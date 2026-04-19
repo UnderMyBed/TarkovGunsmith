@@ -1,0 +1,1686 @@
+schema {
+  query: Query
+}
+
+"""
+**In-game achievements players can earn by completing specific objectives.**
+"""
+type Achievement {
+  """
+  Statistically adjusted percentage that accounts for active players, providing a more representative completion rate. Uses the percentage completion of Welcome to Tarkov as the baseline under the assumption that all active accounts have died once.
+  """
+  adjustedPlayersCompletedPercent: Float
+  """
+  Text describing the conditions required to unlock the achievement (e.g., "Neutralize Killa 15 times while playing as a PMC").
+  """
+  description: String
+  """
+  Whether the achievement is hidden from players until unlocked (true) or visible from the start (false).
+  """
+  hidden: Boolean!
+  """
+  A unique 24-character hexadecimal identifier for the achievement. Follows a consistent format across all achievements.
+  """
+  id: ID!
+  """
+  URL to the achievement's image.
+  """
+  imageLink: String
+  """
+  The display name of the achievement (e.g., "Welcome to Tarkov", "The Kappa Path").
+  """
+  name: String!
+  """
+  Lowercase, standardized version of the rarity field used for consistent sorting and filtering (e.g., "common", "rare", "legendary").
+  """
+  normalizedRarity: String
+  """
+  Lowercase, standardized version of the side field used for consistent sorting and filtering (e.g., "pmc", "all", "scavs").
+  """
+  normalizedSide: String
+  """
+  Raw percentage of all players who have completed this achievement (e.g., 0.06, 43.48).
+  """
+  playersCompletedPercent: Float!
+  """
+  The difficulty/rarity tier of the achievement. Values include "Common", "Rare", or "Legendary".
+  """
+  rarity: String
+  """
+  The game faction or player type this achievement is associated with. Values include "PMC", "All", or "Scavs".
+  """
+  side: String
+}
+
+type Ammo {
+  accuracy: Int @deprecated(reason: "Use accuracyModifier instead.")
+  accuracyModifier: Float
+  ammoType: String!
+  armorDamage: Int!
+  caliber: String
+  damage: Int!
+  fragmentationChance: Float!
+  heavyBleedModifier: Float!
+  initialSpeed: Float
+  item: Item!
+  lightBleedModifier: Float!
+  penetrationChance: Float!
+  penetrationPower: Int!
+  penetrationPowerDeviation: Float
+  projectileCount: Int
+  recoil: Int @deprecated(reason: "Use recoilModifier instead.")
+  recoilModifier: Float
+  ricochetChance: Float!
+  stackMaxSize: Int!
+  staminaBurnPerDamage: Float
+  tracer: Boolean!
+  tracerColor: String
+  weight: Float!
+}
+
+type ArmorMaterial {
+  destructibility: Float
+  explosionDestructibility: Float
+  id: String
+  maxRepairDegradation: Float
+  maxRepairKitDegradation: Float
+  minRepairDegradation: Float
+  minRepairKitDegradation: Float
+  name: String
+}
+
+type AttributeThreshold {
+  name: String!
+  requirement: NumberCompare!
+}
+
+type Barter {
+  buyLimit: Int
+  id: ID!
+  level: Int!
+  requiredItems: [ContainedItem]!
+  requirements: [PriceRequirement]! @deprecated(reason: "Use level instead.")
+  rewardItems: [ContainedItem]!
+  source: String! @deprecated(reason: "Use trader and level instead.")
+  sourceName: ItemSourceName! @deprecated(reason: "Use trader instead.")
+  taskUnlock: Task
+  trader: Trader!
+}
+
+type BossEscort {
+  amount: [BossEscortAmount]
+  boss: MobInfo!
+  name: String! @deprecated(reason: "Use boss.name instead.")
+  normalizedName: String! @deprecated(reason: "Use boss.normalizedName instead.")
+}
+
+type BossEscortAmount {
+  chance: Float!
+  count: Int!
+}
+
+type BossSpawn {
+  boss: MobInfo!
+  escorts: [BossEscort]!
+  name: String! @deprecated(reason: "Use boss.name instead.")
+  normalizedName: String! @deprecated(reason: "Use boss.normalizedName instead.")
+  spawnChance: Float!
+  spawnLocations: [BossSpawnLocation]!
+  spawnTime: Int
+  spawnTimeRandom: Boolean
+  spawnTrigger: String
+  switch: MapSwitch
+}
+
+"""
+The chances of spawning in a given location are
+very rough estimates and may be incaccurate
+"""
+type BossSpawnLocation {
+  chance: Float!
+  name: String!
+  spawnKey: String!
+}
+
+type ContainedItem {
+  attributes: [ItemAttribute]
+  count: Float!
+  item: Item!
+  quantity: Float!
+}
+
+type Craft {
+  duration: Int!
+  id: ID!
+  level: Int!
+  requiredItems: [ContainedItem]!
+  requiredQuestItems: [QuestItem]!
+  requirements: [PriceRequirement]! @deprecated(reason: "Use stationLevel instead.")
+  rewardItems: [ContainedItem]!
+  source: String! @deprecated(reason: "Use stationLevel instead.")
+  sourceName: String! @deprecated(reason: "Use stationLevel instead.")
+  station: HideoutStation!
+  taskUnlock: Task
+}
+
+interface CustomizationItem {
+  customizationType: String!
+  customizationTypeName: String!
+  id: ID!
+  imageLink: String
+  name: String!
+}
+
+type CustomizationItemBasic implements CustomizationItem {
+  customizationType: String!
+  customizationTypeName: String!
+  id: ID!
+  imageLink: String
+  name: String!
+}
+
+type CustomizationItems implements CustomizationItem {
+  customizationType: String!
+  customizationTypeName: String!
+  id: ID!
+  imageLink: String
+  items: [Item]!
+  name: String!
+}
+
+type FleaMarket implements Vendor {
+  enabled: Boolean!
+  foundInRaidRequired: Boolean
+  minPlayerLevel: Int!
+  name: String!
+  normalizedName: String!
+  reputationLevels: [FleaMarketReputationLevel]!
+  sellOfferFeeRate: Float!
+  sellRequirementFeeRate: Float!
+}
+
+type FleaMarketReputationLevel {
+  maxRep: Float!
+  minRep: Float!
+  offers: Int!
+  offersSpecialEditions: Int!
+}
+
+enum GameMode {
+  pve
+  regular
+}
+
+type GameProperty {
+  arrayValue: [String]
+  key: String!
+  numericValue: Float
+  objectValue: String
+  stringValue: String
+}
+
+type GoonReport {
+  map: Map
+  timestamp: String
+}
+
+type HealthEffect {
+  bodyParts: [String]!
+  effects: [String]!
+  time: NumberCompare
+}
+
+type HealthPart {
+  bodyPart: String!
+  id: ID!
+  max: Int!
+}
+
+"""
+HideoutModule has been replaced with HideoutStation.
+"""
+type HideoutModule {
+  id: Int @deprecated(reason: "Use HideoutStation type instead.")
+  itemRequirements: [ContainedItem]!
+  level: Int
+  moduleRequirements: [HideoutModule]!
+  name: String @deprecated(reason: "Use HideoutStation type instead.")
+}
+
+type HideoutStation {
+  """
+  crafts is only available via the hideoutStations query.
+  """
+  crafts: [Craft]!
+  id: ID!
+  imageLink: String
+  levels: [HideoutStationLevel]!
+  name: String!
+  normalizedName: String!
+  tarkovDataId: Int
+}
+
+type HideoutStationBonus {
+  name: String!
+  passive: Boolean
+  production: Boolean
+  skillName: String
+  slotItems: [Item]
+  type: String!
+  value: Float
+}
+
+type HideoutStationLevel {
+  bonuses: [HideoutStationBonus]
+  constructionTime: Int!
+  """
+  crafts is only available via the hideoutStations query.
+  """
+  crafts: [Craft]!
+  description: String!
+  id: ID!
+  itemRequirements: [RequirementItem]!
+  level: Int!
+  skillRequirements: [RequirementSkill]!
+  stationLevelRequirements: [RequirementHideoutStationLevel]!
+  tarkovDataId: Int
+  traderRequirements: [RequirementTrader]!
+}
+
+type Item {
+  accuracyModifier: Float
+  avg24hPrice: Int
+  backgroundColor: String!
+  bartersFor: [Barter]!
+  bartersUsing: [Barter]!
+  baseImageLink: String
+  basePrice: Int!
+  blocksHeadphones: Boolean
+  bsgCategory: ItemCategory @deprecated(reason: "Use category instead.")
+  bsgCategoryId: String
+  buyFor: [ItemPrice!]
+  categories: [ItemCategory]!
+  category: ItemCategory
+  categoryTop: ItemCategory
+    @deprecated(reason: "No longer meaningful with inclusion of Item category.")
+  changeLast48h: Float
+  changeLast48hPercent: Float
+  conflictingItems: [Item]
+  conflictingSlotIds: [String]
+  containsItems: [ContainedItem]
+  craftsFor: [Craft]!
+  craftsUsing: [Craft]!
+  description: String
+  ergonomicsModifier: Float
+  fleaMarketFee(
+    count: Int
+    hideoutManagementLevel: Int
+    intelCenterLevel: Int
+    price: Int
+    requireAll: Boolean
+  ): Int
+  gridImageLink: String
+  gridImageLinkFallback: String!
+    @deprecated(reason: "Fallback handled automatically by gridImageLink.")
+  handbookCategories: [ItemCategory]!
+  hasGrid: Boolean
+  height: Int!
+  high24hPrice: Int
+  """
+  historicalPrices is only available via the item and items queries.
+  """
+  historicalPrices: [historicalPricePoint]
+  iconLink: String
+  iconLinkFallback: String! @deprecated(reason: "Fallback handled automatically by iconLink.")
+  id: ID!
+  image8xLink: String
+  image512pxLink: String
+  imageLink: String @deprecated(reason: "Use inspectImageLink instead.")
+  imageLinkFallback: String!
+    @deprecated(reason: "Fallback handled automatically by inspectImageLink.")
+  inspectImageLink: String
+  lastLowPrice: Int
+  lastOfferCount: Int
+  link: String
+  loudness: Int
+  low24hPrice: Int
+  minLevelForFlea: Int
+  name: String
+  normalizedName: String
+  properties: ItemProperties
+  receivedFromTasks: [Task]!
+  recoilModifier: Float
+  sellFor: [ItemPrice!]
+  shortName: String
+  traderPrices: [TraderPrice]! @deprecated(reason: "Use sellFor instead.")
+  translation(languageCode: LanguageCode): ItemTranslation
+    @deprecated(reason: "Use the lang argument on queries instead.")
+  types: [ItemType]!
+  updated: String
+  usedInTasks: [Task]!
+  velocity: Float
+  weight: Float
+  width: Int!
+  wikiLink: String
+}
+
+interface ItemArmorSlot {
+  nameId: String
+  zones: [String]
+}
+
+type ItemArmorSlotLocked implements ItemArmorSlot {
+  armorType: String
+  baseValue: Int
+  bluntThroughput: Float
+  class: Int
+  durability: Int
+  ergoPenalty: Float
+  material: ArmorMaterial
+  name: String
+  nameId: String
+  repairCost: Int
+  ricochetX: Float
+  ricochetY: Float
+  ricochetZ: Float
+  speedPenalty: Float
+  turnPenalty: Float
+  zones: [String]
+}
+
+type ItemArmorSlotOpen implements ItemArmorSlot {
+  allowedPlates: [Item]
+  name: String
+  nameId: String
+  zones: [String]
+}
+
+type ItemAttribute {
+  name: String!
+  type: String!
+  value: String
+}
+
+type ItemCategory {
+  children: [ItemCategory]
+  id: ID!
+  """
+  Only Handbook categories have image links
+  """
+  imageLink: String
+  """
+  Only Handbook categories have minLevelForFlea
+  """
+  minLevelForFlea: Int
+  name: String!
+  normalizedName: String!
+  parent: ItemCategory
+}
+
+type ItemFilters {
+  allowedCategories: [ItemCategory]!
+  allowedItems: [Item]!
+  excludedCategories: [ItemCategory]!
+  excludedItems: [Item]!
+}
+
+type ItemPrice {
+  currency: String
+  currencyItem: Item
+  price: Int
+  priceRUB: Int
+  requirements: [PriceRequirement]! @deprecated(reason: "Use vendor instead.")
+  source: ItemSourceName @deprecated(reason: "Use vendor instead.")
+  vendor: Vendor!
+}
+
+union ItemProperties =
+  | ItemPropertiesAmmo
+  | ItemPropertiesArmor
+  | ItemPropertiesArmorAttachment
+  | ItemPropertiesBackpack
+  | ItemPropertiesBarrel
+  | ItemPropertiesChestRig
+  | ItemPropertiesContainer
+  | ItemPropertiesFoodDrink
+  | ItemPropertiesGlasses
+  | ItemPropertiesGrenade
+  | ItemPropertiesHeadphone
+  | ItemPropertiesHeadwear
+  | ItemPropertiesHelmet
+  | ItemPropertiesKey
+  | ItemPropertiesMagazine
+  | ItemPropertiesMedKit
+  | ItemPropertiesMedicalItem
+  | ItemPropertiesMelee
+  | ItemPropertiesNightVision
+  | ItemPropertiesPainkiller
+  | ItemPropertiesPreset
+  | ItemPropertiesResource
+  | ItemPropertiesScope
+  | ItemPropertiesStim
+  | ItemPropertiesSurgicalKit
+  | ItemPropertiesWeapon
+  | ItemPropertiesWeaponMod
+
+type ItemPropertiesAmmo {
+  accuracy: Int @deprecated(reason: "Use accuracyModifier instead.")
+  accuracyModifier: Float
+  ammoType: String
+  armorDamage: Int
+  ballisticCoeficient: Float
+  bulletDiameterMilimeters: Float
+  bulletMassGrams: Float
+  caliber: String
+  damage: Int
+  durabilityBurnFactor: Float
+  failureToFeedChance: Float
+  fragmentationChance: Float
+  heatFactor: Float
+  heavyBleedModifier: Float
+  initialSpeed: Float
+  lightBleedModifier: Float
+  misfireChance: Float
+  penetrationChance: Float
+  penetrationPower: Int
+  penetrationPowerDeviation: Float
+  projectileCount: Int
+  recoil: Float @deprecated(reason: "Use recoilModifier instead.")
+  recoilModifier: Float
+  ricochetChance: Float
+  stackMaxSize: Int
+  staminaBurnPerDamage: Float
+  tracer: Boolean
+  tracerColor: String
+}
+
+type ItemPropertiesArmor {
+  armorSlots: [ItemArmorSlot]
+  armorType: String
+  bluntThroughput: Float
+  class: Int
+  durability: Int
+  ergoPenalty: Float
+  material: ArmorMaterial
+  repairCost: Int
+  speedPenalty: Float
+  turnPenalty: Float
+  zones: [String]
+}
+
+type ItemPropertiesArmorAttachment {
+  armorType: String
+  blindnessProtection: Float
+  bluntThroughput: Float
+  class: Int
+  durability: Int
+  ergoPenalty: Float
+  headZones: [String] @deprecated(reason: "Use zones instead.")
+  material: ArmorMaterial
+  repairCost: Int
+  slots: [ItemSlot]
+  speedPenalty: Float
+  turnPenalty: Float
+  zones: [String]
+}
+
+type ItemPropertiesBackpack {
+  capacity: Int
+  ergoPenalty: Float
+  grids: [ItemStorageGrid]
+  pouches: [ItemStorageGrid] @deprecated(reason: "Use grids instead.")
+  speedPenalty: Float
+  turnPenalty: Float
+}
+
+type ItemPropertiesBarrel {
+  accuracyModifier: Float
+    @deprecated(reason: "Use centerOfImpact, deviationCurve, and deviationMax instead.")
+  centerOfImpact: Float
+  deviationCurve: Float
+  deviationMax: Float
+  ergonomics: Float
+  recoil: Float @deprecated(reason: "Use recoilModifier instead.")
+  recoilModifier: Float
+  slots: [ItemSlot]
+}
+
+type ItemPropertiesChestRig {
+  armorSlots: [ItemArmorSlot]
+  armorType: String
+  bluntThroughput: Float
+  capacity: Int
+  class: Int
+  durability: Int
+  ergoPenalty: Float
+  grids: [ItemStorageGrid]
+  material: ArmorMaterial
+  pouches: [ItemStorageGrid] @deprecated(reason: "Use grids instead.")
+  repairCost: Int
+  speedPenalty: Float
+  turnPenalty: Float
+  zones: [String]
+}
+
+type ItemPropertiesContainer {
+  capacity: Int
+  grids: [ItemStorageGrid]
+}
+
+type ItemPropertiesFoodDrink {
+  energy: Int
+  hydration: Int
+  stimEffects: [StimEffect]!
+  units: Int
+}
+
+type ItemPropertiesGlasses {
+  blindnessProtection: Float
+  bluntThroughput: Float
+  class: Int
+  durability: Int
+  ergoPenalty: Float
+  material: ArmorMaterial
+  repairCost: Int
+}
+
+type ItemPropertiesGrenade {
+  contusionRadius: Int
+  fragments: Int
+  fuse: Float
+  maxExplosionDistance: Int
+  minExplosionDistance: Int
+  type: String
+}
+
+type ItemPropertiesHeadphone {
+  ambientVolume: Int
+  compressorAttack: Int
+  compressorGain: Int
+  compressorRelease: Int
+  compressorThreshold: Int
+  compressorVolume: Int
+  cutoffFrequency: Int
+  distanceModifier: Float
+  distortion: Float
+  dryVolume: Int
+  highFrequencyGain: Float
+  resonance: Float
+}
+
+type ItemPropertiesHeadwear {
+  slots: [ItemSlot]
+}
+
+type ItemPropertiesHelmet {
+  armorSlots: [ItemArmorSlot]
+  armorType: String
+  blindnessProtection: Float
+  blocksHeadset: Boolean
+  bluntThroughput: Float
+  class: Int
+  deafening: String
+  durability: Int
+  ergoPenalty: Float
+  headZones: [String]
+  material: ArmorMaterial
+  repairCost: Int
+  ricochetX: Float
+  ricochetY: Float
+  ricochetZ: Float
+  slots: [ItemSlot]
+  speedPenalty: Float
+  turnPenalty: Float
+}
+
+type ItemPropertiesKey {
+  uses: Int
+}
+
+type ItemPropertiesMagazine {
+  allowedAmmo: [Item]
+  ammoCheckModifier: Float
+  capacity: Int
+  ergonomics: Float
+  loadModifier: Float
+  malfunctionChance: Float
+  recoil: Float @deprecated(reason: "Use recoilModifier instead.")
+  recoilModifier: Float
+  slots: [ItemSlot]
+}
+
+type ItemPropertiesMedKit {
+  cures: [String]
+  hitpoints: Int
+  hpCostHeavyBleeding: Int
+  hpCostLightBleeding: Int
+  maxHealPerUse: Int
+  useTime: Int
+}
+
+type ItemPropertiesMedicalItem {
+  cures: [String]
+  useTime: Int
+  uses: Int
+}
+
+type ItemPropertiesMelee {
+  hitRadius: Float
+  slashDamage: Int
+  stabDamage: Int
+}
+
+type ItemPropertiesNightVision {
+  diffuseIntensity: Float
+  intensity: Float
+  noiseIntensity: Float
+  noiseScale: Float
+}
+
+type ItemPropertiesPainkiller {
+  cures: [String]
+  energyImpact: Int
+  hydrationImpact: Int
+  painkillerDuration: Int
+  useTime: Int
+  uses: Int
+}
+
+type ItemPropertiesPreset {
+  baseItem: Item!
+  default: Boolean
+  ergonomics: Float
+  moa: Float
+  recoilHorizontal: Int
+  recoilVertical: Int
+}
+
+type ItemPropertiesResource {
+  units: Int
+}
+
+type ItemPropertiesScope {
+  ergonomics: Float
+  recoil: Float @deprecated(reason: "Use recoilModifier instead.")
+  recoilModifier: Float
+  sightModes: [Int]
+  sightingRange: Int
+  slots: [ItemSlot]
+  zoomLevels: [[Float]]
+}
+
+type ItemPropertiesStim {
+  cures: [String]
+  stimEffects: [StimEffect]!
+  useTime: Int
+}
+
+type ItemPropertiesSurgicalKit {
+  cures: [String]
+  maxLimbHealth: Float
+  minLimbHealth: Float
+  useTime: Int
+  uses: Int
+}
+
+type ItemPropertiesWeapon {
+  allowedAmmo: [Item]
+  caliber: String
+  cameraRecoil: Float
+  cameraSnap: Float
+  centerOfImpact: Float
+  convergence: Float
+  defaultAmmo: Item
+  defaultErgonomics: Float
+  defaultHeight: Int
+  defaultPreset: Item
+  defaultRecoilHorizontal: Int
+  defaultRecoilVertical: Int
+  defaultWeight: Float
+  defaultWidth: Int
+  deviationCurve: Float
+  deviationMax: Float
+  effectiveDistance: Int
+  ergonomics: Float
+  fireModes: [String]
+  fireRate: Int
+  maxDurability: Int
+  presets: [Item]
+  recoilAngle: Int
+  recoilDispersion: Int
+  recoilHorizontal: Int
+  recoilVertical: Int
+  repairCost: Int
+  sightingRange: Int
+  slots: [ItemSlot]
+}
+
+type ItemPropertiesWeaponMod {
+  accuracyModifier: Float
+  ergonomics: Float
+  recoil: Float @deprecated(reason: "Use recoilModifier instead.")
+  recoilModifier: Float
+  slots: [ItemSlot]
+}
+
+type ItemSlot {
+  filters: ItemFilters
+  id: ID!
+  name: String!
+  nameId: String!
+  required: Boolean
+}
+
+enum ItemSourceName {
+  fence
+  fleaMarket
+  jaeger
+  mechanic
+  peacekeeper
+  prapor
+  ragman
+  ref
+  skier
+  therapist
+}
+
+type ItemStorageGrid {
+  filters: ItemFilters!
+  height: Int!
+  width: Int!
+}
+
+"""
+The below types are all deprecated and may not return current data.
+ItemTranslation has been replaced with the lang argument on all queries
+"""
+type ItemTranslation {
+  description: String @deprecated(reason: "Use the lang argument on queries instead.")
+  name: String @deprecated(reason: "Use the lang argument on queries instead.")
+  shortName: String @deprecated(reason: "Use the lang argument on queries instead.")
+}
+
+enum ItemType {
+  ammo
+  ammoBox
+  any
+  armor
+  armorPlate
+  backpack
+  barter
+  container
+  glasses
+  grenade
+  gun
+  headphones
+  helmet
+  injectors
+  keys
+  markedOnly
+  meds
+  mods
+  noFlea
+  pistolGrip
+  poster
+  preset
+  provisions
+  rig
+  specialSlot
+  suppressor
+  wearable
+}
+
+enum LanguageCode {
+  cs
+  de
+  en
+  es
+  fr
+  hu
+  it
+  ja
+  ko
+  pl
+  pt
+  ro
+  ru
+  sk
+  tr
+  zh
+}
+
+type Lock {
+  bottom: Float
+  key: Item
+  lockType: String
+  needsPower: Boolean
+  outline: [MapPosition]
+  position: MapPosition
+  top: Float
+}
+
+type LootContainer {
+  id: ID!
+  name: String!
+  normalizedName: String!
+}
+
+type LootContainerPosition {
+  lootContainer: LootContainer
+  position: MapPosition
+}
+
+type LootLoosePosition {
+  items: [Item]
+  position: MapPosition
+}
+
+type Map {
+  accessKeys: [Item]!
+  accessKeysMinPlayerLevel: Int
+  artillery: MapArtillerySettings
+  bosses: [BossSpawn]!
+  btrStops: [MapPositionNamed]
+  description: String
+  enemies: [String]
+  extracts: [MapExtract]
+  hazards: [MapHazard]
+  id: ID!
+  locks: [Lock]
+  lootContainers: [LootContainerPosition]
+  lootLoose: [LootLoosePosition]
+  maxPlayerLevel: Int
+  minPlayerLevel: Int
+  name: String!
+  nameId: String
+  normalizedName: String!
+  players: String
+  raidDuration: Int
+  spawns: [MapSpawn]
+  stationaryWeapons: [StationaryWeaponPosition]
+  switches: [MapSwitch]
+  tarkovDataId: ID
+  transits: [MapTransit]
+  wiki: String
+}
+
+type MapArtillerySettings {
+  zones: [MapArtilleryZone]
+}
+
+type MapArtilleryZone {
+  bottom: Float
+  outline: [MapPosition]
+  position: MapPosition
+  radius: Float @deprecated(reason: "Use outline instead.")
+  top: Float
+}
+
+type MapExtract {
+  bottom: Float
+  faction: String
+  id: ID!
+  name: String
+  outline: [MapPosition]
+  position: MapPosition
+  switches: [MapSwitch]
+  top: Float
+  transferItem: ContainedItem
+}
+
+type MapHazard {
+  bottom: Float
+  hazardType: String
+  name: String
+  outline: [MapPosition]
+  position: MapPosition
+  top: Float
+}
+
+type MapPosition {
+  x: Float!
+  y: Float!
+  z: Float!
+}
+
+type MapPositionNamed {
+  name: String
+  x: Float!
+  y: Float!
+  z: Float!
+}
+
+type MapSpawn {
+  categories: [String]
+  position: MapPosition!
+  sides: [String]
+  zoneName: String
+}
+
+type MapSwitch {
+  activatedBy: MapSwitch
+  activates: [MapSwitchOperation]
+  id: ID!
+  name: String
+  position: MapPosition
+  switchType: String
+}
+
+type MapSwitchOperation {
+  operation: String
+  target: MapSwitchTarget
+}
+
+union MapSwitchTarget = MapExtract | MapSwitch
+
+type MapTransit {
+  bottom: Float
+  conditions: String
+  description: String
+  id: ID!
+  map: Map
+  outline: [MapPosition]
+  position: MapPosition
+  top: Float
+}
+
+type MapWithPosition {
+  map: Map
+  positions: [MapPosition]
+}
+
+type Mastering {
+  id: ID!
+  level2: Int
+  level3: Int
+  weapons: [Item]!
+}
+
+type MobInfo {
+  """
+  equipment and items are estimates and may be inaccurate.
+  """
+  equipment: [ContainedItem]!
+  health: [HealthPart]
+  id: ID!
+  imagePortraitLink: String
+  imagePosterLink: String
+  items: [Item]!
+  name: String!
+  normalizedName: String!
+}
+
+type NumberCompare {
+  compareMethod: String!
+  value: Float!
+}
+
+type OfferUnlock {
+  id: ID!
+  item: Item!
+  level: Int!
+  trader: Trader!
+}
+
+type PlayerLevel {
+  exp: Int!
+  level: Int!
+  levelBadgeImageLink: String
+}
+
+type Prestige {
+  conditions: [TaskObjective]
+  iconLink: String
+  id: ID!
+  imageLink: String
+  name: String
+  prestigeLevel: Int
+  rewards: TaskRewards
+  transferSettings: [PrestigeTransferSettings]
+}
+
+union PrestigeTransferSettings = PrestigeTransferSettingsSkill | PrestigeTransferSettingsStash
+
+type PrestigeTransferSettingsSkill {
+  name: String
+  skillType: String
+  transferRate: Float
+}
+
+type PrestigeTransferSettingsStash {
+  gridHeight: Int
+  gridWidth: Int
+  itemFilters: ItemFilters
+}
+
+type PriceRequirement {
+  stringValue: String
+  type: RequirementType!
+  value: Int
+}
+
+type Query {
+  achievements(lang: LanguageCode, limit: Int, offset: Int): [Achievement]!
+  ammo(gameMode: GameMode, lang: LanguageCode, limit: Int, offset: Int): [Ammo]
+  archivedItemPrices(id: ID!, limit: Int, offset: Int): [historicalPricePoint]!
+  armorMaterials(lang: LanguageCode): [ArmorMaterial]!
+  barters(gameMode: GameMode, lang: LanguageCode, limit: Int, offset: Int): [Barter]
+  bosses(
+    gameMode: GameMode
+    lang: LanguageCode
+    limit: Int
+    name: [String!]
+    offset: Int
+  ): [MobInfo]
+  crafts(gameMode: GameMode, lang: LanguageCode, limit: Int, offset: Int): [Craft]
+  fleaMarket(gameMode: GameMode, lang: LanguageCode): FleaMarket!
+  goonReports(gameMode: GameMode, lang: LanguageCode, limit: Int, ofset: Int): [GoonReport]!
+  handbookCategories(lang: LanguageCode, limit: Int, offset: Int): [ItemCategory]!
+  hideoutModules: [HideoutModule] @deprecated(reason: "Use hideoutStations instead.")
+  hideoutStations(
+    gameMode: GameMode
+    lang: LanguageCode
+    limit: Int
+    offset: Int
+  ): [HideoutStation]!
+  historicalItemPrices(
+    days: Int
+    gameMode: GameMode
+    id: ID!
+    lang: LanguageCode
+    limit: Int
+    offset: Int
+  ): [historicalPricePoint]!
+  item(gameMode: GameMode, id: ID, lang: LanguageCode, normalizedName: String): Item
+  itemByNormalizedName(normalizedName: String!): Item @deprecated(reason: "Use item instead.")
+  itemCategories(lang: LanguageCode, limit: Int, offset: Int): [ItemCategory]!
+  itemPrices(gameMode: GameMode, id: ID!, limit: Int, offset: Int): [historicalPricePoint]!
+  items(
+    bsgCategory: String
+    bsgCategoryId: String
+    bsgCategoryIds: [String]
+    categoryNames: [String]
+    gameMode: GameMode
+    handbookCategoryNames: [String]
+    ids: [ID]
+    lang: LanguageCode
+    limit: Int
+    name: String
+    names: [String]
+    offset: Int
+    type: ItemType
+    types: [ItemType]
+  ): [Item]!
+  itemsByBsgCategoryId(bsgCategoryId: String!): [Item]! @deprecated(reason: "Use items instead.")
+  itemsByIDs(ids: [ID]!): [Item] @deprecated(reason: "Use items instead.")
+  itemsByName(name: String!): [Item]! @deprecated(reason: "Use items instead.")
+  itemsByType(type: ItemType!): [Item]! @deprecated(reason: "Use items instead.")
+  lootContainers(lang: LanguageCode, limit: Int, offset: Int): [LootContainer]
+  maps(
+    enemies: [String!]
+    gameMode: GameMode
+    lang: LanguageCode
+    limit: Int
+    name: [String!]
+    offset: Int
+  ): [Map]!
+  mastering(lang: LanguageCode): [Mastering]!
+  playerLevels: [PlayerLevel]!
+  prestige(gameMode: GameMode, lang: LanguageCode): [Prestige]!
+  questItems(lang: LanguageCode): [QuestItem]
+  quests: [Quest] @deprecated(reason: "Use tasks instead.")
+  skills(lang: LanguageCode): [Skill]!
+  stationaryWeapons(lang: LanguageCode, limit: Int, offset: Int): [StationaryWeapon]
+  status: ServerStatus!
+  task(gameMode: GameMode, id: ID!, lang: LanguageCode): Task
+  tasks(faction: String, gameMode: GameMode, lang: LanguageCode, limit: Int, offset: Int): [Task]!
+  traderResetTimes: [TraderResetTime] @deprecated(reason: "Use traders instead.")
+  traders(gameMode: GameMode, lang: LanguageCode, limit: Int, offset: Int): [Trader]!
+}
+
+"""
+Quest has been replaced with Task.
+"""
+type Quest {
+  exp: Int! @deprecated(reason: "Use Task type instead.")
+  giver: Trader! @deprecated(reason: "Use Task type instead.")
+  id: String! @deprecated(reason: "Use Task type instead.")
+  objectives: [QuestObjective]! @deprecated(reason: "Use Task type instead.")
+  reputation: [QuestRewardReputation!] @deprecated(reason: "Use Task type instead.")
+  requirements: QuestRequirement @deprecated(reason: "Use Task type instead.")
+  title: String! @deprecated(reason: "Use Task type instead.")
+  turnin: Trader! @deprecated(reason: "Use Task type instead.")
+  unlocks: [String]! @deprecated(reason: "Use Task type instead.")
+  wikiLink: String! @deprecated(reason: "Use Task type instead.")
+}
+
+type QuestItem {
+  baseImageLink: String
+  description: String
+  gridImageLink: String
+  height: Int
+  iconLink: String
+  id: ID
+  image8xLink: String
+  image512pxLink: String
+  inspectImageLink: String
+  name: String!
+  normalizedName: String
+  shortName: String
+  width: Int
+}
+
+"""
+QuestObjective has been replaced with TaskObjective.
+"""
+type QuestObjective {
+  id: String @deprecated(reason: "Use Task type instead.")
+  location: String @deprecated(reason: "Use Task type instead.")
+  number: Int @deprecated(reason: "Use Task type instead.")
+  target: [String!] @deprecated(reason: "Use Task type instead.")
+  targetItem: Item @deprecated(reason: "Use Task type instead.")
+  type: String! @deprecated(reason: "Use Task type instead.")
+}
+
+"""
+QuestRequirement has been replaced with TaskRequirement.
+"""
+type QuestRequirement {
+  level: Int @deprecated(reason: "Use Task type instead.")
+  prerequisiteQuests: [[Quest]]! @deprecated(reason: "Use Task type instead.")
+  quests: [[Int]]! @deprecated(reason: "Use Task type instead.")
+}
+
+type QuestRewardReputation {
+  amount: Float! @deprecated(reason: "Use Task type instead.")
+  trader: Trader! @deprecated(reason: "Use Task type instead.")
+}
+
+type RequirementHideoutStationLevel {
+  id: ID
+  level: Int!
+  station: HideoutStation!
+}
+
+type RequirementItem {
+  attributes: [ItemAttribute]
+  count: Int!
+  id: ID
+  item: Item!
+  quantity: Int!
+}
+
+type RequirementSkill {
+  id: ID
+  level: Int!
+  name: String!
+  skill: Skill!
+}
+
+type RequirementTask {
+  id: ID
+  task: Task!
+}
+
+type RequirementTrader {
+  compareMethod: String
+  id: ID
+  level: Int @deprecated(reason: "Use value instead.")
+  requirementType: String
+  trader: Trader!
+  value: Int
+}
+
+enum RequirementType {
+  loyaltyLevel
+  playerLevel
+  questCompleted
+  stationLevel
+}
+
+type ServerStatus {
+  currentStatuses: [Status]
+  generalStatus: Status
+  messages: [StatusMessage]
+}
+
+type Skill {
+  id: ID
+  imageLink: String
+  name: String
+}
+
+type SkillLevel {
+  level: Float!
+  name: String!
+  skill: Skill!
+}
+
+type StationaryWeapon {
+  id: ID
+  name: String
+  shortName: String
+}
+
+type StationaryWeaponPosition {
+  position: MapPosition
+  stationaryWeapon: StationaryWeapon
+}
+
+type Status {
+  message: String
+  name: String!
+  status: Int!
+  statusCode: String!
+}
+
+enum StatusCode {
+  Down
+  OK
+  Unstable
+  Updating
+}
+
+type StatusMessage {
+  content: String!
+  solveTime: String
+  statusCode: String!
+  time: String!
+  type: Int!
+}
+
+type StimEffect {
+  chance: Float!
+  delay: Int!
+  duration: Int!
+  percent: Boolean!
+  skill: Skill
+  skillName: String
+  type: String!
+  value: Float!
+}
+
+type Task {
+  availableDelaySecondsMax: Int
+  availableDelaySecondsMin: Int
+  descriptionMessageId: String
+  experience: Int!
+  factionName: String
+  failConditions: [TaskObjective]!
+  failMessageId: String
+  failureOutcome: TaskRewards
+  finishRewards: TaskRewards
+  id: ID
+  kappaRequired: Boolean
+  lightkeeperRequired: Boolean
+  map: Map
+  minPlayerLevel: Int
+  name: String!
+  neededKeys: [TaskKey] @deprecated(reason: "Use requiredKeys on objectives instead.")
+  normalizedName: String!
+  objectives: [TaskObjective]!
+  requiredPrestige: Prestige
+  restartable: Boolean
+  startMessageId: String
+  startRewards: TaskRewards
+  successMessageId: String
+  tarkovDataId: Int
+  taskImageLink: String
+  taskRequirements: [TaskStatusRequirement]!
+  trader: Trader!
+  traderLevelRequirements: [RequirementTrader]!
+    @deprecated(reason: "Use traderRequirements instead.")
+  traderRequirements: [RequirementTrader]!
+  wikiLink: String
+}
+
+type TaskKey {
+  keys: [Item]!
+  map: Map
+}
+
+interface TaskObjective {
+  description: String!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  type: String!
+}
+
+type TaskObjectiveBasic implements TaskObjective {
+  description: String!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  requiredKeys: [[Item]]
+  type: String!
+  zones: [TaskZone]
+}
+
+type TaskObjectiveBuildItem implements TaskObjective {
+  attributes: [AttributeThreshold]!
+  containsAll: [Item]!
+  containsCategory: [ItemCategory]!
+  containsOne: [Item]! @deprecated(reason: "Use containsCategory instead.")
+  description: String!
+  id: ID
+  item: Item!
+  maps: [Map]!
+  optional: Boolean!
+  type: String!
+}
+
+type TaskObjectiveExperience implements TaskObjective {
+  count: Int!
+  description: String!
+  healthEffect: HealthEffect!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  type: String!
+}
+
+type TaskObjectiveExtract implements TaskObjective {
+  count: Int!
+  description: String!
+  exitName: String
+  exitStatus: [String]!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  requiredKeys: [[Item]]
+  type: String!
+  zoneNames: [String]!
+}
+
+type TaskObjectiveHideoutStation implements TaskObjective {
+  description: String!
+  hideoutStation: HideoutStation
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  stationLevel: Int
+  type: String!
+}
+
+type TaskObjectiveItem implements TaskObjective {
+  count: Int!
+  description: String!
+  dogTagLevel: Int
+  foundInRaid: Boolean!
+  id: ID
+  item: Item! @deprecated(reason: "Use items instead.")
+  items: [Item]!
+  maps: [Map]!
+  maxDurability: Int
+  minDurability: Int
+  optional: Boolean!
+  requiredKeys: [[Item]]
+  type: String!
+  zones: [TaskZone]
+}
+
+type TaskObjectiveMark implements TaskObjective {
+  description: String!
+  id: ID
+  maps: [Map]!
+  markerItem: Item!
+  optional: Boolean!
+  requiredKeys: [[Item]]
+  type: String!
+  zones: [TaskZone]
+}
+
+type TaskObjectivePlayerLevel implements TaskObjective {
+  description: String!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  playerLevel: Int!
+  type: String!
+}
+
+type TaskObjectiveQuestItem implements TaskObjective {
+  count: Int!
+  description: String!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  possibleLocations: [MapWithPosition]
+  questItem: QuestItem!
+  requiredKeys: [[Item]]
+  type: String!
+  zones: [TaskZone]
+}
+
+type TaskObjectiveShoot implements TaskObjective {
+  bodyParts: [String]!
+  count: Int!
+  description: String!
+  distance: NumberCompare
+  enemyHealthEffect: HealthEffect
+  id: ID
+  maps: [Map]!
+  notWearing: [Item]
+  optional: Boolean!
+  playerHealthEffect: HealthEffect
+  requiredKeys: [[Item]]
+  shotType: String!
+  target: String! @deprecated(reason: "Use targetNames instead.")
+  targetNames: [String]!
+  timeFromHour: Int
+  timeUntilHour: Int
+  type: String!
+  usingWeapon: [Item]
+  usingWeaponMods: [[Item]]
+  wearing: [[Item]]
+  zoneNames: [String]!
+  zones: [TaskZone]
+}
+
+type TaskObjectiveSkill implements TaskObjective {
+  description: String!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  skillLevel: SkillLevel!
+  type: String!
+}
+
+type TaskObjectiveTaskStatus implements TaskObjective {
+  description: String!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  status: [String]!
+  task: Task!
+  type: String!
+}
+
+type TaskObjectiveTraderLevel implements TaskObjective {
+  description: String!
+  id: ID
+  level: Int!
+  maps: [Map]!
+  optional: Boolean!
+  trader: Trader!
+  type: String!
+}
+
+type TaskObjectiveTraderStanding implements TaskObjective {
+  compareMethod: String!
+  description: String!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  trader: Trader!
+  type: String!
+  value: Int!
+}
+
+type TaskObjectiveUseItem implements TaskObjective {
+  compareMethod: String!
+  count: Int!
+  description: String!
+  id: ID
+  maps: [Map]!
+  optional: Boolean!
+  requiredKeys: [[Item]]
+  type: String!
+  useAny: [Item]!
+  zoneNames: [String]!
+  zones: [TaskZone]
+}
+
+type TaskRewards {
+  achievement: [Achievement]!
+  craftUnlock: [Craft]!
+  customization: [CustomizationItem]
+  items: [ContainedItem]!
+  offerUnlock: [OfferUnlock]!
+  skillLevelReward: [SkillLevel]!
+  traderStanding: [TraderStanding]!
+  traderUnlock: [Trader]!
+}
+
+type TaskStatusRequirement {
+  status: [String]!
+  task: Task!
+}
+
+type TaskZone {
+  bottom: Float
+  id: ID!
+  map: Map
+  outline: [MapPosition]
+  position: MapPosition
+  top: Float
+}
+
+type Trader {
+  """
+  barters and cashOffers are only available via the traders query.
+  """
+  barters: [Barter]!
+  cashOffers: [TraderCashOffer]!
+  currency: Item!
+  description: String
+  discount: Float!
+  id: ID!
+  image4xLink: String
+  imageLink: String
+  levels: [TraderLevel!]!
+  name: String!
+  normalizedName: String!
+  reputationLevels: [TraderReputationLevel]!
+  resetTime: String
+  tarkovDataId: Int
+}
+
+type TraderCashOffer {
+  buyLimit: Int
+  currency: String
+  currencyItem: Item
+  id: ID
+  item: Item!
+  minTraderLevel: Int
+  price: Int
+  priceRUB: Int
+  taskUnlock: Task
+}
+
+type TraderLevel {
+  """
+  barters and cashOffers are only available via the traders query.
+  """
+  barters: [Barter]!
+  cashOffers: [TraderCashOffer]!
+  id: ID!
+  image4xLink: String
+  imageLink: String
+  insuranceRate: Float
+  level: Int!
+  payRate: Float!
+  repairCostMultiplier: Float
+  requiredCommerce: Int!
+  requiredPlayerLevel: Int!
+  requiredReputation: Float!
+}
+
+enum TraderName {
+  fence
+  jaeger
+  mechanic
+  peacekeeper
+  prapor
+  ragman
+  ref
+  skier
+  therapist
+}
+
+type TraderOffer implements Vendor {
+  buyLimit: Int
+  minTraderLevel: Int
+  name: String!
+  normalizedName: String!
+  taskUnlock: Task
+  trader: Trader!
+}
+
+"""
+TraderPrice is deprecated and replaced with ItemPrice.
+"""
+type TraderPrice {
+  currency: String! @deprecated(reason: "Use item.buyFor instead.")
+  price: Int! @deprecated(reason: "Use item.buyFor instead.")
+  priceRUB: Int! @deprecated(reason: "Use item.buyFor instead.")
+  trader: Trader! @deprecated(reason: "Use item.buyFor instead.")
+}
+
+union TraderReputationLevel = TraderReputationLevelFence
+
+type TraderReputationLevelFence {
+  availableScavExtracts: Int
+  btrCoveringFireDiscount: Int
+  btrDeliveryDiscount: Int
+  btrDeliveryGridSize: MapPosition
+  btrEnabled: Boolean
+  btrTaxiDiscount: Int
+  extractPriceModifier: Float
+  hostileBosses: Boolean
+  hostileScavs: Boolean
+  minimumReputation: Int!
+  priceModifier: Float
+  scavAttackSupport: Boolean
+  scavCaseTimeModifier: Float
+  scavCooldownModifier: Float
+  scavEquipmentSpawnChanceModifier: Float
+  scavFollowChance: Float
+}
+
+"""
+TraderResetTime is deprecated and replaced with Trader.
+"""
+type TraderResetTime {
+  name: String @deprecated(reason: "Use Trader.name type instead.")
+  resetTimestamp: String @deprecated(reason: "Use Trader.resetTime type instead.")
+}
+
+type TraderStanding {
+  standing: Float!
+  trader: Trader!
+}
+
+interface Vendor {
+  name: String!
+  normalizedName: String!
+}
+
+type historicalPricePoint {
+  offerCount: Int
+  offerCountMin: Int
+  price: Int
+  priceMin: Int
+  timestamp: String
+}
