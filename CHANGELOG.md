@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.12.0...v1.0.0) (2026-04-19)
+
+
+### Documentation
+
+* declare v1.0.0 — Milestone 1 complete ([#41](https://github.com/UnderMyBed/TarkovGunsmith/issues/41)) ([8701c8b](https://github.com/UnderMyBed/TarkovGunsmith/commit/8701c8b55a15e4bd897a96709bd92b901eff4576))
+
 ## [0.12.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.11.0...v0.12.0) (2026-04-19)
 
 
