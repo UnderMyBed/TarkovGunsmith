@@ -31,7 +31,7 @@ export default tseslint.config(
             "packages/ui/src/lib/*.test.ts",
             "packages/ui/src/components/*.test.ts",
           ],
-          defaultProject: "packages/ballistics/tsconfig.test.json",
+          defaultProject: "packages/ui/tsconfig.test.json",
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20,
         },
         tsconfigRootDir: import.meta.dirname,
