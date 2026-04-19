@@ -8,16 +8,16 @@ Tier C is "AI-orchestrated": agents do triage, scheduling, schema-watching, and 
 
 Each item is one PR. Do them in order. After each, the project still works at Tier B + that one feature — so you can stop at any step.
 
-| # | PR | What it adds | Estimated effort |
-|---|---|---|---|
-| 1 | `chore(ai): add issue templates + triage skill` | `.github/ISSUE_TEMPLATE/{bug,feature,chore}.yml` + `.claude/skills/triage-issue.md` | S |
-| 2 | `chore(ai): add tarkov-schema-watcher cron` | `.github/workflows/schema-watch.yml` runs nightly, calls Claude via API to check schema, opens PR if changed | M |
-| 3 | `chore(ai): add data-fixture-refresh cron` | Weekly workflow: refresh test fixtures from current API state, open PR | S |
-| 4 | `chore(ai): add dependency-bumper agent` | Workflow runs Renovate-style logic via agent that reads changelogs + explains breakage in PR body | M |
-| 5 | `chore(ai): add parallel-dispatch recipes` | `docs/ai-workflow/recipes/` with concrete templates for cross-cutting features | S |
-| 6 | `chore(ai): add module-owner agents` | `.claude/agents/{builder,matrix,ballistics}-owner.md` — long-lived domain experts | M |
-| 7 | `chore(ai): add post-merge agents` | `docs-updater`, `adr-drafter`, `deploy-verifier` workflows triggered on merge to `main` | M |
-| 8 | `chore(ai): flip default workflow to issue-driven` | Update root `CLAUDE.md` and `tier-b.md` references → "see tier-c.md"; mark this file `Status: Active` | S |
+| #   | PR                                                 | What it adds                                                                                                 | Estimated effort |
+| --- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------- |
+| 1   | `chore(ai): add issue templates + triage skill`    | `.github/ISSUE_TEMPLATE/{bug,feature,chore}.yml` + `.claude/skills/triage-issue.md`                          | S                |
+| 2   | `chore(ai): add tarkov-schema-watcher cron`        | `.github/workflows/schema-watch.yml` runs nightly, calls Claude via API to check schema, opens PR if changed | M                |
+| 3   | `chore(ai): add data-fixture-refresh cron`         | Weekly workflow: refresh test fixtures from current API state, open PR                                       | S                |
+| 4   | `chore(ai): add dependency-bumper agent`           | Workflow runs Renovate-style logic via agent that reads changelogs + explains breakage in PR body            | M                |
+| 5   | `chore(ai): add parallel-dispatch recipes`         | `docs/ai-workflow/recipes/` with concrete templates for cross-cutting features                               | S                |
+| 6   | `chore(ai): add module-owner agents`               | `.claude/agents/{builder,matrix,ballistics}-owner.md` — long-lived domain experts                            | M                |
+| 7   | `chore(ai): add post-merge agents`                 | `docs-updater`, `adr-drafter`, `deploy-verifier` workflows triggered on merge to `main`                      | M                |
+| 8   | `chore(ai): flip default workflow to issue-driven` | Update root `CLAUDE.md` and `tier-b.md` references → "see tier-c.md"; mark this file `Status: Active`        | S                |
 
 ## Step 1 — Issue-driven dev
 
@@ -43,7 +43,7 @@ Each item is one PR. Do them in order. After each, the project still works at Ti
 ```yaml
 on:
   schedule:
-    - cron: "0 6 * * *"  # 06:00 UTC daily
+    - cron: "0 6 * * *" # 06:00 UTC daily
   workflow_dispatch:
 jobs:
   check:
@@ -84,7 +84,7 @@ A workflow that nightly runs `pnpm outdated`, picks one update at a time, runs `
 - If green: opens PR with a Claude-generated body summarizing the changelog highlights and noting any deprecation warnings observed in test output.
 - If red: opens PR as draft with the failing test logs and a Claude-written hypothesis on the cause.
 
-**Why not Renovate/Dependabot directly?** Because the value-add is the *contextual changelog summary* and the *hypothesis on failures*, not the bumping itself.
+**Why not Renovate/Dependabot directly?** Because the value-add is the _contextual changelog summary_ and the _hypothesis on failures_, not the bumping itself.
 
 ## Step 5 — Parallel dispatch recipes
 

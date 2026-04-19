@@ -65,6 +65,7 @@ No `apps/*` or `packages/*` directories yet — those land in 0b/0c/0d.
 ```bash
 node --version
 ```
+
 Expected: `v22.x.x`. If not, install via `nvm install 22` or your version manager.
 
 - [ ] **Step 2: Verify pnpm 10 is available**
@@ -72,6 +73,7 @@ Expected: `v22.x.x`. If not, install via `nvm install 22` or your version manage
 ```bash
 pnpm --version
 ```
+
 Expected: `10.x.x`. If not, `npm i -g pnpm@10` or `corepack enable && corepack prepare pnpm@latest --activate`.
 
 - [ ] **Step 3: Verify gh CLI is authenticated**
@@ -79,6 +81,7 @@ Expected: `10.x.x`. If not, `npm i -g pnpm@10` or `corepack enable && corepack p
 ```bash
 gh auth status
 ```
+
 Expected: logged in as `UnderMyBed`. If not: `gh auth login`.
 
 ---
@@ -86,6 +89,7 @@ Expected: logged in as `UnderMyBed`. If not: `gh auth login`.
 ## Task 1: Add `.gitignore`, `.editorconfig`, `.nvmrc`, `.node-version`
 
 **Files:**
+
 - Create: `.gitignore`
 - Create: `.editorconfig`
 - Create: `.nvmrc`
@@ -152,6 +156,7 @@ trim_trailing_whitespace = false
 - [ ] **Step 3: Create `.nvmrc` and `.node-version`**
 
 Both files contain only:
+
 ```
 22
 ```
@@ -168,6 +173,7 @@ git commit -m "chore: add base ignore and editor config"
 ## Task 2: Initialize pnpm workspace + root `package.json`
 
 **Files:**
+
 - Create: `package.json`
 - Create: `pnpm-workspace.yaml`
 - Create: `README.md`
@@ -210,7 +216,7 @@ packages:
 
 - [ ] **Step 3: Create `README.md`**
 
-```markdown
+````markdown
 # TarkovGunsmith
 
 AI-first rebuild of [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov ballistics, weapon builds, and ammo-vs-armor analysis.
@@ -227,15 +233,18 @@ pnpm typecheck
 pnpm lint
 pnpm test
 ```
+````
 
 ## License
 
 MIT
+
 ```
 
 - [ ] **Step 4: Create `LICENSE` (MIT)**
 
 ```
+
 MIT License
 
 Copyright (c) 2026 Matt Shipman
@@ -257,13 +266,15 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
+
+````
 
 - [ ] **Step 5: Verify pnpm install works**
 
 ```bash
 pnpm install
-```
+````
+
 Expected: creates `node_modules/`, no errors. (No deps yet, so it's basically a no-op but verifies workspace is parsed.)
 
 - [ ] **Step 6: Commit**
@@ -278,6 +289,7 @@ git commit -m "chore: initialize pnpm workspace"
 ## Task 3: Add Turborepo
 
 **Files:**
+
 - Modify: `package.json` (already references turbo scripts)
 - Create: `turbo.json`
 
@@ -322,6 +334,7 @@ pnpm add -Dw turbo
 ```bash
 pnpm turbo run typecheck
 ```
+
 Expected: "No tasks were executed as part of this run." Exit 0.
 
 - [ ] **Step 4: Commit**
@@ -336,6 +349,7 @@ git commit -m "chore: add turborepo"
 ## Task 4: Root TypeScript config
 
 **Files:**
+
 - Create: `tsconfig.base.json`
 - Create: `tsconfig.json`
 
@@ -392,6 +406,7 @@ pnpm add -Dw typescript @types/node
 ```bash
 pnpm exec tsc --noEmit
 ```
+
 Expected: exit 0, no output.
 
 - [ ] **Step 5: Commit**
@@ -406,6 +421,7 @@ git commit -m "chore: add base typescript config"
 ## Task 5: ESLint (flat config)
 
 **Files:**
+
 - Create: `eslint.config.js`
 
 - [ ] **Step 1: Install ESLint and plugins**
@@ -424,7 +440,14 @@ import globals from "globals";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/build/**", "**/.turbo/**", "**/.wrangler/**", "**/coverage/**", "**/node_modules/**"],
+    ignores: [
+      "**/dist/**",
+      "**/build/**",
+      "**/.turbo/**",
+      "**/.wrangler/**",
+      "**/coverage/**",
+      "**/node_modules/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -438,7 +461,10 @@ export default tseslint.config(
     },
     rules: {
       "@typescript-eslint/consistent-type-imports": "error",
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
   prettier,
@@ -450,6 +476,7 @@ export default tseslint.config(
 ```bash
 pnpm exec eslint . --max-warnings 0
 ```
+
 Expected: exit 0, no output.
 
 - [ ] **Step 4: Commit**
@@ -464,6 +491,7 @@ git commit -m "chore: add eslint flat config with type-checked rules"
 ## Task 6: Prettier
 
 **Files:**
+
 - Create: `.prettierrc.json`
 - Create: `.prettierignore`
 
@@ -504,6 +532,7 @@ pnpm-lock.yaml
 ```bash
 pnpm exec prettier --check .
 ```
+
 Expected: exit 0. If any existing files (e.g., `CLAUDE.md`, the spec) fail formatting, run `pnpm exec prettier --write .` and review the diff before committing.
 
 - [ ] **Step 5: Commit**
@@ -518,6 +547,7 @@ git commit -m "chore: add prettier config"
 ## Task 7: Husky + lint-staged + commitlint (Conventional Commits enforcement)
 
 **Files:**
+
 - Create: `commitlint.config.js`
 - Create: `.husky/pre-commit`
 - Create: `.husky/commit-msg`
@@ -534,6 +564,7 @@ pnpm add -Dw husky lint-staged @commitlint/cli @commitlint/config-conventional
 ```bash
 pnpm exec husky init
 ```
+
 This creates `.husky/pre-commit` with a default `pnpm test` line.
 
 - [ ] **Step 3: Replace `.husky/pre-commit` content**
@@ -549,6 +580,7 @@ pnpm exec commitlint --edit "$1"
 ```
 
 Make it executable:
+
 ```bash
 chmod +x .husky/commit-msg
 ```
@@ -562,7 +594,19 @@ export default {
     "type-enum": [
       2,
       "always",
-      ["feat", "fix", "chore", "docs", "refactor", "test", "ci", "build", "perf", "style", "revert"],
+      [
+        "feat",
+        "fix",
+        "chore",
+        "docs",
+        "refactor",
+        "test",
+        "ci",
+        "build",
+        "perf",
+        "style",
+        "revert",
+      ],
     ],
     "subject-case": [0],
   },
@@ -572,6 +616,7 @@ export default {
 - [ ] **Step 6: Add `lint-staged` config to `package.json`**
 
 Add to `package.json` (after `"scripts"` block):
+
 ```json
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
@@ -584,6 +629,7 @@ Add to `package.json` (after `"scripts"` block):
 ```bash
 git commit --allow-empty -m "bad commit message no type" 2>&1 | head -20
 ```
+
 Expected: commitlint rejects with `subject may not be empty` or `type may not be empty`.
 
 - [ ] **Step 8: Commit (use a valid conventional message)**
@@ -598,6 +644,7 @@ git commit -m "chore: enforce conventional commits and pre-commit lint"
 ## Task 8: Vitest base setup
 
 **Files:**
+
 - Create: `vitest.config.ts`
 
 - [ ] **Step 1: Install Vitest**
@@ -627,6 +674,7 @@ export default defineConfig({
 ```bash
 pnpm exec vitest run
 ```
+
 Expected: "No test files found." Exit 0 (or non-zero in some Vitest versions — that's fine for now since there genuinely are no tests; we just verify the binary works).
 
 - [ ] **Step 4: Commit**
@@ -641,6 +689,7 @@ git commit -m "chore: add vitest base config"
 ## Task 9: GitHub Actions CI
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`
 
 - [ ] **Step 1: Create the workflow file**
@@ -695,6 +744,7 @@ jobs:
 ```bash
 pnpm dlx @action-validator/cli .github/workflows/ci.yml || echo "validator unavailable, skipping"
 ```
+
 Expected: no errors. (If validator unavailable, that's OK — GitHub will validate on push.)
 
 - [ ] **Step 3: Commit**
@@ -709,6 +759,7 @@ git commit -m "ci: add typecheck, lint, format, and test pipeline"
 ## Task 10: `.claude/settings.json`
 
 **Files:**
+
 - Create: `.claude/settings.json`
 
 - [ ] **Step 1: Create the settings file**
@@ -758,11 +809,7 @@ git commit -m "ci: add typecheck, lint, format, and test pipeline"
       "Bash(git push)",
       "Bash(git push origin:*)"
     ],
-    "deny": [
-      "Bash(git push --force:*)",
-      "Bash(git reset --hard:*)",
-      "Bash(rm -rf:*)"
-    ]
+    "deny": ["Bash(git push --force:*)", "Bash(git reset --hard:*)", "Bash(rm -rf:*)"]
   },
   "hooks": {
     "PostToolUse": [
@@ -792,6 +839,7 @@ git commit -m "chore(ai): add claude code settings — allowlist, hooks"
 ## Task 11: Project skill — `add-data-query`
 
 **Files:**
+
 - Create: `.claude/skills/add-data-query.md`
 
 - [ ] **Step 1: Create the skill**
@@ -848,6 +896,7 @@ git commit -m "chore(ai): add add-data-query project skill"
 ## Task 12: Project skill — `add-calc-function`
 
 **Files:**
+
 - Create: `.claude/skills/add-calc-function.md`
 
 - [ ] **Step 1: Create the skill**
@@ -902,6 +951,7 @@ git commit -m "chore(ai): add add-calc-function project skill"
 ## Task 13: Project skill — `add-feature-route`
 
 **Files:**
+
 - Create: `.claude/skills/add-feature-route.md`
 
 - [ ] **Step 1: Create the skill**
@@ -954,6 +1004,7 @@ git commit -m "chore(ai): add add-feature-route project skill"
 ## Task 14: Project skill — `verify-data-shape`
 
 **Files:**
+
 - Create: `.claude/skills/verify-data-shape.md`
 
 - [ ] **Step 1: Create the skill**
@@ -1000,6 +1051,7 @@ git commit -m "chore(ai): add verify-data-shape project skill"
 ## Task 15: Project skill — `update-tarkov-schema`
 
 **Files:**
+
 - Create: `.claude/skills/update-tarkov-schema.md`
 
 - [ ] **Step 1: Create the skill**
@@ -1050,6 +1102,7 @@ git commit -m "chore(ai): add update-tarkov-schema project skill"
 ## Task 16: Project subagent — `tarkov-api-explorer`
 
 **Files:**
+
 - Create: `.claude/agents/tarkov-api-explorer.md`
 
 - [ ] **Step 1: Create the agent**
@@ -1091,6 +1144,7 @@ You are a read-only research agent specializing in the [tarkov-api](https://api.
 ## Output format
 
 Always include:
+
 - A short answer (1–3 sentences).
 - The relevant file path and line range, if applicable.
 - A minimal GraphQL snippet, if the question is about query shape.
@@ -1109,6 +1163,7 @@ git commit -m "chore(ai): add tarkov-api-explorer subagent"
 ## Task 17: Project subagent — `ballistics-verifier`
 
 **Files:**
+
 - Create: `.claude/agents/ballistics-verifier.md`
 
 - [ ] **Step 1: Create the agent**
@@ -1149,14 +1204,16 @@ You are a verification agent for the `packages/ballistics` math engine. Your job
 - Skip the cross-check step even if all unit tests pass — that's the whole point.
 
 ## Output format
-
 ```
+
 [verifier] <result line>
 [verifier] tests: <count passing> / <count total>
 [verifier] cross-checks: <count aligned> / <count checked>
 [verifier] drifted: <list or "none">
 [verifier] failures: <list or "none">
+
 ```
+
 ```
 
 - [ ] **Step 2: Commit**
@@ -1171,23 +1228,26 @@ git commit -m "chore(ai): add ballistics-verifier subagent"
 ## Task 18: Update root `CLAUDE.md` to reflect actual state
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 1: Replace the "Status" callout in `CLAUDE.md`**
 
 Find:
+
 ```markdown
 > **Status:** Pre-implementation. Design approved, no code yet. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the design spec — it is the source of truth for everything below.
 ```
 
 Replace with:
+
 ```markdown
 > **Status:** Foundation in place (Milestone 0a complete). Monorepo, CI, and AI workflow Tier B are wired. No `apps/*` or `packages/*` exist yet — those land in Milestones 0b (Workers), 0c (Web app), and 0d (Data & Math packages). See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the full design.
 ```
 
 - [ ] **Step 2: Append a "Local development" section just before "Acknowledgements"**
 
-```markdown
+````markdown
 ## Local development
 
 ```bash
@@ -1198,6 +1258,7 @@ pnpm format:check     # prettier check
 pnpm test             # vitest across all packages
 pnpm format           # auto-format
 ```
+````
 
 Pre-commit (via Husky) runs `lint-staged` on changed files. Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint).
 
@@ -1211,14 +1272,14 @@ GitHub Actions runs typecheck, lint, format check, and tests on every push and P
 - `.claude/skills/` — `add-data-query`, `add-calc-function`, `add-feature-route`, `verify-data-shape`, `update-tarkov-schema`
 - `.claude/agents/` — `tarkov-api-explorer` (read-only), `ballistics-verifier`
 
-```
+````
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add CLAUDE.md
 git commit -m "docs: update CLAUDE.md to reflect milestone 0a completion"
-```
+````
 
 ---
 
@@ -1232,6 +1293,7 @@ git commit -m "docs: update CLAUDE.md to reflect milestone 0a completion"
 rm -rf node_modules pnpm-lock.yaml
 pnpm install
 ```
+
 Expected: completes without error. New `pnpm-lock.yaml` produced.
 
 - [ ] **Step 2: Run all gates**
@@ -1239,6 +1301,7 @@ Expected: completes without error. New `pnpm-lock.yaml` produced.
 ```bash
 pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
 ```
+
 Expected: all four pass. (`pnpm test` may report "no tests found" — acceptable at this milestone.)
 
 - [ ] **Step 3: Verify Husky hooks fire**
@@ -1246,26 +1309,32 @@ Expected: all four pass. (`pnpm test` may report "no tests found" — acceptable
 ```bash
 git commit --allow-empty -m "bad message" 2>&1 | tail -10
 ```
+
 Expected: commitlint rejects.
 
 ```bash
 git commit --allow-empty -m "chore: verify hooks fire"
 ```
+
 Expected: succeeds.
 
 - [ ] **Step 4: Ensure a GitHub remote exists, then push and verify CI**
 
 If no remote is configured yet, create the repo and add it:
+
 ```bash
 git remote -v
 # if no output, create the GitHub repo
 gh repo create UnderMyBed/TarkovGunsmith --public --source . --remote origin --description "AI-first rebuild of TarkovGunsmith"
 ```
+
 Then push and watch CI:
+
 ```bash
 git push -u origin main
 gh run watch
 ```
+
 Expected: workflow completes green.
 
 - [ ] **Step 5: Tag the milestone**

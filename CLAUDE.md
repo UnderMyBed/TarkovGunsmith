@@ -2,11 +2,11 @@
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
 
-> **Status:** Pre-implementation. Design approved, no code yet. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the design spec — it is the source of truth for everything below.
+> **Status:** Foundation in place (Milestone 0a complete). Monorepo, CI, and AI workflow Tier B are wired. No `apps/*` or `packages/*` exist yet — those land in Milestones 0b (Workers), 0c (Web app), and 0d (Data & Math packages). See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the full design.
 
 ## What this project is
 
-A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Built explicitly to be developed *with* Claude as the primary collaborator.
+A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Built explicitly to be developed _with_ Claude as the primary collaborator.
 
 - **Frontend:** Vite + React + TypeScript SPA → Cloudflare Pages
 - **Edge backend:** Two Cloudflare Workers (`data-proxy` for GraphQL caching, `builds-api` for KV-backed share URLs)
@@ -16,14 +16,14 @@ A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Bui
 
 ## Where to look first
 
-| If you want to … | Read |
-|---|---|
-| Understand *why* anything is the way it is | [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) |
-| See the locked architectural decisions | `docs/adr/` (ADR-0001 onwards) |
-| Plan a new feature | Use `superpowers:brainstorming`, then `writing-plans` → output goes to `docs/plans/` |
-| Understand the AI workflow tier we're on | [`docs/ai-workflow/tier-b.md`](docs/ai-workflow/tier-b.md) |
-| Activate the next AI workflow tier | [`docs/ai-workflow/tier-c-upgrade.md`](docs/ai-workflow/tier-c-upgrade.md) |
-| Work in a specific app/package | That directory's own `CLAUDE.md` |
+| If you want to …                           | Read                                                                                                                                         |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Understand _why_ anything is the way it is | [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) |
+| See the locked architectural decisions     | `docs/adr/` (ADR-0001 onwards)                                                                                                               |
+| Plan a new feature                         | Use `superpowers:brainstorming`, then `writing-plans` → output goes to `docs/plans/`                                                         |
+| Understand the AI workflow tier we're on   | [`docs/ai-workflow/tier-b.md`](docs/ai-workflow/tier-b.md)                                                                                   |
+| Activate the next AI workflow tier         | [`docs/ai-workflow/tier-c-upgrade.md`](docs/ai-workflow/tier-c-upgrade.md)                                                                   |
+| Work in a specific app/package             | That directory's own `CLAUDE.md`                                                                                                             |
 
 ## How we work here (Tier B)
 
@@ -60,7 +60,46 @@ docs/                 Specs, plans, ADRs, AI workflow guides
 .claude/              Project skills, agents, settings, commands
 ```
 
-This layout is created during Milestone 0. Until then, only `docs/`, `.claude/` (eventually), and this `CLAUDE.md` exist.
+This layout is created across Milestones 0a–0d. After 0a (current), only `docs/`, `.claude/`, and root config files exist.
+
+## Local development
+
+```bash
+pnpm install          # install everything
+pnpm typecheck        # tsc across all packages
+pnpm lint             # eslint across all packages
+pnpm format:check     # prettier check
+pnpm test             # vitest across all packages
+pnpm format           # auto-format
+echo "feat: foo" | pnpm exec commitlint --stdin-only  # test a commit message
+```
+
+Pre-commit (via Husky 9) runs `lint-staged` on changed files (`eslint --fix --max-warnings 0` and `prettier --write`). Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint).
+
+## CI
+
+GitHub Actions runs typecheck, lint, format check, and tests on every push and PR. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+## Releases & versioning
+
+Versioning is fully automated via [release-please](https://github.com/googleapis/release-please-action). On every push to `main`, the workflow inspects Conventional Commits since the last release and opens (or updates) a `chore(release): vX.Y.Z` PR with an auto-generated CHANGELOG.
+
+- `feat:` → minor bump
+- `fix:` / `perf:` → patch bump
+- `feat!:` or any `BREAKING CHANGE:` footer → major bump
+- `chore:` / `ci:` / `build:` / `test:` / `style:` → no version bump (hidden from changelog)
+
+Merging the release PR creates a Git tag, a GitHub Release, and bumps `package.json` automatically. Never tag manually.
+
+## Gotcha: per-package `tsconfig.json` is required
+
+The root ESLint config uses typescript-eslint's `projectService: true` with the root `tsconfig.json` which only `include`s root-level `.ts` files. Any `.ts`/`.tsx` file under `apps/*` or `packages/*` MUST belong to a package-local `tsconfig.json` — otherwise `eslint --fix` (in pre-commit and CI) will fail with `was not found by the project service`. Every new app or package added in 0b/0c/0d must ship its own `tsconfig.json` extending `tsconfig.base.json`.
+
+## AI tooling installed
+
+- **`.claude/settings.json`** — permissions allowlist (pnpm, vitest, wrangler, gh, git) + post-edit `tsc --noEmit` hook for `.ts`/`.tsx` files
+- **`.claude/skills/`** — `add-data-query`, `add-calc-function`, `add-feature-route`, `verify-data-shape`, `update-tarkov-schema`
+- **`.claude/agents/`** — `tarkov-api-explorer` (read-only research), `ballistics-verifier` (math correctness)
 
 ## Acknowledgements
 
