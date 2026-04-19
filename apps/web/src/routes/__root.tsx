@@ -21,6 +21,12 @@ function RootLayout() {
               Home
             </Link>
             <Link
+              to="/calc"
+              activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
+            >
+              Calc
+            </Link>
+            <Link
               to="/smoke"
               activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
             >

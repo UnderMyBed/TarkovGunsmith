@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 
 export const Route = createFileRoute("/")({
@@ -15,15 +15,19 @@ function HomePage() {
         </p>
       </section>
       <section className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ballistic Calculator</CardTitle>
-            <CardDescription>Coming in Milestone 1.</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-[var(--color-muted-foreground)]">
-            Enter ammo + armor + distance, get a deterministic shot result.
-          </CardContent>
-        </Card>
+        <Link to="/calc" className="block">
+          <Card className="transition-colors hover:border-[var(--color-primary)]">
+            <CardHeader>
+              <CardTitle>Ballistic Calculator</CardTitle>
+              <CardDescription>
+                Live — pick ammo + armor + distance, see the result.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--color-muted-foreground)]">
+              Enter ammo + armor + distance, get a deterministic shot result.
+            </CardContent>
+          </Card>
+        </Link>
         <Card>
           <CardHeader>
             <CardTitle>AmmoVsArmor Matrix</CardTitle>
