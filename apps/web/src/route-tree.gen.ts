@@ -8,70 +8,88 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as SmokeRouteImport } from "./routes/smoke";
-import { Route as IndexRouteImport } from "./routes/index";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as SmokeRouteImport } from './routes/smoke'
+import { Route as CalcRouteImport } from './routes/calc'
+import { Route as IndexRouteImport } from './routes/index'
 
 const SmokeRoute = SmokeRouteImport.update({
-  id: "/smoke",
-  path: "/smoke",
+  id: '/smoke',
+  path: '/smoke',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
+const CalcRoute = CalcRouteImport.update({
+  id: '/calc',
+  path: '/calc',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/smoke": typeof SmokeRoute;
+  '/': typeof IndexRoute
+  '/calc': typeof CalcRoute
+  '/smoke': typeof SmokeRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/smoke": typeof SmokeRoute;
+  '/': typeof IndexRoute
+  '/calc': typeof CalcRoute
+  '/smoke': typeof SmokeRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/smoke": typeof SmokeRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/calc': typeof CalcRoute
+  '/smoke': typeof SmokeRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/smoke";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/smoke";
-  id: "__root__" | "/" | "/smoke";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/calc' | '/smoke'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/calc' | '/smoke'
+  id: '__root__' | '/' | '/calc' | '/smoke'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  SmokeRoute: typeof SmokeRoute;
+  IndexRoute: typeof IndexRoute
+  CalcRoute: typeof CalcRoute
+  SmokeRoute: typeof SmokeRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/smoke": {
-      id: "/smoke";
-      path: "/smoke";
-      fullPath: "/smoke";
-      preLoaderRoute: typeof SmokeRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+    '/smoke': {
+      id: '/smoke'
+      path: '/smoke'
+      fullPath: '/smoke'
+      preLoaderRoute: typeof SmokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calc': {
+      id: '/calc'
+      path: '/calc'
+      fullPath: '/calc'
+      preLoaderRoute: typeof CalcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalcRoute: CalcRoute,
   SmokeRoute: SmokeRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()

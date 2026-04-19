@@ -90,6 +90,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.95.0
         version: 1.168.23(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@tarkov/ballistics':
+        specifier: workspace:*
+        version: link:../../packages/ballistics
       '@tarkov/data':
         specifier: workspace:*
         version: link:../../packages/tarkov-data
