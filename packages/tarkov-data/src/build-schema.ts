@@ -11,7 +11,8 @@ import { z } from "zod";
 export const BuildV1 = z.object({
   version: z.literal(1),
   weaponId: z.string().min(1),
-  modIds: z.array(z.string()).max(64),
+  modIds: z.array(z.string().min(1)).max(64),
+  // UTC-only: Zod rejects timezone offsets by default; Date.toISOString() always produces a Z-suffix.
   createdAt: z.string().datetime(),
 });
 

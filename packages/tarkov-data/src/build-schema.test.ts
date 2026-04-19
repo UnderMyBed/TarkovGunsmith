@@ -31,6 +31,10 @@ describe("BuildV1", () => {
     expect(BuildV1.safeParse({ ...validV1, modIds: mods }).success).toBe(false);
   });
 
+  it("rejects an empty string in modIds", () => {
+    expect(BuildV1.safeParse({ ...validV1, modIds: ["mod-1", ""] }).success).toBe(false);
+  });
+
   it("rejects a malformed createdAt", () => {
     expect(BuildV1.safeParse({ ...validV1, createdAt: "yesterday" }).success).toBe(false);
   });
