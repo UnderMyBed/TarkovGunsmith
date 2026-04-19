@@ -45,10 +45,10 @@ describe("fetchArmorList", () => {
     expect(result[1]?.properties.material.destructibility).toBe(0.45);
   });
 
-  it("throws on invalid response shape", async () => {
+  it("throws when the outer envelope is malformed (no items array)", async () => {
     const mockFetch = vi.fn(() =>
       Promise.resolve(
-        new Response(JSON.stringify({ data: { items: [{}] } }), {
+        new Response(JSON.stringify({ data: { items: "not an array" } }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }),
@@ -56,5 +56,32 @@ describe("fetchArmorList", () => {
     );
     const client = createTarkovClient("https://example.test/graphql", mockFetch);
     await expect(fetchArmorList(client)).rejects.toThrow();
+  });
+
+  it("filters out non-armor items (e.g. chest rigs) silently", async () => {
+    // Mirrors the actual upstream — `items(type: armor)` returns mixed
+    // ItemPropertiesArmor and ItemPropertiesChestRig.
+    const chestRig = {
+      id: "5648a7494bdc2d9d488b4584",
+      name: "ANA Tactical Beta-2 Battle Belt",
+      shortName: "ANA",
+      iconLink: "https://assets.tarkov.dev/5648a7494bdc2d9d488b4584-icon.webp",
+      properties: { __typename: "ItemPropertiesChestRig" },
+    };
+    const mixed = {
+      data: { items: [chestRig, ...fixture.data.items] },
+    };
+    const mockFetch = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(mixed), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    const client = createTarkovClient("https://example.test/graphql", mockFetch);
+    const result = await fetchArmorList(client);
+    expect(result).toHaveLength(fixture.data.items.length);
+    expect(result.every((i) => i.properties.__typename === "ItemPropertiesArmor")).toBe(true);
   });
 });
