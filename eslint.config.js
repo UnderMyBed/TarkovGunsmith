@@ -20,7 +20,15 @@ export default tseslint.config(
     languageOptions: {
       globals: { ...globals.node },
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: [
+            "packages/*/vitest.config.ts",
+            "packages/ballistics/src/*.test.ts",
+            "packages/ballistics/src/*/*.test.ts",
+          ],
+          defaultProject: "packages/ballistics/tsconfig.test.json",
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20,
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
