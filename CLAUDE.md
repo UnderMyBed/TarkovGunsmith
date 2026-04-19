@@ -2,7 +2,7 @@
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
 
-> **Status:** Foundation + `packages/ballistics` + `packages/tarkov-types` + `packages/tarkov-data` shipped. Math, generated types, and the data layer (3 fetchers/hooks: ammo, armor, weapon — Zod-validated) are live. Still pending: `packages/ui`, `apps/data-proxy`, `apps/builds-api`, `apps/web`. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the full design.
+> **Status:** Foundation + all four packages shipped (`packages/ballistics`, `packages/tarkov-types`, `packages/tarkov-data`, `packages/ui`). Math, generated types, the data layer, and design tokens + primitives are live. Still pending: `apps/data-proxy`, `apps/builds-api`, `apps/web`. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the full design.
 
 ## What this project is
 
