@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.7.0...v0.8.0) (2026-04-19)
+
+
+### Features
+
+* **ci:** auto-deploy workers + pages on main merges ([#27](https://github.com/UnderMyBed/TarkovGunsmith/issues/27)) ([ff30391](https://github.com/UnderMyBed/TarkovGunsmith/commit/ff30391b9c4ef2020adc1604a8266186477451e9))
+
+
+### Documentation
+
+* add CI deploys implementation plan ([#25](https://github.com/UnderMyBed/TarkovGunsmith/issues/25)) ([ecfbccc](https://github.com/UnderMyBed/TarkovGunsmith/commit/ecfbccc0fa4425da17a84bc3caeb83774e64a8e9))
+
 ## [0.7.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.6.0...v0.7.0) (2026-04-19)
 
 
