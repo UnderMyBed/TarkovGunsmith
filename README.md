@@ -1,4 +1,3 @@
-````markdown
 # TarkovGunsmith
 
 AI-first rebuild of [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov ballistics, weapon builds, and ammo-vs-armor analysis.
@@ -19,4 +18,3 @@ pnpm test
 ## License
 
 MIT
-````
