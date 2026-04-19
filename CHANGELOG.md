@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.9.0...v0.9.1) (2026-04-19)
+
+
+### Bug Fixes
+
+* **ci:** build apps/web workspace deps in deploy workflow ([#30](https://github.com/UnderMyBed/TarkovGunsmith/issues/30)) ([40a54e3](https://github.com/UnderMyBed/TarkovGunsmith/commit/40a54e3b9fc4816734dba57b977b1315a2ec35cf))
+
 ## [0.9.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.8.0...v0.9.0) (2026-04-19)
 
 
