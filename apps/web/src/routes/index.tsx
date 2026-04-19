@@ -39,15 +39,17 @@ function HomePage() {
             </CardContent>
           </Card>
         </Link>
-        <Card>
-          <CardHeader>
-            <CardTitle>Weapon Builder</CardTitle>
-            <CardDescription>Coming in Milestone 1.</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-[var(--color-muted-foreground)]">
-            Compose mods, see live ergo / recoil / weight, share via short URL.
-          </CardContent>
-        </Card>
+        <Link to="/builder" className="block">
+          <Card className="transition-colors hover:border-[var(--color-primary)]">
+            <CardHeader>
+              <CardTitle>Weapon Builder</CardTitle>
+              <CardDescription>Live — pick weapon + mods, see live spec.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--color-muted-foreground)]">
+              Compose mods, see live ergo / recoil / weight. Share-URL coming in v0.13.0.
+            </CardContent>
+          </Card>
+        </Link>
       </section>
     </div>
   );

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SmokeRouteImport } from './routes/smoke'
 import { Route as MatrixRouteImport } from './routes/matrix'
 import { Route as CalcRouteImport } from './routes/calc'
+import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SmokeRoute = SmokeRouteImport.update({
@@ -29,6 +30,11 @@ const CalcRoute = CalcRouteImport.update({
   path: '/calc',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calc' | '/matrix' | '/smoke'
+  fullPaths: '/' | '/builder' | '/calc' | '/matrix' | '/smoke'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calc' | '/matrix' | '/smoke'
-  id: '__root__' | '/' | '/calc' | '/matrix' | '/smoke'
+  to: '/' | '/builder' | '/calc' | '/matrix' | '/smoke'
+  id: '__root__' | '/' | '/builder' | '/calc' | '/matrix' | '/smoke'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuilderRoute: typeof BuilderRoute
   CalcRoute: typeof CalcRoute
   MatrixRoute: typeof MatrixRoute
   SmokeRoute: typeof SmokeRoute
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalcRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuilderRoute: BuilderRoute,
   CalcRoute: CalcRoute,
   MatrixRoute: MatrixRoute,
   SmokeRoute: SmokeRoute,
