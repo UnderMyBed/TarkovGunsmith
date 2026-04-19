@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.2.0...v0.3.0) (2026-04-19)
+
+
+### Features
+
+* **types:** add @tarkov/types package ([#12](https://github.com/UnderMyBed/TarkovGunsmith/issues/12)) ([de1d73d](https://github.com/UnderMyBed/TarkovGunsmith/commit/de1d73d7dcb1b822267f7f2659d6b4213b4b22d9))
+
+
+### Bug Fixes
+
+* **ci:** pass --repo to gh workflow run + document admin-merge for release PRs ([#9](https://github.com/UnderMyBed/TarkovGunsmith/issues/9)) ([64e61c6](https://github.com/UnderMyBed/TarkovGunsmith/commit/64e61c6d0aa249810d2e7030a7f1f85d25fb0f8a))
+
+
+### Documentation
+
+* add packages/tarkov-types implementation plan ([#11](https://github.com/UnderMyBed/TarkovGunsmith/issues/11)) ([246d045](https://github.com/UnderMyBed/TarkovGunsmith/commit/246d045f70c21a6122b9f4b0a19294756ff5c632))
+
 ## [0.2.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.1.0...v0.2.0) (2026-04-19)
 
 
