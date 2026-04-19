@@ -24,9 +24,7 @@ function SmokePage() {
         </CardHeader>
         <CardContent>
           {ammo.isLoading && <p>Loading…</p>}
-          {ammo.error && (
-            <p className="text-[var(--color-destructive)]">Error: {ammo.error.message}</p>
-          )}
+          {ammo.error && <ErrorDetails error={ammo.error} />}
           {ammo.data && (
             <div className="flex flex-col gap-2">
               <p>
@@ -47,6 +45,38 @@ function SmokePage() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+interface ZodLikeError {
+  issues?: unknown;
+}
+
+function isZodLike(error: unknown): error is ZodLikeError & { issues: unknown[] } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "issues" in error &&
+    Array.isArray((error as ZodLikeError).issues)
+  );
+}
+
+function ErrorDetails({ error }: { error: Error }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="font-semibold text-[var(--color-destructive)]">Error: {error.message}</p>
+      {isZodLike(error) && (
+        <details className="text-xs">
+          <summary className="cursor-pointer text-[var(--color-muted-foreground)]">
+            {error.issues.length} validation issue{error.issues.length === 1 ? "" : "s"} (click to
+            expand)
+          </summary>
+          <pre className="mt-2 overflow-auto whitespace-pre-wrap rounded border p-2">
+            {JSON.stringify(error.issues, null, 2)}
+          </pre>
+        </details>
+      )}
     </div>
   );
 }

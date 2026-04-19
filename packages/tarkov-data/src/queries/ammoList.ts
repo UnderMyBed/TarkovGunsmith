@@ -43,12 +43,37 @@ export const ammoListSchema = z.object({
   items: z.array(ammoItemSchema),
 });
 
+const ammoListEnvelopeSchema = z.object({
+  items: z.array(z.unknown()),
+});
+
 export type AmmoListItem = z.infer<typeof ammoItemSchema>;
 
 /**
- * Fetch the full list of ammo items, validated against {@link ammoListSchema}.
+ * Fetch the full list of ammo items.
+ *
+ * The upstream `items(type: ammo)` query returns mixed types — actual ammo
+ * (`ItemPropertiesAmmo`) plus grenades (`ItemPropertiesGrenade`). We validate
+ * the outer envelope strictly, then `safeParse` each item against
+ * {@link ammoItemSchema} and silently drop the ones that don't match. A single
+ * unrelated item shape never fails the whole call.
+ *
+ * Logs a `console.debug` line listing how many items were filtered, so unusual
+ * upstream changes (a new `ItemPropertiesX` variant we should map) are
+ * discoverable in the browser console.
  */
 export async function fetchAmmoList(client: GraphQLClient): Promise<AmmoListItem[]> {
   const raw = await client.request<unknown>(AMMO_LIST_QUERY);
-  return ammoListSchema.parse(raw).items;
+  const { items } = ammoListEnvelopeSchema.parse(raw);
+  const ammoItems: AmmoListItem[] = [];
+  for (const item of items) {
+    const result = ammoItemSchema.safeParse(item);
+    if (result.success) ammoItems.push(result.data);
+  }
+  if (ammoItems.length < items.length && typeof console !== "undefined") {
+    console.debug(
+      `[fetchAmmoList] filtered ${items.length - ammoItems.length} non-ammo items (kept ${ammoItems.length}/${items.length})`,
+    );
+  }
+  return ammoItems;
 }
