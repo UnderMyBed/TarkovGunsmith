@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.10.0...v0.11.0) (2026-04-19)
+
+
+### Features
+
+* **web:** add /matrix AmmoVsArmor route ([#37](https://github.com/UnderMyBed/TarkovGunsmith/issues/37)) ([5996c7b](https://github.com/UnderMyBed/TarkovGunsmith/commit/5996c7bfccda06463374a3e2b9a82c469b138dbb))
+
 ## [0.10.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.9.2...v0.10.0) (2026-04-19)
 
 
