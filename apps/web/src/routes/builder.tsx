@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useModList, useWeaponList } from "@tarkov/data";
+import { useModList, useWeaponList, useSaveBuild, CURRENT_BUILD_VERSION } from "@tarkov/data";
 import type { ModListItem } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
 import {
@@ -58,6 +58,30 @@ function BuilderPage() {
     return weaponSpec(adaptWeapon(selectedWeapon), selectedMods.map(adaptMod));
   }, [selectedWeapon, selectedMods]);
 
+  const saveMutation = useSaveBuild();
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+
+  function handleShare() {
+    if (!selectedWeapon) return;
+    saveMutation.mutate(
+      {
+        version: CURRENT_BUILD_VERSION,
+        weaponId: selectedWeapon.id,
+        modIds: [...selectedModIds],
+        createdAt: new Date().toISOString(),
+      },
+      {
+        onSuccess: (result) => {
+          void navigator.clipboard.writeText(result.url).catch(() => {
+            // Clipboard permission denied — still show the URL so the user can copy manually.
+          });
+          setShareUrl(result.url);
+          window.setTimeout(() => setShareUrl(null), 5000);
+        },
+      },
+    );
+  }
+
   function toggleMod(modId: string) {
     setSelectedModIds((prev) => {
       const next = new Set(prev);
@@ -100,7 +124,7 @@ function BuilderPage() {
             {isLoading ? "Loading…" : `${weaponOptions.length} weapons available`}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-3">
           <select
             className="h-9 w-full rounded-[var(--radius)] border bg-[var(--color-input)] px-3 text-sm"
             value={weaponId}
@@ -117,6 +141,18 @@ function BuilderPage() {
               </option>
             ))}
           </select>
+          {selectedWeapon && (
+            <div className="flex items-center gap-3">
+              <Button onClick={handleShare} disabled={saveMutation.isPending} size="sm">
+                {saveMutation.isPending ? "Saving…" : "Share build"}
+              </Button>
+              {saveMutation.error && (
+                <span className="text-sm text-[var(--color-destructive)]">
+                  Couldn't save — try again
+                </span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -194,6 +230,17 @@ function BuilderPage() {
             </Card>
           )}
         </>
+      )}
+      {shareUrl && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg"
+        >
+          <div className="text-sm font-medium">Build URL copied</div>
+          <code className="mt-1 block max-w-xs truncate text-xs text-[var(--color-muted-foreground)]">
+            {shareUrl}
+          </code>
+        </div>
       )}
     </div>
   );
