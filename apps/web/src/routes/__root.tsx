@@ -33,6 +33,12 @@ function RootLayout() {
               Matrix
             </Link>
             <Link
+              to="/builder"
+              activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
+            >
+              Builder
+            </Link>
+            <Link
               to="/smoke"
               activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
             >
