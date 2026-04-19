@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.8.0...v0.9.0) (2026-04-19)
+
+
+### Features
+
+* rename cloudflare resources with tarkov-gunsmith prefix ([#28](https://github.com/UnderMyBed/TarkovGunsmith/issues/28)) ([5095125](https://github.com/UnderMyBed/TarkovGunsmith/commit/509512548cfb8efa10b0aee3084c27e3e289d2a5))
+
 ## [0.8.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.7.0...v0.8.0) (2026-04-19)
 
 

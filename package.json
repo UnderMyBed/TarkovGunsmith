@@ -1,6 +1,6 @@
 {
   "name": "tarkov-gunsmith",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "description": "AI-first rebuild of TarkovGunsmith — a community tool for Escape from Tarkov ballistics, weapon builds, and ammo-vs-armor analysis.",
