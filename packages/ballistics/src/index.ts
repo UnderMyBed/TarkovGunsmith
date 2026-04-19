@@ -7,3 +7,4 @@ export type {
   WeaponSpec,
 } from "./types.js";
 export { penetrationChance } from "./armor/penetrationChance.js";
+export { armorDamage } from "./armor/armorDamage.js";
