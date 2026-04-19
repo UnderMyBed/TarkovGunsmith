@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.9.1...v0.9.2) (2026-04-19)
+
+
+### Bug Fixes
+
+* **data:** filter non-ammo/armor items from upstream list responses + better error UX ([#33](https://github.com/UnderMyBed/TarkovGunsmith/issues/33)) ([1770175](https://github.com/UnderMyBed/TarkovGunsmith/commit/1770175a47eb8b136334f3fec40d7fcdd27b1d37))
+
 ## [0.9.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.9.0...v0.9.1) (2026-04-19)
 
 
