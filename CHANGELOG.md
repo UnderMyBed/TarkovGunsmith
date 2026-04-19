@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.9.2...v0.10.0) (2026-04-19)
+
+
+### Features
+
+* **web:** add /calc Ballistic Calculator route ([#35](https://github.com/UnderMyBed/TarkovGunsmith/issues/35)) ([2b003ad](https://github.com/UnderMyBed/TarkovGunsmith/commit/2b003ad9a1e41b2d7a718c48cf6fd359c1447a23))
+
 ## [0.9.2](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.9.1...v0.9.2) (2026-04-19)
 
 
