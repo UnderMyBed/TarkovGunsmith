@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tarkov-builds-api",
+  "name": "tarkov-gunsmith-builds-api",
   "main": "src/index.ts",
   "compatibility_date": "2024-09-23",
   "observability": { "enabled": true },
