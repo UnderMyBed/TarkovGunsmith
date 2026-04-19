@@ -1,8 +1,8 @@
-# AI Workflow — Tier B (Target — instantiated during Milestone 0)
+# AI Workflow — Tier B (Active)
 
-This is the workflow tier this project targets. It is "AI-collaborative": Claude is a first-class partner in every change, but humans drive direction and approve every PR.
+This is the workflow tier this project operates at today. It is "AI-collaborative": Claude is a first-class partner in every change, but humans drive direction and approve every PR.
 
-**Status note (2026-04-18):** the design exists, the implementation does not yet. The `.claude/` directory, project skills, subagents, hooks, and per-package `CLAUDE.md` files described below are all created during **Milestone 0**. Until then, only the global Claude Code skills (e.g. `superpowers:brainstorming`, `superpowers:writing-plans`) are available.
+**Status note (active as of Milestone 0a, 2026-04-18):** the `.claude/` directory, project skills, subagents, settings, and post-edit hook are wired and live. Per-package `CLAUDE.md` files land with each package in 0b/0c/0d. The post-edit `tsc --noEmit` hook in `.claude/settings.json` is currently scoped to the root `tsconfig.json`; it will need an upgrade in 0b to dispatch per-package typechecks once `apps/*` and `packages/*` files exist. Tracked as a known follow-up.
 
 ## The loop
 
