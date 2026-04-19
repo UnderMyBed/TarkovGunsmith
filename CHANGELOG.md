@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.11.0...v0.12.0) (2026-04-19)
+
+
+### Features
+
+* **web:** add /builder Weapon Builder route (no save yet) ([#39](https://github.com/UnderMyBed/TarkovGunsmith/issues/39)) ([f489770](https://github.com/UnderMyBed/TarkovGunsmith/commit/f489770ed9a4fee588e00b1e60445f2b5775d8a8))
+
 ## [0.11.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.10.0...v0.11.0) (2026-04-19)
 
 
