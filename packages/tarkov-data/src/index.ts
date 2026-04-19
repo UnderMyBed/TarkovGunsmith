@@ -27,3 +27,14 @@ export { useArmorList } from "./hooks/useArmorList.js";
 export { useWeapon } from "./hooks/useWeapon.js";
 export { useWeaponList } from "./hooks/useWeaponList.js";
 export { useModList } from "./hooks/useModList.js";
+export { useSaveBuild } from "./hooks/useSaveBuild.js";
+export { useLoadBuild } from "./hooks/useLoadBuild.js";
+
+// Builds API client
+export {
+  saveBuild,
+  loadBuild,
+  LoadBuildError,
+  type LoadBuildErrorCode,
+  type SaveBuildResponse,
+} from "./buildsApi.js";
