@@ -45,10 +45,10 @@ describe("fetchAmmoList", () => {
     expect(result[0]?.properties.penetrationPower).toBe(21);
   });
 
-  it("throws when the response shape is invalid", async () => {
+  it("throws when the outer envelope is malformed (no items array)", async () => {
     const mockFetch = vi.fn(() =>
       Promise.resolve(
-        new Response(JSON.stringify({ data: { items: [{ id: 123 }] } }), {
+        new Response(JSON.stringify({ data: { items: "not an array" } }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }),
@@ -56,5 +56,33 @@ describe("fetchAmmoList", () => {
     );
     const client = createTarkovClient("https://example.test/graphql", mockFetch);
     await expect(fetchAmmoList(client)).rejects.toThrow();
+  });
+
+  it("filters out non-ammo items (e.g. grenades) silently", async () => {
+    // Mirrors what api.tarkov.dev actually returns for `items(type: ammo)`:
+    // mixed `ItemPropertiesAmmo` and `ItemPropertiesGrenade`. Real bug from
+    // first deploy of the Smoke route.
+    const grenade = {
+      id: "5448be9a4bdc2dfd2f8b456a",
+      name: "RGD-5 hand grenade",
+      shortName: "RGD-5",
+      iconLink: "https://assets.tarkov.dev/5448be9a4bdc2dfd2f8b456a-icon.webp",
+      properties: { __typename: "ItemPropertiesGrenade" },
+    };
+    const mixed = {
+      data: { items: [grenade, ...fixture.data.items] },
+    };
+    const mockFetch = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(mixed), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    const client = createTarkovClient("https://example.test/graphql", mockFetch);
+    const result = await fetchAmmoList(client);
+    expect(result).toHaveLength(fixture.data.items.length);
+    expect(result.every((i) => i.properties.__typename === "ItemPropertiesAmmo")).toBe(true);
   });
 });
