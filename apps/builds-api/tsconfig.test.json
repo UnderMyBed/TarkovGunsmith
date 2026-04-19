@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/vitest-pool-workers"]
+  },
+  "include": ["src/**/*", "vitest.config.ts", "worker-configuration.d.ts"],
+  "exclude": ["dist", "node_modules"]
+}
