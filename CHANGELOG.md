@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.1.0...v0.2.0) (2026-04-19)
+
+
+### Features
+
+* **ballistics:** add @tarkov/ballistics package ([#8](https://github.com/UnderMyBed/TarkovGunsmith/issues/8)) ([f41ced9](https://github.com/UnderMyBed/TarkovGunsmith/commit/f41ced933d3de3616796fd9646956323ac70f286))
+
+
+### Documentation
+
+* add packages/ballistics implementation plan ([#6](https://github.com/UnderMyBed/TarkovGunsmith/issues/6)) ([38bf1e1](https://github.com/UnderMyBed/TarkovGunsmith/commit/38bf1e1487ec450cc142e2c7105b1f71fdf7552a))
+
 ## 0.1.0 (2026-04-19)
 
 
