@@ -6,7 +6,7 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 
 ## What this project is
 
-A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Built explicitly to be developed *with* Claude as the primary collaborator.
+A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Built explicitly to be developed _with_ Claude as the primary collaborator.
 
 - **Frontend:** Vite + React + TypeScript SPA → Cloudflare Pages
 - **Edge backend:** Two Cloudflare Workers (`data-proxy` for GraphQL caching, `builds-api` for KV-backed share URLs)
@@ -16,14 +16,14 @@ A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Bui
 
 ## Where to look first
 
-| If you want to … | Read |
-|---|---|
-| Understand *why* anything is the way it is | [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) |
-| See the locked architectural decisions | `docs/adr/` (ADR-0001 onwards) |
-| Plan a new feature | Use `superpowers:brainstorming`, then `writing-plans` → output goes to `docs/plans/` |
-| Understand the AI workflow tier we're on | [`docs/ai-workflow/tier-b.md`](docs/ai-workflow/tier-b.md) |
-| Activate the next AI workflow tier | [`docs/ai-workflow/tier-c-upgrade.md`](docs/ai-workflow/tier-c-upgrade.md) |
-| Work in a specific app/package | That directory's own `CLAUDE.md` |
+| If you want to …                           | Read                                                                                                                                         |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Understand _why_ anything is the way it is | [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) |
+| See the locked architectural decisions     | `docs/adr/` (ADR-0001 onwards)                                                                                                               |
+| Plan a new feature                         | Use `superpowers:brainstorming`, then `writing-plans` → output goes to `docs/plans/`                                                         |
+| Understand the AI workflow tier we're on   | [`docs/ai-workflow/tier-b.md`](docs/ai-workflow/tier-b.md)                                                                                   |
+| Activate the next AI workflow tier         | [`docs/ai-workflow/tier-c-upgrade.md`](docs/ai-workflow/tier-c-upgrade.md)                                                                   |
+| Work in a specific app/package             | That directory's own `CLAUDE.md`                                                                                                             |
 
 ## How we work here (Tier B)
 

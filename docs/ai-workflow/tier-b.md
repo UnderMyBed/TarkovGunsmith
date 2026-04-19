@@ -55,19 +55,19 @@ CI must be green. CF Pages auto-deploys on `main`. Workers deploy via `wrangler 
 
 ### Project skills (`.claude/skills/`)
 
-| Skill | Purpose |
-|---|---|
-| `add-data-query` | Scaffold a new GraphQL query + TanStack Query hook + types |
-| `add-calc-function` | Scaffold a new ballistics function with TDD pre-baked |
-| `add-feature-route` | Scaffold a new route + page + tests |
-| `verify-data-shape` | Zod-check tarkov-api responses for a given query |
-| `update-tarkov-schema` | Re-run codegen, reconcile breaking changes |
+| Skill                  | Purpose                                                    |
+| ---------------------- | ---------------------------------------------------------- |
+| `add-data-query`       | Scaffold a new GraphQL query + TanStack Query hook + types |
+| `add-calc-function`    | Scaffold a new ballistics function with TDD pre-baked      |
+| `add-feature-route`    | Scaffold a new route + page + tests                        |
+| `verify-data-shape`    | Zod-check tarkov-api responses for a given query           |
+| `update-tarkov-schema` | Re-run codegen, reconcile breaking changes                 |
 
 ### Project subagents (`.claude/agents/`)
 
-| Agent | Purpose | Tools |
-|---|---|---|
-| `tarkov-api-explorer` | Read-only research; "what fields exist for X?" | Read, Grep, WebFetch |
+| Agent                 | Purpose                                                            | Tools                     |
+| --------------------- | ------------------------------------------------------------------ | ------------------------- |
+| `tarkov-api-explorer` | Read-only research; "what fields exist for X?"                     | Read, Grep, WebFetch      |
 | `ballistics-verifier` | Given a calc change, runs ballistics tests + cross-checks fixtures | Read, Bash (vitest), Grep |
 
 Global subagents (`feature-dev`, `code-reviewer`, `Explore`, `Plan`) are reused as-is for general tasks.
