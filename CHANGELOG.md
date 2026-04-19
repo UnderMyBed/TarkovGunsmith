@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.6.0...v0.7.0) (2026-04-19)
+
+
+### Features
+
+* **web:** add @tarkov/web SPA ([#24](https://github.com/UnderMyBed/TarkovGunsmith/issues/24)) ([e9846d0](https://github.com/UnderMyBed/TarkovGunsmith/commit/e9846d07432b8341f171b91cca4baf258da1a4b0))
+
+
+### Documentation
+
+* add apps/web implementation plan ([#22](https://github.com/UnderMyBed/TarkovGunsmith/issues/22)) ([6d6da27](https://github.com/UnderMyBed/TarkovGunsmith/commit/6d6da2702bfa0f04f0d8786558b87cd4d736ebd5))
+
 ## [0.6.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.5.0...v0.6.0) (2026-04-19)
 
 
