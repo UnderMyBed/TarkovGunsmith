@@ -25,15 +25,19 @@ pnpm --filter @tarkov/web pages:deploy # wrangler pages deploy (manual deploy af
 
 In v0.7.0 the SPA hits `https://api.tarkov.dev/graphql` directly (CORS is enabled upstream). The Vite `server.proxy` config is wired for `/api/data/*` → `localhost:8787` (data-proxy) and `/api/builds/*` → `localhost:8788` (builds-api), unused until a follow-up plan switches the endpoint.
 
-## Deploy (manual, for now)
+## Deploy
+
+Auto-deploys to Cloudflare Pages on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-web.pages.dev`.
+
+The first CI deploy auto-creates the Pages project (`tarkov-web`). Manual deploy (rare):
 
 ```bash
 wrangler login                              # one-time
 pnpm --filter @tarkov/web build
-pnpm --filter @tarkov/web pages:deploy      # creates project on first run
+pnpm --filter @tarkov/web pages:deploy
 ```
 
-CI deploy + Cloudflare secrets land in a separate follow-up PR.
+Full setup runbook: [`docs/operations/cloudflare-deploys.md`](../../docs/operations/cloudflare-deploys.md).
 
 ## Conventions
 

@@ -18,7 +18,11 @@ pnpm --filter @tarkov/data-proxy build  # wrangler --dry-run --outdir dist (no d
 
 `wrangler dev` simulates Cache API + bindings locally; state persists in `.wrangler/state/`. Use `wrangler dev --remote` to test against real Cloudflare resources before a production deploy.
 
-## Deploy (manual, for now)
+## Deploy
+
+Auto-deploys to Cloudflare Workers on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-data-proxy.<your-subdomain>.workers.dev`.
+
+Manual deploy (rare — for testing a fix locally before pushing):
 
 ```bash
 wrangler login                                    # one-time
@@ -26,7 +30,7 @@ pnpm --filter @tarkov/data-proxy deploy           # wrangler deploy
 pnpm --filter @tarkov/data-proxy tail             # live log stream
 ```
 
-CI deploy + Cloudflare secrets land in a separate follow-up PR.
+Token + secret setup is documented in [`docs/operations/cloudflare-deploys.md`](../../docs/operations/cloudflare-deploys.md).
 
 ## Conventions
 
