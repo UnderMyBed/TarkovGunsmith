@@ -27,9 +27,9 @@ In v0.7.0 the SPA hits `https://api.tarkov.dev/graphql` directly (CORS is enable
 
 ## Deploy
 
-Auto-deploys to Cloudflare Pages on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-web.pages.dev`.
+Auto-deploys to Cloudflare Pages on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-gunsmith-web.pages.dev`.
 
-The first CI deploy auto-creates the Pages project (`tarkov-web`). Manual deploy (rare):
+The first CI deploy auto-creates the Pages project (`tarkov-gunsmith-web`). Manual deploy (rare):
 
 ```bash
 wrangler login                              # one-time

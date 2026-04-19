@@ -20,7 +20,7 @@ pnpm --filter @tarkov/data-proxy build  # wrangler --dry-run --outdir dist (no d
 
 ## Deploy
 
-Auto-deploys to Cloudflare Workers on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-data-proxy.<your-subdomain>.workers.dev`.
+Auto-deploys to Cloudflare Workers on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-gunsmith-data-proxy.<your-subdomain>.workers.dev`.
 
 Manual deploy (rare — for testing a fix locally before pushing):
 

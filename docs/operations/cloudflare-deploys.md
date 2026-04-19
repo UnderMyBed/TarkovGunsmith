@@ -6,11 +6,11 @@ How CI auto-deploys the Workers and the SPA, what the API token needs to be allo
 
 `.github/workflows/deploy.yml` runs three parallel jobs on every push to `main`:
 
-| Job          | Deploys                            | Wrangler invocation                                      |
-| ------------ | ---------------------------------- | -------------------------------------------------------- |
-| `data-proxy` | `apps/data-proxy` Worker           | `wrangler deploy` (from `apps/data-proxy/`)              |
-| `builds-api` | `apps/builds-api` Worker (uses KV) | `wrangler deploy` (from `apps/builds-api/`)              |
-| `pages`      | `apps/web` (Vite build output)     | `wrangler pages deploy ./dist --project-name=tarkov-web` |
+| Job          | Deploys                            | Wrangler invocation                                               |
+| ------------ | ---------------------------------- | ----------------------------------------------------------------- |
+| `data-proxy` | `apps/data-proxy` Worker           | `wrangler deploy` (from `apps/data-proxy/`)                       |
+| `builds-api` | `apps/builds-api` Worker (uses KV) | `wrangler deploy` (from `apps/builds-api/`)                       |
+| `pages`      | `apps/web` (Vite build output)     | `wrangler pages deploy ./dist --project-name=tarkov-gunsmith-web` |
 
 All three use [`cloudflare/wrangler-action@v3`](https://github.com/cloudflare/wrangler-action) for auth + dispatch. Concurrency is grouped per job so two rapid merges queue cleanly.
 
@@ -73,6 +73,18 @@ The token never needs to be deleted — just expanded as the project grows. Edit
 
 You can do these locally with `wrangler login` once, OR let the first CI run create them.
 
+### Where wrangler lives
+
+Wrangler is installed per-Worker in this monorepo (each `apps/*` has it as a devDep). It's NOT on your shell PATH globally. Invoke via the workspace:
+
+```bash
+pnpm --filter @tarkov/builds-api exec wrangler <command>
+pnpm --filter @tarkov/data-proxy exec wrangler <command>
+pnpm --filter @tarkov/web exec wrangler <command>
+```
+
+`pnpm --filter <pkg> exec` runs the binary from that package's `node_modules/.bin/`. This pins each Worker to its own Wrangler version and avoids "which wrangler am I running?" confusion. `wrangler login` from any of those works for all of them (auth is stored in `~/.config/.wrangler/`).
+
 ### 1. Create the `BUILDS` KV namespace
 
 ```bash
@@ -85,7 +97,7 @@ Replace `"id": "REPLACE_ON_FIRST_DEPLOY"` in `apps/builds-api/wrangler.jsonc` wi
 ### 2. Create the Pages project (or let `wrangler pages deploy` auto-create on first run)
 
 ```bash
-pnpm --filter @tarkov/web exec wrangler pages project create tarkov-web --production-branch=main
+pnpm --filter @tarkov/web exec wrangler pages project create tarkov-gunsmith-web --production-branch=main
 # → creates the project; subsequent deploys go to <project>.pages.dev
 ```
 
@@ -102,9 +114,9 @@ gh run view <run-id> --log
 
 The three jobs should complete within ~30 seconds each. Live URLs:
 
-- `https://tarkov-data-proxy.<your-subdomain>.workers.dev/healthz` → `ok`
-- `https://tarkov-builds-api.<your-subdomain>.workers.dev/healthz` → `ok`
-- `https://tarkov-web.pages.dev` → the SPA's landing page
+- `https://tarkov-gunsmith-data-proxy.<your-subdomain>.workers.dev/healthz` → `ok`
+- `https://tarkov-gunsmith-builds-api.<your-subdomain>.workers.dev/healthz` → `ok`
+- `https://tarkov-gunsmith-web.pages.dev` → the SPA's landing page
 
 ## Rotating the token
 

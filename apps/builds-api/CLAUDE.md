@@ -21,7 +21,7 @@ pnpm --filter @tarkov/builds-api build  # wrangler --dry-run --outdir dist
 
 ## Deploy
 
-Auto-deploys to Cloudflare Workers on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-builds-api.<your-subdomain>.workers.dev`.
+Auto-deploys to Cloudflare Workers on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-gunsmith-builds-api.<your-subdomain>.workers.dev`.
 
 ### One-time KV setup (before first deploy)
 
