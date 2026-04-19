@@ -97,8 +97,11 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build SPA
-        run: pnpm --filter @tarkov/web build
+      - name: Build SPA (and its workspace deps)
+        # ...build = include the workspace packages @tarkov/web depends on
+        # (@tarkov/data, @tarkov/ui, @tarkov/types). Without this, vite/tsc
+        # can't resolve the workspace imports because their dist/ is missing.
+        run: pnpm --filter "@tarkov/web..." build
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
