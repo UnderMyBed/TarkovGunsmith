@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.4.0...v0.5.0) (2026-04-19)
+
+
+### Features
+
+* **ui:** add @tarkov/ui package ([#18](https://github.com/UnderMyBed/TarkovGunsmith/issues/18)) ([5c52d32](https://github.com/UnderMyBed/TarkovGunsmith/commit/5c52d32203de53eb57a982b7dedd9782d48d73eb))
+
+
+### Documentation
+
+* add packages/ui implementation plan ([#16](https://github.com/UnderMyBed/TarkovGunsmith/issues/16)) ([28e314a](https://github.com/UnderMyBed/TarkovGunsmith/commit/28e314a1b5b9fc9e9501bf434e5bf25dc6201b84))
+
 ## [0.4.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.3.0...v0.4.0) (2026-04-19)
 
 
