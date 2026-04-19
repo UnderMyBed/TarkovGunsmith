@@ -52,6 +52,7 @@ packages/ballistics/
 ### Task 1: Scaffold `packages/ballistics/` directory and `package.json`
 
 **Files:**
+
 - Create: `packages/ballistics/package.json`
 
 - [ ] **Step 1: Create the directory and `package.json`**
@@ -93,6 +94,7 @@ Create `packages/ballistics/package.json` with EXACTLY this content:
 - [ ] **Step 2: Verify the workspace picks it up**
 
 Run from repo root:
+
 ```bash
 pnpm install
 ```
@@ -113,6 +115,7 @@ This `feat:` commit will trigger a minor bump from release-please (0.1.0 → 0.2
 ### Task 2: TypeScript and Vitest config
 
 **Files:**
+
 - Create: `packages/ballistics/tsconfig.json`
 - Create: `packages/ballistics/vitest.config.ts`
 
@@ -174,6 +177,7 @@ git commit -m "feat(ballistics): add tsconfig and vitest config"
 ### Task 3: Type interfaces and empty barrel
 
 **Files:**
+
 - Create: `packages/ballistics/src/types.ts`
 - Create: `packages/ballistics/src/index.ts`
 
@@ -321,12 +325,13 @@ git commit -m "feat(ballistics): add type interfaces and barrel"
 ### Task 4: Per-package `CLAUDE.md` and `README.md`
 
 **Files:**
+
 - Create: `packages/ballistics/CLAUDE.md`
 - Create: `packages/ballistics/README.md`
 
 - [ ] **Step 1: Create `packages/ballistics/CLAUDE.md`** with EXACTLY:
 
-````markdown
+```markdown
 # `@tarkov/ballistics`
 
 Pure-TypeScript math for ballistic and armor calculations. Used by `apps/web` (and potentially Workers) to compute damage, penetration, durability, and weapon stats from typed inputs.
@@ -361,7 +366,7 @@ Where possible, compare outputs against [Ratstash / WishGranter](https://github.
 - Fetching game data (that's `@tarkov/data`).
 - React components or UI (that's `apps/web`).
 - Caching or memoization — callers handle that with TanStack Query or `useMemo`.
-````
+```
 
 - [ ] **Step 2: Create `packages/ballistics/README.md`** with EXACTLY:
 
@@ -378,8 +383,8 @@ Workspace-internal — consumed via pnpm workspace protocol:
 // in another workspace package
 {
   "dependencies": {
-    "@tarkov/ballistics": "workspace:*"
-  }
+    "@tarkov/ballistics": "workspace:*",
+  },
 }
 ```
 
@@ -388,8 +393,12 @@ Workspace-internal — consumed via pnpm workspace protocol:
 ```ts
 import { simulateShot, type BallisticAmmo, type BallisticArmor } from "@tarkov/ballistics";
 
-const ammo: BallisticAmmo = { /* ... */ };
-const armor: BallisticArmor = { /* ... */ };
+const ammo: BallisticAmmo = {
+  /* ... */
+};
+const armor: BallisticArmor = {
+  /* ... */
+};
 
 const result = simulateShot(ammo, armor, /* distance */ 15);
 console.log(result.didPenetrate, result.damage);
@@ -449,6 +458,7 @@ else:
 If `currentDurability <= 0`, return `1.0` regardless (broken armor offers no resistance).
 
 **Files:**
+
 - Create: `packages/ballistics/src/armor/penetrationChance.ts`
 - Create: `packages/ballistics/src/armor/penetrationChance.test.ts`
 
@@ -559,6 +569,7 @@ armorDamage = ammo.armorDamagePercent * armor.materialDestructibility / 100
 Multiplied by `0.5` if the round did NOT penetrate (deflected hits damage less). Result is rounded to 2 decimal places.
 
 **Files:**
+
 - Create: `packages/ballistics/src/armor/armorDamage.ts`
 - Create: `packages/ballistics/src/armor/armorDamage.test.ts`
 
@@ -660,6 +671,7 @@ else: damage = ammo.damage * (1 - armorClass * 0.1 * durabilityPercent)
 This is a simplified mitigation curve (real EFT uses a more elaborate "blunt damage" formula; we capture the essential behavior and can refine later).
 
 **Files:**
+
 - Create: `packages/ballistics/src/armor/effectiveDamage.ts`
 - Create: `packages/ballistics/src/armor/effectiveDamage.test.ts`
 
@@ -763,6 +775,7 @@ Composes `penetrationChance`, `armorDamage`, and `effectiveDamage` into a single
 Distance is accepted as a parameter but does NOT affect the math at MVP (penetration falloff over distance is a real EFT mechanic but the formula is contested; we'll add it in a later iteration). Distance is recorded for return-shape consistency only — it's used by `simulateBurst` for grouping.
 
 **Files:**
+
 - Create: `packages/ballistics/src/shot/simulateShot.ts`
 - Create: `packages/ballistics/src/shot/simulateShot.test.ts`
 
@@ -821,7 +834,10 @@ describe("simulateShot", () => {
 
   it("returns updated remainingDurability", () => {
     const result = simulateShot(m855, class4Fresh, 15);
-    expect(result.remainingDurability).toBeCloseTo(class4Fresh.currentDurability - result.armorDamage, 4);
+    expect(result.remainingDurability).toBeCloseTo(
+      class4Fresh.currentDurability - result.armorDamage,
+      4,
+    );
   });
 
   it("clamps remainingDurability to 0", () => {
@@ -888,7 +904,11 @@ export function simulateShot(
     armor.maxDurability,
     didPenetrate,
   );
-  const armorDmg = armorDamage(ammo.armorDamagePercent, armor.materialDestructibility, didPenetrate);
+  const armorDmg = armorDamage(
+    ammo.armorDamagePercent,
+    armor.materialDestructibility,
+    didPenetrate,
+  );
   const remainingDurability = Math.max(0, armor.currentDurability - armorDmg);
   return {
     didPenetrate,
@@ -926,6 +946,7 @@ git commit -m "feat(ballistics): add simulateShot"
 Loops `simulateShot`, mutating armor durability between shots. Returns the result array. Stops early if armor breaks AND a parameter `stopOnBreak` is true (default false — caller usually wants the full sequence).
 
 **Files:**
+
 - Create: `packages/ballistics/src/shot/simulateBurst.ts`
 - Create: `packages/ballistics/src/shot/simulateBurst.test.ts`
 
@@ -964,7 +985,9 @@ describe("simulateBurst", () => {
   it("decreases remainingDurability monotonically across the burst", () => {
     const results = simulateBurst(m995, class4Fresh, 5, 15);
     for (let i = 1; i < results.length; i++) {
-      expect(results[i].remainingDurability).toBeLessThanOrEqual(results[i - 1].remainingDurability);
+      expect(results[i].remainingDurability).toBeLessThanOrEqual(
+        results[i - 1].remainingDurability,
+      );
     }
   });
 
@@ -1027,11 +1050,7 @@ export function simulateBurst(
   const results: ShotResult[] = [];
   let currentDurability = armor.currentDurability;
   for (let i = 0; i < shots; i++) {
-    const shot = simulateShot(
-      ammo,
-      { ...armor, currentDurability },
-      distance,
-    );
+    const shot = simulateShot(ammo, { ...armor, currentDurability }, distance);
     results.push(shot);
     currentDurability = shot.remainingDurability;
   }
@@ -1069,6 +1088,7 @@ Returns a 2D matrix of "shots-to-kill-the-armor" — i.e., how many shots of eac
 If an ammo cannot kill an armor in a reasonable bound (default 500 shots — matches realistic worst-case deflection-only rates), return `Infinity` for that cell.
 
 **Files:**
+
 - Create: `packages/ballistics/src/armor/armorEffectiveness.ts`
 - Create: `packages/ballistics/src/armor/armorEffectiveness.test.ts`
 
@@ -1080,13 +1100,43 @@ import { armorEffectiveness } from "./armorEffectiveness.js";
 import type { BallisticAmmo, BallisticArmor } from "../types.js";
 
 const ammos: BallisticAmmo[] = [
-  { id: "ps", name: "5.45 PS", penetrationPower: 21, damage: 50, armorDamagePercent: 38, projectileCount: 1 },
-  { id: "bp", name: "5.45 BP", penetrationPower: 40, damage: 50, armorDamagePercent: 50, projectileCount: 1 },
+  {
+    id: "ps",
+    name: "5.45 PS",
+    penetrationPower: 21,
+    damage: 50,
+    armorDamagePercent: 38,
+    projectileCount: 1,
+  },
+  {
+    id: "bp",
+    name: "5.45 BP",
+    penetrationPower: 40,
+    damage: 50,
+    armorDamagePercent: 50,
+    projectileCount: 1,
+  },
 ];
 
 const armors: BallisticArmor[] = [
-  { id: "class3", name: "C3", armorClass: 3, maxDurability: 50, currentDurability: 50, materialDestructibility: 0.5, zones: ["chest"] },
-  { id: "class5", name: "C5", armorClass: 5, maxDurability: 80, currentDurability: 80, materialDestructibility: 0.45, zones: ["chest"] },
+  {
+    id: "class3",
+    name: "C3",
+    armorClass: 3,
+    maxDurability: 50,
+    currentDurability: 50,
+    materialDestructibility: 0.5,
+    zones: ["chest"],
+  },
+  {
+    id: "class5",
+    name: "C5",
+    armorClass: 5,
+    maxDurability: 80,
+    currentDurability: 80,
+    materialDestructibility: 0.45,
+    zones: ["chest"],
+  },
 ];
 
 describe("armorEffectiveness", () => {
@@ -1200,6 +1250,7 @@ git commit -m "feat(ballistics): add armorEffectiveness"
 Sums ergonomics, weight, and accuracy deltas from mods onto the weapon's base. Recoil uses multiplicative percent: each mod's `recoilModifierPercent` reduces (or increases) recoil; multipliers are summed first, then applied as `base * (1 + sum/100)`.
 
 **Files:**
+
 - Create: `packages/ballistics/src/weapon/weaponSpec.ts`
 - Create: `packages/ballistics/src/weapon/weaponSpec.test.ts`
 
@@ -1370,6 +1421,7 @@ git commit -m "feat(ballistics): add weaponSpec"
 Provide curated sample ammo, armor, and weapon objects for use in integration tests, the matrix UI, and documentation. Numbers are taken from the EFT wiki where available, marked with comments. These are **not** the source of truth for game data — they exist for tests and demos only.
 
 **Files:**
+
 - Create: `packages/ballistics/src/__fixtures__/ammo.ts`
 - Create: `packages/ballistics/src/__fixtures__/armor.ts`
 - Create: `packages/ballistics/src/__fixtures__/weapons.ts`
@@ -1533,18 +1585,14 @@ git commit -m "test(ballistics): add wiki-sourced sample fixtures"
 A smoke test that exercises all four public functions together with the curated fixtures, ensuring the public API is coherent end-to-end.
 
 **Files:**
+
 - Create: `packages/ballistics/src/index.test.ts`
 
 - [ ] **Step 1: Write `packages/ballistics/src/index.test.ts`**:
 
 ```ts
 import { describe, expect, it } from "vitest";
-import {
-  simulateShot,
-  simulateBurst,
-  armorEffectiveness,
-  weaponSpec,
-} from "./index.js";
+import { simulateShot, simulateBurst, armorEffectiveness, weaponSpec } from "./index.js";
 import { M855, M995, PS_545, BP_545 } from "./__fixtures__/ammo.js";
 import { PACA_C3, KORD_C4, HEXGRID_C5, SLICK_C6 } from "./__fixtures__/armor.js";
 import { M4A1, MK16_GRIP, BUFFER_STOCK, COMPENSATOR } from "./__fixtures__/weapons.js";
@@ -1668,16 +1716,19 @@ Expected: exit 0.
 ### Task 15: Update root `CLAUDE.md` to mention `packages/ballistics`
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 1: Edit `CLAUDE.md` Status callout**
 
 Find:
+
 ```markdown
 > **Status:** Foundation in place (Milestone 0a complete). Monorepo, CI, and AI workflow Tier B are wired. No `apps/*` or `packages/*` exist yet — those land in Milestones 0b (Workers), 0c (Web app), and 0d (Data & Math packages). See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the full design.
 ```
 
 Replace with:
+
 ```markdown
 > **Status:** Foundation in place + `packages/ballistics` shipped. Monorepo, CI, AI workflow Tier B, and the pure-TS ballistic math package are live. Still pending: `packages/tarkov-types`, `packages/tarkov-data`, `packages/ui`, `apps/data-proxy`, `apps/builds-api`, `apps/web`. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the full design.
 ```
@@ -1752,6 +1803,7 @@ gh pr merge <pr-number> --repo UnderMyBed/TarkovGunsmith --squash --delete-branc
 - [ ] **Step 6: release-please will auto-open the v0.2.0 release PR**
 
 Verify with:
+
 ```bash
 gh pr list --repo UnderMyBed/TarkovGunsmith --state open
 ```
