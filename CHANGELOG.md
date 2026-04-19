@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.5.0...v0.6.0) (2026-04-19)
+
+
+### Features
+
+* **workers:** add data-proxy and builds-api Cloudflare Workers ([#21](https://github.com/UnderMyBed/TarkovGunsmith/issues/21)) ([8e3ba2e](https://github.com/UnderMyBed/TarkovGunsmith/commit/8e3ba2e4e59918d1a0e50512376d8e53f068b3b0))
+
+
+### Documentation
+
+* add apps/data-proxy + apps/builds-api implementation plan ([#19](https://github.com/UnderMyBed/TarkovGunsmith/issues/19)) ([44c3d16](https://github.com/UnderMyBed/TarkovGunsmith/commit/44c3d16e8348b749b729deb940b7834f05bb10ad))
+
 ## [0.5.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.4.0...v0.5.0) (2026-04-19)
 
 
