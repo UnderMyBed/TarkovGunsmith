@@ -12,6 +12,7 @@ export default tseslint.config(
       "**/.wrangler/**",
       "**/coverage/**",
       "**/node_modules/**",
+      "**/worker-configuration.d.ts",
     ],
   },
   js.configs.recommended,
@@ -30,6 +31,10 @@ export default tseslint.config(
             "packages/tarkov-data/src/client.test.ts",
             "packages/ui/src/lib/*.test.ts",
             "packages/ui/src/components/*.test.ts",
+            "apps/*/vitest.config.ts",
+            "apps/data-proxy/src/*.test.ts",
+            "apps/builds-api/src/*.test.ts",
+            "apps/builds-api/worker-configuration.d.ts",
           ],
           defaultProject: "packages/ui/tsconfig.test.json",
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20,
@@ -50,6 +55,12 @@ export default tseslint.config(
   // so that files outside any tsconfig project are not erroneously linted with type info.
   {
     files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
+    ...tseslint.configs.disableTypeChecked,
+  },
+  // Workers test files import from cloudflare:test which is not resolvable from
+  // the root default project tsconfig — disable type-checked rules for them.
+  {
+    files: ["apps/*/src/*.test.ts"],
     ...tseslint.configs.disableTypeChecked,
   },
   prettier,
