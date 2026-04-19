@@ -233,11 +233,22 @@ Dark-mode default; light-mode toggle for completeness.
 - AI workflow Tier B fully wired (CLAUDE.md hierarchy, skills, subagents, MCP, hooks).
 - `packages/ballistics` + `packages/tarkov-data` with first-pass implementations & tests.
 
-### Milestone 1 — MVP (the three killer features)
+### Milestone 1 — MVP (the three killer features) ✅ shipped as v1.0.0
 
 - `/calc` — Ballistic Calculator (smallest, ships first, validates whole stack end-to-end).
 - `/matrix` — AmmoVsArmor table.
-- `/builder` — Weapon Builder + share-URL via builds-api.
+- `/builder` — Weapon Builder (weapon picker + flat mod list + live `weaponSpec`). Save/share-URL deferred to M1.5.
+
+### Milestone 1.5 — Builder Robustness (v1.1.x)
+
+Dedicated pass to finish the Builder before adding breadth. Pulls the trader-availability filter up from M3 because it shares the same data-enrichment pipeline as slot-based compatibility. Sub-projects (one PR each, one umbrella spec):
+
+- **Slot-based mod compatibility** — weapon-slot tree, recursive child slots, `compatibleItems` filtering so a user physically cannot attach a mod to an incompatible slot.
+- **Build schema + save/load** — versioned Zod schema, `POST /builds` on save, `/builder/$id` loader, graceful "this build can no longer be loaded" states for upstream data changes.
+- **Player-progression gating** — basic mode (trader loyalty levels 1–4 per trader + flea toggle) and advanced mode (basic + a curated set of marquee unlock quests). Profile persists in localStorage and ships with shared builds. Items the current profile can't acquire are dimmed with the blocking requirement shown; users can toggle "show all" to override.
+- **UX depth** — slot tree UI replaces flat checklist; preset loadouts (stock / meta / budget); undo/redo; build-vs-stock diff.
+
+Out of scope for M1.5 (deferred): `tarkov.dev` profile-import integration (Question D from brainstorming) — flagged as future enhancement once the manual profile shape stabilizes.
 
 ### Milestone 2 — Parity
 
@@ -250,9 +261,9 @@ Dark-mode default; light-mode toggle for completeness.
 ### Milestone 3 — Differentiators
 
 - Build comparison (diff two builds side-by-side).
-- Build optimization (find min-recoil mod set under user constraints).
-- Trader-availability filter on builds.
+- Build optimization (find min-recoil mod set under user constraints + current player profile).
 - OG share cards (server-rendered build summary images).
+- `tarkov.dev` profile import (promoted from M1.5 future-enhancement list once profile shape is proven).
 
 ### Milestone 4 — Tier C activation
 
