@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useAmmoList, useArmorList } from "@tarkov/data";
 import { simulateShot } from "@tarkov/ballistics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@tarkov/ui";
-import { adaptAmmo, adaptArmor } from "../features/calc/adapters.js";
+import { adaptAmmo, adaptArmor } from "../features/data-adapters/adapters.js";
 
 export const Route = createFileRoute("/calc")({
   component: CalcPage,
