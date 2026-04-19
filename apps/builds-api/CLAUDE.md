@@ -19,18 +19,30 @@ pnpm --filter @tarkov/builds-api build  # wrangler --dry-run --outdir dist
 
 `wrangler dev` simulates the `BUILDS` KV namespace locally; values persist in `.wrangler/state/`.
 
-## First deploy
+## Deploy
 
-The KV id in `wrangler.jsonc` is a placeholder. Before the first `wrangler deploy`:
+Auto-deploys to Cloudflare Workers on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-builds-api.<your-subdomain>.workers.dev`.
+
+### One-time KV setup (before first deploy)
+
+The KV namespace id in `wrangler.jsonc` is a placeholder. Before the first CI deploy succeeds:
 
 ```bash
-wrangler login
-wrangler kv:namespace create BUILDS         # prints { "id": "<real-id>" }
-# replace REPLACE_ON_FIRST_DEPLOY in wrangler.jsonc with the printed id
-pnpm --filter @tarkov/builds-api deploy
+wrangler login                                                   # one-time
+pnpm --filter @tarkov/builds-api exec wrangler kv:namespace create BUILDS
+# → prints { "id": "<real-id>" }; replace REPLACE_ON_FIRST_DEPLOY in wrangler.jsonc
 ```
 
-This is a one-time manual step; tracked as a follow-up so CI deploys can take over.
+KV namespace ids are opaque, NOT secret — commit the real id once and CI takes over.
+
+Manual deploy (rare):
+
+```bash
+pnpm --filter @tarkov/builds-api deploy
+pnpm --filter @tarkov/builds-api tail
+```
+
+Full setup runbook: [`docs/operations/cloudflare-deploys.md`](../../docs/operations/cloudflare-deploys.md).
 
 ## Conventions
 

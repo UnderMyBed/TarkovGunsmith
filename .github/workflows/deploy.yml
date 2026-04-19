@@ -1,0 +1,109 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  data-proxy:
+    name: Deploy data-proxy Worker
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-data-proxy
+      cancel-in-progress: false
+    environment:
+      name: production-data-proxy
+      url: https://tarkov-data-proxy.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (verify bundle)
+        run: pnpm --filter @tarkov/data-proxy build
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/data-proxy
+          command: deploy
+
+  builds-api:
+    name: Deploy builds-api Worker
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-builds-api
+      cancel-in-progress: false
+    environment:
+      name: production-builds-api
+      url: https://tarkov-builds-api.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (verify bundle)
+        run: pnpm --filter @tarkov/builds-api build
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/builds-api
+          command: deploy
+
+  pages:
+    name: Deploy web (Cloudflare Pages)
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-pages
+      cancel-in-progress: false
+    environment:
+      name: production-pages
+      url: https://tarkov-web.pages.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SPA
+        run: pnpm --filter @tarkov/web build
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/web
+          command: pages deploy ./dist --project-name=tarkov-web --branch=main
