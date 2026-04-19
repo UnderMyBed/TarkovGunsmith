@@ -1,0 +1,35 @@
+{
+  "name": "@tarkov/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Generated TypeScript types for the api.tarkov.dev GraphQL schema. Type-only; no runtime code. Refresh with `pnpm codegen:refresh`.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen:refresh": "SCHEMA_REFRESH=1 graphql-codegen --config codegen.ts"
+  },
+  "dependencies": {
+    "graphql": "^16.0.0"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.0",
+    "@graphql-codegen/typescript": "^4.0.0",
+    "@graphql-codegen/schema-ast": "^4.0.0",
+    "@parcel/watcher": "^2.0.0"
+  }
+}
