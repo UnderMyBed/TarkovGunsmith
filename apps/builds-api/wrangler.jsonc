@@ -7,7 +7,7 @@
   "kv_namespaces": [
     {
       "binding": "BUILDS",
-      "id": "REPLACE_ON_FIRST_DEPLOY",
+      "id": "c42204b518fd4af2a5f3aa5bd8f24d69",
     },
   ],
   "vars": {
