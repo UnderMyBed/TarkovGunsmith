@@ -28,15 +28,17 @@ function HomePage() {
             </CardContent>
           </Card>
         </Link>
-        <Card>
-          <CardHeader>
-            <CardTitle>AmmoVsArmor Matrix</CardTitle>
-            <CardDescription>Coming in Milestone 1.</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-[var(--color-muted-foreground)]">
-            Shots-to-break for every ammo against every armor, sorted and filtered.
-          </CardContent>
-        </Card>
+        <Link to="/matrix" className="block">
+          <Card className="transition-colors hover:border-[var(--color-primary)]">
+            <CardHeader>
+              <CardTitle>AmmoVsArmor Matrix</CardTitle>
+              <CardDescription>Live — color-coded shots-to-break grid.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--color-muted-foreground)]">
+              Shots-to-break for every ammo against every armor, sorted and filtered.
+            </CardContent>
+          </Card>
+        </Link>
         <Card>
           <CardHeader>
             <CardTitle>Weapon Builder</CardTitle>
