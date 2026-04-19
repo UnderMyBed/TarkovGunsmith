@@ -80,6 +80,17 @@ Pre-commit (via Husky 9) runs `lint-staged` on changed files (`eslint --fix --ma
 
 GitHub Actions runs typecheck, lint, format check, and tests on every push and PR. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
+## Releases & versioning
+
+Versioning is fully automated via [release-please](https://github.com/googleapis/release-please-action). On every push to `main`, the workflow inspects Conventional Commits since the last release and opens (or updates) a `chore(release): vX.Y.Z` PR with an auto-generated CHANGELOG.
+
+- `feat:` → minor bump
+- `fix:` / `perf:` → patch bump
+- `feat!:` or any `BREAKING CHANGE:` footer → major bump
+- `chore:` / `ci:` / `build:` / `test:` / `style:` → no version bump (hidden from changelog)
+
+Merging the release PR creates a Git tag, a GitHub Release, and bumps `package.json` automatically. Never tag manually.
+
 ## Gotcha: per-package `tsconfig.json` is required
 
 The root ESLint config uses typescript-eslint's `projectService: true` with the root `tsconfig.json` which only `include`s root-level `.ts` files. Any `.ts`/`.tsx` file under `apps/*` or `packages/*` MUST belong to a package-local `tsconfig.json` — otherwise `eslint --fix` (in pre-commit and CI) will fail with `was not found by the project service`. Every new app or package added in 0b/0c/0d must ship its own `tsconfig.json` extending `tsconfig.base.json`.
