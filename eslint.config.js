@@ -26,6 +26,8 @@ export default tseslint.config(
             "packages/ballistics/src/*.test.ts",
             "packages/ballistics/src/*/*.test.ts",
             "packages/tarkov-types/codegen.ts",
+            "packages/tarkov-data/src/queries/*.test.ts",
+            "packages/tarkov-data/src/client.test.ts",
           ],
           defaultProject: "packages/ballistics/tsconfig.test.json",
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20,
