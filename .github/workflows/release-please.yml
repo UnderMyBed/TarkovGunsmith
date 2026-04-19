@@ -30,4 +30,7 @@ jobs:
         run: |
           PR_BRANCH=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.headBranchName')
           echo "Triggering CI workflow on $PR_BRANCH"
-          gh workflow run ci.yml --ref "$PR_BRANCH" --field ref="$PR_BRANCH"
+          gh workflow run ci.yml \
+            --repo "${{ github.repository }}" \
+            --ref "$PR_BRANCH" \
+            --field ref="$PR_BRANCH"

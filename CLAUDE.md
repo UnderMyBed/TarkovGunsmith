@@ -91,6 +91,14 @@ Versioning is fully automated via [release-please](https://github.com/googleapis
 
 Merging the release PR creates a Git tag, a GitHub Release, and bumps `package.json` automatically. Never tag manually.
 
+### Known limitation: release PRs need admin-merge
+
+Release-please opens PRs using `GITHUB_TOKEN`. GitHub blocks `pull_request` events from `GITHUB_TOKEN`-pushed PRs (anti-recursion guard), so the CI workflow doesn't auto-run as a PR check. The release-please workflow explicitly fires CI via `workflow_dispatch` on the release branch, but `workflow_dispatch` runs don't satisfy the branch-protection "required status check" gate.
+
+**Today's workflow:** verify the workflow_dispatch CI run on the release branch passed (`gh run list --workflow ci.yml --branch release-please--branches--main--components--tarkov-gunsmith --limit 1`), then `gh pr merge <num> --squash --admin` to bypass the empty status check.
+
+**Cleaner long-term fix:** create a fine-grained PAT scoped to this repo with `contents: write` and `pull-requests: write`, store as `RELEASE_PLEASE_TOKEN` secret, and pass `token: ${{ secrets.RELEASE_PLEASE_TOKEN }}` to the release-please action. PRs created by a PAT trigger normal `pull_request` events. Tracked as a future improvement.
+
 ## Gotcha: per-package `tsconfig.json` is required
 
 The root ESLint config uses typescript-eslint's `projectService: true` with the root `tsconfig.json` which only `include`s root-level `.ts` files. Any `.ts`/`.tsx` file under `apps/*` or `packages/*` MUST belong to a package-local `tsconfig.json` — otherwise `eslint --fix` (in pre-commit and CI) will fail with `was not found by the project service`. Every new app or package added in 0b/0c/0d must ship its own `tsconfig.json` extending `tsconfig.base.json`.
