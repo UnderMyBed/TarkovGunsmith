@@ -99,6 +99,12 @@ Release-please opens PRs using `GITHUB_TOKEN`. GitHub blocks `pull_request` even
 
 **Cleaner long-term fix:** create a fine-grained PAT scoped to this repo with `contents: write` and `pull-requests: write`, store as `RELEASE_PLEASE_TOKEN` secret, and pass `token: ${{ secrets.RELEASE_PLEASE_TOKEN }}` to the release-please action. PRs created by a PAT trigger normal `pull_request` events. Tracked as a future improvement.
 
+## Deploys
+
+Workers and the SPA auto-deploy to Cloudflare on every merge to `main`. The runbook (token permissions, repo secrets, one-time setup, rotation) lives at [`docs/operations/cloudflare-deploys.md`](docs/operations/cloudflare-deploys.md).
+
+The token uses **least-privilege** scoping — only the four permissions actually needed today (Workers Scripts edit, Workers KV edit, Pages edit, Account Settings read). Add more as features land per the runbook's "Future permissions" table.
+
 ## Gotcha: per-package `tsconfig.json` is required
 
 The root ESLint config uses typescript-eslint's `projectService: true` with the root `tsconfig.json` which only `include`s root-level `.ts` files. Any `.ts`/`.tsx` file under `apps/*` or `packages/*` MUST belong to a package-local `tsconfig.json` — otherwise `eslint --fix` (in pre-commit and CI) will fail with `was not found by the project service`. Every new app or package added in 0b/0c/0d must ship its own `tsconfig.json` extending `tsconfig.base.json`.
