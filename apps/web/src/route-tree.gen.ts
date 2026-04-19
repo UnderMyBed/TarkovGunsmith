@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SmokeRouteImport } from './routes/smoke'
+import { Route as MatrixRouteImport } from './routes/matrix'
 import { Route as CalcRouteImport } from './routes/calc'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SmokeRoute = SmokeRouteImport.update({
   id: '/smoke',
   path: '/smoke',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MatrixRoute = MatrixRouteImport.update({
+  id: '/matrix',
+  path: '/matrix',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalcRoute = CalcRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calc': typeof CalcRoute
+  '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calc': typeof CalcRoute
+  '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calc': typeof CalcRoute
+  '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calc' | '/smoke'
+  fullPaths: '/' | '/calc' | '/matrix' | '/smoke'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calc' | '/smoke'
-  id: '__root__' | '/' | '/calc' | '/smoke'
+  to: '/' | '/calc' | '/matrix' | '/smoke'
+  id: '__root__' | '/' | '/calc' | '/matrix' | '/smoke'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalcRoute: typeof CalcRoute
+  MatrixRoute: typeof MatrixRoute
   SmokeRoute: typeof SmokeRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/smoke'
       fullPath: '/smoke'
       preLoaderRoute: typeof SmokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/matrix': {
+      id: '/matrix'
+      path: '/matrix'
+      fullPath: '/matrix'
+      preLoaderRoute: typeof MatrixRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calc': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalcRoute: CalcRoute,
+  MatrixRoute: MatrixRoute,
   SmokeRoute: SmokeRoute,
 }
 export const routeTree = rootRouteImport
