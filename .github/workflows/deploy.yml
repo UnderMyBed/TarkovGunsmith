@@ -17,7 +17,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: production-data-proxy
-      url: https://tarkov-data-proxy.workers.dev
+      url: https://tarkov-gunsmith-data-proxy.workers.dev
     steps:
       - uses: actions/checkout@v4
 
@@ -50,7 +50,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: production-builds-api
-      url: https://tarkov-builds-api.workers.dev
+      url: https://tarkov-gunsmith-builds-api.workers.dev
     steps:
       - uses: actions/checkout@v4
 
@@ -83,7 +83,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: production-pages
-      url: https://tarkov-web.pages.dev
+      url: https://tarkov-gunsmith-web.pages.dev
     steps:
       - uses: actions/checkout@v4
 
@@ -106,4 +106,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/web
-          command: pages deploy ./dist --project-name=tarkov-web --branch=main
+          command: pages deploy ./dist --project-name=tarkov-gunsmith-web --branch=main
