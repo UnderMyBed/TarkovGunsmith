@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.3.0...v0.4.0) (2026-04-19)
+
+
+### Features
+
+* **data:** add @tarkov/data package ([#15](https://github.com/UnderMyBed/TarkovGunsmith/issues/15)) ([6bb24d2](https://github.com/UnderMyBed/TarkovGunsmith/commit/6bb24d2187775380b7c0461626ed18992f63dae5))
+
+
+### Documentation
+
+* add packages/tarkov-data implementation plan ([#13](https://github.com/UnderMyBed/TarkovGunsmith/issues/13)) ([6649e3e](https://github.com/UnderMyBed/TarkovGunsmith/commit/6649e3ed243cca2ca11f1e12104b9e8127bb60d0))
+
 ## [0.3.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.2.0...v0.3.0) (2026-04-19)
 
 
