@@ -1,0 +1,32 @@
+{
+  "data": {
+    "items": [
+      {
+        "id": "5648a7494bdc2d9d488b4583",
+        "name": "PACA Soft Armor",
+        "shortName": "PACA",
+        "iconLink": "https://assets.tarkov.dev/5648a7494bdc2d9d488b4583-icon.webp",
+        "properties": {
+          "__typename": "ItemPropertiesArmor",
+          "class": 3,
+          "durability": 40,
+          "material": { "name": "Aramid", "destructibility": 0.55 },
+          "zones": ["Chest", "Stomach"]
+        }
+      },
+      {
+        "id": "5c0e655586f774045612eeb2",
+        "name": "Hexgrid Plate Carrier",
+        "shortName": "Hexgrid",
+        "iconLink": "https://assets.tarkov.dev/5c0e655586f774045612eeb2-icon.webp",
+        "properties": {
+          "__typename": "ItemPropertiesArmor",
+          "class": 5,
+          "durability": 80,
+          "material": { "name": "Ceramic", "destructibility": 0.45 },
+          "zones": ["Chest", "Stomach"]
+        }
+      }
+    ]
+  }
+}

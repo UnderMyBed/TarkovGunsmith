@@ -1,0 +1,19 @@
+{
+  "data": {
+    "item": {
+      "id": "5447a9cd4bdc2dbd208b4567",
+      "name": "Colt M4A1 5.56x45 assault rifle",
+      "shortName": "M4A1",
+      "iconLink": "https://assets.tarkov.dev/5447a9cd4bdc2dbd208b4567-icon.webp",
+      "properties": {
+        "__typename": "ItemPropertiesWeapon",
+        "ergonomics": 50,
+        "recoilVertical": 56,
+        "recoilHorizontal": 220,
+        "caliber": "Caliber556x45NATO",
+        "fireRate": 800
+      },
+      "weight": 2.7
+    }
+  }
+}
