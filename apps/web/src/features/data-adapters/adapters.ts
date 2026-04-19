@@ -1,5 +1,12 @@
-import type { AmmoListItem, ArmorListItem } from "@tarkov/data";
-import type { BallisticAmmo, BallisticArmor } from "@tarkov/ballistics";
+import type { AmmoListItem, ArmorListItem, ModListItem, WeaponListItem } from "@tarkov/data";
+import type {
+  BallisticAmmo,
+  BallisticArmor,
+  BallisticMod,
+  BallisticWeapon,
+} from "@tarkov/ballistics";
+
+const DEFAULT_BASE_ACCURACY = 3.5;
 
 /**
  * Convert an `@tarkov/data` ammo item to the `@tarkov/ballistics` input shape.
@@ -34,5 +41,42 @@ export function adaptArmor(item: ArmorListItem): BallisticArmor {
     currentDurability: item.properties.durability,
     materialDestructibility: item.properties.material.destructibility,
     zones: item.properties.zones,
+  };
+}
+
+/**
+ * Convert an `@tarkov/data` weapon item to the `@tarkov/ballistics` input shape.
+ *
+ * Note: the upstream schema doesn't expose a base "accuracy" stat (it's
+ * computed from barrel + caliber + ammo). Default to {@link DEFAULT_BASE_ACCURACY}
+ * (typical AR baseline). Mod accuracyDelta values are still applied via
+ * `weaponSpec`, so relative comparisons between builds remain accurate.
+ */
+export function adaptWeapon(item: WeaponListItem): BallisticWeapon {
+  return {
+    id: item.id,
+    name: item.name,
+    baseErgonomics: item.properties.ergonomics,
+    baseVerticalRecoil: item.properties.recoilVertical,
+    baseHorizontalRecoil: item.properties.recoilHorizontal,
+    baseWeight: item.weight,
+    baseAccuracy: DEFAULT_BASE_ACCURACY,
+  };
+}
+
+/**
+ * Convert an `@tarkov/data` mod item to the `@tarkov/ballistics` input shape.
+ *
+ * EFT's `recoilModifier` is already a percent (e.g. -8 for an 8% recoil
+ * reduction), so it maps directly to `recoilModifierPercent`.
+ */
+export function adaptMod(item: ModListItem): BallisticMod {
+  return {
+    id: item.id,
+    name: item.name,
+    ergonomicsDelta: item.properties.ergonomics,
+    recoilModifierPercent: item.properties.recoilModifier,
+    weight: item.weight,
+    accuracyDelta: item.properties.accuracyModifier,
   };
 }
