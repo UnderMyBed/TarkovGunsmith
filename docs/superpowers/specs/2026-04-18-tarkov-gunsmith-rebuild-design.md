@@ -7,7 +7,7 @@
 
 ## 1. Purpose & vision
 
-Rebuild the defunct TarkovGunsmith site as a modern, AI-first, free-to-host web app. The original was a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes. This rebuild keeps the spirit but trades the original's C# backend + CRA frontend for a serverless, edge-hosted, monorepo architecture explicitly engineered to be developed *with* Claude as the primary collaborator.
+Rebuild the defunct TarkovGunsmith site as a modern, AI-first, free-to-host web app. The original was a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes. This rebuild keeps the spirit but trades the original's C# backend + CRA frontend for a serverless, edge-hosted, monorepo architecture explicitly engineered to be developed _with_ Claude as the primary collaborator.
 
 **Goals:**
 
@@ -26,13 +26,13 @@ Rebuild the defunct TarkovGunsmith site as a modern, AI-first, free-to-host web 
 
 ## 2. Locked decisions (from brainstorming)
 
-| # | Decision | Choice |
-|---|----------|--------|
-| 1 | Feature scope | **MVP first** — three killer features, then iterate to parity |
-| 2 | Backend posture | **SPA + thin edge backend from day 1** (Cloudflare Workers + KV) |
-| 3 | Frontend stack | **Vite + React + TypeScript**, TanStack Router/Query, Zod, Tailwind v4, shadcn/ui, Vitest, Playwright |
-| 4 | AI workflow ambition | **Tier B implemented now**, Tier C fully documented as future-state upgrade |
-| 5 | Visual identity | **Fresh, opinionated dark UI** on shadcn defaults, accented with Tarkov item iconography |
+| #   | Decision             | Choice                                                                                                |
+| --- | -------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1   | Feature scope        | **MVP first** — three killer features, then iterate to parity                                         |
+| 2   | Backend posture      | **SPA + thin edge backend from day 1** (Cloudflare Workers + KV)                                      |
+| 3   | Frontend stack       | **Vite + React + TypeScript**, TanStack Router/Query, Zod, Tailwind v4, shadcn/ui, Vitest, Playwright |
+| 4   | AI workflow ambition | **Tier B implemented now**, Tier C fully documented as future-state upgrade                           |
+| 5   | Visual identity      | **Fresh, opinionated dark UI** on shadcn defaults, accented with Tarkov item iconography              |
 
 ## 3. System architecture
 
