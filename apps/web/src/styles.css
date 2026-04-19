@@ -1,0 +1,10 @@
+@import "@tarkov/ui/styles.css";
+
+/* App-specific overrides + utilities go below this line. */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
