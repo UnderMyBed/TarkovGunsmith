@@ -2,7 +2,7 @@
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
 
-> **Status:** Pre-implementation. Design approved, no code yet. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the design spec — it is the source of truth for everything below.
+> **Status:** Foundation in place (Milestone 0a complete). Monorepo, CI, and AI workflow Tier B are wired. No `apps/*` or `packages/*` exist yet — those land in Milestones 0b (Workers), 0c (Web app), and 0d (Data & Math packages). See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the full design.
 
 ## What this project is
 
@@ -60,7 +60,35 @@ docs/                 Specs, plans, ADRs, AI workflow guides
 .claude/              Project skills, agents, settings, commands
 ```
 
-This layout is created during Milestone 0. Until then, only `docs/`, `.claude/` (eventually), and this `CLAUDE.md` exist.
+This layout is created across Milestones 0a–0d. After 0a (current), only `docs/`, `.claude/`, and root config files exist.
+
+## Local development
+
+```bash
+pnpm install          # install everything
+pnpm typecheck        # tsc across all packages
+pnpm lint             # eslint across all packages
+pnpm format:check     # prettier check
+pnpm test             # vitest across all packages
+pnpm format           # auto-format
+pnpm commitlint       # validate a commit message manually
+```
+
+Pre-commit (via Husky 9) runs `lint-staged` on changed files (`eslint --fix --max-warnings 0` and `prettier --write`). Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint).
+
+## CI
+
+GitHub Actions runs typecheck, lint, format check, and tests on every push and PR. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+## Gotcha: per-package `tsconfig.json` is required
+
+The root ESLint config uses typescript-eslint's `projectService: true` with the root `tsconfig.json` which only `include`s root-level `.ts` files. Any `.ts`/`.tsx` file under `apps/*` or `packages/*` MUST belong to a package-local `tsconfig.json` — otherwise `eslint --fix` (in pre-commit and CI) will fail with `was not found by the project service`. Every new app or package added in 0b/0c/0d must ship its own `tsconfig.json` extending `tsconfig.base.json`.
+
+## AI tooling installed
+
+- **`.claude/settings.json`** — permissions allowlist (pnpm, vitest, wrangler, gh, git) + post-edit `tsc --noEmit` hook for `.ts`/`.tsx` files
+- **`.claude/skills/`** — `add-data-query`, `add-calc-function`, `add-feature-route`, `verify-data-shape`, `update-tarkov-schema`
+- **`.claude/agents/`** — `tarkov-api-explorer` (read-only research), `ballistics-verifier` (math correctness)
 
 ## Acknowledgements
 
