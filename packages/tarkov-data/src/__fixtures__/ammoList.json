@@ -1,0 +1,34 @@
+{
+  "data": {
+    "items": [
+      {
+        "id": "5656d7c34bdc2d9d198b4587",
+        "name": "5.45x39mm PS gs",
+        "shortName": "5.45 PS",
+        "iconLink": "https://assets.tarkov.dev/5656d7c34bdc2d9d198b4587-icon.webp",
+        "properties": {
+          "__typename": "ItemPropertiesAmmo",
+          "caliber": "Caliber545x39",
+          "penetrationPower": 21,
+          "damage": 50,
+          "armorDamage": 38,
+          "projectileCount": 1
+        }
+      },
+      {
+        "id": "5c0d5e4486f77478390952fe",
+        "name": "5.45x39mm BP gs",
+        "shortName": "5.45 BP",
+        "iconLink": "https://assets.tarkov.dev/5c0d5e4486f77478390952fe-icon.webp",
+        "properties": {
+          "__typename": "ItemPropertiesAmmo",
+          "caliber": "Caliber545x39",
+          "penetrationPower": 40,
+          "damage": 50,
+          "armorDamage": 50,
+          "projectileCount": 1
+        }
+      }
+    ]
+  }
+}
