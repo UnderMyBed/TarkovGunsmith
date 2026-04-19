@@ -25,6 +25,7 @@ export interface TarkovIconProps extends Omit<ImgHTMLAttributes<HTMLImageElement
 /**
  * Renders an EFT item icon from `assets.tarkov.dev`.
  */
+/* v8 ignore next 12 -- presentational component; covered by apps/web Playwright tests */
 export const TarkovIcon = forwardRef<HTMLImageElement, TarkovIconProps>(function TarkovIcon(
   { itemId, variant = "icon", className, alt = "", loading = "lazy", ...props },
   ref,
