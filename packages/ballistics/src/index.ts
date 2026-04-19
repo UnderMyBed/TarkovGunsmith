@@ -12,3 +12,4 @@ export { effectiveDamage } from "./armor/effectiveDamage.js";
 export { simulateShot } from "./shot/simulateShot.js";
 export { simulateBurst } from "./shot/simulateBurst.js";
 export { armorEffectiveness } from "./armor/armorEffectiveness.js";
+export { weaponSpec } from "./weapon/weaponSpec.js";
