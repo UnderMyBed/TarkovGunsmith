@@ -55,5 +55,11 @@ export default tseslint.config(
     files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
     ...tseslint.configs.disableTypeChecked,
   },
+  // Workers test files import from cloudflare:test which is not resolvable from
+  // the root default project tsconfig — disable type-checked rules for them.
+  {
+    files: ["apps/*/src/*.test.ts"],
+    ...tseslint.configs.disableTypeChecked,
+  },
   prettier,
 );
