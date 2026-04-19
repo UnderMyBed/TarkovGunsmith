@@ -6,3 +6,4 @@ export type {
   BallisticMod,
   WeaponSpec,
 } from "./types.js";
+export { penetrationChance } from "./armor/penetrationChance.js";

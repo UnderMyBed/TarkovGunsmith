@@ -21,7 +21,11 @@ export default tseslint.config(
       globals: { ...globals.node },
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["packages/*/vitest.config.ts"],
+          allowDefaultProject: [
+            "packages/*/vitest.config.ts",
+            "packages/ballistics/src/*/*.test.ts",
+          ],
+          defaultProject: "packages/ballistics/tsconfig.test.json",
         },
         tsconfigRootDir: import.meta.dirname,
       },
