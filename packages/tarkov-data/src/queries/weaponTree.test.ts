@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchWeaponTree, normalizeSlots, type SlotNode } from "./weaponTree.js";
+import { parse as parseGraphQL } from "graphql";
+import { fetchWeaponTree, normalizeSlots, WEAPON_TREE_QUERY, type SlotNode } from "./weaponTree.js";
 import { createTarkovClient } from "../client.js";
 
 // Minimal fake GraphQL response matching the query shape at depth 3.
@@ -150,6 +151,23 @@ describe("normalizeSlots", () => {
     expect(normalized[0]!.path).toBe("mod_scope");
     const scopeB = normalized[0]!.allowedItems[1]!;
     expect(scopeB.children[0]!.path).toBe("mod_scope/mod_mount");
+  });
+});
+
+describe("WEAPON_TREE_QUERY", () => {
+  it("is valid GraphQL syntax", () => {
+    // Prod regression: the recursive buildSlotSelection generator used to emit
+    // an empty `slots {}` at the innermost level, which the API rejects with
+    // "Syntax Error: Expected Name, found '}'". Parse-verify the query here
+    // so any future drift in the generator fails at test time, not runtime.
+    expect(() => parseGraphQL(WEAPON_TREE_QUERY)).not.toThrow();
+  });
+
+  it("contains no empty selection sets", () => {
+    // GraphQL forbids `foo {}` — a selection set must contain at least one
+    // field or fragment. The old buildSlotSelection(0) === "" path violated
+    // this. Guard explicitly so the regression message is obvious.
+    expect(WEAPON_TREE_QUERY).not.toMatch(/\{\s*\}/);
   });
 });
 
