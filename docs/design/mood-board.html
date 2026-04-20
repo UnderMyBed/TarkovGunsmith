@@ -1,0 +1,1445 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TarkovGunsmith — Field Ledger / mood board</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bungee&family=Chivo:ital,wght@0,300;0,400;0,500;0,700;0,800;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* Palette — "Field Ledger" */
+        --bg: #0e0f0c;
+        --surface: #16170f;
+        --surface-2: #1f211a;
+        --surface-3: #2a2c23;
+        --line: #3a3d33;
+        --line-muted: #26291f;
+        --paper: #e6e4db;
+        --paper-muted: #9a988d;
+        --paper-dim: #6b6a60;
+        --amber: #f59e0b;
+        --amber-deep: #b45309;
+        --olive: #7a8b3f;
+        --rust: #9c3f1e;
+        --blood: #b91c1c;
+
+        --font-display: "Bungee", sans-serif;
+        --font-body: "Chivo", -apple-system, sans-serif;
+        --font-mono: "Azeret Mono", ui-monospace, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--paper);
+        font-family: var(--font-body);
+        font-weight: 400;
+        font-size: 15px;
+        line-height: 1.55;
+        letter-spacing: 0.005em;
+      }
+      body {
+        min-height: 100vh;
+        background-image:
+          radial-gradient(ellipse at 15% 0%, rgba(245, 158, 11, 0.06), transparent 55%),
+          radial-gradient(ellipse at 85% 100%, rgba(122, 139, 63, 0.04), transparent 55%);
+      }
+
+      /* SVG grain via data URI */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9  0 0 0 0 0.9  0 0 0 0 0.85  0 0 0 0.06 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+        pointer-events: none;
+        z-index: 1;
+        mix-blend-mode: overlay;
+        opacity: 0.35;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 2;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 32px 96px;
+      }
+
+      /* ─── typography ──────────────────────────────────────────── */
+      .label {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--paper-muted);
+      }
+      .label-accent {
+        color: var(--amber);
+      }
+      .num {
+        font-family: var(--font-mono);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+      h1.hero {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(52px, 7vw, 96px);
+        line-height: 0.92;
+        letter-spacing: -0.01em;
+        color: var(--paper);
+        margin: 0;
+      }
+      h1.hero em {
+        font-style: normal;
+        color: var(--amber);
+      }
+      h2 {
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 22px;
+        letter-spacing: -0.01em;
+        margin: 0 0 8px;
+      }
+      h3 {
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 16px;
+        margin: 0 0 6px;
+      }
+      p {
+        margin: 0 0 12px;
+      }
+      p.lead {
+        font-size: 17px;
+        color: var(--paper-muted);
+        max-width: 640px;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.9em;
+        color: var(--amber);
+        background: var(--surface-2);
+        padding: 1px 5px;
+        border: 1px solid var(--line-muted);
+      }
+
+      /* ─── classification stamp ────────────────────────────────── */
+      .stamp {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 10px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--amber);
+        border: 1.5px solid var(--amber);
+        padding: 4px 10px 3px;
+        transform: rotate(-2deg);
+      }
+      .stamp.red {
+        color: var(--blood);
+        border-color: var(--blood);
+      }
+
+      /* ─── nav ─────────────────────────────────────────────────── */
+      header.top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 2px solid var(--paper);
+        border-bottom: 1px solid var(--line);
+        padding: 14px 0;
+        margin-bottom: 48px;
+      }
+      .brand {
+        font-family: var(--font-display);
+        font-size: 18px;
+        letter-spacing: 0.02em;
+        color: var(--paper);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand::before {
+        content: "▲";
+        color: var(--amber);
+      }
+      nav.top-nav {
+        display: flex;
+        gap: 26px;
+      }
+      nav.top-nav a {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--paper-muted);
+        text-decoration: none;
+        padding: 4px 0;
+        border-bottom: 1.5px solid transparent;
+        transition: all 120ms ease;
+      }
+      nav.top-nav a:hover {
+        color: var(--paper);
+      }
+      nav.top-nav a.active {
+        color: var(--amber);
+        border-bottom-color: var(--amber);
+      }
+
+      /* ─── hero ────────────────────────────────────────────────── */
+      .hero-block {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        gap: 48px;
+        align-items: end;
+        padding-bottom: 48px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 64px;
+      }
+      .hero-meta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        color: var(--paper-dim);
+        text-transform: uppercase;
+        margin-bottom: 24px;
+        display: flex;
+        gap: 16px;
+      }
+      .hero-meta span + span::before {
+        content: "/";
+        margin-right: 16px;
+        color: var(--line);
+      }
+      .hero-right {
+        border-left: 1px solid var(--line);
+        padding-left: 32px;
+      }
+      .hero-right .num-big {
+        font-family: var(--font-display);
+        font-size: 72px;
+        line-height: 1;
+        color: var(--amber);
+      }
+      .ammo-line {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        color: var(--paper-muted);
+      }
+
+      /* ─── section title ───────────────────────────────────────── */
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 72px 0 28px;
+      }
+      .section-title .num {
+        color: var(--amber);
+        font-size: 13px;
+        letter-spacing: 0.2em;
+      }
+      .section-title .rule {
+        flex: 1;
+        height: 1px;
+        background: var(--line);
+      }
+
+      /* ─── panel (with corner brackets) ────────────────────────── */
+      .panel {
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        padding: 24px;
+      }
+      .panel.raised {
+        background: var(--surface-2);
+      }
+      .panel::before,
+      .panel::after {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--amber);
+      }
+      .panel::before {
+        top: -1px;
+        left: -1px;
+        border-right: none;
+        border-bottom: none;
+      }
+      .panel::after {
+        bottom: -1px;
+        right: -1px;
+        border-left: none;
+        border-top: none;
+      }
+      .panel-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        border-bottom: 1px dashed var(--line);
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+      }
+
+      /* ─── palette grid ────────────────────────────────────────── */
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+      .swatch {
+        border: 1px solid var(--line);
+      }
+      .swatch .fill {
+        height: 68px;
+      }
+      .swatch .meta {
+        padding: 10px 12px;
+        background: var(--surface-2);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .swatch .meta .name {
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .swatch .meta .hex {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--paper-muted);
+      }
+
+      /* ─── type samples ────────────────────────────────────────── */
+      .type-grid {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 0;
+      }
+      .type-grid > div {
+        padding: 18px 16px;
+        border-top: 1px solid var(--line-muted);
+      }
+      .type-grid > div:first-child,
+      .type-grid > div:nth-child(2) {
+        border-top: none;
+      }
+      .type-grid .sample-meta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--paper-muted);
+      }
+      .sample-display {
+        font-family: var(--font-display);
+        font-size: 36px;
+        line-height: 1;
+        color: var(--paper);
+      }
+      .sample-h {
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 22px;
+        color: var(--paper);
+      }
+      .sample-body {
+        font-size: 16px;
+        color: var(--paper);
+      }
+      .sample-mono {
+        font-family: var(--font-mono);
+        font-size: 15px;
+        color: var(--paper);
+      }
+      .sample-label {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+
+      /* ─── data table ──────────────────────────────────────────── */
+      table.ledger {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-body);
+        font-size: 14px;
+      }
+      table.ledger thead th {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        text-align: left;
+        color: var(--paper-muted);
+        padding: 10px 12px;
+        border-bottom: 2px solid var(--paper);
+      }
+      table.ledger thead th.num,
+      table.ledger tbody td.num {
+        text-align: right;
+      }
+      table.ledger tbody td {
+        padding: 10px 12px;
+        border-bottom: 1px dashed var(--line);
+      }
+      table.ledger tbody td.num {
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
+      }
+      table.ledger tbody tr:hover td {
+        background: var(--surface-2);
+      }
+
+      /* classification pills */
+      .pill {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        padding: 3px 8px 2px;
+        border: 1px solid transparent;
+      }
+      .pill.reliable {
+        color: var(--olive);
+        border-color: var(--olive);
+        background: rgba(122, 139, 63, 0.1);
+      }
+      .pill.marginal {
+        color: var(--amber);
+        border-color: var(--amber);
+        background: rgba(245, 158, 11, 0.08);
+      }
+      .pill.ineffective {
+        color: var(--paper-dim);
+        border-color: var(--line);
+        background: transparent;
+      }
+      .pill.pen {
+        color: var(--amber);
+        border-color: var(--amber);
+      }
+      .pill.block {
+        color: var(--paper-dim);
+        border-color: var(--line);
+      }
+
+      /* ─── buttons ─────────────────────────────────────────────── */
+      .btn {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        padding: 10px 18px;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--paper);
+        cursor: pointer;
+        transition: all 120ms ease;
+      }
+      .btn:hover {
+        border-color: var(--amber);
+        color: var(--amber);
+      }
+      .btn.primary {
+        background: var(--amber);
+        color: var(--bg);
+        border-color: var(--amber);
+        font-weight: 600;
+      }
+      .btn.primary:hover {
+        background: var(--amber-deep);
+        border-color: var(--amber-deep);
+        color: var(--paper);
+      }
+      .btn.ghost {
+        border: none;
+        color: var(--paper-muted);
+        padding: 10px 4px;
+      }
+      .btn.ghost:hover {
+        color: var(--amber);
+      }
+
+      /* ─── hp bar ──────────────────────────────────────────────── */
+      .hp-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        color: var(--paper-muted);
+      }
+      .hp-bar .track {
+        flex: 1;
+        height: 6px;
+        background: var(--surface-3);
+        border: 1px solid var(--line-muted);
+        overflow: hidden;
+        position: relative;
+      }
+      .hp-bar .fill {
+        height: 100%;
+        background: var(--olive);
+      }
+      .hp-bar .fill.low {
+        background: var(--amber);
+      }
+      .hp-bar .fill.dead {
+        background: var(--blood);
+      }
+
+      /* ─── reticle decoration ──────────────────────────────────── */
+      .reticle {
+        width: 56px;
+        height: 56px;
+        border: 1.5px solid var(--amber);
+        border-radius: 50%;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .reticle::before,
+      .reticle::after {
+        content: "";
+        position: absolute;
+        background: var(--amber);
+      }
+      .reticle::before {
+        width: 1.5px;
+        height: 76px;
+        left: 50%;
+        top: -10px;
+        transform: translateX(-50%);
+      }
+      .reticle::after {
+        height: 1.5px;
+        width: 76px;
+        top: 50%;
+        left: -10px;
+        transform: translateY(-50%);
+      }
+      .reticle .core {
+        width: 6px;
+        height: 6px;
+        background: var(--amber);
+        border-radius: 50%;
+        z-index: 1;
+      }
+
+      /* ─── shot timeline row ───────────────────────────────────── */
+      .shot-row {
+        display: grid;
+        grid-template-columns: 40px 110px 70px auto 1fr;
+        gap: 16px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px dashed var(--line);
+        font-family: var(--font-body);
+        font-size: 13px;
+      }
+      .shot-row:last-child {
+        border-bottom: none;
+      }
+      .shot-row .idx {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        color: var(--paper-dim);
+        font-variant-numeric: tabular-nums;
+      }
+      .shot-row .zone {
+        text-transform: uppercase;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.15em;
+        color: var(--paper);
+      }
+      .shot-row .meta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--paper-muted);
+        text-align: right;
+        letter-spacing: 0.04em;
+      }
+      .shot-row.fatal .idx {
+        color: var(--blood);
+      }
+      .shot-row.fatal .meta::after {
+        content: " · FATAL";
+        color: var(--blood);
+      }
+
+      /* ─── footer ──────────────────────────────────────────────── */
+      footer.foot {
+        margin-top: 96px;
+        padding-top: 28px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--paper-dim);
+      }
+
+      /* ─── slot tree ───────────────────────────────────────────── */
+      .slot-row {
+        display: grid;
+        grid-template-columns: 18px 140px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 7px 8px;
+        border-bottom: 1px dashed var(--line-muted);
+        font-size: 13px;
+      }
+      .slot-row:last-child {
+        border-bottom: none;
+      }
+      .slot-row .slot-tick {
+        font-family: var(--font-mono);
+        color: var(--amber);
+        font-size: 12px;
+      }
+      .slot-row.empty .slot-tick {
+        color: var(--paper-dim);
+      }
+      .slot-row .slot-name {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--paper-muted);
+      }
+      .slot-row .slot-value {
+        color: var(--paper);
+      }
+      .slot-row .slot-value.muted {
+        color: var(--paper-dim);
+        font-style: italic;
+      }
+      .slot-row.indent {
+        padding-left: 32px;
+      }
+      .slot-row.parent .slot-name {
+        color: var(--amber);
+      }
+      .slot-row.empty {
+        background: repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 4px,
+          var(--line-muted) 4px,
+          var(--line-muted) 5px
+        );
+      }
+
+      /* ─── stat rows (builder right panel) ─────────────────────── */
+      .stat-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .stat-row {
+        display: grid;
+        grid-template-columns: 110px 46px 56px 48px 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 4px 0;
+      }
+      .stat-row .stat-label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--paper-muted);
+      }
+      .stat-row .stat-stock {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--paper-dim);
+        text-align: right;
+        text-decoration: line-through;
+        text-decoration-color: var(--line);
+      }
+      .stat-row .stat-delta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-align: right;
+        letter-spacing: 0.05em;
+      }
+      .stat-row .stat-delta.up {
+        color: var(--olive);
+      }
+      .stat-row .stat-delta.down {
+        color: var(--blood);
+      }
+      .stat-row .stat-current {
+        font-size: 18px;
+        text-align: right;
+        color: var(--paper);
+        font-weight: 600;
+      }
+      .stat-row .stat-bar {
+        height: 4px;
+        background: var(--surface-3);
+        border: 1px solid var(--line-muted);
+        overflow: hidden;
+      }
+      .stat-row .stat-bar .fill {
+        display: block;
+        height: 100%;
+        background: var(--amber);
+      }
+      .stat-row .stat-bar .fill.olive {
+        background: var(--olive);
+      }
+      .stat-row .stat-bar .fill.blood {
+        background: var(--blood);
+      }
+
+      @media (max-width: 860px) {
+        .hero-block {
+          grid-template-columns: 1fr;
+        }
+        .hero-right {
+          border-left: none;
+          padding-left: 0;
+          border-top: 1px solid var(--line);
+          padding-top: 24px;
+        }
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+        .grid-4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        /* Builder panel: stack on mobile */
+        .panel[style*="grid-template-columns: 1.1fr 0.9fr"] {
+          grid-template-columns: 1fr !important;
+        }
+        .panel[style*="grid-template-columns: 1.1fr 0.9fr"] > div:first-child {
+          padding-right: 0 !important;
+          border-right: none !important;
+          border-bottom: 1px solid var(--line);
+          padding-bottom: 20px;
+        }
+        .panel[style*="grid-template-columns: 1.1fr 0.9fr"] > div:last-child {
+          padding-left: 0 !important;
+          padding-top: 24px;
+        }
+        .stat-row {
+          grid-template-columns: 90px 40px 48px 40px 1fr;
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <!-- ──────── top nav ──────── -->
+      <header class="top">
+        <div class="brand">
+          TARKOVGUNSMITH
+          <span
+            style="
+              font-family: var(--font-mono);
+              font-size: 10px;
+              letter-spacing: 0.2em;
+              color: var(--paper-dim);
+            "
+            >v2.0 · FIELD LEDGER</span
+          >
+        </div>
+        <nav class="top-nav">
+          <a href="#" class="active">Builder</a>
+          <a href="#">Calc</a>
+          <a href="#">Matrix</a>
+          <a href="#">Sim</a>
+          <a href="#">ADC</a>
+          <a href="#">AEC</a>
+          <a href="#">Data</a>
+          <a href="#">Charts</a>
+        </nav>
+      </header>
+
+      <!-- ──────── hero ──────── -->
+      <section class="hero-block">
+        <div>
+          <div class="hero-meta">
+            <span>WEAPON · MODS · PROFILE</span>
+            <span>LIVE RECOMPUTE · SHARE URL</span>
+            <span>SCHEMA V4</span>
+          </div>
+          <h1 class="hero">
+            BUILD THE<br />LOADOUT.<br /><em>KNOW THE NUMBERS.</em>
+          </h1>
+          <p class="lead" style="margin-top: 24px">
+            The builder is TarkovGunsmith's core tool. Pick a weapon, walk the
+            slot tree, attach mods — live recompute on ergo, recoil, accuracy,
+            and weight; gated by your trader LLs and quest progress; share the
+            URL and your friend loads the exact same build.
+          </p>
+          <div style="display: flex; gap: 12px; margin-top: 28px">
+            <a href="#" class="btn primary">Open the builder ▸</a>
+            <a href="#" class="btn">Load a preset</a>
+          </div>
+        </div>
+        <div class="hero-right">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: baseline;
+              margin-bottom: 8px;
+            "
+          >
+            <div class="label">CURRENT BUILD</div>
+            <span class="stamp">SHARED</span>
+          </div>
+          <div
+            style="
+              font-family: var(--font-display);
+              font-size: 28px;
+              line-height: 1;
+              color: var(--paper);
+              margin-top: 8px;
+            "
+          >
+            M4A1 · CUSTOM
+          </div>
+          <div class="label" style="margin-top: 6px; color: var(--paper-dim)">
+            14 MODS · BUILD · abc1-2e4f
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 14px 24px;
+              margin-top: 22px;
+            "
+          >
+            <div>
+              <div class="label">ERGONOMICS</div>
+              <div class="num" style="font-size: 22px; margin-top: 4px">
+                72
+                <span
+                  style="
+                    font-size: 13px;
+                    color: var(--olive);
+                    margin-left: 4px;
+                  "
+                  >+18</span
+                >
+              </div>
+            </div>
+            <div>
+              <div class="label">VERTICAL RECOIL</div>
+              <div class="num" style="font-size: 22px; margin-top: 4px">
+                151
+                <span
+                  style="
+                    font-size: 13px;
+                    color: var(--olive);
+                    margin-left: 4px;
+                  "
+                  >−34%</span
+                >
+              </div>
+            </div>
+            <div>
+              <div class="label">WEIGHT</div>
+              <div class="num" style="font-size: 22px; margin-top: 4px">
+                3.24<span
+                  style="
+                    font-size: 13px;
+                    color: var(--paper-dim);
+                    margin-left: 4px;
+                  "
+                  >kg</span
+                >
+                <span
+                  style="
+                    font-size: 13px;
+                    color: var(--blood);
+                    margin-left: 4px;
+                  "
+                  >+0.8</span
+                >
+              </div>
+            </div>
+            <div>
+              <div class="label">ACCURACY</div>
+              <div class="num" style="font-size: 22px; margin-top: 4px">
+                2.1<span
+                  style="
+                    font-size: 13px;
+                    color: var(--paper-dim);
+                    margin-left: 4px;
+                  "
+                  >MoA</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ──────── builder ──────── -->
+      <div class="section-title">
+        <span class="num">01 · BUILDER · THE PRIMARY TOOL</span>
+        <span class="rule"></span>
+        <span class="label">Weapon + slot tree + share URL</span>
+      </div>
+
+      <div
+        class="panel"
+        style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 0"
+      >
+        <!-- left: slot tree -->
+        <div style="padding-right: 24px; border-right: 1px solid var(--line)">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom: 2px">Slot tree</h3>
+              <div class="label">14 / 21 SLOTS FILLED</div>
+            </div>
+            <div class="label">COLT M4A1 · 5.56×45</div>
+          </div>
+
+          <!-- slot rows -->
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <div class="slot-row filled">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Pistol grip</span>
+              <span class="slot-value">Magpul MOE·K2 AR-15</span>
+              <span class="pill reliable">LL2</span>
+            </div>
+            <div class="slot-row filled">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Stock</span>
+              <span class="slot-value">Magpul UBR GEN3</span>
+              <span class="pill reliable">LL3</span>
+            </div>
+            <div class="slot-row filled">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Upper receiver</span>
+              <span class="slot-value">Colt A2 rear sight</span>
+              <span class="pill reliable">stock</span>
+            </div>
+            <div class="slot-row filled parent">
+              <span class="slot-tick">▾</span>
+              <span class="slot-name">Handguard</span>
+              <span class="slot-value">Geissele SMR MK16 13.5"</span>
+              <span class="pill reliable">LL4</span>
+            </div>
+
+            <div class="slot-row filled indent">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Tac. device (top)</span>
+              <span class="slot-value">SureFire M300A</span>
+              <span class="pill reliable">LL2</span>
+            </div>
+            <div class="slot-row filled indent">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Foregrip</span>
+              <span class="slot-value">Magpul AFG</span>
+              <span class="pill reliable">LL2</span>
+            </div>
+            <div class="slot-row empty indent">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Tac. device (side)</span>
+              <span class="slot-value muted">— empty —</span>
+            </div>
+
+            <div class="slot-row filled parent">
+              <span class="slot-tick">▾</span>
+              <span class="slot-name">Barrel</span>
+              <span class="slot-value">Colt M4A1 14.5"</span>
+              <span class="pill reliable">stock</span>
+            </div>
+            <div class="slot-row filled indent">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Muzzle</span>
+              <span class="slot-value">SureFire SOCOM556-RC2</span>
+              <span class="pill marginal">LOCKED · LL4</span>
+            </div>
+            <div class="slot-row filled indent">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Gas block</span>
+              <span class="slot-value">Geissele Super 14"</span>
+              <span class="pill reliable">LL3</span>
+            </div>
+
+            <div class="slot-row filled">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Magazine</span>
+              <span class="slot-value">Magpul PMAG 30 GEN M3</span>
+              <span class="pill reliable">flea</span>
+            </div>
+            <div class="slot-row empty">
+              <span class="slot-tick">▸</span>
+              <span class="slot-name">Scope mount</span>
+              <span class="slot-value muted">— pick a mount —</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- right: stats vs stock + gating + share -->
+        <div style="padding-left: 24px; display: flex; flex-direction: column">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom: 2px">Stats · vs. stock</h3>
+              <div class="label">LIVE RECOMPUTE</div>
+            </div>
+            <span class="stamp">V4 · SHAREABLE</span>
+          </div>
+
+          <div class="stat-rows">
+            <div class="stat-row">
+              <div class="stat-label">Ergonomics</div>
+              <div class="stat-stock">54</div>
+              <div class="stat-delta up">+18</div>
+              <div class="stat-current num">72</div>
+              <div class="stat-bar">
+                <span class="fill" style="width: 72%"></span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-label">Recoil (V)</div>
+              <div class="stat-stock">229</div>
+              <div class="stat-delta up">−34%</div>
+              <div class="stat-current num">151</div>
+              <div class="stat-bar">
+                <span
+                  class="fill olive"
+                  style="width: 40%"
+                ></span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-label">Recoil (H)</div>
+              <div class="stat-stock">365</div>
+              <div class="stat-delta up">−28%</div>
+              <div class="stat-current num">263</div>
+              <div class="stat-bar">
+                <span
+                  class="fill olive"
+                  style="width: 48%"
+                ></span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-label">Weight</div>
+              <div class="stat-stock">2.44</div>
+              <div class="stat-delta down">+0.80</div>
+              <div class="stat-current num">3.24</div>
+              <div class="stat-bar">
+                <span
+                  class="fill blood"
+                  style="width: 65%"
+                ></span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-label">Accuracy</div>
+              <div class="stat-stock">3.5</div>
+              <div class="stat-delta up">−1.4</div>
+              <div class="stat-current num">2.1</div>
+              <div class="stat-bar">
+                <span class="fill" style="width: 80%"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- progression + share footer -->
+          <div
+            style="
+              margin-top: auto;
+              padding-top: 20px;
+              border-top: 1px dashed var(--line);
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 12px;
+            "
+          >
+            <div>
+              <div class="label">PLAYER PROFILE</div>
+              <div
+                class="num"
+                style="font-size: 12px; color: var(--paper); margin-top: 4px"
+              >
+                LL4 · FLEA · 12 QUESTS
+              </div>
+            </div>
+            <div>
+              <div class="label">SHARE URL</div>
+              <div
+                class="num"
+                style="
+                  font-size: 12px;
+                  color: var(--amber);
+                  margin-top: 4px;
+                  font-variant-numeric: tabular-nums;
+                "
+              >
+                /builder/abc1-2e4f ⎘
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 16px">
+            <button class="btn primary" style="flex: 1">Save build ▸</button>
+            <button class="btn">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────── typography ──────── -->
+      <div class="section-title">
+        <span class="num">02 · TYPOGRAPHY</span>
+        <span class="rule"></span>
+        <span class="label">Bungee / Chivo / Azeret Mono</span>
+      </div>
+
+      <div class="panel">
+        <div class="type-grid">
+          <div class="sample-meta">Display — Bungee</div>
+          <div class="sample-display">SHOTS TO KILL</div>
+          <div class="sample-meta">H1 · Chivo 700</div>
+          <div class="sample-h">Ballistic Calculator</div>
+          <div class="sample-meta">Body · Chivo 400</div>
+          <div class="sample-body">
+            The round penetrates Class 4 armor at 15 metres with residual energy
+            sufficient to remove 49 hit points from the thorax.
+          </div>
+          <div class="sample-meta">Mono · Azeret Mono 500</div>
+          <div class="sample-mono">
+            penetrationChance = 0.87 · damage = 49 · armorDamage = 0.245
+          </div>
+          <div class="sample-meta">Label · Azeret 500 caps</div>
+          <div class="sample-label">SHOTS TO BREAK · N=1000</div>
+        </div>
+      </div>
+
+      <!-- ──────── palette ──────── -->
+      <div class="section-title">
+        <span class="num">03 · PALETTE</span>
+        <span class="rule"></span>
+        <span class="label">Warm black · paper · amber phosphor</span>
+      </div>
+
+      <div class="grid-4">
+        <div class="swatch">
+          <div class="fill" style="background: var(--bg)"></div>
+          <div class="meta">
+            <span class="name">Ink</span><span class="hex">#0E0F0C</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="fill" style="background: var(--surface-2)"></div>
+          <div class="meta">
+            <span class="name">Surface</span><span class="hex">#1F211A</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="fill" style="background: var(--paper)"></div>
+          <div class="meta">
+            <span class="name">Paper</span><span class="hex">#E6E4DB</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="fill" style="background: var(--paper-muted)"></div>
+          <div class="meta">
+            <span class="name">Paper Mute</span><span class="hex">#9A988D</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="fill" style="background: var(--amber)"></div>
+          <div class="meta">
+            <span class="name">Amber</span><span class="hex">#F59E0B</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="fill" style="background: var(--amber-deep)"></div>
+          <div class="meta">
+            <span class="name">Amber Deep</span><span class="hex">#B45309</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="fill" style="background: var(--olive)"></div>
+          <div class="meta">
+            <span class="name">Olive</span><span class="hex">#7A8B3F</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="fill" style="background: var(--blood)"></div>
+          <div class="meta">
+            <span class="name">Blood</span><span class="hex">#B91C1C</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────── buttons / pills ──────── -->
+      <div class="section-title">
+        <span class="num">04 · CONTROLS</span>
+        <span class="rule"></span>
+        <span class="label">Buttons · pills · stamps</span>
+      </div>
+
+      <div class="panel raised">
+        <div
+          style="
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 24px;
+          "
+        >
+          <button class="btn primary">Run scenario ▸</button>
+          <button class="btn">Clear plan</button>
+          <button class="btn ghost">← Reset defaults</button>
+          <button class="btn" disabled style="opacity: 0.4">Save build</button>
+        </div>
+        <div
+          style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center"
+        >
+          <span class="pill reliable">reliable</span>
+          <span class="pill marginal">marginal</span>
+          <span class="pill ineffective">ineffective</span>
+          <span class="pill pen">PEN</span>
+          <span class="pill block">blocked</span>
+          <span style="flex: 1"></span>
+          <span class="stamp">CLASSIFIED · DO NOT COPY</span>
+          <span class="stamp red">PMC ONLY</span>
+        </div>
+      </div>
+
+      <!-- ──────── data table ──────── -->
+      <div class="section-title">
+        <span class="num">05 · LEDGER / DATA</span>
+        <span class="rule"></span>
+        <span class="label">AEC · armor-first ammo ranking</span>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Armor: Slick (Class 6)</h2>
+            <div class="label">80 durability · 0.5 destructibility</div>
+          </div>
+          <div style="text-align: right">
+            <div class="label">SHOT CAP</div>
+            <div class="num" style="font-size: 22px; color: var(--amber)">
+              30
+            </div>
+          </div>
+        </div>
+        <table class="ledger">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Ammo</th>
+              <th class="num">Shots to break</th>
+              <th class="num">First pen</th>
+              <th class="num">Damage at break</th>
+              <th>Classification</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num">01</td>
+              <td>5.56×45mm M995</td>
+              <td class="num">4</td>
+              <td class="num">1</td>
+              <td class="num">196</td>
+              <td><span class="pill reliable">reliable</span></td>
+            </tr>
+            <tr>
+              <td class="num">02</td>
+              <td>7.62×51mm M61</td>
+              <td class="num">5</td>
+              <td class="num">1</td>
+              <td class="num">250</td>
+              <td><span class="pill reliable">reliable</span></td>
+            </tr>
+            <tr>
+              <td class="num">03</td>
+              <td>5.45×39mm BS gs</td>
+              <td class="num">12</td>
+              <td class="num">3</td>
+              <td class="num">480</td>
+              <td><span class="pill reliable">reliable</span></td>
+            </tr>
+            <tr>
+              <td class="num">04</td>
+              <td>5.56×45mm M855A1</td>
+              <td class="num">31</td>
+              <td class="num">7</td>
+              <td class="num">1,247</td>
+              <td><span class="pill marginal">marginal</span></td>
+            </tr>
+            <tr>
+              <td class="num">05</td>
+              <td>5.56×45mm M855</td>
+              <td class="num">∞</td>
+              <td class="num">never</td>
+              <td class="num">—</td>
+              <td><span class="pill ineffective">ineffective</span></td>
+            </tr>
+            <tr>
+              <td class="num">06</td>
+              <td>5.45×39mm PS gs</td>
+              <td class="num">∞</td>
+              <td class="num">never</td>
+              <td class="num">—</td>
+              <td><span class="pill ineffective">ineffective</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ──────── simulator shot timeline ──────── -->
+      <div class="section-title">
+        <span class="num">06 · SHOT TIMELINE</span>
+        <span class="rule"></span>
+        <span class="label">Simulator · shot-by-shot</span>
+      </div>
+
+      <div class="grid-3" style="grid-template-columns: 1fr 1fr; gap: 24px">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>M995 vs PACA + Altyn</h3>
+              <div class="label">DISTANCE 15M · PLAN 5 SHOTS</div>
+            </div>
+            <div class="reticle"><span class="core"></span></div>
+          </div>
+
+          <div class="shot-row">
+            <div class="idx">01</div>
+            <div class="zone">THORAX</div>
+            <div><span class="pill pen">PEN</span></div>
+            <div class="hp-bar">
+              <div class="track"><div class="fill" style="width: 57%"></div></div>
+              <div>49/85</div>
+            </div>
+            <div class="meta">49 dmg · 0.3 armor</div>
+          </div>
+
+          <div class="shot-row fatal">
+            <div class="idx">02</div>
+            <div class="zone">THORAX</div>
+            <div><span class="pill pen">PEN</span></div>
+            <div class="hp-bar">
+              <div class="track"><div class="fill dead" style="width: 0%"></div></div>
+              <div>0/85</div>
+            </div>
+            <div class="meta">49 dmg · 0.3 armor</div>
+          </div>
+        </div>
+
+        <div class="panel raised">
+          <div class="panel-head">
+            <div>
+              <h3>Summary</h3>
+              <div class="label">RESULT · PMC DEFAULTS</div>
+            </div>
+            <span class="stamp red">ELIMINATED</span>
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 16px;
+              margin-top: 8px;
+            "
+          >
+            <div>
+              <div class="label">OUTCOME</div>
+              <div
+                class="num"
+                style="font-size: 22px; color: var(--blood); margin-top: 4px"
+              >
+                KILLED · SHOT 2
+              </div>
+            </div>
+            <div>
+              <div class="label">SHOTS FIRED</div>
+              <div
+                class="num"
+                style="font-size: 22px; color: var(--paper); margin-top: 4px"
+              >
+                2 / 5
+              </div>
+            </div>
+            <div>
+              <div class="label">TOTAL FLESH DMG</div>
+              <div
+                class="num"
+                style="font-size: 22px; color: var(--paper); margin-top: 4px"
+              >
+                98.0
+              </div>
+            </div>
+            <div>
+              <div class="label">BODY ARMOR · REM</div>
+              <div
+                class="num"
+                style="font-size: 22px; color: var(--amber); margin-top: 4px"
+              >
+                59.4
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────── footer ──────── -->
+      <footer class="foot">
+        <div>TarkovGunsmith · rebuild of Xerxes-17's original</div>
+        <div>
+          EDITION 2026.04 ·
+          <a href="#" style="color: var(--amber); text-decoration: none"
+            >GitHub ↗</a
+          >
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
