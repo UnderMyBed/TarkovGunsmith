@@ -101,3 +101,24 @@ describe("scenarioReducer — remove", () => {
     expect(scenarioReducer(base, { type: "remove", index: 3 })).toBe(base);
   });
 });
+
+describe("scenarioReducer — clear", () => {
+  it("resets plan and lastResult", () => {
+    const state: ScenarioState = {
+      plan: [shot("head"), shot("thorax")],
+      lastResult: {
+        shots: [],
+        killed: false,
+        killedAt: null,
+      },
+    };
+    const next = scenarioReducer(state, { type: "clear" });
+    expect(next.plan).toEqual([]);
+    expect(next.lastResult).toBeNull();
+  });
+
+  it("returns the initial state sentinel equivalent", () => {
+    const next = scenarioReducer(initialScenarioState, { type: "clear" });
+    expect(next).toEqual(initialScenarioState);
+  });
+});

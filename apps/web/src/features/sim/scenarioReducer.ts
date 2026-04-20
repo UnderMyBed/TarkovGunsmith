@@ -45,7 +45,9 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
       if (index < 0 || index >= state.plan.length) return state;
       return { ...state, plan: state.plan.filter((_, i) => i !== index) };
     }
-    case "clear":
+    case "clear": {
+      return initialScenarioState;
+    }
     case "run": {
       // Implemented in later tasks.
       return state;
