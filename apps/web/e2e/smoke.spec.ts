@@ -116,6 +116,12 @@ test.describe("smoke — builder interaction", () => {
     // throwing a console error along the way.
     await expect(page.getByText(/Mods|slot tree/i).first()).toBeVisible({ timeout: 20_000 });
 
+    // Fail loudly on GraphQL / network errors rendered as card text. The recent
+    // WeaponTree parse-error bug surfaced here, not in the console.
+    await expect(
+      page.getByText(/couldn.?t load slot tree|failed to load|graphql error/i),
+    ).toHaveCount(0);
+
     expect(
       errors,
       `Console errors on /builder after selecting a weapon:\n${errors.join("\n")}`,

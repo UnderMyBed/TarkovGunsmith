@@ -8,6 +8,8 @@ const sampleWeapon = {
   shortName: "M4A1",
   iconLink: "https://assets.tarkov.dev/5447a9cd4bdc2dbd208b4567-icon.webp",
   weight: 2.7,
+  types: [],
+  buyFor: [],
   properties: {
     __typename: "ItemPropertiesWeapon",
     caliber: "Caliber556x45NATO",
@@ -69,5 +71,38 @@ describe("fetchWeaponList", () => {
     const result = await fetchWeaponList(client);
     expect(result).toHaveLength(1);
     expect(result[0]?.id).toBe(sampleWeapon.id);
+  });
+
+  it("parses a weapon with buyFor entries", async () => {
+    const withBuyFor = {
+      ...sampleWeapon,
+      types: ["weapon"],
+      buyFor: [
+        {
+          priceRUB: 43000,
+          currency: "RUB",
+          vendor: {
+            __typename: "TraderOffer",
+            normalizedName: "peacekeeper",
+            minTraderLevel: 2,
+            taskUnlock: null,
+            trader: { normalizedName: "peacekeeper" },
+          },
+        },
+      ],
+    };
+    const mockFetch = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ data: { items: [withBuyFor] } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    const client = createTarkovClient("https://example.test/graphql", mockFetch);
+    const result = await fetchWeaponList(client);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.buyFor).toHaveLength(1);
+    expect(result[0]?.types).toContain("weapon");
   });
 });

@@ -1,5 +1,14 @@
 import type { PlayerProfile } from "./build-schema.js";
-import type { ModListItem } from "./queries/modList.js";
+import type { BuyForEntry } from "./queries/shared/buy-for.js";
+
+/**
+ * Minimal shape `itemAvailability` needs. Both `ModListItem` and
+ * `WeaponListItem` satisfy this structurally.
+ */
+export interface AvailabilityInput {
+  readonly buyFor: readonly BuyForEntry[] | null;
+  readonly types: readonly string[];
+}
 
 export type ItemAvailability =
   | {
@@ -40,12 +49,12 @@ function isTraderKey(name: string): name is TraderKey {
   return (TRADER_PROFILE_KEYS as readonly string[]).includes(name);
 }
 
-function isFleaBlacklisted(item: ModListItem): boolean {
+function isFleaBlacklisted(item: AvailabilityInput): boolean {
   return item.types.includes("noFlea");
 }
 
 /**
- * Evaluate a mod's availability under a player profile.
+ * Evaluate an item's availability under a player profile.
  *
  * Walks every buyFor entry. A TraderOffer is satisfied iff the profile's
  * trader LL meets `minTraderLevel` AND (no taskUnlock OR advanced-mode
@@ -56,8 +65,14 @@ function isFleaBlacklisted(item: ModListItem): boolean {
  * If nothing satisfies, returns the most-accessible unmet requirement —
  * the lowest trader-LL gate across failing trader paths, else a quest,
  * else flea-locked, else no-sources.
+ *
+ * Accepts any `{ buyFor, types }` shape — both `ModListItem` and
+ * `WeaponListItem` satisfy `AvailabilityInput` structurally.
  */
-export function itemAvailability(item: ModListItem, profile: PlayerProfile): ItemAvailability {
+export function itemAvailability(
+  item: AvailabilityInput,
+  profile: PlayerProfile,
+): ItemAvailability {
   const offers = item.buyFor ?? [];
   if (offers.length === 0) {
     return { available: false, reason: "no-sources" };

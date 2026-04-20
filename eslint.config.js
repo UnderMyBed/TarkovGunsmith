@@ -29,6 +29,7 @@ export default tseslint.config(
             "packages/tarkov-types/codegen.ts",
             "packages/tarkov-data/src/*.test.ts",
             "packages/tarkov-data/src/queries/*.test.ts",
+            "packages/tarkov-data/src/queries/shared/*.test.ts",
             "packages/ui/src/lib/*.test.ts",
             "packages/ui/src/components/*.test.ts",
             "apps/*/vitest.config.ts",
