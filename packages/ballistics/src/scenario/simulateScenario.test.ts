@@ -93,6 +93,12 @@ describe("simulateScenario — helmet", () => {
     // M995 (pen 53) easily pens class-4 fresh helmet → full damage expected.
     expect(shot.didPenetrate).toBe(true);
     expect(shot.damage).toBe(M995.damage);
+    // §6.1 case 2: M995 damage 49 > head HP 35 → fatal on first shot.
+    expect(result.killed).toBe(true);
+    expect(result.killedAt).toBe(0);
+    expect(shot.killed).toBe(true);
+    // Helmet durability must have dropped.
+    expect(shot.remainingDurability).toBeLessThan(TEST_HELMET.currentDurability);
   });
 
   it("does not mutate the caller's helmet durability", () => {

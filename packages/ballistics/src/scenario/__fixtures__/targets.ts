@@ -23,14 +23,3 @@ export const TEST_BODY_ARMOR: BallisticArmor = {
   materialDestructibility: 0.5,
   zones: ["thorax", "stomach"],
 };
-
-// A class-3 body armor for lighter-penetration tests.
-export const TEST_BODY_ARMOR_C3: BallisticArmor = {
-  id: "fixture-test-body-c3",
-  name: "Test Body Armor (Class 3)",
-  armorClass: 3,
-  maxDurability: 40,
-  currentDurability: 40,
-  materialDestructibility: 0.55,
-  zones: ["thorax", "stomach"],
-};
