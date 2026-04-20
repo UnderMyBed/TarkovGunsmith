@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { simulateScenario } from "./simulateScenario.js";
 import { createPmcTarget } from "./defaults.js";
 import { M855, M995 } from "../__fixtures__/ammo.js";
-import { TEST_HELMET } from "./__fixtures__/targets.js";
+import { TEST_BODY_ARMOR, TEST_HELMET } from "./__fixtures__/targets.js";
 import type { ScenarioTarget } from "./types.js";
 
 describe("simulateScenario — bare flesh", () => {
@@ -109,6 +109,47 @@ describe("simulateScenario — helmet", () => {
     const weirdHelmet = { ...TEST_HELMET, zones: [] as readonly string[] };
     const target = { ...createPmcTarget(), helmet: weirdHelmet };
     const result = simulateScenario(M995, target, [{ zone: "head", distance: 15 }]);
+    expect(result.shots[0]!.armorUsed).toBeNull();
+  });
+});
+
+describe("simulateScenario — body armor", () => {
+  it("routes thorax shots through body armor when matching", () => {
+    const target = { ...createPmcTarget(), bodyArmor: TEST_BODY_ARMOR };
+    const result = simulateScenario(M995, target, [{ zone: "thorax", distance: 15 }]);
+    expect(result.shots[0]!.armorUsed).toBe("bodyArmor");
+  });
+
+  it("chains armor durability across shots", () => {
+    // Use stomach (not thorax) so the 3-shot plan completes: stomach kills are
+    // non-fatal (only head/thorax zero triggers kill), so all 3 shots execute
+    // and we can verify that armor durability decreases monotonically.
+    const target = { ...createPmcTarget(), bodyArmor: { ...TEST_BODY_ARMOR } };
+    const result = simulateScenario(M995, target, [
+      { zone: "stomach", distance: 15 },
+      { zone: "stomach", distance: 15 },
+      { zone: "stomach", distance: 15 },
+    ]);
+    const [a, b, c] = result.shots;
+    expect(a!.remainingDurability).toBeLessThan(TEST_BODY_ARMOR.maxDurability);
+    expect(b!.remainingDurability).toBeLessThanOrEqual(a!.remainingDurability);
+    expect(c!.remainingDurability).toBeLessThanOrEqual(b!.remainingDurability);
+  });
+
+  it("does not mutate the caller's bodyArmor durability", () => {
+    const armor = { ...TEST_BODY_ARMOR };
+    const target = { ...createPmcTarget(), bodyArmor: armor };
+    const before = armor.currentDurability;
+    simulateScenario(M995, target, [
+      { zone: "thorax", distance: 15 },
+      { zone: "thorax", distance: 15 },
+    ]);
+    expect(armor.currentDurability).toBe(before);
+  });
+
+  it("bypasses armor on zones the armor doesn't cover (e.g. legs)", () => {
+    const target = { ...createPmcTarget(), bodyArmor: TEST_BODY_ARMOR };
+    const result = simulateScenario(M995, target, [{ zone: "leftLeg", distance: 15 }]);
     expect(result.shots[0]!.armorUsed).toBeNull();
   });
 });
