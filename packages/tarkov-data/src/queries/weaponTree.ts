@@ -8,9 +8,24 @@ const RECURSION_DEPTH = 3;
 /**
  * Build the recursive slot selection fragment to depth N. Hand-rolled because
  * GraphQL fragment spreads can't self-reference.
+ *
+ * At the innermost level (depth === 1) the allowed items omit the
+ * `properties { ... slots { ... } }` inner block entirely. Emitting it with
+ * an empty `slots {}` produced invalid GraphQL ("Expected Name, found '}'")
+ * — the whole `/builder` route errored out on slot-tree load as a result.
  */
 function buildSlotSelection(depth: number): string {
   if (depth <= 0) return "";
+  const propertiesBlock =
+    depth > 1
+      ? `
+        properties {
+          __typename
+          ... on ItemPropertiesWeaponMod {
+            slots {${buildSlotSelection(depth - 1)}}
+          }
+        }`
+      : "";
   return `
     id
     nameId
@@ -19,13 +34,7 @@ function buildSlotSelection(depth: number): string {
     filters {
       allowedItems {
         id
-        name
-        properties {
-          __typename
-          ... on ItemPropertiesWeaponMod {
-            slots {${buildSlotSelection(depth - 1)}}
-          }
-        }
+        name${propertiesBlock}
       }
     }`;
 }
