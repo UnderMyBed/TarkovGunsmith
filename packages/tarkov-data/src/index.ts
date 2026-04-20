@@ -41,6 +41,9 @@ export { useWeaponList } from "./hooks/useWeaponList.js";
 export { useModList } from "./hooks/useModList.js";
 export { useSaveBuild } from "./hooks/useSaveBuild.js";
 export { useLoadBuild } from "./hooks/useLoadBuild.js";
+export { useLoadPair } from "./hooks/useLoadPair.js";
+export { useSavePair } from "./hooks/useSavePair.js";
+export { useForkPair } from "./hooks/useForkPair.js";
 
 // Builds API client
 export {
