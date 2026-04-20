@@ -76,6 +76,19 @@ function HomePage() {
             </CardContent>
           </Card>
         </Link>
+        <Link to="/aec" className="block">
+          <Card className="transition-colors hover:border-[var(--color-primary)]">
+            <CardHeader>
+              <CardTitle>Armor Effectiveness</CardTitle>
+              <CardDescription>
+                Pick an armor — see every ammo ranked by shots-to-break.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--color-muted-foreground)]">
+              Inverse view: the armor is fixed; ammos are ranked reliable / marginal / ineffective.
+            </CardContent>
+          </Card>
+        </Link>
       </section>
     </div>
   );
