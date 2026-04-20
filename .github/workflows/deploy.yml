@@ -49,7 +49,7 @@ jobs:
 
   builds-api:
     name: Deploy builds-api Worker
-    if: "${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'chore(main): release') }}"
+    if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-builds-api
@@ -83,7 +83,7 @@ jobs:
 
   pages:
     name: Deploy web (Cloudflare Pages)
-    if: "${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'chore(main): release') }}"
+    if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-pages
