@@ -40,7 +40,11 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
       plan.splice(to, 0, item!);
       return { ...state, plan };
     }
-    case "remove":
+    case "remove": {
+      const { index } = action;
+      if (index < 0 || index >= state.plan.length) return state;
+      return { ...state, plan: state.plan.filter((_, i) => i !== index) };
+    }
     case "clear":
     case "run": {
       // Implemented in later tasks.

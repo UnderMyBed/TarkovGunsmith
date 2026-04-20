@@ -74,3 +74,30 @@ describe("scenarioReducer — move", () => {
     expect(scenarioReducer(base, { type: "move", from: 0, to: 3 })).toBe(base);
   });
 });
+
+describe("scenarioReducer — remove", () => {
+  const base: ScenarioState = {
+    plan: [shot("head"), shot("thorax"), shot("stomach")],
+    lastResult: null,
+  };
+
+  it("removes an item by index", () => {
+    const next = scenarioReducer(base, { type: "remove", index: 1 });
+    expect(next.plan.map((s) => s.zone)).toEqual(["head", "stomach"]);
+  });
+
+  it("handles removing the first item", () => {
+    const next = scenarioReducer(base, { type: "remove", index: 0 });
+    expect(next.plan.map((s) => s.zone)).toEqual(["thorax", "stomach"]);
+  });
+
+  it("handles removing the last item", () => {
+    const next = scenarioReducer(base, { type: "remove", index: 2 });
+    expect(next.plan.map((s) => s.zone)).toEqual(["head", "thorax"]);
+  });
+
+  it("no-ops on out-of-range index", () => {
+    expect(scenarioReducer(base, { type: "remove", index: -1 })).toBe(base);
+    expect(scenarioReducer(base, { type: "remove", index: 3 })).toBe(base);
+  });
+});
