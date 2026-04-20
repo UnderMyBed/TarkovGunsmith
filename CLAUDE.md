@@ -9,7 +9,7 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 > - **M2 (unreleased):** Parity — `/sim`, `/adc`, `/aec`, `/data`, `/charts`.
 > - **M3 frontend design pass (unreleased, 5 PRs):** "Field Ledger" aesthetic — Bungee display + Chivo body + Azeret Mono numerics, amber-phosphor accent, corner-bracketed panels, tick-mark dividers, and new `@tarkov/ui` primitives (`Pill`, `Stamp`, `SectionTitle`, `StatRow`, `Card variant="bracket"`). Applied across every route.
 >
-> Plus `/smoke` + `/` (Builder-forward landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Auto-deploys on every merge to `main`.
+> Plus `/smoke` + `/` (Builder-forward landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Deploys fire on release-please PR merges (tagged version bumps) — feature PR merges stage changes on `main` without deploying.
 >
 > **Roadmap from here — M3 Differentiators, 4 of 5 remaining:** (1) ✅ Frontend design pass. (2) Build comparison (diff two builds). (3) Build optimization (constraint solver). (4) OG share cards (server-rendered PNG). (5) `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13. Visual polish / fix-up items discovered during the design pass are tracked ad-hoc and landed before the next feature PR.
 >
@@ -70,7 +70,7 @@ Skip none of these steps. Even "simple" changes warrant a plan — it takes a mi
 - **Tests:** Vitest for units, Playwright for e2e, `@cloudflare/vitest-pool-workers` for Worker tests
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`)
 - **Branches:** `main` is protected; all changes via PR
-- **Deploy:** push to `main` → CF Pages (frontend) and `wrangler deploy` (workers) via GitHub Actions
+- **Deploy:** release-please PR merge (tagged version bump) → CF Pages (frontend) and `wrangler deploy` (workers) via GitHub Actions. Feature PR merges to `main` stage changes without deploying.
 
 ## Repo layout (target)
 
@@ -127,7 +127,7 @@ Release-please opens PRs using `GITHUB_TOKEN`. GitHub blocks `pull_request` even
 
 ## Deploys
 
-Workers and the SPA auto-deploy to Cloudflare on every merge to `main`. The runbook (token permissions, repo secrets, one-time setup, rotation) lives at [`docs/operations/cloudflare-deploys.md`](docs/operations/cloudflare-deploys.md).
+Workers and the SPA deploy to Cloudflare when a **release-please PR is merged** (head commit message starts with `chore(main): release`). Feature PR merges to `main` stage changes without deploying — the release PR is the promotion gate. Merge the release PR (admin-merge, see release note below) when you're ready to ship the accumulated changes. The runbook (token permissions, repo secrets, one-time setup, rotation) lives at [`docs/operations/cloudflare-deploys.md`](docs/operations/cloudflare-deploys.md).
 
 The token uses **least-privilege** scoping — only the four permissions actually needed today (Workers Scripts edit, Workers KV edit, Pages edit, Account Settings read). Add more as features land per the runbook's "Future permissions" table.
 
