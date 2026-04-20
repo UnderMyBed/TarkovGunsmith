@@ -36,24 +36,37 @@ function LoadedBuilderPage() {
     <Card>
       <CardContent className="pt-6">
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          Loaded build <code>{id}</code>. Changes you make here won't update the saved copy — use
-          "Share build" to create a new URL.
+          Loaded build <code>{id}</code>. Changes you make here won&apos;t update the saved copy —
+          use &quot;Share build&quot; to create a new URL.
         </p>
       </CardContent>
     </Card>
   );
 
+  const commonProps = {
+    initialWeaponId: build.weaponId,
+    notice,
+  } as const;
+
   if (build.version === 1) {
+    return <BuilderPage {...commonProps} initialModIds={build.modIds} />;
+  }
+  if (build.version === 2) {
     return (
-      <BuilderPage initialWeaponId={build.weaponId} initialModIds={build.modIds} notice={notice} />
+      <BuilderPage
+        {...commonProps}
+        initialAttachments={build.attachments}
+        initialOrphaned={build.orphaned}
+      />
     );
   }
+  // v3
   return (
     <BuilderPage
-      initialWeaponId={build.weaponId}
+      {...commonProps}
       initialAttachments={build.attachments}
       initialOrphaned={build.orphaned}
-      notice={notice}
+      initialProfileSnapshot={build.profileSnapshot}
     />
   );
 }

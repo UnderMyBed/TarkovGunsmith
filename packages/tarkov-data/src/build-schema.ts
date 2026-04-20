@@ -38,12 +38,50 @@ export const BuildV2 = z.object({
 
 export type BuildV2 = z.infer<typeof BuildV2>;
 
+export const PlayerProfile = z.object({
+  mode: z.enum(["basic", "advanced"]),
+  traders: z.object({
+    prapor: z.number().int().min(1).max(4),
+    therapist: z.number().int().min(1).max(4),
+    skier: z.number().int().min(1).max(4),
+    peacekeeper: z.number().int().min(1).max(4),
+    mechanic: z.number().int().min(1).max(4),
+    ragman: z.number().int().min(1).max(4),
+    jaeger: z.number().int().min(1).max(4),
+  }),
+  flea: z.boolean(),
+  completedQuests: z.array(z.string().min(1)).max(256).optional(),
+});
+
+export type PlayerProfile = z.infer<typeof PlayerProfile>;
+
+export const DEFAULT_PROFILE: PlayerProfile = {
+  mode: "basic",
+  traders: {
+    prapor: 1,
+    therapist: 1,
+    skier: 1,
+    peacekeeper: 1,
+    mechanic: 1,
+    ragman: 1,
+    jaeger: 1,
+  },
+  flea: false,
+};
+
+export const BuildV3 = BuildV2.extend({
+  version: z.literal(3),
+  profileSnapshot: PlayerProfile.optional(),
+});
+
+export type BuildV3 = z.infer<typeof BuildV3>;
+
 /**
  * Discriminated union over all known build versions. Grows one variant per
  * Builder Robustness PR. Never mutates existing variants — old shared URLs
  * must keep parsing forever (modulo the 30-day KV TTL on builds-api).
  */
-export const Build = z.discriminatedUnion("version", [BuildV1, BuildV2]);
+export const Build = z.discriminatedUnion("version", [BuildV1, BuildV2, BuildV3]);
 export type Build = z.infer<typeof Build>;
 
 /**
@@ -51,4 +89,4 @@ export type Build = z.infer<typeof Build>;
  * so callers can use this literal in `{ version: CURRENT_BUILD_VERSION }`
  * without a cast.
  */
-export const CURRENT_BUILD_VERSION = 2 as const;
+export const CURRENT_BUILD_VERSION = 3 as const;
