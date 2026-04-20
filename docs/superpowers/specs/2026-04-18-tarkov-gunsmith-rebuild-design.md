@@ -239,35 +239,42 @@ Dark-mode default; light-mode toggle for completeness.
 - `/matrix` — AmmoVsArmor table.
 - `/builder` — Weapon Builder (weapon picker + flat mod list + live `weaponSpec`). Save/share-URL deferred to M1.5.
 
-### Milestone 1.5 — Builder Robustness (v1.1.x)
+### Milestone 1.5 — Builder Robustness ✅ shipped as v1.1 – v1.4
 
-Dedicated pass to finish the Builder before adding breadth. Pulls the trader-availability filter up from M3 because it shares the same data-enrichment pipeline as slot-based compatibility. Sub-projects (one PR each, one umbrella spec):
+Dedicated pass to finish the Builder before adding breadth. Pulled the trader-availability filter up from M3 because it shares the same data-enrichment pipeline as slot-based compatibility. Sub-projects (one PR each, one umbrella spec at [`2026-04-19-builder-robustness-design.md`](./2026-04-19-builder-robustness-design.md)):
 
-- **Slot-based mod compatibility** — weapon-slot tree, recursive child slots, `compatibleItems` filtering so a user physically cannot attach a mod to an incompatible slot.
-- **Build schema + save/load** — versioned Zod schema, `POST /builds` on save, `/builder/$id` loader, graceful "this build can no longer be loaded" states for upstream data changes.
-- **Player-progression gating** — basic mode (trader loyalty levels 1–4 per trader + flea toggle) and advanced mode (basic + a curated set of marquee unlock quests). Profile persists in localStorage and ships with shared builds. Items the current profile can't acquire are dimmed with the blocking requirement shown; users can toggle "show all" to override.
-- **UX depth** — slot tree UI replaces flat checklist; preset loadouts (stock / meta / budget); undo/redo; build-vs-stock diff.
+- ✅ **Build schema + save/load** (v1.1.0, PR #43) — `BuildV1` + `POST /builds` + `/builder/$id` loader + 4-code `LoadBuildError` taxonomy.
+- ✅ **Slot-based mod compatibility** (v1.2.0, PR #45) — `BuildV2` slot paths, recursive weapon tree (depth 3), `SlotTree` component, `OrphanedBanner`.
+- ✅ **Player-progression gating** (v1.3.0, PR #47) — `BuildV3` + `PlayerProfile` (basic LL + advanced marquee quests) + `itemAvailability`, dimmed/badged unavailable mods with "show all" toggle.
+- ✅ **UX depth** (v1.4.0, PR #49) — `BuildV4` (name + description), inline `BuildHeader`, stock-diff stat grid, `PresetPicker` scaffold (empty map).
 
-Out of scope for M1.5 (deferred): `tarkov.dev` profile-import integration (Question D from brainstorming) — flagged as future enhancement once the manual profile shape stabilizes.
+Deferred from M1.5 (still open): `tarkov.dev` profile import (moved into M3); undo/redo; `allowedCategories` in slot filtering; `craftsFor` / `bartersFor` in `itemAvailability`; weapon preset content; slot-tree polish (sticky headers, keyboard nav); Dialog primitive; recursion depth 5.
 
-### Milestone 2 — Parity
+### Milestone 2 — Parity ✅ shipped as v1.5+ (release pending)
 
-- Ballistics Simulator (multi-shot scenarios).
-- ADC (Armor Damage Calc).
-- AEC (Armor Effectiveness Calc, the inverse view).
-- Full DataSheets: weapons, ammo, armor, modules.
-- Effectiveness charts.
+Five sub-projects, shipped across 9 PRs in one session on 2026-04-20. Each has its own spec and plan under `docs/superpowers/specs/` + `docs/plans/`.
+
+- ✅ **Ballistics Simulator** (`/sim`, PRs #53/#55/#56/#57) — `simulateScenario` engine + `useScenario` hook + 3-panel route + wire-up. Multi-shot, multi-zone, PMC body defaults, kill detection, shot-by-shot timeline with HP bars.
+- ✅ **ADC** (`/adc`, PR #58) — multi-shot forward ballistics at a single armor piece with per-shot table + summary.
+- ✅ **AEC** (`/aec`, PR #59) — armor-first: every ammo ranked by shots-to-break, classified reliable / marginal / ineffective.
+- ✅ **DataSheets** (`/data`, PR #60) — single route, 4 tabs (ammo / armor / weapons / modules) with sort + filter.
+- ✅ **Effectiveness Charts** (`/charts`, PR #61) — Recharts BarChart of shots-to-break per armor for a chosen ammo.
+
+Known v1 limitations still open: helmets may not populate `/sim`'s picker (upstream `items(type: armor)` may exclude headwear — needs a dedicated helmet query); thorax-overflow damage / bleed / probabilistic mode are explicit non-goals for the Simulator v1; no save/share for scenarios.
 
 ### Milestone 3 — Differentiators
 
-- Build comparison (diff two builds side-by-side).
-- Build optimization (find min-recoil mod set under user constraints + current player profile).
-- OG share cards (server-rendered build summary images).
-- `tarkov.dev` profile import (promoted from M1.5 future-enhancement list once profile shape is proven).
+Ordered by intended delivery:
+
+1. **Frontend design pass** — the current look is functional-ugly (shipped for speed across M1–M2). Before adding more features, redo the visual system: typography, spacing, color, card density, table density, dark-mode polish, mobile responsiveness, landing-page hierarchy. Likely involves extending `@tarkov/ui` primitives, picking a real display font, and possibly a small component library audit. Blocks or runs alongside (not after) everything else in M3.
+2. **Build comparison** — diff two builds side-by-side. Stats deltas, mod differences. Leans on the existing share-URL save/load from M1.5.
+3. **Build optimization** — "find the min-recoil mod set for this weapon under my constraints + current player profile." Constraint-based solver. Probably its own pure-TS module in `@tarkov/ballistics` or a new `@tarkov/optimizer` package.
+4. **OG share cards** — server-rendered PNG build summaries. New Cloudflare Worker (or Pages Function) using satori + resvg. Rich previews in Discord / Twitter for `/builder/$id` URLs.
+5. **`tarkov.dev` profile import** — read the user's tarkov.dev profile to auto-populate `PlayerProfile`. Promoted from M1.5's deferred list.
 
 ### Milestone 4 — Tier C activation
 
-User-triggered (not date-bound). Likely between M2 and M3. Follow `docs/ai-workflow/tier-c-upgrade.md`.
+User-triggered (not date-bound). Likely between M3 and any M5. Follow `docs/ai-workflow/tier-c-upgrade.md`.
 
 ## 14. Open questions / deferred decisions
 

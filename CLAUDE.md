@@ -2,18 +2,23 @@
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
 
-> **Status: v1.4.0 — Milestones 1 + 1.5 complete.** Full stack live with the three M1 killer features (`/calc`, `/matrix`, `/builder`) plus the M1.5 Builder Robustness arc:
+> **Status: Milestones 1 + 1.5 + 2 all complete** (release-please PR pending for the M2 bump). Full stack live with eight user-facing routes:
 >
-> - **v1.1.0** — Build schema v1, save/share URL via `apps/builds-api`, `/builder/$id` loader route, 4-code `LoadBuildError` taxonomy, upstream-drift warning.
-> - **v1.2.0** — Slot-based mod compatibility (schema v2), recursive `useWeaponTree` (depth 3), `<details>`-based slot picker, `OrphanedBanner` for v1→v2 migration.
-> - **v1.3.0** — Player-progression gating (schema v3), `PlayerProfile` (basic LL/flea + advanced marquee quests), `itemAvailability` pure function, dimmed/badged unavailable mods with "show all" toggle, opt-in profile snapshot embed.
-> - **v1.4.0** — UX depth (schema v4): optional build name/description + inline editor, stock-diff stat grid, `PresetPicker` scaffold (empty map — content follow-up).
+> - **M1 (v1.0.0):** `/calc`, `/matrix`, `/builder` (flat mod list).
+> - **M1.5 (v1.1 – v1.4):** Builder Robustness arc — build schema v1 → v4, save/share URL, slot-based mod compatibility, player-progression gating, UX depth (name/desc + stock diff + preset scaffold).
+> - **M2 (unreleased):** Parity — `/sim` (multi-shot Ballistics Simulator), `/adc` (Armor Damage Calc), `/aec` (Armor Effectiveness Calc), `/data` (DataSheets for ammo/armor/weapons/modules), `/charts` (Recharts effectiveness bar charts).
 >
-> Plus `/smoke` (end-to-end data wiring proof) and `/` (landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Auto-deploys on every merge to `main`.
+> Plus `/smoke` + `/` (landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Auto-deploys on every merge to `main`.
 >
-> **Roadmap from here (v2.0+ — Milestone 2 "Parity"):** Ballistics Simulator (multi-shot scenarios); ADC (Armor Damage Calc); AEC (Armor Effectiveness Calc, inverse view); full DataSheets for weapons / ammo / armor / modules; effectiveness charts. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13.
+> **Roadmap from here — Milestone 3 "Differentiators":** (1) **Frontend design pass** — current look is functional-ugly; redo typography / spacing / color / density before more features. (2) Build comparison. (3) Build optimization (constraint solver). (4) OG share cards (server-rendered PNG). (5) `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13.
 >
-> **Deferred M1.5 items (tracked, not blocking):** Undo/redo; `allowedCategories` slot filtering; `craftsFor`/`bartersFor` in availability; Dialog primitive; weapon preset content; slot-tree polish (sticky headers, keyboard nav); Playwright e2e.
+> **Deferred M1.5 items (still open, not yet re-raised):** Undo/redo; `allowedCategories` slot filtering; `craftsFor`/`bartersFor` in availability; Dialog primitive; weapon preset content; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
+>
+> **Deferred M2 items (still open):** Helmet-only query for `/sim`'s helmet picker; thorax-overflow damage / bleed / probabilistic mode in the Simulator; scenario save/share; ammo caliber column on `/data`.
+>
+> **Cross-milestone deferred:** Playwright e2e. With 5 new routes in M2 the regression surface grew — revisit when the M3 frontend-design pass lands.
+>
+> **Production action still open:** `wrangler pages secret put BUILDS_API_URL --project-name tarkov-gunsmith-web` — without this, `/builder` save/load returns 500 in prod.
 
 ## What this project is
 
