@@ -45,6 +45,12 @@ function RootLayout() {
               Sim
             </Link>
             <Link
+              to="/adc"
+              activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
+            >
+              ADC
+            </Link>
+            <Link
               to="/smoke"
               activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
             >

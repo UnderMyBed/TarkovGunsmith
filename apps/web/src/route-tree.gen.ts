@@ -14,6 +14,7 @@ import { Route as SimRouteImport } from './routes/sim'
 import { Route as MatrixRouteImport } from './routes/matrix'
 import { Route as CalcRouteImport } from './routes/calc'
 import { Route as BuilderRouteImport } from './routes/builder'
+import { Route as AdcRouteImport } from './routes/adc'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuilderIdRouteImport } from './routes/builder.$id'
 
@@ -42,6 +43,11 @@ const BuilderRoute = BuilderRouteImport.update({
   path: '/builder',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdcRoute = AdcRouteImport.update({
+  id: '/adc',
+  path: '/adc',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -55,6 +61,7 @@ const BuilderIdRoute = BuilderIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/adc': typeof AdcRoute
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/adc': typeof AdcRoute
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/adc': typeof AdcRoute
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/adc'
     | '/builder'
     | '/calc'
     | '/matrix'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/adc'
     | '/builder'
     | '/calc'
     | '/matrix'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/adc'
     | '/builder'
     | '/calc'
     | '/matrix'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdcRoute: typeof AdcRoute
   BuilderRoute: typeof BuilderRouteWithChildren
   CalcRoute: typeof CalcRoute
   MatrixRoute: typeof MatrixRoute
@@ -157,6 +170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuilderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/adc': {
+      id: '/adc'
+      path: '/adc'
+      fullPath: '/adc'
+      preLoaderRoute: typeof AdcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -187,6 +207,7 @@ const BuilderRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdcRoute: AdcRoute,
   BuilderRoute: BuilderRouteWithChildren,
   CalcRoute: CalcRoute,
   MatrixRoute: MatrixRoute,
