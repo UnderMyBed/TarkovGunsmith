@@ -19,11 +19,31 @@ export const BuildV1 = z.object({
 export type BuildV1 = z.infer<typeof BuildV1>;
 
 /**
+ * Build schema v2 — slot-aware.
+ *
+ * Replaces the flat `modIds` array with a `Record<SlotPath, ItemId>` map
+ * keyed by `/`-joined slot `nameId` paths (e.g. `"mod_scope/mod_mount_000"`).
+ * `orphaned` captures item ids the v1→v2 migration couldn't place in the
+ * current weapon tree — rendered as a dismissable banner so the user can
+ * manually re-home them.
+ */
+export const BuildV2 = z.object({
+  version: z.literal(2),
+  weaponId: z.string().min(1),
+  attachments: z.record(z.string().min(1), z.string().min(1)),
+  orphaned: z.array(z.string().min(1)).max(64),
+  // UTC-only: Zod rejects timezone offsets by default; Date.toISOString() always produces a Z-suffix.
+  createdAt: z.string().datetime(),
+});
+
+export type BuildV2 = z.infer<typeof BuildV2>;
+
+/**
  * Discriminated union over all known build versions. Grows one variant per
  * Builder Robustness PR. Never mutates existing variants — old shared URLs
  * must keep parsing forever (modulo the 30-day KV TTL on builds-api).
  */
-export const Build = z.discriminatedUnion("version", [BuildV1]);
+export const Build = z.discriminatedUnion("version", [BuildV1, BuildV2]);
 export type Build = z.infer<typeof Build>;
 
 /**
@@ -31,4 +51,4 @@ export type Build = z.infer<typeof Build>;
  * so callers can use this literal in `{ version: CURRENT_BUILD_VERSION }`
  * without a cast.
  */
-export const CURRENT_BUILD_VERSION = 1 as const;
+export const CURRENT_BUILD_VERSION = 2 as const;

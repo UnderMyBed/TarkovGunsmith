@@ -1,4 +1,4 @@
-import { Build, type BuildV1 } from "./build-schema.js";
+import { Build } from "./build-schema.js";
 
 const BUILDS_ENDPOINT = "/api/builds";
 
@@ -31,10 +31,7 @@ export interface SaveBuildResponse {
  * surface the failure with a toast — no retry policy here; retries are the
  * caller's call.
  */
-export async function saveBuild(
-  fetchImpl: typeof fetch,
-  build: BuildV1,
-): Promise<SaveBuildResponse> {
+export async function saveBuild(fetchImpl: typeof fetch, build: Build): Promise<SaveBuildResponse> {
   const res = await fetchImpl(BUILDS_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

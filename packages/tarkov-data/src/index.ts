@@ -19,7 +19,7 @@ export { MOD_LIST_QUERY, modListSchema, fetchModList } from "./queries/modList.j
 export type { ModListItem } from "./queries/modList.js";
 
 // Build schema
-export { Build, BuildV1, CURRENT_BUILD_VERSION } from "./build-schema.js";
+export { Build, BuildV1, BuildV2, CURRENT_BUILD_VERSION } from "./build-schema.js";
 
 // Hooks
 export { useAmmoList } from "./hooks/useAmmoList.js";
@@ -38,3 +38,12 @@ export {
   type LoadBuildErrorCode,
   type SaveBuildResponse,
 } from "./buildsApi.js";
+
+// Weapon tree (slot-based compatibility)
+export { WEAPON_TREE_QUERY, fetchWeaponTree, normalizeSlots } from "./queries/weaponTree.js";
+export type { WeaponTree, SlotNode, AllowedItem } from "./queries/weaponTree.js";
+export { useWeaponTree } from "./hooks/useWeaponTree.js";
+
+// Build migrations
+export { migrateV1ToV2 } from "./build-migrations.js";
+export type { SlotNodeForMigration } from "./build-migrations.js";
