@@ -13,3 +13,15 @@ export { simulateShot } from "./shot/simulateShot.js";
 export { simulateBurst } from "./shot/simulateBurst.js";
 export { armorEffectiveness } from "./armor/armorEffectiveness.js";
 export { weaponSpec } from "./weapon/weaponSpec.js";
+export type {
+  Zone,
+  BodyPart,
+  ScenarioTarget,
+  PlannedShot,
+  ShotPlan,
+  ScenarioShotResult,
+  ScenarioResult,
+} from "./scenario/types.js";
+export { ZONES } from "./scenario/types.js";
+export { PMC_BODY_DEFAULTS, createPmcTarget } from "./scenario/defaults.js";
+export { simulateScenario } from "./scenario/simulateScenario.js";
