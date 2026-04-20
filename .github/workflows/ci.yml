@@ -50,8 +50,30 @@ jobs:
         # devDependencies that vite or tsc resolve only at bundle time).
         run: pnpm build
 
-      - name: Install Playwright browsers
+      # Playwright's Chromium tarball is ~130MB. Cache it keyed to the
+      # resolved @playwright/test version so we only re-download when the
+      # package updates. System deps (apt packages) are fast and can
+      # always reinstall from APT on the runner.
+      - name: Resolve Playwright version
+        id: pw-version
+        run: |
+          version=$(node -p "require('./apps/web/package.json').devDependencies['@playwright/test'].replace(/^[\^~]/,'')")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Install Playwright browsers (cache miss only)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm --filter @tarkov/web test:e2e:install
+
+      - name: Install Playwright system deps (cache hit — apt only)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @tarkov/web exec playwright install-deps chromium
 
       - name: E2E smoke tests
         run: pnpm --filter @tarkov/web test:e2e
