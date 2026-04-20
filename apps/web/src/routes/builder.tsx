@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useModList, useWeaponList, useSaveBuild, CURRENT_BUILD_VERSION } from "@tarkov/data";
 import type { ModListItem } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
@@ -76,11 +76,16 @@ function BuilderPage() {
             // Clipboard permission denied — still show the URL so the user can copy manually.
           });
           setShareUrl(result.url);
-          window.setTimeout(() => setShareUrl(null), 5000);
         },
       },
     );
   }
+
+  useEffect(() => {
+    if (!shareUrl) return;
+    const id = window.setTimeout(() => setShareUrl(null), 5000);
+    return () => window.clearTimeout(id);
+  }, [shareUrl]);
 
   function toggleMod(modId: string) {
     setSelectedModIds((prev) => {
