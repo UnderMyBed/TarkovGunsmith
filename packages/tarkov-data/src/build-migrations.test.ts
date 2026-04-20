@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { migrateV1ToV2, migrateV2ToV3, type SlotNodeForMigration } from "./build-migrations.js";
-import type { BuildV1, BuildV2 } from "./build-schema.js";
+import {
+  migrateV1ToV2,
+  migrateV2ToV3,
+  migrateV3ToV4,
+  type SlotNodeForMigration,
+} from "./build-migrations.js";
+import type { BuildV1, BuildV2, BuildV3 } from "./build-schema.js";
 
 const v1: BuildV1 = {
   version: 1,
@@ -95,5 +100,23 @@ describe("migrateV2ToV3", () => {
     expect(v3.attachments).toEqual({ s: "m" });
     expect(v3.orphaned).toEqual([]);
     expect(v3.profileSnapshot).toBeUndefined();
+  });
+});
+
+describe("migrateV3ToV4", () => {
+  it("bumps version and preserves all fields", () => {
+    const v3: BuildV3 = {
+      version: 3,
+      weaponId: "w",
+      attachments: { s: "m" },
+      orphaned: [],
+      createdAt: "2026-04-20T00:00:00.000Z",
+    };
+    const v4 = migrateV3ToV4(v3);
+    expect(v4.version).toBe(4);
+    expect(v4.weaponId).toBe("w");
+    expect(v4.attachments).toEqual({ s: "m" });
+    expect(v4.name).toBeUndefined();
+    expect(v4.description).toBeUndefined();
   });
 });
