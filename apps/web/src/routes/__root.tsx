@@ -51,6 +51,12 @@ function RootLayout() {
               ADC
             </Link>
             <Link
+              to="/aec"
+              activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
+            >
+              AEC
+            </Link>
+            <Link
               to="/smoke"
               activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
             >
