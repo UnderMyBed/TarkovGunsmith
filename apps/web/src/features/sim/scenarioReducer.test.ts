@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PlannedShot } from "@tarkov/ballistics";
+import { createPmcTarget, type BallisticAmmo, type PlannedShot } from "@tarkov/ballistics";
 import {
   type ScenarioState,
   initialScenarioState,
@@ -120,5 +120,57 @@ describe("scenarioReducer — clear", () => {
   it("returns the initial state sentinel equivalent", () => {
     const next = scenarioReducer(initialScenarioState, { type: "clear" });
     expect(next).toEqual(initialScenarioState);
+  });
+});
+
+const M855: BallisticAmmo = {
+  id: "m855-test",
+  name: "M855",
+  penetrationPower: 31,
+  damage: 49,
+  armorDamagePercent: 49,
+  projectileCount: 1,
+};
+
+describe("scenarioReducer — run", () => {
+  it("runs the current plan and stores the result", () => {
+    const state: ScenarioState = {
+      plan: [shot("thorax"), shot("thorax")],
+      lastResult: null,
+    };
+    const next = scenarioReducer(state, {
+      type: "run",
+      ammo: M855,
+      target: createPmcTarget(),
+    });
+    expect(next.plan).toEqual(state.plan);
+    expect(next.lastResult).not.toBeNull();
+    expect(next.lastResult!.shots).toHaveLength(2);
+    expect(next.lastResult!.killed).toBe(true);
+    expect(next.lastResult!.killedAt).toBe(1);
+  });
+
+  it("runs an empty plan producing an empty result", () => {
+    const next = scenarioReducer(initialScenarioState, {
+      type: "run",
+      ammo: M855,
+      target: createPmcTarget(),
+    });
+    expect(next.lastResult).not.toBeNull();
+    expect(next.lastResult!.shots).toEqual([]);
+    expect(next.lastResult!.killed).toBe(false);
+  });
+
+  it("leaves the plan untouched when running", () => {
+    const state: ScenarioState = {
+      plan: [shot("leftLeg"), shot("stomach")],
+      lastResult: null,
+    };
+    const next = scenarioReducer(state, {
+      type: "run",
+      ammo: M855,
+      target: createPmcTarget(),
+    });
+    expect(next.plan).toBe(state.plan);
   });
 });

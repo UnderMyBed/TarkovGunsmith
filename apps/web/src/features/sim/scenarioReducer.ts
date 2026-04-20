@@ -1,4 +1,5 @@
 import {
+  simulateScenario,
   type BallisticAmmo,
   type PlannedShot,
   type ScenarioResult,
@@ -49,8 +50,8 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
       return initialScenarioState;
     }
     case "run": {
-      // Implemented in later tasks.
-      return state;
+      const lastResult = simulateScenario(action.ammo, action.target, state.plan);
+      return { ...state, lastResult };
     }
   }
 }
