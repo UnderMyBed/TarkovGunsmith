@@ -63,6 +63,19 @@ function HomePage() {
             </CardContent>
           </Card>
         </Link>
+        <Link to="/adc" className="block">
+          <Card className="transition-colors hover:border-[var(--color-primary)]">
+            <CardHeader>
+              <CardTitle>Armor Damage Calculator</CardTitle>
+              <CardDescription>
+                Multi-shot burst at a single armor piece — shot-by-shot breakdown.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--color-muted-foreground)]">
+              Pick ammo + armor, set shot count, see pen / damage / durability per shot.
+            </CardContent>
+          </Card>
+        </Link>
       </section>
     </div>
   );
