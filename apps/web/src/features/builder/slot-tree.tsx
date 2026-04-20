@@ -1,12 +1,14 @@
-import type { SlotNode, WeaponTree } from "@tarkov/data";
+import type { SlotNode, WeaponTree, ItemAvailability } from "@tarkov/data";
 
 export interface SlotTreeProps {
   tree: WeaponTree;
   attachments: Readonly<Record<string, string>>;
   onAttach: (path: string, itemId: string | null) => void;
+  getAvailability?: (itemId: string) => ItemAvailability | null;
+  showAll?: boolean;
 }
 
-export function SlotTree({ tree, attachments, onAttach }: SlotTreeProps) {
+export function SlotTree({ tree, attachments, onAttach, getAvailability, showAll }: SlotTreeProps) {
   if (tree.slots.length === 0) {
     return (
       <p className="text-sm text-[var(--color-muted-foreground)]">This weapon has no mod slots.</p>
@@ -15,7 +17,14 @@ export function SlotTree({ tree, attachments, onAttach }: SlotTreeProps) {
   return (
     <ul className="flex flex-col gap-2">
       {tree.slots.map((slot) => (
-        <SlotRow key={slot.path} slot={slot} attachments={attachments} onAttach={onAttach} />
+        <SlotRow
+          key={slot.path}
+          slot={slot}
+          attachments={attachments}
+          onAttach={onAttach}
+          getAvailability={getAvailability}
+          showAll={showAll}
+        />
       ))}
     </ul>
   );
@@ -25,10 +34,14 @@ function SlotRow({
   slot,
   attachments,
   onAttach,
+  getAvailability,
+  showAll,
 }: {
   slot: SlotNode;
   attachments: Readonly<Record<string, string>>;
   onAttach: (path: string, itemId: string | null) => void;
+  getAvailability?: (itemId: string) => ItemAvailability | null;
+  showAll?: boolean;
 }) {
   const selectedId = attachments[slot.path] ?? null;
   const selectedItem = selectedId ? slot.allowedItems.find((i) => i.id === selectedId) : null;
@@ -68,21 +81,32 @@ function SlotRow({
                   (none)
                 </button>
               </li>
-              {slot.allowedItems.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => onAttach(slot.path, item.id)}
-                    className={`w-full rounded-[var(--radius)] p-2 text-left text-sm ${
-                      selectedId === item.id
-                        ? "bg-[var(--color-accent)]"
-                        : "hover:bg-[var(--color-accent)]"
-                    }`}
-                  >
-                    {item.name}
-                  </button>
-                </li>
-              ))}
+              {slot.allowedItems.map((item) => {
+                const availability = getAvailability?.(item.id) ?? null;
+                const dim = !showAll && availability?.available === false;
+                const requirementLabel =
+                  availability && !availability.available ? formatRequirement(availability) : null;
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => onAttach(slot.path, item.id)}
+                      className={`flex w-full items-center justify-between gap-2 rounded-[var(--radius)] p-2 text-left text-sm ${
+                        selectedId === item.id
+                          ? "bg-[var(--color-accent)]"
+                          : "hover:bg-[var(--color-accent)]"
+                      } ${dim ? "opacity-40" : ""}`}
+                    >
+                      <span>{item.name}</span>
+                      {requirementLabel && (
+                        <span className="rounded border px-1.5 py-0.5 text-xs text-[var(--color-muted-foreground)]">
+                          {requirementLabel}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
           {selectedItem && selectedItem.children.length > 0 && (
@@ -93,6 +117,8 @@ function SlotRow({
                   slot={child}
                   attachments={attachments}
                   onAttach={onAttach}
+                  getAvailability={getAvailability}
+                  showAll={showAll}
                 />
               ))}
             </ul>
@@ -101,4 +127,18 @@ function SlotRow({
       </details>
     </li>
   );
+}
+
+function formatRequirement(a: ItemAvailability): string {
+  if (a.available) return "";
+  switch (a.reason) {
+    case "trader-ll-required":
+      return `${a.traderNormalizedName} ${a.minLevel}`;
+    case "quest-required":
+      return `Quest: ${a.questNormalizedName}`;
+    case "flea-locked":
+      return "Flea only";
+    case "no-sources":
+      return "No sources";
+  }
 }
