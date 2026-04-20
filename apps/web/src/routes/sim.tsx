@@ -167,6 +167,14 @@ function SimPage() {
           <CardContent className="flex flex-col gap-4">
             <BodySilhouette onZoneClick={(zone) => append({ zone, distance })} />
             <ShotQueue plan={plan} onMove={move} onRemove={remove} onClear={clear} />
+            <button
+              type="button"
+              disabled
+              title="Scenario execution lands in Simulator PR 4"
+              className="rounded-[var(--radius)] border bg-[var(--color-primary)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Run
+            </button>
           </CardContent>
         </Card>
 
