@@ -2,9 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useAmmoList, useArmorList } from "@tarkov/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@tarkov/ui";
+import { adaptAmmo } from "../features/data-adapters/adapters.js";
 import { useScenario } from "../features/sim/useScenario.js";
 import { BodySilhouette } from "../features/sim/BodySilhouette.js";
 import { ShotQueue } from "../features/sim/ShotQueue.js";
+import { ScenarioSummary } from "../features/sim/ScenarioSummary.js";
+import { ShotTimeline } from "../features/sim/ShotTimeline.js";
+import { buildScenarioTarget } from "../features/sim/buildScenarioTarget.js";
 
 export const Route = createFileRoute("/sim")({
   component: SimPage,
@@ -21,14 +25,22 @@ function SimPage() {
   const [bodyArmorId, setBodyArmorId] = useState<string>("");
   const [distance, setDistance] = useState<number>(DEFAULT_DISTANCE);
 
-  const { plan, lastResult, append, move, remove, clear } = useScenario();
+  const { plan, lastResult, append, move, remove, clear, run } = useScenario();
+
+  const selectedAmmo = useMemo(() => ammo.data?.find((a) => a.id === ammoId), [ammo.data, ammoId]);
+  const selectedHelmet = useMemo(
+    () => armor.data?.find((a) => a.id === helmetId),
+    [armor.data, helmetId],
+  );
+  const selectedBodyArmor = useMemo(
+    () => armor.data?.find((a) => a.id === bodyArmorId),
+    [armor.data, bodyArmorId],
+  );
 
   const ammoOptions = useMemo(
     () => (ammo.data ? [...ammo.data].sort((a, b) => a.name.localeCompare(b.name)) : []),
     [ammo.data],
   );
-
-  // Helmet options: armored headwear (zones includes head-related zone names)
   const helmetOptions = useMemo(
     () =>
       armor.data
@@ -38,8 +50,6 @@ function SimPage() {
         : [],
     [armor.data],
   );
-
-  // Body armor options: chest/stomach coverage
   const bodyArmorOptions = useMemo(
     () =>
       armor.data
@@ -55,37 +65,45 @@ function SimPage() {
   );
 
   const isLoading = ammo.isLoading || armor.isLoading;
-  const error = ammo.error ?? armor.error;
+  const dataError = ammo.error ?? armor.error;
 
-  // Selections held for PR 4 wire-up (target + ammo passed to run()).
-  void ammoId;
-  void helmetId;
-  void bodyArmorId;
+  const canRun = selectedAmmo !== undefined && !isLoading && dataError === null;
+
+  const onRun = () => {
+    if (!selectedAmmo) return;
+    const target = buildScenarioTarget({
+      helmet: selectedHelmet,
+      bodyArmor: selectedBodyArmor,
+    });
+    run(adaptAmmo(selectedAmmo), target);
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <section>
         <h1 className="text-3xl font-bold tracking-tight">Ballistics Simulator</h1>
         <p className="mt-2 text-[var(--color-muted-foreground)]">
-          Build a shot plan against a PMC target. Pick ammo, optional armor, click zones to queue
-          shots, then hit Run to simulate the engagement.
+          Build a shot plan against a PMC target. Pick ammo, optional helmet + body armor, click
+          zones to queue shots, then hit Run to simulate the engagement shot-by-shot.
         </p>
       </section>
 
-      {error && (
+      {dataError && (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-[var(--color-destructive)]">Failed to load data: {error.message}</p>
+            <p className="text-[var(--color-destructive)]">
+              Failed to load data: {dataError.message}
+            </p>
           </CardContent>
         </Card>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Panel 1 — Inputs */}
+        {/* Inputs */}
         <Card>
           <CardHeader>
             <CardTitle>Inputs</CardTitle>
-            <CardDescription>Ammo and target loadout.</CardDescription>
+            <CardDescription>Ammo + target loadout.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
@@ -121,6 +139,12 @@ function SimPage() {
                     </option>
                   ))}
                 </select>
+                {!isLoading && helmetOptions.length === 0 && (
+                  <span className="text-xs text-[var(--color-muted-foreground)]">
+                    No helmets available — tarkov-api&rsquo;s <code>armor</code> type may not
+                    include headwear. Follow-up.
+                  </span>
+                )}
               </label>
 
               <label className="flex flex-col gap-1.5">
@@ -158,7 +182,7 @@ function SimPage() {
           </CardContent>
         </Card>
 
-        {/* Panel 2 — Shot Plan */}
+        {/* Shot plan */}
         <Card>
           <CardHeader>
             <CardTitle>Shot Plan</CardTitle>
@@ -169,32 +193,32 @@ function SimPage() {
             <ShotQueue plan={plan} onMove={move} onRemove={remove} onClear={clear} />
             <button
               type="button"
-              disabled
-              title="Scenario execution lands in Simulator PR 4"
-              className="rounded-[var(--radius)] border bg-[var(--color-primary)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={onRun}
+              disabled={!canRun}
+              title={canRun ? "" : "Select ammo to enable"}
+              className="rounded-[var(--radius)] border bg-[var(--color-primary)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-foreground)] hover:bg-[var(--color-primary)]/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Run
             </button>
           </CardContent>
         </Card>
 
-        {/* Panel 3 — Results (placeholder — wired in PR 4) */}
+        {/* Results */}
         <Card>
           <CardHeader>
             <CardTitle>Results</CardTitle>
             {!lastResult && (
-              <CardDescription>Add shots to the plan and press Run to simulate.</CardDescription>
+              <CardDescription>Pick ammo, build a plan, then press Run.</CardDescription>
             )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-4">
             {lastResult ? (
-              <p className="text-sm text-[var(--color-muted-foreground)]">
-                Results wiring lands in PR 4.
-              </p>
+              <>
+                <ScenarioSummary result={lastResult} />
+                <ShotTimeline shots={lastResult.shots} />
+              </>
             ) : (
-              <p className="text-sm text-[var(--color-muted-foreground)]">
-                No results yet. Build a shot plan and press Run.
-              </p>
+              <p className="text-sm text-[var(--color-muted-foreground)]">No results yet.</p>
             )}
           </CardContent>
         </Card>
