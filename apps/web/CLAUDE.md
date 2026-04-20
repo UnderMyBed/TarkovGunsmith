@@ -53,9 +53,19 @@ Set via `wrangler pages secret put BUILDS_API_URL --project-name tarkov-gunsmith
 - **UI via `@tarkov/ui` primitives.** Shadcn-CLI inline if a primitive isn't there yet, then extract upstream in a follow-up.
 - **`src/route-tree.gen.ts` is generated.** Excluded from coverage, formatting will rewrite it as needed.
 
+## E2E tests (Playwright)
+
+Smoke-level Chromium tests live at `apps/web/e2e/`. Run:
+
+- `pnpm --filter @tarkov/web test:e2e:install` — first-time browser install.
+- `pnpm --filter @tarkov/web test:e2e` — run the suite (builds first? no — build separately or use `pnpm --filter @tarkov/web build` beforehand).
+
+Tests use a `preview`-backed webServer on port 4173. CI runs them as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `smoke.spec.ts`. Any new route added to `__root.tsx` nav must also be added there.
+
+Fonts are guarded by a separate test using `document.fonts.check("1em <Family>")`. If you change the font stack, update that test.
+
 ## Out of scope (deferred to follow-up plans / Milestone 1)
 
 - The three killer features (Calc, Matrix, Builder) — Milestone 1.
-- Playwright e2e — when there are interactive features worth testing.
 - The `@tarkov/data-proxy` integration in prod — separate plan once CI deploys + Pages routing land.
 - Auth, build sharing UI, more `@tarkov/ui` primitives.

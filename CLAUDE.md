@@ -19,7 +19,7 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 >
 > **Deferred M3 design-polish items:** Light theme; loading skeleton shimmers in the Field Ledger aesthetic; custom favicon + OG social cards (the latter pairs with M3 sub-project 4); keyboard shortcut overlay; real weapon silhouettes. Revisit after functional M3 work lands.
 >
-> **Cross-milestone deferred:** Playwright e2e. The design pass shipped without regression tests — due for its own PR.
+> **Cross-milestone deferred:** ~~Playwright e2e~~ — shipped in this PR.
 >
 > **Production action still open:** `wrangler pages secret put BUILDS_API_URL --project-name tarkov-gunsmith-web` — without this, `/builder` save/load returns 500 in prod.
 
@@ -55,6 +55,13 @@ Every feature flows: **brainstorm → spec → plan → TDD execution → code r
 - Project-specific subagents live in `.claude/agents/`
 
 Skip none of these steps. Even "simple" changes warrant a plan — it takes a minute and prevents drift.
+
+### Testing discipline (hard rule)
+
+- **Every feature PR includes e2e coverage.** If the PR adds a new route, `apps/web/e2e/smoke.spec.ts` gets a new entry in the `ROUTES` array. If it adds a user-facing interaction flow worth protecting, a new test file.
+- **"Visual walkthrough deferred" is no longer acceptable.** If you can't verify a change works in a browser, you can't ship it. Playwright is the verification mechanism; run it locally with `pnpm --filter @tarkov/web test:e2e` before pushing.
+- **Console errors fail the build.** If a real false positive appears, allowlist it in `smoke.spec.ts` with a comment explaining why.
+- **Fonts are load-checked.** The Bungee / Chivo / Azeret Mono fonts are part of the contract — changing them means updating the font-load test.
 
 ## Project conventions (preview — full version after Milestone 0)
 

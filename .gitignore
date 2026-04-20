@@ -27,6 +27,10 @@ pnpm-debug.log*
 coverage/
 .nyc_output/
 
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+
 # OS
 .DS_Store
 Thumbs.db
