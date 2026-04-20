@@ -1,44 +1,50 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Chivo:ital,wght@0,300;0,400;0,500;0,700;0,800;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
 
 @theme {
-  /* Color scale — dark-first, neutral with a muted Tarkov-tan accent */
-  --color-background: oklch(0.16 0 0);
-  --color-foreground: oklch(0.96 0 0);
+  /* ───── Field Ledger palette ────────────────────────────────── */
+  --color-background: #0e0f0c;
+  --color-foreground: #e6e4db;
 
-  --color-muted: oklch(0.22 0 0);
-  --color-muted-foreground: oklch(0.7 0 0);
+  /* Surfaces */
+  --color-card: #16170f;
+  --color-card-foreground: #e6e4db;
+  --color-popover: #1f211a;
+  --color-popover-foreground: #e6e4db;
+  --color-muted: #1f211a;
+  --color-muted-foreground: #9a988d;
+  --color-accent: #2a2c23;
+  --color-accent-foreground: #e6e4db;
+  --color-secondary: #2a2c23;
+  --color-secondary-foreground: #e6e4db;
 
-  --color-card: oklch(0.19 0 0);
-  --color-card-foreground: oklch(0.96 0 0);
+  /* Strokes + inputs */
+  --color-border: #3a3d33;
+  --color-input: #1f211a;
+  --color-ring: #f59e0b;
 
-  --color-popover: oklch(0.18 0 0);
-  --color-popover-foreground: oklch(0.96 0 0);
+  /* Amber — primary accent */
+  --color-primary: #f59e0b;
+  --color-primary-foreground: #0e0f0c;
 
-  --color-border: oklch(0.28 0 0);
-  --color-input: oklch(0.22 0 0);
-  --color-ring: oklch(0.55 0.05 90);
+  /* Destructive (blood red) */
+  --color-destructive: #b91c1c;
+  --color-destructive-foreground: #e6e4db;
 
-  /* Tarkov-tan accent — muted greenish-brown reminiscent of EFT's UI chrome */
-  --color-primary: oklch(0.65 0.06 90);
-  --color-primary-foreground: oklch(0.13 0 0);
+  /* Field Ledger — additional palette (not semantic aliases) */
+  --color-amber-deep: #b45309;
+  --color-olive: #7a8b3f;
+  --color-rust: #9c3f1e;
+  --color-paper-dim: #6b6a60;
+  --color-line-muted: #26291f;
 
-  --color-secondary: oklch(0.25 0 0);
-  --color-secondary-foreground: oklch(0.96 0 0);
+  /* ───── Typography ──────────────────────────────────────────── */
+  --font-display: "Bungee", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Chivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Azeret Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --color-destructive: oklch(0.55 0.18 25);
-  --color-destructive-foreground: oklch(0.98 0 0);
-
-  --color-accent: oklch(0.3 0 0);
-  --color-accent-foreground: oklch(0.96 0 0);
-
-  /* Spacing/radius/typography */
-  --radius: 0.5rem;
-  --font-sans:
-    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
-  --font-mono:
-    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
+  /* ───── Shape ───────────────────────────────────────────────── */
+  --radius: 0.125rem;
 }
 
 @layer base {
@@ -50,12 +56,63 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-weight: 400;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    /* Subtle atmospheric backlight */
+    background-image:
+      radial-gradient(ellipse at 15% 0%, rgba(245, 158, 11, 0.05), transparent 55%),
+      radial-gradient(ellipse at 85% 100%, rgba(122, 139, 63, 0.04), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  /* Grain overlay on the body — subtle texture so the dark theme isn't sterile */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    mix-blend-mode: overlay;
+    opacity: 0.28;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9  0 0 0 0 0.9  0 0 0 0 0.85  0 0 0 0.06 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+  }
+
+  /* Ensure app content sits above the grain layer */
+  #root,
+  #__root,
+  main {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Mono numerics everywhere by default on tabular contexts */
+  table,
+  pre,
+  code,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
   }
 
   ::selection {
     background-color: var(--color-primary);
     color: var(--color-primary-foreground);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-background);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border: 2px solid var(--color-background);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-paper-dim);
   }
 }
