@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.3.0...v1.4.0) (2026-04-20)
+
+
+### Features
+
+* **builder:** UX depth — name/description + stock diff + preset scaffold (M1.5 PR 4) ([#49](https://github.com/UnderMyBed/TarkovGunsmith/issues/49)) ([bc90e34](https://github.com/UnderMyBed/TarkovGunsmith/commit/bc90e346126288d3839c928ed6d55f03cc8e29d7))
+
 ## [1.3.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.2.0...v1.3.0) (2026-04-20)
 
 
