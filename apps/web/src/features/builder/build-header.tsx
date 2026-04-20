@@ -1,15 +1,21 @@
 import type { WeaponSpec } from "@tarkov/ballistics";
-import { Card, CardContent } from "@tarkov/ui";
+import { Card, CardContent, CardHeader, Stamp, StatRow } from "@tarkov/ui";
 
 export interface BuildHeaderProps {
   name: string;
   description: string;
   onNameChange: (next: string) => void;
   onDescriptionChange: (next: string) => void;
+  /** Weapon short name, or null if no weapon selected. */
+  weaponName?: string | null;
   /** Current build spec (weapon + current mods). */
   currentSpec: WeaponSpec | null;
   /** Stock-weapon spec (no mods). Used to compute deltas. */
   stockSpec: WeaponSpec | null;
+  /** Mod count, for the meta line. */
+  modCount?: number;
+  /** Truthy when the build has been saved and has a share URL. */
+  sharedId?: string | null;
 }
 
 export function BuildHeader({
@@ -17,19 +23,36 @@ export function BuildHeader({
   description,
   onNameChange,
   onDescriptionChange,
+  weaponName,
   currentSpec,
   stockSpec,
+  modCount,
+  sharedId,
 }: BuildHeaderProps) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3 pt-6">
+    <Card variant="bracket">
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
+          <div className="font-display text-xl sm:text-2xl leading-none tracking-wide uppercase text-[var(--color-foreground)]">
+            {weaponName ?? "NO WEAPON SELECTED"}
+          </div>
+          <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-paper-dim)]">
+            {typeof modCount === "number"
+              ? `${modCount} MOD${modCount === 1 ? "" : "S"}`
+              : "— MODS"}
+            {sharedId ? ` · BUILD · ${sharedId.slice(0, 8)}` : ""}
+          </div>
+        </div>
+        {sharedId && <Stamp tone="amber">SHARED</Stamp>}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         <input
           type="text"
           value={name}
           maxLength={60}
           onChange={(e) => onNameChange(e.target.value)}
           placeholder="Build name (optional)"
-          className="bg-transparent text-2xl font-bold tracking-tight outline-none placeholder:text-[var(--color-muted-foreground)] focus:outline-none"
+          className="bg-transparent font-sans text-lg font-bold tracking-tight text-[var(--color-foreground)] outline-none placeholder:text-[var(--color-paper-dim)] focus:outline-none border-b border-transparent focus:border-[var(--color-primary)] pb-1 transition-colors"
         />
         <textarea
           value={description}
@@ -37,61 +60,96 @@ export function BuildHeader({
           onChange={(e) => onDescriptionChange(e.target.value)}
           placeholder="Description (optional)"
           rows={2}
-          className="resize-none bg-transparent text-sm text-[var(--color-muted-foreground)] outline-none placeholder:text-[var(--color-muted-foreground)] focus:outline-none"
+          className="resize-none bg-transparent text-sm text-[var(--color-muted-foreground)] outline-none placeholder:text-[var(--color-paper-dim)] focus:outline-none"
         />
+
         {currentSpec && stockSpec && (
-          <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-            <Delta label="Ergo" current={currentSpec.ergonomics} stock={stockSpec.ergonomics} />
-            <Delta
-              label="Vert. recoil"
-              current={currentSpec.verticalRecoil}
+          <div className="flex flex-col gap-2 border-t border-dashed border-[var(--color-border)] pt-4">
+            <StatRow
+              label="ERGONOMICS"
+              stock={stockSpec.ergonomics}
+              delta={formatDelta(currentSpec.ergonomics - stockSpec.ergonomics, false)}
+              deltaDirection={deltaDirection(currentSpec.ergonomics - stockSpec.ergonomics, false)}
+              value={currentSpec.ergonomics}
+              percent={clampPercent(currentSpec.ergonomics)}
+              barTone="primary"
+            />
+            <StatRow
+              label="RECOIL V"
               stock={stockSpec.verticalRecoil}
-              higherIsWorse
+              delta={formatPercent(currentSpec.verticalRecoil, stockSpec.verticalRecoil)}
+              deltaDirection={deltaDirection(
+                currentSpec.verticalRecoil - stockSpec.verticalRecoil,
+                true,
+              )}
+              value={currentSpec.verticalRecoil}
+              percent={clampInverse(currentSpec.verticalRecoil, stockSpec.verticalRecoil)}
+              barTone="olive"
             />
-            <Delta
-              label="Horiz. recoil"
-              current={currentSpec.horizontalRecoil}
+            <StatRow
+              label="RECOIL H"
               stock={stockSpec.horizontalRecoil}
-              higherIsWorse
+              delta={formatPercent(currentSpec.horizontalRecoil, stockSpec.horizontalRecoil)}
+              deltaDirection={deltaDirection(
+                currentSpec.horizontalRecoil - stockSpec.horizontalRecoil,
+                true,
+              )}
+              value={currentSpec.horizontalRecoil}
+              percent={clampInverse(currentSpec.horizontalRecoil, stockSpec.horizontalRecoil)}
+              barTone="olive"
             />
-            <Delta label="Accuracy" current={currentSpec.accuracy} stock={stockSpec.accuracy} />
-          </dl>
+            <StatRow
+              label="WEIGHT"
+              stock={stockSpec.weight.toFixed(2)}
+              delta={formatDelta(currentSpec.weight - stockSpec.weight, true)}
+              deltaDirection={deltaDirection(currentSpec.weight - stockSpec.weight, true)}
+              value={currentSpec.weight.toFixed(2)}
+              percent={clampPercent(currentSpec.weight * 20)}
+              barTone={currentSpec.weight > stockSpec.weight ? "destructive" : "primary"}
+            />
+            <StatRow
+              label="ACCURACY"
+              stock={stockSpec.accuracy.toFixed(1)}
+              delta={formatDelta(currentSpec.accuracy - stockSpec.accuracy, true)}
+              deltaDirection={deltaDirection(currentSpec.accuracy - stockSpec.accuracy, true)}
+              value={currentSpec.accuracy.toFixed(1)}
+              percent={100 - clampPercent(currentSpec.accuracy * 20)}
+              barTone="primary"
+            />
+          </div>
         )}
       </CardContent>
     </Card>
   );
 }
 
-function Delta({
-  label,
-  current,
-  stock,
-  higherIsWorse,
-}: {
-  label: string;
-  current: number;
-  stock: number;
-  higherIsWorse?: boolean;
-}) {
-  const delta = current - stock;
-  const sign = delta > 0 ? "+" : "";
+function formatDelta(delta: number, allowDecimals: boolean): string {
+  if (Math.abs(delta) < 0.005) return "";
+  const rounded = allowDecimals ? delta.toFixed(2) : String(Math.round(delta));
+  return delta > 0 ? `+${rounded}` : rounded;
+}
+
+function formatPercent(current: number, stock: number): string {
+  if (stock === 0) return "";
+  const pct = ((current - stock) / stock) * 100;
+  if (Math.abs(pct) < 0.5) return "";
+  const sign = pct > 0 ? "+" : "−";
+  return `${sign}${Math.abs(pct).toFixed(0)}%`;
+}
+
+function deltaDirection(delta: number, higherIsWorse: boolean): "up" | "down" | "neutral" {
+  if (Math.abs(delta) < 0.005) return "neutral";
   const improved = higherIsWorse ? delta < 0 : delta > 0;
-  const cls =
-    delta === 0 ? "" : improved ? "text-[var(--color-primary)]" : "text-[var(--color-destructive)]";
-  return (
-    <div className="flex flex-col gap-0.5 rounded-[var(--radius)] border p-2">
-      <dt className="text-[0.65rem] uppercase tracking-wide text-[var(--color-muted-foreground)]">
-        {label}
-      </dt>
-      <dd className="flex items-baseline gap-1.5">
-        <span className="font-semibold">{current.toFixed(1)}</span>
-        {delta !== 0 && (
-          <span className={`text-xs ${cls}`}>
-            {sign}
-            {delta.toFixed(1)}
-          </span>
-        )}
-      </dd>
-    </div>
-  );
+  return improved ? "up" : "down";
+}
+
+function clampPercent(v: number): number {
+  return Math.max(0, Math.min(100, v));
+}
+
+function clampInverse(current: number, stock: number): number {
+  if (stock === 0) return 0;
+  // current lower than stock → higher bar (good for "less recoil")
+  const pct = 100 - (current / stock) * 100;
+  return Math.max(0, Math.min(100, pct + 50));
 }
