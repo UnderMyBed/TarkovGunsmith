@@ -88,3 +88,7 @@ export { useProfile } from "./hooks/useProfile.js";
 // Presets
 export { WEAPON_PRESETS, presetsForWeapon } from "./presets.js";
 export type { WeaponPreset } from "./presets.js";
+
+// Slot diff (Build comparison)
+export { slotDiff } from "./slot-diff.js";
+export type { SlotDiffStatus, SlotDiffInput, SlotDiffMap } from "./slot-diff.js";
