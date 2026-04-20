@@ -1,4 +1,4 @@
-import type { BuildV1, BuildV2, BuildV3 } from "./build-schema.js";
+import type { BuildV1, BuildV2, BuildV3, BuildV4 } from "./build-schema.js";
 
 /**
  * Minimal shape of a slot node the migration needs. The full `SlotNode` type
@@ -68,4 +68,9 @@ function findSlotPathFor(modId: string, nodes: readonly SlotNodeForMigration[]):
 /** v2 → v3 is a no-op apart from the version bump. Profile snapshot is always absent on auto-migration. */
 export function migrateV2ToV3(v2: BuildV2): BuildV3 {
   return { ...v2, version: 3 };
+}
+
+/** v3 → v4 is a no-op apart from the version bump. No name/desc on auto-migrated builds. */
+export function migrateV3ToV4(v3: BuildV3): BuildV4 {
+  return { ...v3, version: 4 };
 }

@@ -20,6 +20,8 @@ import { adaptMod, adaptWeapon } from "../features/data-adapters/adapters.js";
 import { SlotTree } from "../features/builder/slot-tree.js";
 import { OrphanedBanner } from "../features/builder/orphaned-banner.js";
 import { ProfileEditor } from "../features/builder/profile-editor.js";
+import { BuildHeader } from "../features/builder/build-header.js";
+import { PresetPicker } from "../features/builder/preset-picker.js";
 
 export const Route = createFileRoute("/builder")({
   component: BuilderPage,
@@ -35,6 +37,10 @@ export interface BuilderPageProps {
   initialOrphaned?: string[];
   /** v3 hydration — profile snapshot embedded in the shared build. */
   initialProfileSnapshot?: PlayerProfile;
+  /** v4 hydration — optional build name. */
+  initialName?: string;
+  /** v4 hydration — optional build description. */
+  initialDescription?: string;
   notice?: React.ReactNode;
 }
 
@@ -44,6 +50,8 @@ export function BuilderPage({
   initialAttachments,
   initialOrphaned,
   initialProfileSnapshot,
+  initialName,
+  initialDescription,
   notice,
 }: BuilderPageProps = {}) {
   const weapons = useWeaponList();
@@ -59,6 +67,9 @@ export function BuilderPage({
   const [showAll, setShowAll] = useState(false);
   const [embedProfileOnSave, setEmbedProfileOnSave] = useState(false);
   const [snapshotBannerDismissed, setSnapshotBannerDismissed] = useState(false);
+
+  const [buildName, setBuildName] = useState<string>(initialName ?? "");
+  const [buildDescription, setBuildDescription] = useState<string>(initialDescription ?? "");
 
   const tree = useWeaponTree(weaponId);
 
@@ -113,6 +124,11 @@ export function BuilderPage({
     return weaponSpec(adaptWeapon(selectedWeapon), selectedMods.map(adaptMod));
   }, [selectedWeapon, selectedMods]);
 
+  const stockSpec = useMemo(() => {
+    if (!selectedWeapon) return null;
+    return weaponSpec(adaptWeapon(selectedWeapon), []);
+  }, [selectedWeapon]);
+
   const upstreamDrift = useMemo(() => {
     // Only meaningful for loaded builds; fresh builds can't drift because they're built from current data.
     if (!initialWeaponId) return null;
@@ -154,6 +170,8 @@ export function BuilderPage({
         orphaned,
         createdAt: new Date().toISOString(),
         ...(embedProfileOnSave ? { profileSnapshot: profile } : {}),
+        ...(buildName.trim().length > 0 ? { name: buildName.trim() } : {}),
+        ...(buildDescription.trim().length > 0 ? { description: buildDescription.trim() } : {}),
       },
       {
         onSuccess: (result) => {
@@ -186,14 +204,14 @@ export function BuilderPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <h1 className="text-3xl font-bold tracking-tight">Weapon Builder</h1>
-        <p className="mt-2 text-[var(--color-muted-foreground)]">
-          Pick a weapon, attach mods, see live <code>weaponSpec</code> output (ergonomics, recoil,
-          weight, accuracy). v0.12.0 includes only mods with ergo/recoil/accuracy deltas (
-          <code>ItemPropertiesWeaponMod</code>); slot-based compatibility comes in a follow-up.
-        </p>
-      </section>
+      <BuildHeader
+        name={buildName}
+        description={buildDescription}
+        onNameChange={setBuildName}
+        onDescriptionChange={setBuildDescription}
+        currentSpec={spec}
+        stockSpec={stockSpec}
+      />
       {notice}
       {upstreamDrift}
 
@@ -284,6 +302,16 @@ export function BuilderPage({
           )}
         </CardContent>
       </Card>
+
+      {selectedWeapon && (
+        <PresetPicker
+          weaponId={selectedWeapon.id}
+          onApply={(next) => {
+            setAttachments({ ...next });
+            setOrphaned([]);
+          }}
+        />
+      )}
 
       {selectedWeapon && (
         <>
