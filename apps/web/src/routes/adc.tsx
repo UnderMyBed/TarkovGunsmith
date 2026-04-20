@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useAmmoList, useArmorList } from "@tarkov/data";
 import { simulateBurst } from "@tarkov/ballistics";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@tarkov/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Pill } from "@tarkov/ui";
 import { adaptAmmo, adaptArmor } from "../features/data-adapters/adapters.js";
 import { adcSummary } from "../features/adc/adcSummary.js";
 
@@ -62,9 +62,15 @@ function AdcPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <h1 className="text-3xl font-bold tracking-tight">Armor Damage Calculator</h1>
-        <p className="mt-2 text-[var(--color-muted-foreground)]">
+      <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
+        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
+          <span>FORWARD · BURST</span>
+          <span>/ PER-SHOT TABLE</span>
+        </div>
+        <h1 className="font-display text-[clamp(32px,5vw,56px)] leading-[0.95] tracking-tight uppercase">
+          Armor Damage <span className="text-[var(--color-primary)]">Calculator</span>
+        </h1>
+        <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Multi-shot forward ballistics at a single armor piece. Pick ammo, armor, and shot count;
           live-recompute shows a shot-by-shot table.
         </p>
@@ -169,7 +175,7 @@ function AdcPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card variant="bracket">
         <CardHeader>
           <CardTitle>Results</CardTitle>
           {!results && (
@@ -215,15 +221,9 @@ function AdcPage() {
                     <tr key={i} className="border-b last:border-b-0">
                       <td className="py-1.5 font-mono tabular-nums">{i + 1}</td>
                       <td className="py-1.5">
-                        {r.didPenetrate ? (
-                          <span className="rounded-full bg-[var(--color-primary)]/20 px-2 py-0.5 text-xs font-semibold text-[var(--color-primary)]">
-                            PEN
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-[var(--color-muted)] px-2 py-0.5 text-xs">
-                            blocked
-                          </span>
-                        )}
+                        <Pill tone={r.didPenetrate ? "accent" : "muted"}>
+                          {r.didPenetrate ? "PEN" : "blocked"}
+                        </Pill>
                       </td>
                       <td className="py-1.5 tabular-nums">{r.damage.toFixed(1)}</td>
                       <td className="py-1.5 tabular-nums">{r.armorDamage.toFixed(2)}</td>
@@ -243,11 +243,11 @@ function AdcPage() {
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-[var(--radius)] border p-3">
-      <dt className="text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
+    <div className="border border-[var(--color-border)] p-3">
+      <dt className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
         {label}
       </dt>
-      <dd>{value}</dd>
+      <dd className="mt-1 font-mono tabular-nums">{value}</dd>
     </div>
   );
 }
