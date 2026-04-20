@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { migrateV1ToV2, type SlotNodeForMigration } from "./build-migrations.js";
-import type { BuildV1 } from "./build-schema.js";
+import { migrateV1ToV2, migrateV2ToV3, type SlotNodeForMigration } from "./build-migrations.js";
+import type { BuildV1, BuildV2 } from "./build-schema.js";
 
 const v1: BuildV1 = {
   version: 1,
@@ -77,5 +77,23 @@ describe("migrateV1ToV2", () => {
     const manyModIds = Array.from({ length: 200 }, (_, i) => `mod-${i}`);
     const v2 = migrateV1ToV2({ ...v1, modIds: manyModIds }, []);
     expect(v2.orphaned).toHaveLength(64);
+  });
+});
+
+describe("migrateV2ToV3", () => {
+  it("bumps version and preserves all fields", () => {
+    const v2: BuildV2 = {
+      version: 2,
+      weaponId: "w",
+      attachments: { s: "m" },
+      orphaned: [],
+      createdAt: "2026-04-20T00:00:00.000Z",
+    };
+    const v3 = migrateV2ToV3(v2);
+    expect(v3.version).toBe(3);
+    expect(v3.weaponId).toBe("w");
+    expect(v3.attachments).toEqual({ s: "m" });
+    expect(v3.orphaned).toEqual([]);
+    expect(v3.profileSnapshot).toBeUndefined();
   });
 });
