@@ -39,17 +39,34 @@ jobs:
       # Skip the expensive pipeline when the only changes are documentation.
       # The job itself still runs (to satisfy branch-protection's required
       # status check) but every heavy step is gated on `code-changed`.
+      #
+      # Uses POSITIVE patterns (code-only paths). With dorny/paths-filter's
+      # default `some` quantifier, `code` is true iff any changed file
+      # matches. Docs-only PRs match nothing → code is false → pipeline
+      # short-circuits.
+      #
+      # (An earlier version used negation patterns — `- '!docs/**'` — which
+      # matches a docs file against the `!docs/**` pattern positively, so
+      # code was true on docs-only PRs. Positive patterns are the correct
+      # paths-filter idiom.)
       - name: Detect code changes
         id: changes
         uses: dorny/paths-filter@v3
         with:
           filters: |
             code:
-              - '!docs/**'
-              - '!**/*.md'
-              - '!.github/ISSUE_TEMPLATE/**'
-              - '!.gitignore'
-              - '!LICENSE'
+              - 'apps/**'
+              - 'packages/**'
+              - '.github/workflows/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - 'turbo.json'
+              - 'tsconfig*.json'
+              - 'eslint.config.js'
+              - 'commitlint.config.js'
+              - '.prettierrc*'
+              - '.nvmrc'
 
       - name: No-op for docs-only change
         if: steps.changes.outputs.code != 'true'
