@@ -153,3 +153,70 @@ describe("simulateScenario — body armor", () => {
     expect(result.shots[0]!.armorUsed).toBeNull();
   });
 });
+
+describe("simulateScenario — termination and plan handling", () => {
+  it("stops executing shots after the fatal one", () => {
+    const plan = Array.from({ length: 50 }, () => ({
+      zone: "thorax" as const,
+      distance: 15,
+    }));
+    const result = simulateScenario(M855, createPmcTarget(), plan);
+    expect(result.killed).toBe(true);
+    expect(result.shots.length).toBeLessThan(plan.length);
+    // Only the last recorded shot is marked killed.
+    const killedFlags = result.shots.map((s) => s.killed);
+    expect(killedFlags.filter(Boolean)).toHaveLength(1);
+    expect(killedFlags[killedFlags.length - 1]).toBe(true);
+  });
+
+  it("never kills on arms / legs alone", () => {
+    const plan = Array.from({ length: 100 }, () => ({
+      zone: "leftLeg" as const,
+      distance: 15,
+    }));
+    const result = simulateScenario(M855, createPmcTarget(), plan);
+    expect(result.killed).toBe(false);
+    expect(result.killedAt).toBeNull();
+    // Leg went to zero (blacked) but no death.
+    const last = result.shots[result.shots.length - 1]!;
+    expect(last.bodyAfter.leftLeg.blacked).toBe(true);
+  });
+
+  it("handles mixed-zone plans picking the right armor per shot", () => {
+    const target: ScenarioTarget = {
+      ...createPmcTarget(),
+      helmet: TEST_HELMET,
+      bodyArmor: TEST_BODY_ARMOR,
+    };
+    const result = simulateScenario(M855, target, [
+      { zone: "thorax", distance: 15 },
+      { zone: "leftLeg", distance: 15 },
+      { zone: "head", distance: 15 },
+    ]);
+    expect(result.shots[0]!.armorUsed).toBe("bodyArmor");
+    expect(result.shots[1]!.armorUsed).toBeNull();
+    expect(result.shots[2]!.armorUsed).toBe("helmet");
+  });
+
+  it("does not mutate the caller's body parts object", () => {
+    const target = createPmcTarget();
+    const snapshot = structuredClone(target.parts);
+    simulateScenario(M855, target, [
+      { zone: "thorax", distance: 15 },
+      { zone: "leftLeg", distance: 15 },
+    ]);
+    expect(target.parts).toEqual(snapshot);
+  });
+
+  it("produces independent bodyAfter snapshots per shot", () => {
+    const result = simulateScenario(M855, createPmcTarget(), [
+      { zone: "thorax", distance: 15 },
+      { zone: "thorax", distance: 15 },
+    ]);
+    const first = result.shots[0]!.bodyAfter.thorax.hp;
+    const second = result.shots[1]!.bodyAfter.thorax.hp;
+    expect(second).toBeLessThan(first);
+    // First snapshot wasn't mutated by the second shot.
+    expect(first).toBe(85 - M855.damage);
+  });
+});
