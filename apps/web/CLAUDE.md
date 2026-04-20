@@ -39,6 +39,12 @@ pnpm --filter @tarkov/web pages:deploy
 
 Full setup runbook: [`docs/operations/cloudflare-deploys.md`](../../docs/operations/cloudflare-deploys.md).
 
+### Env vars on Cloudflare Pages
+
+- `BUILDS_API_URL` (required in production) — URL of the `apps/builds-api` Worker (e.g. `https://tarkov-gunsmith-builds-api.<subdomain>.workers.dev`). Used by `apps/web/functions/api/builds/[[path]].ts` to proxy build save/load requests same-origin.
+
+Set via `wrangler pages secret put BUILDS_API_URL --project-name tarkov-gunsmith-web` or via the Cloudflare dashboard. The Pages deploy action does not set this automatically — if the var is missing, the Pages Function returns a 500.
+
 ## Conventions
 
 - **File-based routes only.** Files in `src/routes/` become routes. The plugin generates `route-tree.gen.ts` automatically.

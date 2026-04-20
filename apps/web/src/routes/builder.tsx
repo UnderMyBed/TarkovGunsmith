@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useModList, useWeaponList } from "@tarkov/data";
+import type React from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useModList, useWeaponList, useSaveBuild, CURRENT_BUILD_VERSION } from "@tarkov/data";
 import type { ModListItem } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
 import {
@@ -18,12 +19,24 @@ export const Route = createFileRoute("/builder")({
   component: BuilderPage,
 });
 
-function BuilderPage() {
+export interface BuilderPageProps {
+  initialWeaponId?: string;
+  initialModIds?: string[];
+  notice?: React.ReactNode;
+}
+
+export function BuilderPage({
+  initialWeaponId = "",
+  initialModIds,
+  notice,
+}: BuilderPageProps = {}) {
   const weapons = useWeaponList();
   const mods = useModList();
 
-  const [weaponId, setWeaponId] = useState<string>("");
-  const [selectedModIds, setSelectedModIds] = useState<Set<string>>(() => new Set());
+  const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
+  const [selectedModIds, setSelectedModIds] = useState<Set<string>>(
+    () => new Set(initialModIds ?? []),
+  );
   const [modSearch, setModSearch] = useState<string>("");
 
   const weaponOptions = useMemo(
@@ -58,6 +71,64 @@ function BuilderPage() {
     return weaponSpec(adaptWeapon(selectedWeapon), selectedMods.map(adaptMod));
   }, [selectedWeapon, selectedMods]);
 
+  const upstreamDrift = useMemo(() => {
+    // Only meaningful for loaded builds; fresh builds can't drift because they're built from current data.
+    if (!initialWeaponId) return null;
+    if (!weapons.data || !mods.data) return null;
+
+    const missingWeapon = !weapons.data.some((w) => w.id === initialWeaponId);
+    const knownModIds = new Set(mods.data.map((m) => m.id));
+    const missingModIds = (initialModIds ?? []).filter((id) => !knownModIds.has(id));
+
+    if (!missingWeapon && missingModIds.length === 0) return null;
+
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-sm text-[var(--color-destructive)]">
+            Some items in this build are no longer in the current game data.
+            {missingWeapon && " The original weapon is missing."}
+            {missingModIds.length > 0 &&
+              ` ${missingModIds.length} mod${missingModIds.length === 1 ? "" : "s"} couldn't be resolved.`}{" "}
+            Viewing what still exists.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }, [initialWeaponId, initialModIds, weapons.data, mods.data]);
+
+  const saveMutation = useSaveBuild();
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+
+  function handleShare() {
+    if (!selectedWeapon) return;
+    saveMutation.mutate(
+      {
+        version: CURRENT_BUILD_VERSION,
+        weaponId: selectedWeapon.id,
+        modIds: [...selectedModIds],
+        createdAt: new Date().toISOString(),
+      },
+      {
+        onSuccess: (result) => {
+          // Build the shareable URL from the SPA origin so it points at the /builder/$id
+          // loader route, not the Worker's JSON endpoint.
+          const shareableUrl = `${window.location.origin}/builder/${result.id}`;
+          void navigator.clipboard.writeText(shareableUrl).catch(() => {
+            // Clipboard permission denied — still show the URL so the user can copy manually.
+          });
+          setShareUrl(shareableUrl);
+        },
+      },
+    );
+  }
+
+  useEffect(() => {
+    if (!shareUrl) return;
+    const id = window.setTimeout(() => setShareUrl(null), 5000);
+    return () => window.clearTimeout(id);
+  }, [shareUrl]);
+
   function toggleMod(modId: string) {
     setSelectedModIds((prev) => {
       const next = new Set(prev);
@@ -84,6 +155,8 @@ function BuilderPage() {
           <code>ItemPropertiesWeaponMod</code>); slot-based compatibility comes in a follow-up.
         </p>
       </section>
+      {notice}
+      {upstreamDrift}
 
       {error && (
         <Card>
@@ -100,7 +173,7 @@ function BuilderPage() {
             {isLoading ? "Loading…" : `${weaponOptions.length} weapons available`}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-3">
           <select
             className="h-9 w-full rounded-[var(--radius)] border bg-[var(--color-input)] px-3 text-sm"
             value={weaponId}
@@ -117,6 +190,18 @@ function BuilderPage() {
               </option>
             ))}
           </select>
+          {selectedWeapon && (
+            <div className="flex items-center gap-3">
+              <Button onClick={handleShare} disabled={saveMutation.isPending} size="sm">
+                {saveMutation.isPending ? "Saving…" : "Share build"}
+              </Button>
+              {saveMutation.error && (
+                <span className="text-sm text-[var(--color-destructive)]">
+                  Couldn't save — try again
+                </span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -194,6 +279,17 @@ function BuilderPage() {
             </Card>
           )}
         </>
+      )}
+      {shareUrl && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg"
+        >
+          <div className="text-sm font-medium">Build URL copied</div>
+          <code className="mt-1 block max-w-xs truncate text-xs text-[var(--color-muted-foreground)]">
+            {shareUrl}
+          </code>
+        </div>
       )}
     </div>
   );
