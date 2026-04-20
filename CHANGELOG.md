@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.2.0...v1.3.0) (2026-04-20)
+
+
+### Features
+
+* **builder:** player-progression gating + schema v3 (M1.5 PR 3) ([#47](https://github.com/UnderMyBed/TarkovGunsmith/issues/47)) ([2e26b00](https://github.com/UnderMyBed/TarkovGunsmith/commit/2e26b00a7ca003680f7d4c6497638c4fd1b18a76))
+
 ## [1.2.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.1.0...v1.2.0) (2026-04-20)
 
 
