@@ -100,6 +100,17 @@ function HomePage() {
             </CardContent>
           </Card>
         </Link>
+        <Link to="/charts" className="block">
+          <Card className="transition-colors hover:border-[var(--color-primary)]">
+            <CardHeader>
+              <CardTitle>Effectiveness Charts</CardTitle>
+              <CardDescription>Visual shots-to-break per armor for a chosen ammo.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--color-muted-foreground)]">
+              Bar chart with reliable / marginal / ineffective classification.
+            </CardContent>
+          </Card>
+        </Link>
       </section>
     </div>
   );
