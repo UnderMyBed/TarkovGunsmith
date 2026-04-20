@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.0.0...v1.1.0) (2026-04-20)
+
+
+### Features
+
+* **builder:** schema v1 + save/load round-trip (M1.5 PR 1) ([#43](https://github.com/UnderMyBed/TarkovGunsmith/issues/43)) ([a8e74ac](https://github.com/UnderMyBed/TarkovGunsmith/commit/a8e74ac079b4456e841c96441e49c0ca89f54636))
+
 ## [1.0.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v0.12.0...v1.0.0) (2026-04-19)
 
 
