@@ -13,6 +13,7 @@ import { Route as SmokeRouteImport } from './routes/smoke'
 import { Route as SimRouteImport } from './routes/sim'
 import { Route as MatrixRouteImport } from './routes/matrix'
 import { Route as DataRouteImport } from './routes/data'
+import { Route as ChartsRouteImport } from './routes/charts'
 import { Route as CalcRouteImport } from './routes/calc'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as AecRouteImport } from './routes/aec'
@@ -38,6 +39,11 @@ const MatrixRoute = MatrixRouteImport.update({
 const DataRoute = DataRouteImport.update({
   id: '/data',
   path: '/data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChartsRoute = ChartsRouteImport.update({
+  id: '/charts',
+  path: '/charts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalcRoute = CalcRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/aec': typeof AecRoute
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
+  '/charts': typeof ChartsRoute
   '/data': typeof DataRoute
   '/matrix': typeof MatrixRoute
   '/sim': typeof SimRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/aec': typeof AecRoute
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
+  '/charts': typeof ChartsRoute
   '/data': typeof DataRoute
   '/matrix': typeof MatrixRoute
   '/sim': typeof SimRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/aec': typeof AecRoute
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
+  '/charts': typeof ChartsRoute
   '/data': typeof DataRoute
   '/matrix': typeof MatrixRoute
   '/sim': typeof SimRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/aec'
     | '/builder'
     | '/calc'
+    | '/charts'
     | '/data'
     | '/matrix'
     | '/sim'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/aec'
     | '/builder'
     | '/calc'
+    | '/charts'
     | '/data'
     | '/matrix'
     | '/sim'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/aec'
     | '/builder'
     | '/calc'
+    | '/charts'
     | '/data'
     | '/matrix'
     | '/sim'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   AecRoute: typeof AecRoute
   BuilderRoute: typeof BuilderRouteWithChildren
   CalcRoute: typeof CalcRoute
+  ChartsRoute: typeof ChartsRoute
   DataRoute: typeof DataRoute
   MatrixRoute: typeof MatrixRoute
   SimRoute: typeof SimRoute
@@ -187,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/data'
       fullPath: '/data'
       preLoaderRoute: typeof DataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/charts': {
+      id: '/charts'
+      path: '/charts'
+      fullPath: '/charts'
+      preLoaderRoute: typeof ChartsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calc': {
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   AecRoute: AecRoute,
   BuilderRoute: BuilderRouteWithChildren,
   CalcRoute: CalcRoute,
+  ChartsRoute: ChartsRoute,
   DataRoute: DataRoute,
   MatrixRoute: MatrixRoute,
   SimRoute: SimRoute,

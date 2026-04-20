@@ -63,6 +63,12 @@ function RootLayout() {
               Data
             </Link>
             <Link
+              to="/charts"
+              activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
+            >
+              Charts
+            </Link>
+            <Link
               to="/smoke"
               activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
             >
