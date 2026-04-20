@@ -1,5 +1,8 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Chivo:ital,wght@0,300;0,400;0,500;0,700;0,800;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
+
+/* Fonts are loaded via <link rel="stylesheet"> in apps/web/index.html.
+ * They cannot live here: CSS spec requires @import to precede all other rules
+ * (including Tailwind's @layer output), so compilers strip it from the bundle. */
 
 @theme {
   /* ───── Field Ledger palette ────────────────────────────────── */
