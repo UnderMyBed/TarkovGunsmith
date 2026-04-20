@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.1.0...v1.2.0) (2026-04-20)
+
+
+### Features
+
+* **builder:** slot-based mod compatibility + schema v2 (M1.5 PR 2) ([#45](https://github.com/UnderMyBed/TarkovGunsmith/issues/45)) ([4756524](https://github.com/UnderMyBed/TarkovGunsmith/commit/4756524b21a8e774a18b2c42b0d13675c7bed9ae))
+
 ## [1.1.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.0.0...v1.1.0) (2026-04-20)
 
 
