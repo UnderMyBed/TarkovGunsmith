@@ -26,15 +26,22 @@ function DataPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <h1 className="text-3xl font-bold tracking-tight">DataSheets</h1>
-        <p className="mt-2 text-[var(--color-muted-foreground)]">
+      <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
+        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
+          <span>DATA · TABLES</span>
+          <span>/ AMMO · ARMOR · WEAPONS · MODULES</span>
+          <span>/ SORT + FILTER</span>
+        </div>
+        <h1 className="font-display text-[clamp(32px,5vw,56px)] leading-[0.95] tracking-tight uppercase">
+          Data<span className="text-[var(--color-primary)]">Sheets</span>
+        </h1>
+        <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Reference tables for ammo, armor, weapons, and weapon modifications. Sort by any column;
           filter by name.
         </p>
       </section>
 
-      <div className="flex flex-wrap items-center gap-2 border-b">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)]">
         {(["ammo", "armor", "weapons", "modules"] as const).map((t) => (
           <button
             key={t}
@@ -42,11 +49,11 @@ function DataPage() {
             onClick={() => setTab(t)}
             className={
               tab === t
-                ? "border-b-2 border-[var(--color-primary)] px-3 py-2 text-sm font-semibold text-[var(--color-primary)]"
-                : "px-3 py-2 text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                ? "border-b-2 border-[var(--color-primary)] px-3 py-2 font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-primary)]"
+                : "px-3 py-2 font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
             }
           >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {t.toUpperCase()}
           </button>
         ))}
         <div className="ml-auto">
@@ -109,7 +116,11 @@ function Header<T>({
         className="text-xs font-semibold uppercase tracking-wide hover:text-[var(--color-primary)]"
       >
         {label}
-        {active && <span className="ml-1">{sort.direction === "asc" ? "▲" : "▼"}</span>}
+        {active && (
+          <span className="ml-1 text-[var(--color-primary)]">
+            {sort.direction === "asc" ? "▲" : "▼"}
+          </span>
+        )}
       </button>
     </th>
   );
@@ -148,7 +159,7 @@ function AmmoTable({ query }: { query: string }) {
     <DataCard title="Ammo" count={display.length}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-[var(--color-muted-foreground)]">
+          <tr className="border-b-2 border-[var(--color-foreground)] text-[var(--color-muted-foreground)]">
             <Header<Row> label="Name" keyName="name" sort={sort} onSort={onSort} />
             <Header<Row> label="Pen" keyName="pen" sort={sort} onSort={onSort} align="right" />
             <Header<Row>
@@ -176,7 +187,10 @@ function AmmoTable({ query }: { query: string }) {
         </thead>
         <tbody>
           {display.map((r) => (
-            <tr key={r.id} className="border-b last:border-b-0">
+            <tr
+              key={r.id}
+              className="border-b border-dashed border-[var(--color-border)] last:border-b-0"
+            >
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-right tabular-nums">{r.pen}</td>
               <td className="py-1.5 text-right tabular-nums">{r.damage}</td>
@@ -223,7 +237,7 @@ function ArmorTable({ query }: { query: string }) {
     <DataCard title="Armor" count={display.length}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-[var(--color-muted-foreground)]">
+          <tr className="border-b-2 border-[var(--color-foreground)] text-[var(--color-muted-foreground)]">
             <Header<Row> label="Name" keyName="name" sort={sort} onSort={onSort} />
             <Header<Row> label="Class" keyName="class" sort={sort} onSort={onSort} align="right" />
             <Header<Row>
@@ -239,7 +253,10 @@ function ArmorTable({ query }: { query: string }) {
         </thead>
         <tbody>
           {display.map((r) => (
-            <tr key={r.id} className="border-b last:border-b-0">
+            <tr
+              key={r.id}
+              className="border-b border-dashed border-[var(--color-border)] last:border-b-0"
+            >
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-right tabular-nums">{r.class}</td>
               <td className="py-1.5 text-right tabular-nums">{r.durability}</td>
@@ -288,7 +305,7 @@ function WeaponTable({ query }: { query: string }) {
     <DataCard title="Weapons" count={display.length}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-[var(--color-muted-foreground)]">
+          <tr className="border-b-2 border-[var(--color-foreground)] text-[var(--color-muted-foreground)]">
             <Header<Row> label="Name" keyName="name" sort={sort} onSort={onSort} />
             <Header<Row> label="Caliber" keyName="caliber" sort={sort} onSort={onSort} />
             <Header<Row>
@@ -330,7 +347,10 @@ function WeaponTable({ query }: { query: string }) {
         </thead>
         <tbody>
           {display.map((r) => (
-            <tr key={r.id} className="border-b last:border-b-0">
+            <tr
+              key={r.id}
+              className="border-b border-dashed border-[var(--color-border)] last:border-b-0"
+            >
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-[var(--color-muted-foreground)]">{r.caliber}</td>
               <td className="py-1.5 text-right tabular-nums">{r.ergonomics}</td>
@@ -377,7 +397,7 @@ function ModTable({ query }: { query: string }) {
     <DataCard title="Modules" count={display.length}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-[var(--color-muted-foreground)]">
+          <tr className="border-b-2 border-[var(--color-foreground)] text-[var(--color-muted-foreground)]">
             <Header<Row> label="Name" keyName="name" sort={sort} onSort={onSort} />
             <Header<Row> label="Ergo Δ" keyName="ergo" sort={sort} onSort={onSort} align="right" />
             <Header<Row>
@@ -405,7 +425,10 @@ function ModTable({ query }: { query: string }) {
         </thead>
         <tbody>
           {display.map((r) => (
-            <tr key={r.id} className="border-b last:border-b-0">
+            <tr
+              key={r.id}
+              className="border-b border-dashed border-[var(--color-border)] last:border-b-0"
+            >
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-right tabular-nums">{r.ergo}</td>
               <td className="py-1.5 text-right tabular-nums">{r.recoilPct}</td>

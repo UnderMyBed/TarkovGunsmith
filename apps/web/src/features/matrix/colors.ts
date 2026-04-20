@@ -14,12 +14,13 @@ export function shotsToBreakBucket(shots: number): EffectivenessBucket {
 
 /**
  * Tailwind color classes per bucket. Background + foreground tuned for
- * dark-theme cells in a tight grid.
+ * dark-theme cells in a tight grid. Palette follows the Field Ledger tokens:
+ * olive (great) → amber (good) → amber-deep (fair) → rust (poor) → muted (none).
  */
 export const BUCKET_CLASSES: Record<EffectivenessBucket, string> = {
-  great: "bg-[oklch(0.45_0.13_140)] text-white",
-  good: "bg-[oklch(0.55_0.13_100)] text-white",
-  fair: "bg-[oklch(0.55_0.15_60)] text-white",
-  poor: "bg-[oklch(0.45_0.15_30)] text-white",
+  great: "bg-[color:rgba(122,139,63,0.85)] text-[var(--color-primary-foreground)]",
+  good: "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]",
+  fair: "bg-[var(--color-amber-deep)] text-[var(--color-foreground)]",
+  poor: "bg-[var(--color-rust)] text-[var(--color-foreground)]",
   none: "bg-[var(--color-muted)] text-[var(--color-muted-foreground)]",
 };
