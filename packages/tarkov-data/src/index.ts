@@ -51,6 +51,16 @@ export {
   type SaveBuildResponse,
 } from "./buildsApi.js";
 
+// Pairs API client
+export {
+  savePair,
+  loadPair,
+  forkPair,
+  LoadPairError,
+  type LoadPairErrorCode,
+  type SavePairResponse,
+} from "./pairsApi.js";
+
 // Weapon tree (slot-based compatibility)
 export { WEAPON_TREE_QUERY, fetchWeaponTree, normalizeSlots } from "./queries/weaponTree.js";
 export type { WeaponTree, SlotNode, AllowedItem } from "./queries/weaponTree.js";
