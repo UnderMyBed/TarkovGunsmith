@@ -166,3 +166,31 @@ describe("itemAvailability", () => {
     if (!r2.available) expect(r2.reason).toBe("no-sources");
   });
 });
+
+describe("itemAvailability — weapon shape", () => {
+  // Sanity check: a WeaponListItem-shaped object satisfies AvailabilityInput
+  // and returns the expected trader path.
+  it("evaluates a weapon's trader offer like any other item", () => {
+    const weapon = {
+      buyFor: [
+        {
+          priceRUB: 43000,
+          currency: "RUB",
+          vendor: {
+            __typename: "TraderOffer" as const,
+            normalizedName: "peacekeeper",
+            minTraderLevel: 1,
+            taskUnlock: null,
+            trader: { normalizedName: "peacekeeper" },
+          },
+        },
+      ],
+      types: ["weapon"],
+    };
+    const result = itemAvailability(weapon, baseProfile);
+    expect(result.available).toBe(true);
+    if (result.available) {
+      expect(result.kind).toBe("trader");
+    }
+  });
+});
