@@ -80,3 +80,45 @@ test.describe("smoke — design system", () => {
     expect(loaded).toBe(true);
   });
 });
+
+test.describe("smoke — builder interaction", () => {
+  /**
+   * Regression guard for the reported Builder runtime error: selecting a
+   * weapon should not throw, crash the tree, or surface a console error.
+   * Picks the first real option in the Weapon <select> and waits for the
+   * Mods card (which only renders once tree.data is loaded).
+   */
+  test("selecting a weapon renders the slot tree without errors", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/builder", { waitUntil: "networkidle" });
+
+    // Find the Weapon dropdown. The label text "Weapon" is unique on /builder.
+    const select = page
+      .locator("select")
+      .filter({ has: page.locator('option:has-text("Select weapon")') })
+      .first();
+    await expect(select).toBeVisible({ timeout: 15_000 });
+
+    // Wait until the weapon list has loaded (more than just the placeholder).
+    await expect
+      .poll(async () => (await select.locator("option").count()) > 1, {
+        timeout: 15_000,
+      })
+      .toBe(true);
+
+    // Grab the second option (first real weapon; index 0 is the placeholder).
+    const firstWeaponValue = await select.locator("option").nth(1).getAttribute("value");
+    expect(firstWeaponValue, "expected at least one weapon option").toBeTruthy();
+    await select.selectOption(firstWeaponValue);
+
+    // After selection the Mods card appears with "Loading slot tree…" then the
+    // tree. Assert one of the downstream elements renders without the page
+    // throwing a console error along the way.
+    await expect(page.getByText(/Mods|slot tree/i).first()).toBeVisible({ timeout: 20_000 });
+
+    expect(
+      errors,
+      `Console errors on /builder after selecting a weapon:\n${errors.join("\n")}`,
+    ).toEqual([]);
+  });
+});
