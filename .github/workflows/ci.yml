@@ -19,6 +19,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# dorny/paths-filter calls the GitHub Pulls API to diff changed files;
+# the default GITHUB_TOKEN doesn't grant pull-requests: read on newer
+# repos, which 403s. Grant it explicitly.
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   ci:
     name: Typecheck • Lint • Format • Test
