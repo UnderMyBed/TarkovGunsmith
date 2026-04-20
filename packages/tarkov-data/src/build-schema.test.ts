@@ -4,6 +4,7 @@ import {
   BuildV1,
   BuildV2,
   BuildV3,
+  BuildV4,
   PlayerProfile,
   CURRENT_BUILD_VERSION,
 } from "./build-schema.js";
@@ -183,8 +184,47 @@ describe("Build (discriminated union) — v3", () => {
   });
 });
 
+describe("BuildV4", () => {
+  const v4base = {
+    version: 4 as const,
+    weaponId: "w",
+    attachments: {},
+    orphaned: [],
+    createdAt: "2026-04-20T00:00:00.000Z",
+  };
+  it("parses without name/description", () => {
+    const parsed = BuildV4.parse(v4base);
+    expect(parsed.name).toBeUndefined();
+    expect(parsed.description).toBeUndefined();
+  });
+  it("parses with name and description", () => {
+    const parsed = BuildV4.parse({ ...v4base, name: "Meta M4", description: "budget-friendly" });
+    expect(parsed.name).toBe("Meta M4");
+    expect(parsed.description).toBe("budget-friendly");
+  });
+  it("rejects name longer than 60 chars", () => {
+    expect(BuildV4.safeParse({ ...v4base, name: "x".repeat(61) }).success).toBe(false);
+  });
+  it("rejects description longer than 280 chars", () => {
+    expect(BuildV4.safeParse({ ...v4base, description: "x".repeat(281) }).success).toBe(false);
+  });
+});
+
+describe("Build (discriminated union) — v4", () => {
+  it("dispatches to BuildV4 when version is 4", () => {
+    const v4 = {
+      version: 4 as const,
+      weaponId: "w",
+      attachments: {},
+      orphaned: [],
+      createdAt: "2026-04-20T00:00:00.000Z",
+    };
+    expect(Build.parse(v4).version).toBe(4);
+  });
+});
+
 describe("CURRENT_BUILD_VERSION", () => {
   it("matches the latest BuildV* variant in the discriminated union", () => {
-    expect(CURRENT_BUILD_VERSION).toBe(3);
+    expect(CURRENT_BUILD_VERSION).toBe(4);
   });
 });

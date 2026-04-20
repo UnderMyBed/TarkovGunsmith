@@ -76,12 +76,20 @@ export const BuildV3 = BuildV2.extend({
 
 export type BuildV3 = z.infer<typeof BuildV3>;
 
+export const BuildV4 = BuildV3.extend({
+  version: z.literal(4),
+  name: z.string().max(60).optional(),
+  description: z.string().max(280).optional(),
+});
+
+export type BuildV4 = z.infer<typeof BuildV4>;
+
 /**
  * Discriminated union over all known build versions. Grows one variant per
  * Builder Robustness PR. Never mutates existing variants — old shared URLs
  * must keep parsing forever (modulo the 30-day KV TTL on builds-api).
  */
-export const Build = z.discriminatedUnion("version", [BuildV1, BuildV2, BuildV3]);
+export const Build = z.discriminatedUnion("version", [BuildV1, BuildV2, BuildV3, BuildV4]);
 export type Build = z.infer<typeof Build>;
 
 /**
@@ -89,4 +97,4 @@ export type Build = z.infer<typeof Build>;
  * so callers can use this literal in `{ version: CURRENT_BUILD_VERSION }`
  * without a cast.
  */
-export const CURRENT_BUILD_VERSION = 3 as const;
+export const CURRENT_BUILD_VERSION = 4 as const;

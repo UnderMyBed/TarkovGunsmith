@@ -24,6 +24,7 @@ export {
   BuildV1,
   BuildV2,
   BuildV3,
+  BuildV4,
   PlayerProfile,
   DEFAULT_PROFILE,
   CURRENT_BUILD_VERSION,
@@ -53,7 +54,7 @@ export type { WeaponTree, SlotNode, AllowedItem } from "./queries/weaponTree.js"
 export { useWeaponTree } from "./hooks/useWeaponTree.js";
 
 // Build migrations
-export { migrateV1ToV2, migrateV2ToV3 } from "./build-migrations.js";
+export { migrateV1ToV2, migrateV2ToV3, migrateV3ToV4 } from "./build-migrations.js";
 export type { SlotNodeForMigration } from "./build-migrations.js";
 
 // Progression gating
@@ -67,3 +68,7 @@ export type { TaskListItem } from "./queries/tasks.js";
 export { useTraders } from "./hooks/useTraders.js";
 export { useTasks } from "./hooks/useTasks.js";
 export { useProfile } from "./hooks/useProfile.js";
+
+// Presets
+export { WEAPON_PRESETS, presetsForWeapon } from "./presets.js";
+export type { WeaponPreset } from "./presets.js";
