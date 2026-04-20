@@ -80,10 +80,17 @@ function SimPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <h1 className="text-3xl font-bold tracking-tight">Ballistics Simulator</h1>
-        <p className="mt-2 text-[var(--color-muted-foreground)]">
-          Build a shot plan against a PMC target. Pick ammo, optional helmet + body armor, click
+      <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
+        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
+          <span>FORWARD · SCENARIO</span>
+          <span>/ MULTI-SHOT · MULTI-ZONE</span>
+          <span>/ PMC DEFAULTS</span>
+        </div>
+        <h1 className="font-display text-[clamp(32px,5vw,56px)] leading-[0.95] tracking-tight uppercase">
+          Ballistics <span className="text-[var(--color-primary)]">Simulator</span>
+        </h1>
+        <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
+          Build a shot plan against a PMC target — pick ammo, optional helmet + body armor, click
           zones to queue shots, then hit Run to simulate the engagement shot-by-shot.
         </p>
       </section>
@@ -204,7 +211,7 @@ function SimPage() {
         </Card>
 
         {/* Results */}
-        <Card>
+        <Card variant="bracket">
           <CardHeader>
             <CardTitle>Results</CardTitle>
             {!lastResult && (
