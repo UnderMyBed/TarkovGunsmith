@@ -2,15 +2,18 @@
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
 
-> **Status: v1.0.0 — Milestone 1 complete.** Full stack live with all three killer features deployed:
+> **Status: v1.4.0 — Milestones 1 + 1.5 complete.** Full stack live with the three M1 killer features (`/calc`, `/matrix`, `/builder`) plus the M1.5 Builder Robustness arc:
 >
-> - **`/calc`** — Ballistic Calculator (form → live `simulateShot` result)
-> - **`/matrix`** — AmmoVsArmor matrix (color-coded shots-to-break grid via `armorEffectiveness`)
-> - **`/builder`** — Weapon Builder (weapon picker + mod multi-select + live `weaponSpec` recompute)
+> - **v1.1.0** — Build schema v1, save/share URL via `apps/builds-api`, `/builder/$id` loader route, 4-code `LoadBuildError` taxonomy, upstream-drift warning.
+> - **v1.2.0** — Slot-based mod compatibility (schema v2), recursive `useWeaponTree` (depth 3), `<details>`-based slot picker, `OrphanedBanner` for v1→v2 migration.
+> - **v1.3.0** — Player-progression gating (schema v3), `PlayerProfile` (basic LL/flea + advanced marquee quests), `itemAvailability` pure function, dimmed/badged unavailable mods with "show all" toggle, opt-in profile snapshot embed.
+> - **v1.4.0** — UX depth (schema v4): optional build name/description + inline editor, stock-diff stat grid, `PresetPicker` scaffold (empty map — content follow-up).
 >
 > Plus `/smoke` (end-to-end data wiring proof) and `/` (landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Auto-deploys on every merge to `main`.
 >
-> **Roadmap from here (v1.1.x — Milestone 1.5 "Builder Robustness"):** slot-based mod compatibility; build schema + save/load via `apps/builds-api` (`/builder/$id` loader); player-progression gating (basic: trader loyalty levels + flea toggle; advanced: + marquee unlock quests) — pulled up from M3 since it shares the same enrichment pipeline as slot compat; UX depth (slot tree, presets, undo/redo, build-vs-stock diff). OG share cards, build comparison, build optimization, and `tarkov.dev` profile import defer to M3. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13 for the full roadmap.
+> **Roadmap from here (v2.0+ — Milestone 2 "Parity"):** Ballistics Simulator (multi-shot scenarios); ADC (Armor Damage Calc); AEC (Armor Effectiveness Calc, inverse view); full DataSheets for weapons / ammo / armor / modules; effectiveness charts. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13.
+>
+> **Deferred M1.5 items (tracked, not blocking):** Undo/redo; `allowedCategories` slot filtering; `craftsFor`/`bartersFor` in availability; Dialog primitive; weapon preset content; slot-tree polish (sticky headers, keyboard nav); Playwright e2e.
 
 ## What this project is
 

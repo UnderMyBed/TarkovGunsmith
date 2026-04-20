@@ -44,3 +44,8 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Build
+        # Catches build-only failures that typecheck/lint miss (e.g. missing
+        # devDependencies that vite or tsc resolve only at bundle time).
+        run: pnpm build
