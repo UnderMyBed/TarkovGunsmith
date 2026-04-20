@@ -57,6 +57,12 @@ function RootLayout() {
               AEC
             </Link>
             <Link
+              to="/data"
+              activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
+            >
+              Data
+            </Link>
+            <Link
               to="/smoke"
               activeProps={{ className: "font-semibold text-[var(--color-primary)]" }}
             >
