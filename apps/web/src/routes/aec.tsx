@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useAmmoList, useArmorList } from "@tarkov/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@tarkov/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Pill } from "@tarkov/ui";
 import { adaptAmmo, adaptArmor } from "../features/data-adapters/adapters.js";
-import { rankAmmos, type AecClassification } from "../features/aec/rankAmmos.js";
+import { rankAmmos } from "../features/aec/rankAmmos.js";
 
 export const Route = createFileRoute("/aec")({
   component: AecPage,
@@ -42,9 +42,15 @@ function AecPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <h1 className="text-3xl font-bold tracking-tight">Armor Effectiveness Calculator</h1>
-        <p className="mt-2 text-[var(--color-muted-foreground)]">
+      <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
+        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
+          <span>INVERSE · RANKING</span>
+          <span>/ ARMOR FIXED</span>
+        </div>
+        <h1 className="font-display text-[clamp(32px,5vw,56px)] leading-[0.95] tracking-tight uppercase">
+          Armor Effectiveness <span className="text-[var(--color-primary)]">Calculator</span>
+        </h1>
+        <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Pick an armor; every ammo is simulated and ranked by how efficiently it breaks it.
           Classifications: <strong>reliable</strong> (≤ cap), <strong>marginal</strong> (≤ 2× cap),
           <strong> ineffective</strong> (never breaks within 2× cap).
@@ -118,7 +124,7 @@ function AecPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card variant="bracket">
         <CardHeader>
           <CardTitle>Ranked ammo</CardTitle>
           {!rows && <CardDescription>Pick an armor to rank every ammo.</CardDescription>}
@@ -152,7 +158,7 @@ function AecPage() {
                         {r.totalDamageAtBreak === 0 ? "—" : r.totalDamageAtBreak.toFixed(0)}
                       </td>
                       <td className="py-1.5">
-                        <ClassificationPill k={r.classification} />
+                        <Pill tone={r.classification}>{r.classification}</Pill>
                       </td>
                     </tr>
                   ))}
@@ -163,25 +169,5 @@ function AecPage() {
         )}
       </Card>
     </div>
-  );
-}
-
-function ClassificationPill({ k }: { k: AecClassification }) {
-  if (k === "reliable") {
-    return (
-      <span className="rounded-full bg-[var(--color-primary)]/20 px-2 py-0.5 text-xs font-semibold text-[var(--color-primary)]">
-        reliable
-      </span>
-    );
-  }
-  if (k === "marginal") {
-    return (
-      <span className="rounded-full bg-amber-600/20 px-2 py-0.5 text-xs font-semibold text-amber-500">
-        marginal
-      </span>
-    );
-  }
-  return (
-    <span className="rounded-full bg-[var(--color-muted)] px-2 py-0.5 text-xs">ineffective</span>
   );
 }
