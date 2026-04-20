@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { GraphQLClient } from "../client.js";
+import { buyForEntrySchema } from "./shared/buy-for.js";
 
 export const MOD_LIST_QUERY = /* GraphQL */ `
   query ModList {
@@ -51,38 +52,6 @@ const modPropertiesSchema = z.object({
   accuracyModifier: z.number(),
 });
 
-const traderOfferVendorSchema = z.object({
-  __typename: z.literal("TraderOffer"),
-  normalizedName: z.string(),
-  minTraderLevel: z.number().int().nullable(),
-  taskUnlock: z
-    .object({
-      id: z.string().nullable(),
-      normalizedName: z.string(),
-    })
-    .nullable(),
-  trader: z.object({
-    normalizedName: z.string(),
-  }),
-});
-
-const fleaMarketVendorSchema = z.object({
-  __typename: z.literal("FleaMarket"),
-  normalizedName: z.string(),
-  minPlayerLevel: z.number().int().nullable(),
-});
-
-const vendorSchema = z.discriminatedUnion("__typename", [
-  traderOfferVendorSchema,
-  fleaMarketVendorSchema,
-]);
-
-const buyForEntrySchema = z.object({
-  priceRUB: z.number().int().nullable(),
-  currency: z.string().nullable(),
-  vendor: vendorSchema,
-});
-
 const modListItemSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -104,8 +73,8 @@ const modListEnvelopeSchema = z.object({
 });
 
 export type ModListItem = z.infer<typeof modListItemSchema>;
-export type ModListBuyFor = z.infer<typeof buyForEntrySchema>;
-export type ModListVendor = z.infer<typeof vendorSchema>;
+// Re-exported for backward compat with existing consumers.
+export type { BuyForEntry as ModListBuyFor, Vendor as ModListVendor } from "./shared/buy-for.js";
 
 /**
  * Fetch the list of weapon mods that affect ergo/recoil/accuracy
