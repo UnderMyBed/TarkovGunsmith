@@ -104,7 +104,12 @@ Pre-commit (via Husky 9) runs `lint-staged` on changed files (`eslint --fix --ma
 
 ## CI
 
-GitHub Actions runs typecheck, lint, format check, and tests on every push and PR. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions runs typecheck, lint, format check, Vitest, and Playwright smoke tests on every pull_request. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+**Budget-conscious triggers:**
+
+- CI fires on `pull_request` (the pre-merge gate) + `workflow_dispatch` (release-please fires this on its branch). It does NOT fire on push to `main` — branch protection requires PRs to be up-to-date + green before merging, so post-merge CI would be a duplicate of the just-passed PR check.
+- Docs-only PRs (changes confined to `docs/**`, `*.md`, `.gitignore`, `LICENSE`, issue templates) skip the whole pipeline via a `dorny/paths-filter` gate at the top of the job. The job name still reports success to satisfy branch protection.
 
 ## Releases & versioning
 
