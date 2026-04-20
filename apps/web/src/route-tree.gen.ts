@@ -14,6 +14,7 @@ import { Route as MatrixRouteImport } from './routes/matrix'
 import { Route as CalcRouteImport } from './routes/calc'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BuilderIdRouteImport } from './routes/builder.$id'
 
 const SmokeRoute = SmokeRouteImport.update({
   id: '/smoke',
@@ -40,40 +41,55 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BuilderIdRoute = BuilderIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => BuilderRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/builder': typeof BuilderRoute
+  '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
+  '/builder/$id': typeof BuilderIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/builder': typeof BuilderRoute
+  '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
+  '/builder/$id': typeof BuilderIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/builder': typeof BuilderRoute
+  '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
   '/smoke': typeof SmokeRoute
+  '/builder/$id': typeof BuilderIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/builder' | '/calc' | '/matrix' | '/smoke'
+  fullPaths: '/' | '/builder' | '/calc' | '/matrix' | '/smoke' | '/builder/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/builder' | '/calc' | '/matrix' | '/smoke'
-  id: '__root__' | '/' | '/builder' | '/calc' | '/matrix' | '/smoke'
+  to: '/' | '/builder' | '/calc' | '/matrix' | '/smoke' | '/builder/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/builder'
+    | '/calc'
+    | '/matrix'
+    | '/smoke'
+    | '/builder/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BuilderRoute: typeof BuilderRoute
+  BuilderRoute: typeof BuilderRouteWithChildren
   CalcRoute: typeof CalcRoute
   MatrixRoute: typeof MatrixRoute
   SmokeRoute: typeof SmokeRoute
@@ -116,12 +132,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/builder/$id': {
+      id: '/builder/$id'
+      path: '/$id'
+      fullPath: '/builder/$id'
+      preLoaderRoute: typeof BuilderIdRouteImport
+      parentRoute: typeof BuilderRoute
+    }
   }
 }
 
+interface BuilderRouteChildren {
+  BuilderIdRoute: typeof BuilderIdRoute
+}
+
+const BuilderRouteChildren: BuilderRouteChildren = {
+  BuilderIdRoute: BuilderIdRoute,
+}
+
+const BuilderRouteWithChildren =
+  BuilderRoute._addFileChildren(BuilderRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BuilderRoute: BuilderRoute,
+  BuilderRoute: BuilderRouteWithChildren,
   CalcRoute: CalcRoute,
   MatrixRoute: MatrixRoute,
   SmokeRoute: SmokeRoute,

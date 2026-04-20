@@ -34,3 +34,6 @@ Thumbs.db
 # wrangler / cloudflare
 .wrangler/
 .dev.vars
+
+# worktrees — isolated feature workspaces created by superpowers skills
+.worktrees/

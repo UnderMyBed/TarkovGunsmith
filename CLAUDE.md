@@ -10,7 +10,7 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 >
 > Plus `/smoke` (end-to-end data wiring proof) and `/` (landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Auto-deploys on every merge to `main`.
 >
-> **Roadmap from here (v1.1.0+):** Builder share-URL via `apps/builds-api` (Pages Function proxy + `/builder/$id` loader); slot-based mod compatibility; OG share cards; build comparison; build optimization. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) for the full Milestone 2/3 plan.
+> **Roadmap from here (v1.1.x — Milestone 1.5 "Builder Robustness"):** slot-based mod compatibility; build schema + save/load via `apps/builds-api` (`/builder/$id` loader); player-progression gating (basic: trader loyalty levels + flea toggle; advanced: + marquee unlock quests) — pulled up from M3 since it shares the same enrichment pipeline as slot compat; UX depth (slot tree, presets, undo/redo, build-vs-stock diff). OG share cards, build comparison, build optimization, and `tarkov.dev` profile import defer to M3. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13 for the full roadmap.
 
 ## What this project is
 

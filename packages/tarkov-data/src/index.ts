@@ -18,9 +18,23 @@ export type { WeaponListItem } from "./queries/weaponList.js";
 export { MOD_LIST_QUERY, modListSchema, fetchModList } from "./queries/modList.js";
 export type { ModListItem } from "./queries/modList.js";
 
+// Build schema
+export { Build, BuildV1, CURRENT_BUILD_VERSION } from "./build-schema.js";
+
 // Hooks
 export { useAmmoList } from "./hooks/useAmmoList.js";
 export { useArmorList } from "./hooks/useArmorList.js";
 export { useWeapon } from "./hooks/useWeapon.js";
 export { useWeaponList } from "./hooks/useWeaponList.js";
 export { useModList } from "./hooks/useModList.js";
+export { useSaveBuild } from "./hooks/useSaveBuild.js";
+export { useLoadBuild } from "./hooks/useLoadBuild.js";
+
+// Builds API client
+export {
+  saveBuild,
+  loadBuild,
+  LoadBuildError,
+  type LoadBuildErrorCode,
+  type SaveBuildResponse,
+} from "./buildsApi.js";

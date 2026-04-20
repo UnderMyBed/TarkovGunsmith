@@ -25,7 +25,9 @@ export default defineConfig({
       "/api/builds": {
         target: "http://localhost:8788",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/builds/, ""),
+        // Worker routes under `/builds/...` — strip only the `/api` prefix so
+        // `/api/builds/abc` becomes `/builds/abc` on the Worker.
+        rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
   },
