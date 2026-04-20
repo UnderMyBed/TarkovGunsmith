@@ -65,6 +65,7 @@ export function BuilderPage({
 
   const [profile, setProfile] = useProfile();
   const [showAll, setShowAll] = useState(false);
+  const [showAllWeapons, setShowAllWeapons] = useState(false);
   const [embedProfileOnSave, setEmbedProfileOnSave] = useState(false);
   const [snapshotBannerDismissed, setSnapshotBannerDismissed] = useState(false);
 
@@ -91,10 +92,20 @@ export function BuilderPage({
     migratedRef.current = true;
   }, [initialModIds, initialWeaponId, tree.data]);
 
-  const weaponOptions = useMemo(
-    () => (weapons.data ? [...weapons.data].sort((a, b) => a.name.localeCompare(b.name)) : []),
-    [weapons.data],
-  );
+  const weaponAvailabilityById = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof itemAvailability>>();
+    for (const w of weapons.data ?? []) {
+      map.set(w.id, itemAvailability(w, profile));
+    }
+    return map;
+  }, [weapons.data, profile]);
+
+  const weaponOptions = useMemo(() => {
+    if (!weapons.data) return [];
+    const sorted = [...weapons.data].sort((a, b) => a.name.localeCompare(b.name));
+    if (showAllWeapons) return sorted;
+    return sorted.filter((w) => weaponAvailabilityById.get(w.id)?.available === true);
+  }, [weapons.data, weaponAvailabilityById, showAllWeapons]);
 
   const selectedWeapon = useMemo(
     () => weapons.data?.find((w) => w.id === weaponId),
@@ -264,7 +275,9 @@ export function BuilderPage({
         <CardHeader>
           <CardTitle>Weapon</CardTitle>
           <CardDescription>
-            {isLoading ? "Loading…" : `${weaponOptions.length} weapons available`}
+            {isLoading
+              ? "Loading…"
+              : `${weaponOptions.length} weapons ${showAllWeapons ? "(all)" : "available on your profile"}`}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -281,6 +294,14 @@ export function BuilderPage({
               </option>
             ))}
           </select>
+          <label className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
+            <input
+              type="checkbox"
+              checked={showAllWeapons}
+              onChange={(e) => setShowAllWeapons(e.target.checked)}
+            />
+            <span>Show all weapons (including locked by profile)</span>
+          </label>
           {selectedWeapon && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">

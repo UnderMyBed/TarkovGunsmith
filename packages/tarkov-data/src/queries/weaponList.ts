@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { GraphQLClient } from "../client.js";
+import { buyForEntrySchema } from "./shared/buy-for.js";
 
 export const WEAPON_LIST_QUERY = /* GraphQL */ `
   query WeaponList {
@@ -9,6 +10,7 @@ export const WEAPON_LIST_QUERY = /* GraphQL */ `
       shortName
       iconLink
       weight
+      types
       properties {
         __typename
         ... on ItemPropertiesWeapon {
@@ -17,6 +19,27 @@ export const WEAPON_LIST_QUERY = /* GraphQL */ `
           recoilVertical
           recoilHorizontal
           fireRate
+        }
+      }
+      buyFor {
+        priceRUB
+        currency
+        vendor {
+          __typename
+          normalizedName
+          ... on TraderOffer {
+            minTraderLevel
+            taskUnlock {
+              id
+              normalizedName
+            }
+            trader {
+              normalizedName
+            }
+          }
+          ... on FleaMarket {
+            minPlayerLevel
+          }
         }
       }
     }
@@ -38,7 +61,9 @@ const weaponListItemSchema = z.object({
   shortName: z.string(),
   iconLink: z.string().url(),
   weight: z.number(),
+  types: z.array(z.string()),
   properties: weaponPropertiesSchema,
+  buyFor: z.array(buyForEntrySchema),
 });
 
 export const weaponListSchema = z.object({
