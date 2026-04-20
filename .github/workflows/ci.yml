@@ -49,3 +49,17 @@ jobs:
         # Catches build-only failures that typecheck/lint miss (e.g. missing
         # devDependencies that vite or tsc resolve only at bundle time).
         run: pnpm build
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @tarkov/web test:e2e:install
+
+      - name: E2E smoke tests
+        run: pnpm --filter @tarkov/web test:e2e
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-trace
+          path: apps/web/test-results/
+          retention-days: 7
