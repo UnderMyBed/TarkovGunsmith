@@ -30,6 +30,9 @@ export {
   CURRENT_BUILD_VERSION,
 } from "./build-schema.js";
 
+// Build pair schema
+export { BuildPair, BuildPairV1, CURRENT_PAIR_VERSION } from "./pair-schema.js";
+
 // Hooks
 export { useAmmoList } from "./hooks/useAmmoList.js";
 export { useArmorList } from "./hooks/useArmorList.js";
