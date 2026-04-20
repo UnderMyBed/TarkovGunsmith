@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLoadBuild, LoadBuildError } from "@tarkov/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { BuilderPage } from "./builder.js";
 
 export const Route = createFileRoute("/builder/$id")({
@@ -22,11 +22,13 @@ function LoadedBuilderPage() {
   }
 
   if (query.error) {
-    return <LoadErrorCard error={query.error} id={id} />;
+    return <LoadErrorCard error={query.error} id={id} onRetry={() => void query.refetch()} />;
   }
 
   if (!query.data) {
-    return <LoadErrorCard error={new Error("No data")} id={id} />;
+    return (
+      <LoadErrorCard error={new Error("No data")} id={id} onRetry={() => void query.refetch()} />
+    );
   }
 
   const build = query.data;
@@ -48,7 +50,7 @@ function LoadedBuilderPage() {
   );
 }
 
-function LoadErrorCard({ error, id }: { error: Error; id: string }) {
+function LoadErrorCard({ error, id, onRetry }: { error: Error; id: string; onRetry: () => void }) {
   const code = error instanceof LoadBuildError ? error.code : "unreachable";
 
   const { title, body } = (() => {
@@ -84,7 +86,12 @@ function LoadErrorCard({ error, id }: { error: Error; id: string }) {
           <CardTitle>{title}</CardTitle>
           <CardDescription>{body}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col items-start gap-3">
+          {code === "unreachable" && (
+            <Button onClick={onRetry} size="sm">
+              Try again
+            </Button>
+          )}
           <Link to="/builder" className="text-sm underline underline-offset-4 hover:opacity-80">
             Start a fresh build →
           </Link>
