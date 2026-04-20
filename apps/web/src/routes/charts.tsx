@@ -68,9 +68,16 @@ function ChartsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <h1 className="text-3xl font-bold tracking-tight">Effectiveness Charts</h1>
-        <p className="mt-2 text-[var(--color-muted-foreground)]">
+      <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
+        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
+          <span>DATA · CHARTS</span>
+          <span>/ SHOTS-TO-BREAK VISUALISED</span>
+          <span>/ RELIABLE · MARGINAL · INEFFECTIVE</span>
+        </div>
+        <h1 className="font-display text-[clamp(32px,5vw,56px)] leading-[0.95] tracking-tight uppercase">
+          Effectiveness <span className="text-[var(--color-primary)]">Charts</span>
+        </h1>
+        <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Visualise how an ammo stacks up across every armor. Bar height = shots to break.
           <span className="ml-1">∞ bars = never breaks within the sim window.</span>
         </p>
@@ -141,7 +148,7 @@ function ChartsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card variant="bracket">
         <CardHeader>
           <CardTitle>Shots to break, by armor</CardTitle>
           {!chartData && <CardDescription>Pick an ammo to render the chart.</CardDescription>}
@@ -158,9 +165,18 @@ function ChartsPage() {
                     textAnchor="end"
                     height={100}
                     interval={0}
-                    tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
+                    tick={{
+                      fill: "var(--color-muted-foreground)",
+                      fontSize: 11,
+                      fontFamily: "var(--font-mono)",
+                    }}
                   />
-                  <YAxis tick={{ fill: "var(--color-muted-foreground)" }} />
+                  <YAxis
+                    tick={{
+                      fill: "var(--color-muted-foreground)",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "var(--color-popover)",
@@ -185,7 +201,7 @@ function ChartsPage() {
             </div>
             <div className="mt-4 flex gap-4 text-xs text-[var(--color-muted-foreground)]">
               <Legend color="var(--color-primary)" label="reliable (≤ shot cap)" />
-              <Legend color="#d97706" label="marginal (≤ 2× cap)" />
+              <Legend color="var(--color-amber-deep)" label="marginal (≤ 2× cap)" />
               <Legend color="var(--color-muted)" label="ineffective (∞ or > 2× cap)" />
             </div>
           </CardContent>
@@ -197,7 +213,7 @@ function ChartsPage() {
 
 function fillForClassification(k: ChartRow["classification"]): string {
   if (k === "reliable") return "var(--color-primary)";
-  if (k === "marginal") return "#d97706";
+  if (k === "marginal") return "var(--color-amber-deep)";
   return "var(--color-muted)";
 }
 
