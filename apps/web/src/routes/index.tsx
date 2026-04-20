@@ -50,6 +50,19 @@ function HomePage() {
             </CardContent>
           </Card>
         </Link>
+        <Link to="/sim" className="block">
+          <Card className="transition-colors hover:border-[var(--color-primary)]">
+            <CardHeader>
+              <CardTitle>Ballistics Simulator</CardTitle>
+              <CardDescription>
+                Multi-shot engagement — build a plan, simulate the kill.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--color-muted-foreground)]">
+              Pick ammo + target armor, queue shots by zone, run the scenario.
+            </CardContent>
+          </Card>
+        </Link>
       </section>
     </div>
   );

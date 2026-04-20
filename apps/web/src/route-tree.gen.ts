@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SmokeRouteImport } from './routes/smoke'
+import { Route as SimRouteImport } from './routes/sim'
 import { Route as MatrixRouteImport } from './routes/matrix'
 import { Route as CalcRouteImport } from './routes/calc'
 import { Route as BuilderRouteImport } from './routes/builder'
@@ -19,6 +20,11 @@ import { Route as BuilderIdRouteImport } from './routes/builder.$id'
 const SmokeRoute = SmokeRouteImport.update({
   id: '/smoke',
   path: '/smoke',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimRoute = SimRouteImport.update({
+  id: '/sim',
+  path: '/sim',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MatrixRoute = MatrixRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
+  '/sim': typeof SimRoute
   '/smoke': typeof SmokeRoute
   '/builder/$id': typeof BuilderIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
+  '/sim': typeof SimRoute
   '/smoke': typeof SmokeRoute
   '/builder/$id': typeof BuilderIdRoute
 }
@@ -69,20 +77,36 @@ export interface FileRoutesById {
   '/builder': typeof BuilderRouteWithChildren
   '/calc': typeof CalcRoute
   '/matrix': typeof MatrixRoute
+  '/sim': typeof SimRoute
   '/smoke': typeof SmokeRoute
   '/builder/$id': typeof BuilderIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/builder' | '/calc' | '/matrix' | '/smoke' | '/builder/$id'
+  fullPaths:
+    | '/'
+    | '/builder'
+    | '/calc'
+    | '/matrix'
+    | '/sim'
+    | '/smoke'
+    | '/builder/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/builder' | '/calc' | '/matrix' | '/smoke' | '/builder/$id'
+  to:
+    | '/'
+    | '/builder'
+    | '/calc'
+    | '/matrix'
+    | '/sim'
+    | '/smoke'
+    | '/builder/$id'
   id:
     | '__root__'
     | '/'
     | '/builder'
     | '/calc'
     | '/matrix'
+    | '/sim'
     | '/smoke'
     | '/builder/$id'
   fileRoutesById: FileRoutesById
@@ -92,6 +116,7 @@ export interface RootRouteChildren {
   BuilderRoute: typeof BuilderRouteWithChildren
   CalcRoute: typeof CalcRoute
   MatrixRoute: typeof MatrixRoute
+  SimRoute: typeof SimRoute
   SmokeRoute: typeof SmokeRoute
 }
 
@@ -102,6 +127,13 @@ declare module '@tanstack/react-router' {
       path: '/smoke'
       fullPath: '/smoke'
       preLoaderRoute: typeof SmokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sim': {
+      id: '/sim'
+      path: '/sim'
+      fullPath: '/sim'
+      preLoaderRoute: typeof SimRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/matrix': {
@@ -158,6 +190,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuilderRoute: BuilderRouteWithChildren,
   CalcRoute: CalcRoute,
   MatrixRoute: MatrixRoute,
+  SimRoute: SimRoute,
   SmokeRoute: SmokeRoute,
 }
 export const routeTree = rootRouteImport
