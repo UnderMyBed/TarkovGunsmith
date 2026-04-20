@@ -1,57 +1,63 @@
 import type { ScenarioResult } from "@tarkov/ballistics";
+import { Stamp } from "@tarkov/ui";
+import type { ReactNode } from "react";
 
 export interface ScenarioSummaryProps {
   readonly result: ScenarioResult;
 }
 
-/**
- * Top-line summary card. Shows kill outcome, shots fired, shots-to-kill,
- * total flesh damage, and final armor durabilities (if armor was involved).
- */
 export function ScenarioSummary({ result }: ScenarioSummaryProps) {
   const shotsFired = result.shots.length;
   const totalDamage = result.shots.reduce((sum, s) => sum + s.damage, 0);
-
-  // Final armor durabilities: look at the last shot that used each piece.
   const lastHelmetShot = [...result.shots].reverse().find((s) => s.armorUsed === "helmet");
   const lastBodyShot = [...result.shots].reverse().find((s) => s.armorUsed === "bodyArmor");
 
-  const killedRow = result.killed ? (
-    <span className="font-semibold text-[var(--color-destructive)]">
-      Killed{result.killedAt !== null ? ` on shot ${result.killedAt + 1}` : ""}
-    </span>
-  ) : (
-    <span className="font-semibold text-[var(--color-primary)]">Alive</span>
-  );
-
   return (
-    <dl className="grid gap-2 sm:grid-cols-2">
-      <Stat label="Outcome" value={killedRow} />
-      <Stat label="Shots fired" value={`${shotsFired}`} />
-      <Stat label="Total flesh damage" value={`${totalDamage.toFixed(1)} HP`} />
-      {lastBodyShot && (
-        <Stat
-          label="Body armor durability"
-          value={`${lastBodyShot.remainingDurability.toFixed(1)} pts`}
-        />
-      )}
-      {lastHelmetShot && (
-        <Stat
-          label="Helmet durability"
-          value={`${lastHelmetShot.remainingDurability.toFixed(1)} pts`}
-        />
-      )}
-    </dl>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between border-b border-dashed border-[var(--color-border)] pb-3">
+        <div>
+          <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+            OUTCOME
+          </div>
+          <div className="font-display text-xl leading-none mt-1 uppercase">
+            {result.killed ? (
+              <span className="text-[var(--color-destructive)]">
+                Killed{result.killedAt !== null ? ` · shot ${result.killedAt + 1}` : ""}
+              </span>
+            ) : (
+              <span className="text-[var(--color-primary)]">Alive</span>
+            )}
+          </div>
+        </div>
+        {result.killed && <Stamp tone="red">ELIMINATED</Stamp>}
+      </div>
+      <dl className="grid grid-cols-2 gap-3">
+        <SummaryStat label="SHOTS FIRED" value={`${shotsFired}`} />
+        <SummaryStat label="TOTAL FLESH DMG" value={`${totalDamage.toFixed(1)} HP`} />
+        {lastBodyShot && (
+          <SummaryStat
+            label="BODY ARMOR · REM"
+            value={`${lastBodyShot.remainingDurability.toFixed(1)}`}
+          />
+        )}
+        {lastHelmetShot && (
+          <SummaryStat
+            label="HELMET · REM"
+            value={`${lastHelmetShot.remainingDurability.toFixed(1)}`}
+          />
+        )}
+      </dl>
+    </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function SummaryStat({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-[var(--radius)] border p-3">
-      <dt className="text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
+    <div className="border border-[var(--color-border)] p-3">
+      <dt className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
         {label}
       </dt>
-      <dd>{value}</dd>
+      <dd className="mt-1 font-mono text-xl tabular-nums">{value}</dd>
     </div>
   );
 }

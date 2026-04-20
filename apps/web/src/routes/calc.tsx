@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useAmmoList, useArmorList } from "@tarkov/data";
 import { simulateShot } from "@tarkov/ballistics";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@tarkov/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Pill } from "@tarkov/ui";
 import { adaptAmmo, adaptArmor } from "../features/data-adapters/adapters.js";
 
 export const Route = createFileRoute("/calc")({
@@ -45,9 +45,15 @@ function CalcPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <h1 className="text-3xl font-bold tracking-tight">Ballistic Calculator</h1>
-        <p className="mt-2 text-[var(--color-muted-foreground)]">
+      <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
+        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
+          <span>FORWARD · SINGLE SHOT</span>
+          <span>/ LIVE RECOMPUTE</span>
+        </div>
+        <h1 className="font-display text-[clamp(32px,5vw,56px)] leading-[0.95] tracking-tight uppercase">
+          Ballistic <span className="text-[var(--color-primary)]">Calculator</span>
+        </h1>
+        <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Pick an ammo + armor + distance to compute the deterministic shot outcome (penetration,
           damage, armor damage, remaining durability) via <code>simulateShot</code>.
         </p>
@@ -123,7 +129,7 @@ function CalcPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card variant="bracket">
         <CardHeader>
           <CardTitle>Result</CardTitle>
           {!result && (
@@ -136,15 +142,9 @@ function CalcPage() {
               <Stat
                 label="Penetrated?"
                 value={
-                  <span
-                    className={
-                      result.didPenetrate
-                        ? "font-semibold text-[var(--color-primary)]"
-                        : "font-semibold text-[var(--color-destructive)]"
-                    }
-                  >
-                    {result.didPenetrate ? "Yes" : "No (deflected)"}
-                  </span>
+                  <Pill tone={result.didPenetrate ? "accent" : "muted"}>
+                    {result.didPenetrate ? "PEN" : "BLOCKED"}
+                  </Pill>
                 }
               />
               <Stat label="Body damage" value={`${result.damage.toFixed(1)} HP`} />
