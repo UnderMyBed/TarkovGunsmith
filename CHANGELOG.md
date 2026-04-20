@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.5.0...v1.5.1) (2026-04-20)
+
+
+### Bug Fixes
+
+* **ci:** apply release-gated if: to all three deploy jobs (not just data-proxy) ([#74](https://github.com/UnderMyBed/TarkovGunsmith/issues/74)) ([1b63c36](https://github.com/UnderMyBed/TarkovGunsmith/commit/1b63c367b7a8963bd0ea11aba495db1a2658f0d2))
+* **ci:** grant pull-requests: read for dorny/paths-filter ([#77](https://github.com/UnderMyBed/TarkovGunsmith/issues/77)) ([817ef16](https://github.com/UnderMyBed/TarkovGunsmith/commit/817ef16c4b50690694bea3529375c9b035f7330e))
+* **ci:** paths-filter uses positive patterns (negation was inverted) ([#79](https://github.com/UnderMyBed/TarkovGunsmith/issues/79)) ([1a2292f](https://github.com/UnderMyBed/TarkovGunsmith/commit/1a2292f917d5e66c29ff7c0b56b1476eba27f036))
+
 ## [1.5.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.4.0...v1.5.0) (2026-04-20)
 
 
