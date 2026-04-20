@@ -17,7 +17,7 @@ export function PresetPicker({ weaponId, onApply }: PresetPickerProps) {
           Presets:
         </span>
         {presets.map((p: WeaponPreset) => (
-          <Button key={p.name} size="sm" variant="outline" onClick={() => onApply(p.attachments)}>
+          <Button key={p.name} size="sm" variant="secondary" onClick={() => onApply(p.attachments)}>
             {p.name}
           </Button>
         ))}

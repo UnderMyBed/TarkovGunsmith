@@ -60,6 +60,18 @@ function LoadedBuilderPage() {
       />
     );
   }
+  if (build.version === 4) {
+    return (
+      <BuilderPage
+        {...commonProps}
+        initialAttachments={build.attachments}
+        initialOrphaned={build.orphaned}
+        initialProfileSnapshot={build.profileSnapshot}
+        initialName={build.name}
+        initialDescription={build.description}
+      />
+    );
+  }
   // v3
   return (
     <BuilderPage
