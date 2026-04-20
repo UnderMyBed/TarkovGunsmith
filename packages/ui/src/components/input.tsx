@@ -13,11 +13,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       ref={ref}
       type={type}
       className={cn(
-        "flex h-9 w-full rounded-[var(--radius)] border bg-[var(--color-input)] px-3 py-1 text-sm shadow-sm transition-colors",
-        "file:border-0 file:bg-transparent file:text-sm file:font-medium",
-        "placeholder:text-[var(--color-muted-foreground)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
-        "disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-9 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-input)] px-3 font-mono text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-paper-dim)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-40 tabular-nums",
         className,
       )}
       {...props}
