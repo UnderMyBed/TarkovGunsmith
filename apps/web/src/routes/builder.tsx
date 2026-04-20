@@ -1,19 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
-import { useModList, useWeaponList, useSaveBuild, CURRENT_BUILD_VERSION } from "@tarkov/data";
-import type { ModListItem } from "@tarkov/data";
-import { weaponSpec } from "@tarkov/ballistics";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-} from "@tarkov/ui";
+  useModList,
+  useWeaponList,
+  useSaveBuild,
+  useWeaponTree,
+  migrateV1ToV2,
+  CURRENT_BUILD_VERSION,
+  type BuildV1,
+  type SlotNodeForMigration,
+} from "@tarkov/data";
+import { weaponSpec } from "@tarkov/ballistics";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { adaptMod, adaptWeapon } from "../features/data-adapters/adapters.js";
+import { SlotTree } from "../features/builder/slot-tree.js";
+import { OrphanedBanner } from "../features/builder/orphaned-banner.js";
 
 export const Route = createFileRoute("/builder")({
   component: BuilderPage,
@@ -21,23 +23,50 @@ export const Route = createFileRoute("/builder")({
 
 export interface BuilderPageProps {
   initialWeaponId?: string;
+  /** v1 hydration — flat list of mod ids. Will be migrated once the weapon tree loads. */
   initialModIds?: string[];
+  /** v2 hydration — slot → item id map. */
+  initialAttachments?: Record<string, string>;
+  /** v2 hydration — unplaceable mods from an earlier v1 migration. */
+  initialOrphaned?: string[];
   notice?: React.ReactNode;
 }
 
 export function BuilderPage({
   initialWeaponId = "",
   initialModIds,
+  initialAttachments,
+  initialOrphaned,
   notice,
 }: BuilderPageProps = {}) {
   const weapons = useWeaponList();
   const mods = useModList();
 
   const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
-  const [selectedModIds, setSelectedModIds] = useState<Set<string>>(
-    () => new Set(initialModIds ?? []),
+  const [attachments, setAttachments] = useState<Record<string, string>>(
+    () => initialAttachments ?? {},
   );
-  const [modSearch, setModSearch] = useState<string>("");
+  const [orphaned, setOrphaned] = useState<string[]>(() => initialOrphaned ?? []);
+
+  const tree = useWeaponTree(weaponId);
+
+  const migratedRef = useRef(false);
+  useEffect(() => {
+    if (migratedRef.current) return;
+    if (!initialModIds) return;
+    if (!tree.data) return;
+    const v1: BuildV1 = {
+      version: 1,
+      weaponId: initialWeaponId,
+      modIds: initialModIds,
+      createdAt: new Date(0).toISOString(),
+    };
+    // The tree's SlotNode structurally extends SlotNodeForMigration.
+    const v2 = migrateV1ToV2(v1, tree.data.slots as unknown as readonly SlotNodeForMigration[]);
+    setAttachments(v2.attachments);
+    setOrphaned(v2.orphaned);
+    migratedRef.current = true;
+  }, [initialModIds, initialWeaponId, tree.data]);
 
   const weaponOptions = useMemo(
     () => (weapons.data ? [...weapons.data].sort((a, b) => a.name.localeCompare(b.name)) : []),
@@ -49,21 +78,14 @@ export function BuilderPage({
     [weapons.data, weaponId],
   );
 
-  const filteredMods = useMemo(() => {
-    if (!mods.data) return [];
-    const search = modSearch.toLowerCase();
-    const list = search
-      ? mods.data.filter(
-          (m) =>
-            m.name.toLowerCase().includes(search) || m.shortName.toLowerCase().includes(search),
-        )
-      : mods.data;
-    return [...list].sort((a, b) => a.name.localeCompare(b.name));
-  }, [mods.data, modSearch]);
-
   const selectedMods = useMemo(
-    () => (mods.data ? mods.data.filter((m) => selectedModIds.has(m.id)) : []),
-    [mods.data, selectedModIds],
+    () => (mods.data ? mods.data.filter((m) => Object.values(attachments).includes(m.id)) : []),
+    [mods.data, attachments],
+  );
+
+  const modNamesById = useMemo(
+    () => Object.fromEntries((mods.data ?? []).map((m) => [m.id, m.name])),
+    [mods.data],
   );
 
   const spec = useMemo(() => {
@@ -78,7 +100,9 @@ export function BuilderPage({
 
     const missingWeapon = !weapons.data.some((w) => w.id === initialWeaponId);
     const knownModIds = new Set(mods.data.map((m) => m.id));
-    const missingModIds = (initialModIds ?? []).filter((id) => !knownModIds.has(id));
+    const v1Missing = (initialModIds ?? []).filter((id) => !knownModIds.has(id));
+    const v2Missing = Object.values(initialAttachments ?? {}).filter((id) => !knownModIds.has(id));
+    const missingModIds = [...v1Missing, ...v2Missing];
 
     if (!missingWeapon && missingModIds.length === 0) return null;
 
@@ -95,7 +119,7 @@ export function BuilderPage({
         </CardContent>
       </Card>
     );
-  }, [initialWeaponId, initialModIds, weapons.data, mods.data]);
+  }, [initialWeaponId, initialModIds, initialAttachments, weapons.data, mods.data]);
 
   const saveMutation = useSaveBuild();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -106,7 +130,8 @@ export function BuilderPage({
       {
         version: CURRENT_BUILD_VERSION,
         weaponId: selectedWeapon.id,
-        modIds: [...selectedModIds],
+        attachments,
+        orphaned,
         createdAt: new Date().toISOString(),
       },
       {
@@ -129,17 +154,10 @@ export function BuilderPage({
     return () => window.clearTimeout(id);
   }, [shareUrl]);
 
-  function toggleMod(modId: string) {
-    setSelectedModIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(modId)) next.delete(modId);
-      else next.add(modId);
-      return next;
-    });
-  }
-
-  function clearMods() {
-    setSelectedModIds(new Set());
+  function handleWeaponChange(newWeaponId: string) {
+    setWeaponId(newWeaponId);
+    setAttachments({});
+    setOrphaned([]);
   }
 
   const isLoading = weapons.isLoading || mods.isLoading;
@@ -177,10 +195,7 @@ export function BuilderPage({
           <select
             className="h-9 w-full rounded-[var(--radius)] border bg-[var(--color-input)] px-3 text-sm"
             value={weaponId}
-            onChange={(e) => {
-              setWeaponId(e.target.value);
-              clearMods();
-            }}
+            onChange={(e) => handleWeaponChange(e.target.value)}
             disabled={isLoading || weaponOptions.length === 0}
           >
             <option value="">{isLoading ? "Loading…" : "Select weapon…"}</option>
@@ -209,51 +224,37 @@ export function BuilderPage({
         <>
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Mods</CardTitle>
-                  <CardDescription>
-                    {selectedModIds.size} attached · {filteredMods.length} matching
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearMods}
-                  disabled={selectedModIds.size === 0}
-                >
-                  Clear all
-                </Button>
-              </div>
+              <CardTitle>Mods</CardTitle>
+              <CardDescription>
+                {tree.isLoading && "Loading slot tree…"}
+                {tree.error && (
+                  <span className="text-[var(--color-destructive)]">
+                    Couldn't load slot tree: {tree.error.message}
+                  </span>
+                )}
+                {tree.data && `${Object.keys(attachments).length} attached`}
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              <Input
-                type="search"
-                placeholder="Filter mods by name or shortName…"
-                value={modSearch}
-                onChange={(e) => setModSearch(e.target.value)}
-              />
-              <div className="max-h-96 overflow-y-auto rounded-[var(--radius)] border">
-                {filteredMods.length === 0 ? (
-                  <p className="p-4 text-sm text-[var(--color-muted-foreground)]">No mods match.</p>
-                ) : (
-                  <ul className="divide-y">
-                    {filteredMods.slice(0, 200).map((mod) => (
-                      <ModRow
-                        key={mod.id}
-                        mod={mod}
-                        checked={selectedModIds.has(mod.id)}
-                        onToggle={() => toggleMod(mod.id)}
-                      />
-                    ))}
-                  </ul>
-                )}
-              </div>
-              {filteredMods.length > 200 && (
-                <p className="text-xs text-[var(--color-muted-foreground)]">
-                  Showing first 200 of {filteredMods.length} matches — refine your search.
-                </p>
+              {tree.data && (
+                <SlotTree
+                  tree={tree.data}
+                  attachments={attachments}
+                  onAttach={(path, itemId) =>
+                    setAttachments((prev) => {
+                      const next = { ...prev };
+                      if (itemId === null) delete next[path];
+                      else next[path] = itemId;
+                      return next;
+                    })
+                  }
+                />
               )}
+              <OrphanedBanner
+                orphanedIds={orphaned}
+                names={modNamesById}
+                onDismiss={() => setOrphaned([])}
+              />
             </CardContent>
           </Card>
 
@@ -295,31 +296,6 @@ export function BuilderPage({
   );
 }
 
-function ModRow({
-  mod,
-  checked,
-  onToggle,
-}: {
-  mod: ModListItem;
-  checked: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <li>
-      <label className="flex cursor-pointer items-center gap-3 p-2 hover:bg-[var(--color-accent)]">
-        <input type="checkbox" checked={checked} onChange={onToggle} className="h-4 w-4" />
-        <div className="flex-1 min-w-0">
-          <div className="truncate text-sm">{mod.name}</div>
-          <div className="text-xs text-[var(--color-muted-foreground)]">
-            ergo {fmt(mod.properties.ergonomics)} · recoil {fmt(mod.properties.recoilModifier)}
-            {mod.properties.recoilModifier !== 0 ? "%" : ""} · {mod.weight.toFixed(2)} kg
-          </div>
-        </div>
-      </label>
-    </li>
-  );
-}
-
 function SpecStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-[var(--radius)] border p-3">
@@ -329,9 +305,4 @@ function SpecStat({ label, value }: { label: string; value: string }) {
       <dd className="text-lg font-semibold">{value}</dd>
     </div>
   );
-}
-
-function fmt(n: number): string {
-  if (n > 0) return `+${n}`;
-  return String(n);
 }

@@ -32,20 +32,28 @@ function LoadedBuilderPage() {
   }
 
   const build = query.data;
+  const notice = (
+    <Card>
+      <CardContent className="pt-6">
+        <p className="text-sm text-[var(--color-muted-foreground)]">
+          Loaded build <code>{id}</code>. Changes you make here won't update the saved copy — use
+          "Share build" to create a new URL.
+        </p>
+      </CardContent>
+    </Card>
+  );
+
+  if (build.version === 1) {
+    return (
+      <BuilderPage initialWeaponId={build.weaponId} initialModIds={build.modIds} notice={notice} />
+    );
+  }
   return (
     <BuilderPage
       initialWeaponId={build.weaponId}
-      initialModIds={build.modIds}
-      notice={
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-[var(--color-muted-foreground)]">
-              Loaded build <code>{id}</code>. Changes you make here won't update the saved copy —
-              use "Share build" to create a new URL.
-            </p>
-          </CardContent>
-        </Card>
-      }
+      initialAttachments={build.attachments}
+      initialOrphaned={build.orphaned}
+      notice={notice}
     />
   );
 }
