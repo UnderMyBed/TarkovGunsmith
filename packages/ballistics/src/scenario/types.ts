@@ -48,7 +48,7 @@ export interface ScenarioShotResult extends ShotResult {
   /** Which armor piece absorbed the shot, or null for bare flesh. */
   readonly armorUsed: "helmet" | "bodyArmor" | null;
   /** Deep-cloned body state AFTER this shot resolved. */
-  readonly bodyAfter: Record<Zone, BodyPart>;
+  readonly bodyAfter: Readonly<Record<Zone, BodyPart>>;
   /** True iff this shot was the fatal one. */
   readonly killed: boolean;
 }
