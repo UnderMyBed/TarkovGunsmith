@@ -103,3 +103,5 @@ When any of these become true regularly:
 - We want a "deploy verifier" that smoke-tests the live URL after each deploy.
 
 When ready, follow [`tier-c-upgrade.md`](tier-c-upgrade.md).
+
+<!-- trivial edit to validate CI paths-filter skip path; can be removed -->
