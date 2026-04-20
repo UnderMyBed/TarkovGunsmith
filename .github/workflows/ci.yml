@@ -1,8 +1,11 @@
 name: CI
 
+# CI fires on pull_request (the real pre-merge gate) and on manual dispatch
+# (release-please uses this to run CI against its own branch). It does NOT
+# fire on push to main because branch protection requires PRs to be
+# up-to-date + green before merging — post-merge CI on main would be a
+# duplicate of the just-passed PR check.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -22,32 +25,62 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Need the base commit to diff against for the paths-filter step.
+          fetch-depth: 0
+
+      # Skip the expensive pipeline when the only changes are documentation.
+      # The job itself still runs (to satisfy branch-protection's required
+      # status check) but every heavy step is gated on `code-changed`.
+      - name: Detect code changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            code:
+              - '!docs/**'
+              - '!**/*.md'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!.gitignore'
+              - '!LICENSE'
+
+      - name: No-op for docs-only change
+        if: steps.changes.outputs.code != 'true'
+        run: echo "Documentation-only change detected — skipping install + pipeline."
 
       - uses: pnpm/action-setup@v4
+        if: steps.changes.outputs.code == 'true'
 
       - uses: actions/setup-node@v4
+        if: steps.changes.outputs.code == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install
+        if: steps.changes.outputs.code == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
+        if: steps.changes.outputs.code == 'true'
         run: pnpm typecheck
 
       - name: Lint
+        if: steps.changes.outputs.code == 'true'
         run: pnpm lint
 
       - name: Format check
+        if: steps.changes.outputs.code == 'true'
         run: pnpm format:check
 
       - name: Test
+        if: steps.changes.outputs.code == 'true'
         run: pnpm test
 
       - name: Build
         # Catches build-only failures that typecheck/lint miss (e.g. missing
         # devDependencies that vite or tsc resolve only at bundle time).
+        if: steps.changes.outputs.code == 'true'
         run: pnpm build
 
       # Playwright's Chromium tarball is ~130MB. Cache it keyed to the
@@ -55,12 +88,14 @@ jobs:
       # package updates. System deps (apt packages) are fast and can
       # always reinstall from APT on the runner.
       - name: Resolve Playwright version
+        if: steps.changes.outputs.code == 'true'
         id: pw-version
         run: |
           version=$(node -p "require('./apps/web/package.json').devDependencies['@playwright/test'].replace(/^[\^~]/,'')")
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
+        if: steps.changes.outputs.code == 'true'
         id: playwright-cache
         uses: actions/cache@v4
         with:
@@ -68,18 +103,19 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
 
       - name: Install Playwright browsers (cache miss only)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        if: steps.changes.outputs.code == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm --filter @tarkov/web test:e2e:install
 
       - name: Install Playwright system deps (cache hit — apt only)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        if: steps.changes.outputs.code == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter @tarkov/web exec playwright install-deps chromium
 
       - name: E2E smoke tests
+        if: steps.changes.outputs.code == 'true'
         run: pnpm --filter @tarkov/web test:e2e
 
       - name: Upload Playwright trace on failure
-        if: failure()
+        if: failure() && steps.changes.outputs.code == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-trace
