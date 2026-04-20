@@ -111,10 +111,13 @@ export function BuilderPage({
       },
       {
         onSuccess: (result) => {
-          void navigator.clipboard.writeText(result.url).catch(() => {
+          // Build the shareable URL from the SPA origin so it points at the /builder/$id
+          // loader route, not the Worker's JSON endpoint.
+          const shareableUrl = `${window.location.origin}/builder/${result.id}`;
+          void navigator.clipboard.writeText(shareableUrl).catch(() => {
             // Clipboard permission denied — still show the URL so the user can copy manually.
           });
-          setShareUrl(result.url);
+          setShareUrl(shareableUrl);
         },
       },
     );
