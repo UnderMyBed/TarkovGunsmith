@@ -42,3 +42,35 @@ describe("scenarioReducer — append", () => {
     expect(PLAN_LENGTH_CAP).toBe(128);
   });
 });
+
+describe("scenarioReducer — move", () => {
+  const base: ScenarioState = {
+    plan: [shot("head"), shot("thorax"), shot("stomach")],
+    lastResult: null,
+  };
+
+  it("moves an item forward", () => {
+    const next = scenarioReducer(base, { type: "move", from: 0, to: 2 });
+    expect(next.plan.map((s) => s.zone)).toEqual(["thorax", "stomach", "head"]);
+  });
+
+  it("moves an item backward", () => {
+    const next = scenarioReducer(base, { type: "move", from: 2, to: 0 });
+    expect(next.plan.map((s) => s.zone)).toEqual(["stomach", "head", "thorax"]);
+  });
+
+  it("no-ops when from === to", () => {
+    const next = scenarioReducer(base, { type: "move", from: 1, to: 1 });
+    expect(next).toBe(base);
+  });
+
+  it("no-ops when from is out of range", () => {
+    expect(scenarioReducer(base, { type: "move", from: -1, to: 0 })).toBe(base);
+    expect(scenarioReducer(base, { type: "move", from: 3, to: 0 })).toBe(base);
+  });
+
+  it("no-ops when to is out of range", () => {
+    expect(scenarioReducer(base, { type: "move", from: 0, to: -1 })).toBe(base);
+    expect(scenarioReducer(base, { type: "move", from: 0, to: 3 })).toBe(base);
+  });
+});

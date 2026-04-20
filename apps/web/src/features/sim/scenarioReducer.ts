@@ -30,7 +30,16 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
       if (state.plan.length >= PLAN_LENGTH_CAP) return state;
       return { ...state, plan: [...state.plan, action.shot] };
     }
-    case "move":
+    case "move": {
+      const { from, to } = action;
+      const len = state.plan.length;
+      if (from === to) return state;
+      if (from < 0 || from >= len || to < 0 || to >= len) return state;
+      const plan = [...state.plan];
+      const [item] = plan.splice(from, 1);
+      plan.splice(to, 0, item!);
+      return { ...state, plan };
+    }
     case "remove":
     case "clear":
     case "run": {
