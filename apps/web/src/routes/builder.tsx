@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useModList, useWeaponList, useSaveBuild, CURRENT_BUILD_VERSION } from "@tarkov/data";
 import type { ModListItem } from "@tarkov/data";
@@ -18,12 +19,24 @@ export const Route = createFileRoute("/builder")({
   component: BuilderPage,
 });
 
-function BuilderPage() {
+export interface BuilderPageProps {
+  initialWeaponId?: string;
+  initialModIds?: string[];
+  notice?: React.ReactNode;
+}
+
+export function BuilderPage({
+  initialWeaponId = "",
+  initialModIds,
+  notice,
+}: BuilderPageProps = {}) {
   const weapons = useWeaponList();
   const mods = useModList();
 
-  const [weaponId, setWeaponId] = useState<string>("");
-  const [selectedModIds, setSelectedModIds] = useState<Set<string>>(() => new Set());
+  const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
+  const [selectedModIds, setSelectedModIds] = useState<Set<string>>(
+    () => new Set(initialModIds ?? []),
+  );
   const [modSearch, setModSearch] = useState<string>("");
 
   const weaponOptions = useMemo(
@@ -57,6 +70,32 @@ function BuilderPage() {
     if (!selectedWeapon) return null;
     return weaponSpec(adaptWeapon(selectedWeapon), selectedMods.map(adaptMod));
   }, [selectedWeapon, selectedMods]);
+
+  const upstreamDrift = useMemo(() => {
+    // Only meaningful for loaded builds; fresh builds can't drift because they're built from current data.
+    if (!initialWeaponId) return null;
+    if (!weapons.data || !mods.data) return null;
+
+    const missingWeapon = !weapons.data.some((w) => w.id === initialWeaponId);
+    const knownModIds = new Set(mods.data.map((m) => m.id));
+    const missingModIds = (initialModIds ?? []).filter((id) => !knownModIds.has(id));
+
+    if (!missingWeapon && missingModIds.length === 0) return null;
+
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-sm text-[var(--color-destructive)]">
+            Some items in this build are no longer in the current game data.
+            {missingWeapon && " The original weapon is missing."}
+            {missingModIds.length > 0 &&
+              ` ${missingModIds.length} mod${missingModIds.length === 1 ? "" : "s"} couldn't be resolved.`}{" "}
+            Viewing what still exists.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }, [initialWeaponId, initialModIds, weapons.data, mods.data]);
 
   const saveMutation = useSaveBuild();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -113,6 +152,8 @@ function BuilderPage() {
           <code>ItemPropertiesWeaponMod</code>); slot-based compatibility comes in a follow-up.
         </p>
       </section>
+      {notice}
+      {upstreamDrift}
 
       {error && (
         <Card>
