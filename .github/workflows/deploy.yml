@@ -11,10 +11,11 @@ permissions:
 jobs:
   data-proxy:
     name: Deploy data-proxy Worker
-    # Release-please PRs only touch CHANGELOG.md + package.json version — app code
-    # is identical to the previous (already-deployed) feature merge. Skip to avoid
-    # double-deploying every release cycle.
-    if: "${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'chore(main): release') }}"
+    # Release-gated: only deploy when a release-please PR is merged (head commit
+    # message starts with "chore(main): release") or when dispatched manually.
+    # Feature PR merges stage changes on main without deploying — the release PR
+    # is the promotion gate.
+    if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-data-proxy
