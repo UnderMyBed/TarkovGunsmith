@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { simulateScenario } from "./simulateScenario.js";
 import { createPmcTarget } from "./defaults.js";
-import { M855 } from "../__fixtures__/ammo.js";
+import { M855, M995 } from "../__fixtures__/ammo.js";
+import { TEST_HELMET } from "./__fixtures__/targets.js";
 import type { ScenarioTarget } from "./types.js";
 
 describe("simulateScenario — bare flesh", () => {
@@ -80,5 +81,34 @@ describe("simulateScenario — degenerate inputs", () => {
     expect(result.shots).toEqual([]);
     expect(result.killed).toBe(true);
     expect(result.killedAt).toBeNull();
+  });
+});
+
+describe("simulateScenario — helmet", () => {
+  it("routes head shots through the helmet when present and matching", () => {
+    const target = { ...createPmcTarget(), helmet: TEST_HELMET };
+    const result = simulateScenario(M995, target, [{ zone: "head", distance: 15 }]);
+    const shot = result.shots[0]!;
+    expect(shot.armorUsed).toBe("helmet");
+    // M995 (pen 53) easily pens class-4 fresh helmet → full damage expected.
+    expect(shot.didPenetrate).toBe(true);
+    expect(shot.damage).toBe(M995.damage);
+  });
+
+  it("does not mutate the caller's helmet durability", () => {
+    const target = { ...createPmcTarget(), helmet: { ...TEST_HELMET } };
+    const before = target.helmet.currentDurability;
+    simulateScenario(M995, target, [
+      { zone: "head", distance: 15 },
+      { zone: "head", distance: 15 },
+    ]);
+    expect(target.helmet.currentDurability).toBe(before);
+  });
+
+  it("leaves a non-matching helmet (zones=[]) out of the path", () => {
+    const weirdHelmet = { ...TEST_HELMET, zones: [] as readonly string[] };
+    const target = { ...createPmcTarget(), helmet: weirdHelmet };
+    const result = simulateScenario(M995, target, [{ zone: "head", distance: 15 }]);
+    expect(result.shots[0]!.armorUsed).toBeNull();
   });
 });
