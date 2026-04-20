@@ -211,6 +211,9 @@ export function BuilderPage({
         onDescriptionChange={setBuildDescription}
         currentSpec={spec}
         stockSpec={stockSpec}
+        weaponName={selectedWeapon?.shortName ?? selectedWeapon?.name ?? null}
+        modCount={Object.keys(attachments).length}
+        sharedId={shareUrl?.split("/").pop() ?? null}
       />
       {notice}
       {upstreamDrift}
