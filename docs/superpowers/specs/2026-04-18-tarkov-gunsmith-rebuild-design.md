@@ -266,11 +266,13 @@ Known v1 limitations still open: helmets may not populate `/sim`'s picker (upstr
 
 Ordered by intended delivery:
 
-1. **Frontend design pass** — the current look is functional-ugly (shipped for speed across M1–M2). Before adding more features, redo the visual system: typography, spacing, color, card density, table density, dark-mode polish, mobile responsiveness, landing-page hierarchy. Likely involves extending `@tarkov/ui` primitives, picking a real display font, and possibly a small component library audit. Blocks or runs alongside (not after) everything else in M3.
+1. ✅ **Frontend design pass** — "Field Ledger" aesthetic (Bungee / Chivo / Azeret Mono, amber-phosphor, corner-bracketed panels, tick-mark dividers). Shipped across 5 PRs on 2026-04-20: #63 (tokens + primitives), #64 (landing + nav), #65 (`/builder` redesign), #66 (`/calc` + `/sim` + `/adc` + `/aec`), #67 (`/data` + `/charts` + `/matrix`). Umbrella: [`docs/superpowers/specs/2026-04-20-frontend-design-pass-design.md`](./2026-04-20-frontend-design-pass-design.md). Mood board: [`docs/design/mood-board.html`](../../design/mood-board.html).
 2. **Build comparison** — diff two builds side-by-side. Stats deltas, mod differences. Leans on the existing share-URL save/load from M1.5.
 3. **Build optimization** — "find the min-recoil mod set for this weapon under my constraints + current player profile." Constraint-based solver. Probably its own pure-TS module in `@tarkov/ballistics` or a new `@tarkov/optimizer` package.
 4. **OG share cards** — server-rendered PNG build summaries. New Cloudflare Worker (or Pages Function) using satori + resvg. Rich previews in Discord / Twitter for `/builder/$id` URLs.
 5. **`tarkov.dev` profile import** — read the user's tarkov.dev profile to auto-populate `PlayerProfile`. Promoted from M1.5's deferred list.
+
+Visual polish items discovered during the design pass are tracked ad-hoc and landed in small fix PRs before the next differentiator feature.
 
 ### Milestone 4 — Tier C activation
 
