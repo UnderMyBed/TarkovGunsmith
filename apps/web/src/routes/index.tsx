@@ -89,6 +89,17 @@ function HomePage() {
             </CardContent>
           </Card>
         </Link>
+        <Link to="/data" className="block">
+          <Card className="transition-colors hover:border-[var(--color-primary)]">
+            <CardHeader>
+              <CardTitle>DataSheets</CardTitle>
+              <CardDescription>Browse raw stats — ammo, armor, weapons, modules.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--color-muted-foreground)]">
+              Sortable, searchable reference tables.
+            </CardContent>
+          </Card>
+        </Link>
       </section>
     </div>
   );
