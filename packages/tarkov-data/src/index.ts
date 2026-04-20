@@ -92,3 +92,7 @@ export type { WeaponPreset } from "./presets.js";
 // Slot diff (Build comparison)
 export { slotDiff } from "./slot-diff.js";
 export type { SlotDiffStatus, SlotDiffInput, SlotDiffMap } from "./slot-diff.js";
+
+// Stat delta (Build comparison)
+export { statDelta } from "./stat-delta.js";
+export type { StatDeltaRow, StatDeltaResult, StatDirection, StatKey } from "./stat-delta.js";
