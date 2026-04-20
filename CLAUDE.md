@@ -2,21 +2,24 @@
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
 
-> **Status: Milestones 1 + 1.5 + 2 all complete** (release-please PR pending for the M2 bump). Full stack live with eight user-facing routes:
+> **Status: M1 + M1.5 + M2 + M3 frontend design pass all live.** The whole stack — 8 routes, Builder-forward landing, full ballistics + reference tools — now ships in the "Field Ledger" aesthetic.
 >
 > - **M1 (v1.0.0):** `/calc`, `/matrix`, `/builder` (flat mod list).
-> - **M1.5 (v1.1 – v1.4):** Builder Robustness arc — build schema v1 → v4, save/share URL, slot-based mod compatibility, player-progression gating, UX depth (name/desc + stock diff + preset scaffold).
-> - **M2 (unreleased):** Parity — `/sim` (multi-shot Ballistics Simulator), `/adc` (Armor Damage Calc), `/aec` (Armor Effectiveness Calc), `/data` (DataSheets for ammo/armor/weapons/modules), `/charts` (Recharts effectiveness bar charts).
+> - **M1.5 (v1.1 – v1.4):** Builder Robustness arc — build schema v1 → v4, save/share URL, slot-based mod compatibility, player-progression gating, UX depth.
+> - **M2 (unreleased):** Parity — `/sim`, `/adc`, `/aec`, `/data`, `/charts`.
+> - **M3 frontend design pass (unreleased, 5 PRs):** "Field Ledger" aesthetic — Bungee display + Chivo body + Azeret Mono numerics, amber-phosphor accent, corner-bracketed panels, tick-mark dividers, and new `@tarkov/ui` primitives (`Pill`, `Stamp`, `SectionTitle`, `StatRow`, `Card variant="bracket"`). Applied across every route.
 >
-> Plus `/smoke` + `/` (landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Auto-deploys on every merge to `main`.
+> Plus `/smoke` + `/` (Builder-forward landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Auto-deploys on every merge to `main`.
 >
-> **Roadmap from here — Milestone 3 "Differentiators":** (1) **Frontend design pass** — current look is functional-ugly; redo typography / spacing / color / density before more features. (2) Build comparison. (3) Build optimization (constraint solver). (4) OG share cards (server-rendered PNG). (5) `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13.
+> **Roadmap from here — M3 Differentiators, 4 of 5 remaining:** (1) ✅ Frontend design pass. (2) Build comparison (diff two builds). (3) Build optimization (constraint solver). (4) OG share cards (server-rendered PNG). (5) `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13. Visual polish / fix-up items discovered during the design pass are tracked ad-hoc and landed before the next feature PR.
 >
-> **Deferred M1.5 items (still open, not yet re-raised):** Undo/redo; `allowedCategories` slot filtering; `craftsFor`/`bartersFor` in availability; Dialog primitive; weapon preset content; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
+> **Deferred M1.5 items (still open):** Undo/redo; `allowedCategories` slot filtering; `craftsFor`/`bartersFor` in availability; Dialog primitive; weapon preset content; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
 >
 > **Deferred M2 items (still open):** Helmet-only query for `/sim`'s helmet picker; thorax-overflow damage / bleed / probabilistic mode in the Simulator; scenario save/share; ammo caliber column on `/data`.
 >
-> **Cross-milestone deferred:** Playwright e2e. With 5 new routes in M2 the regression surface grew — revisit when the M3 frontend-design pass lands.
+> **Deferred M3 design-polish items:** Light theme; loading skeleton shimmers in the Field Ledger aesthetic; custom favicon + OG social cards (the latter pairs with M3 sub-project 4); keyboard shortcut overlay; real weapon silhouettes. Revisit after functional M3 work lands.
+>
+> **Cross-milestone deferred:** Playwright e2e. The design pass shipped without regression tests — due for its own PR.
 >
 > **Production action still open:** `wrangler pages secret put BUILDS_API_URL --project-name tarkov-gunsmith-web` — without this, `/builder` save/load returns 500 in prod.
 
