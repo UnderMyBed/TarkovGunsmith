@@ -11,6 +11,10 @@ permissions:
 jobs:
   data-proxy:
     name: Deploy data-proxy Worker
+    # Release-please PRs only touch CHANGELOG.md + package.json version — app code
+    # is identical to the previous (already-deployed) feature merge. Skip to avoid
+    # double-deploying every release cycle.
+    if: "${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-data-proxy
@@ -44,6 +48,7 @@ jobs:
 
   builds-api:
     name: Deploy builds-api Worker
+    if: "${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-builds-api
@@ -77,6 +82,7 @@ jobs:
 
   pages:
     name: Deploy web (Cloudflare Pages)
+    if: "${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-pages
