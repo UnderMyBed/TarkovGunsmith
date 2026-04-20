@@ -16,10 +16,18 @@ export type { Weapon } from "./queries/weapon.js";
 export { WEAPON_LIST_QUERY, weaponListSchema, fetchWeaponList } from "./queries/weaponList.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
 export { MOD_LIST_QUERY, modListSchema, fetchModList } from "./queries/modList.js";
-export type { ModListItem } from "./queries/modList.js";
+export type { ModListItem, ModListBuyFor, ModListVendor } from "./queries/modList.js";
 
 // Build schema
-export { Build, BuildV1, BuildV2, CURRENT_BUILD_VERSION } from "./build-schema.js";
+export {
+  Build,
+  BuildV1,
+  BuildV2,
+  BuildV3,
+  PlayerProfile,
+  DEFAULT_PROFILE,
+  CURRENT_BUILD_VERSION,
+} from "./build-schema.js";
 
 // Hooks
 export { useAmmoList } from "./hooks/useAmmoList.js";
@@ -45,5 +53,17 @@ export type { WeaponTree, SlotNode, AllowedItem } from "./queries/weaponTree.js"
 export { useWeaponTree } from "./hooks/useWeaponTree.js";
 
 // Build migrations
-export { migrateV1ToV2 } from "./build-migrations.js";
+export { migrateV1ToV2, migrateV2ToV3 } from "./build-migrations.js";
 export type { SlotNodeForMigration } from "./build-migrations.js";
+
+// Progression gating
+export { itemAvailability } from "./item-availability.js";
+export type { ItemAvailability } from "./item-availability.js";
+export { MARQUEE_QUEST_NORMALIZED_NAMES } from "./marquee-quests.js";
+export { TRADERS_QUERY, fetchTraders, tradersSchema } from "./queries/traders.js";
+export type { TraderListItem } from "./queries/traders.js";
+export { TASKS_QUERY, fetchTasks, tasksSchema } from "./queries/tasks.js";
+export type { TaskListItem } from "./queries/tasks.js";
+export { useTraders } from "./hooks/useTraders.js";
+export { useTasks } from "./hooks/useTasks.js";
+export { useProfile } from "./hooks/useProfile.js";

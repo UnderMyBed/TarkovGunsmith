@@ -6,9 +6,12 @@ import {
   useWeaponList,
   useSaveBuild,
   useWeaponTree,
+  useProfile,
   migrateV1ToV2,
+  itemAvailability,
   CURRENT_BUILD_VERSION,
   type BuildV1,
+  type PlayerProfile,
   type SlotNodeForMigration,
 } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
@@ -16,6 +19,7 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } fro
 import { adaptMod, adaptWeapon } from "../features/data-adapters/adapters.js";
 import { SlotTree } from "../features/builder/slot-tree.js";
 import { OrphanedBanner } from "../features/builder/orphaned-banner.js";
+import { ProfileEditor } from "../features/builder/profile-editor.js";
 
 export const Route = createFileRoute("/builder")({
   component: BuilderPage,
@@ -29,6 +33,8 @@ export interface BuilderPageProps {
   initialAttachments?: Record<string, string>;
   /** v2 hydration — unplaceable mods from an earlier v1 migration. */
   initialOrphaned?: string[];
+  /** v3 hydration — profile snapshot embedded in the shared build. */
+  initialProfileSnapshot?: PlayerProfile;
   notice?: React.ReactNode;
 }
 
@@ -37,6 +43,7 @@ export function BuilderPage({
   initialModIds,
   initialAttachments,
   initialOrphaned,
+  initialProfileSnapshot,
   notice,
 }: BuilderPageProps = {}) {
   const weapons = useWeaponList();
@@ -47,6 +54,11 @@ export function BuilderPage({
     () => initialAttachments ?? {},
   );
   const [orphaned, setOrphaned] = useState<string[]>(() => initialOrphaned ?? []);
+
+  const [profile, setProfile] = useProfile();
+  const [showAll, setShowAll] = useState(false);
+  const [embedProfileOnSave, setEmbedProfileOnSave] = useState(false);
+  const [snapshotBannerDismissed, setSnapshotBannerDismissed] = useState(false);
 
   const tree = useWeaponTree(weaponId);
 
@@ -87,6 +99,14 @@ export function BuilderPage({
     () => Object.fromEntries((mods.data ?? []).map((m) => [m.id, m.name])),
     [mods.data],
   );
+
+  const availabilityById = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof itemAvailability>>();
+    for (const m of mods.data ?? []) {
+      map.set(m.id, itemAvailability(m, profile));
+    }
+    return map;
+  }, [mods.data, profile]);
 
   const spec = useMemo(() => {
     if (!selectedWeapon) return null;
@@ -133,6 +153,7 @@ export function BuilderPage({
         attachments,
         orphaned,
         createdAt: new Date().toISOString(),
+        ...(embedProfileOnSave ? { profileSnapshot: profile } : {}),
       },
       {
         onSuccess: (result) => {
@@ -176,6 +197,40 @@ export function BuilderPage({
       {notice}
       {upstreamDrift}
 
+      {initialProfileSnapshot && !snapshotBannerDismissed && (
+        <Card>
+          <CardContent className="flex items-start justify-between gap-3 pt-6">
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                This build was shared with a progression snapshot ({initialProfileSnapshot.mode}{" "}
+                mode).
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+                Availability currently uses your saved profile. Switch to the author&apos;s snapshot
+                to see exactly what they had access to.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setProfile(initialProfileSnapshot);
+                  setSnapshotBannerDismissed(true);
+                }}
+              >
+                Use author&apos;s profile
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSnapshotBannerDismissed(true)}>
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <ProfileEditor profile={profile} onChange={setProfile} />
+
       {error && (
         <Card>
           <CardContent className="pt-6">
@@ -206,15 +261,25 @@ export function BuilderPage({
             ))}
           </select>
           {selectedWeapon && (
-            <div className="flex items-center gap-3">
-              <Button onClick={handleShare} disabled={saveMutation.isPending} size="sm">
-                {saveMutation.isPending ? "Saving…" : "Share build"}
-              </Button>
-              {saveMutation.error && (
-                <span className="text-sm text-[var(--color-destructive)]">
-                  Couldn't save — try again
-                </span>
-              )}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <Button onClick={handleShare} disabled={saveMutation.isPending} size="sm">
+                  {saveMutation.isPending ? "Saving…" : "Share build"}
+                </Button>
+                {saveMutation.error && (
+                  <span className="text-sm text-[var(--color-destructive)]">
+                    Couldn&apos;t save — try again
+                  </span>
+                )}
+              </div>
+              <label className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
+                <input
+                  type="checkbox"
+                  checked={embedProfileOnSave}
+                  onChange={(e) => setEmbedProfileOnSave(e.target.checked)}
+                />
+                <span>Embed my progression snapshot in the shared URL</span>
+              </label>
             </div>
           )}
         </CardContent>
@@ -224,16 +289,28 @@ export function BuilderPage({
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Mods</CardTitle>
-              <CardDescription>
-                {tree.isLoading && "Loading slot tree…"}
-                {tree.error && (
-                  <span className="text-[var(--color-destructive)]">
-                    Couldn't load slot tree: {tree.error.message}
-                  </span>
-                )}
-                {tree.data && `${Object.keys(attachments).length} attached`}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Mods</CardTitle>
+                  <CardDescription>
+                    {tree.isLoading && "Loading slot tree…"}
+                    {tree.error && (
+                      <span className="text-[var(--color-destructive)]">
+                        Couldn&apos;t load slot tree: {tree.error.message}
+                      </span>
+                    )}
+                    {tree.data && `${Object.keys(attachments).length} attached`}
+                  </CardDescription>
+                </div>
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={showAll}
+                    onChange={(e) => setShowAll(e.target.checked)}
+                  />
+                  <span>Show all items</span>
+                </label>
+              </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {tree.data && (
@@ -248,6 +325,8 @@ export function BuilderPage({
                       return next;
                     })
                   }
+                  getAvailability={(id) => availabilityById.get(id) ?? null}
+                  showAll={showAll}
                 />
               )}
               <OrphanedBanner

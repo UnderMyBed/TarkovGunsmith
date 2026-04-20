@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { Build, BuildV1, BuildV2, CURRENT_BUILD_VERSION } from "./build-schema.js";
+import {
+  Build,
+  BuildV1,
+  BuildV2,
+  BuildV3,
+  PlayerProfile,
+  CURRENT_BUILD_VERSION,
+} from "./build-schema.js";
 
 const validV1 = {
   version: 1 as const,
@@ -95,8 +102,89 @@ describe("Build (discriminated union) — v2", () => {
   });
 });
 
+describe("PlayerProfile", () => {
+  const validProfile = {
+    mode: "basic" as const,
+    traders: {
+      prapor: 2,
+      therapist: 1,
+      skier: 1,
+      peacekeeper: 1,
+      mechanic: 1,
+      ragman: 1,
+      jaeger: 1,
+    },
+    flea: false,
+  };
+  it("parses a valid basic profile", () => {
+    expect(PlayerProfile.parse(validProfile)).toEqual(validProfile);
+  });
+  it("parses advanced mode with quests", () => {
+    const parsed = PlayerProfile.parse({
+      ...validProfile,
+      mode: "advanced",
+      completedQuests: ["q1"],
+    });
+    expect(parsed.completedQuests).toEqual(["q1"]);
+  });
+  it("rejects trader LL above 4", () => {
+    expect(
+      PlayerProfile.safeParse({ ...validProfile, traders: { ...validProfile.traders, prapor: 5 } })
+        .success,
+    ).toBe(false);
+  });
+  it("rejects trader LL below 1", () => {
+    expect(
+      PlayerProfile.safeParse({ ...validProfile, traders: { ...validProfile.traders, prapor: 0 } })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe("BuildV3", () => {
+  const v3base = {
+    version: 3 as const,
+    weaponId: "w",
+    attachments: {},
+    orphaned: [],
+    createdAt: "2026-04-20T00:00:00.000Z",
+  };
+  it("parses without profileSnapshot", () => {
+    expect(BuildV3.parse(v3base).profileSnapshot).toBeUndefined();
+  });
+  it("parses with profileSnapshot", () => {
+    const profile = {
+      mode: "basic" as const,
+      traders: {
+        prapor: 1,
+        therapist: 1,
+        skier: 1,
+        peacekeeper: 1,
+        mechanic: 1,
+        ragman: 1,
+        jaeger: 1,
+      },
+      flea: true,
+    };
+    expect(BuildV3.parse({ ...v3base, profileSnapshot: profile }).profileSnapshot).toEqual(profile);
+  });
+});
+
+describe("Build (discriminated union) — v3", () => {
+  it("dispatches to BuildV3 when version is 3", () => {
+    const v3 = {
+      version: 3 as const,
+      weaponId: "w",
+      attachments: {},
+      orphaned: [],
+      createdAt: "2026-04-20T00:00:00.000Z",
+    };
+    expect(Build.parse(v3).version).toBe(3);
+  });
+});
+
 describe("CURRENT_BUILD_VERSION", () => {
   it("matches the latest BuildV* variant in the discriminated union", () => {
-    expect(CURRENT_BUILD_VERSION).toBe(2);
+    expect(CURRENT_BUILD_VERSION).toBe(3);
   });
 });
