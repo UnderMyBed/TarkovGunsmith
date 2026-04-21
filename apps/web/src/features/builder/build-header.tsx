@@ -18,6 +18,8 @@ export interface BuildHeaderProps {
   sharedId?: string | null;
   /** When provided, renders a "Compare ↔" action in the header. */
   onCompare?: () => void;
+  /** When provided, renders an "Optimize ⚙" action in the header. */
+  onOptimize?: () => void;
 }
 
 export function BuildHeader({
@@ -31,6 +33,7 @@ export function BuildHeader({
   modCount,
   sharedId,
   onCompare,
+  onOptimize,
 }: BuildHeaderProps) {
   return (
     <Card variant="bracket">
@@ -50,6 +53,11 @@ export function BuildHeader({
           {onCompare && (
             <Button variant="secondary" size="sm" onClick={onCompare}>
               Compare ↔
+            </Button>
+          )}
+          {onOptimize && (
+            <Button variant="secondary" size="sm" onClick={onOptimize}>
+              Optimize ⚙
             </Button>
           )}
           {sharedId && <Stamp tone="amber">SHARED</Stamp>}
