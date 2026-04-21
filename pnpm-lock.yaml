@@ -145,6 +145,15 @@ importers:
 
   packages/ballistics: {}
 
+  packages/optimizer:
+    dependencies:
+      '@tarkov/ballistics':
+        specifier: workspace:*
+        version: link:../ballistics
+      '@tarkov/data':
+        specifier: workspace:*
+        version: link:../tarkov-data
+
   packages/tarkov-data:
     dependencies:
       '@tarkov/types':

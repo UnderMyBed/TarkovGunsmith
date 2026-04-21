@@ -26,6 +26,8 @@ export default tseslint.config(
             "packages/*/vitest.config.ts",
             "packages/ballistics/src/*.test.ts",
             "packages/ballistics/src/*/*.test.ts",
+            "packages/optimizer/src/*.test.ts",
+            "packages/optimizer/src/*/*.test.ts",
             "packages/tarkov-types/codegen.ts",
             "packages/tarkov-data/src/*.test.ts",
             "packages/tarkov-data/src/queries/*.test.ts",
