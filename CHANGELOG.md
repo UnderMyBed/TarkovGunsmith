@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.5.1...v1.6.0) (2026-04-21)
+
+
+### Features
+
+* **m3:** Build comparison — live side-by-side workspace ([#81](https://github.com/UnderMyBed/TarkovGunsmith/issues/81)) ([6f60ca5](https://github.com/UnderMyBed/TarkovGunsmith/commit/6f60ca5881348ed3050bda0930edc1365a9a3052))
+
 ## [1.5.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.5.0...v1.5.1) (2026-04-20)
 
 
