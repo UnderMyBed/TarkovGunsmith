@@ -41,3 +41,6 @@ Thumbs.db
 
 # worktrees — isolated feature workspaces created by superpowers skills
 .worktrees/
+
+# visual-companion scratch from superpowers brainstorming
+.superpowers/
