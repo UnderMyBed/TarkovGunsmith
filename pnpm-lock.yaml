@@ -96,6 +96,9 @@ importers:
       '@tarkov/data':
         specifier: workspace:*
         version: link:../../packages/tarkov-data
+      '@tarkov/optimizer':
+        specifier: workspace:*
+        version: link:../../packages/optimizer
       '@tarkov/types':
         specifier: workspace:*
         version: link:../../packages/tarkov-types
