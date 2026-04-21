@@ -1,5 +1,5 @@
 import type { WeaponSpec } from "@tarkov/ballistics";
-import { Card, CardContent, CardHeader, Stamp, StatRow } from "@tarkov/ui";
+import { Button, Card, CardContent, CardHeader, Stamp, StatRow } from "@tarkov/ui";
 
 export interface BuildHeaderProps {
   name: string;
@@ -16,6 +16,8 @@ export interface BuildHeaderProps {
   modCount?: number;
   /** Truthy when the build has been saved and has a share URL. */
   sharedId?: string | null;
+  /** When provided, renders a "Compare ↔" action in the header. */
+  onCompare?: () => void;
 }
 
 export function BuildHeader({
@@ -28,6 +30,7 @@ export function BuildHeader({
   stockSpec,
   modCount,
   sharedId,
+  onCompare,
 }: BuildHeaderProps) {
   return (
     <Card variant="bracket">
@@ -43,7 +46,14 @@ export function BuildHeader({
             {sharedId ? ` · BUILD · ${sharedId.slice(0, 8)}` : ""}
           </div>
         </div>
-        {sharedId && <Stamp tone="amber">SHARED</Stamp>}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {onCompare && (
+            <Button variant="secondary" size="sm" onClick={onCompare}>
+              Compare ↔
+            </Button>
+          )}
+          {sharedId && <Stamp tone="amber">SHARED</Stamp>}
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <input

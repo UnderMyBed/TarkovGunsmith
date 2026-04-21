@@ -30,6 +30,9 @@ export {
   CURRENT_BUILD_VERSION,
 } from "./build-schema.js";
 
+// Build pair schema
+export { BuildPair, BuildPairV1, CURRENT_PAIR_VERSION } from "./pair-schema.js";
+
 // Hooks
 export { useAmmoList } from "./hooks/useAmmoList.js";
 export { useArmorList } from "./hooks/useArmorList.js";
@@ -38,6 +41,9 @@ export { useWeaponList } from "./hooks/useWeaponList.js";
 export { useModList } from "./hooks/useModList.js";
 export { useSaveBuild } from "./hooks/useSaveBuild.js";
 export { useLoadBuild } from "./hooks/useLoadBuild.js";
+export { useLoadPair } from "./hooks/useLoadPair.js";
+export { useSavePair } from "./hooks/useSavePair.js";
+export { useForkPair } from "./hooks/useForkPair.js";
 
 // Builds API client
 export {
@@ -47,6 +53,16 @@ export {
   type LoadBuildErrorCode,
   type SaveBuildResponse,
 } from "./buildsApi.js";
+
+// Pairs API client
+export {
+  savePair,
+  loadPair,
+  forkPair,
+  LoadPairError,
+  type LoadPairErrorCode,
+  type SavePairResponse,
+} from "./pairsApi.js";
 
 // Weapon tree (slot-based compatibility)
 export { WEAPON_TREE_QUERY, fetchWeaponTree, normalizeSlots } from "./queries/weaponTree.js";
@@ -72,3 +88,11 @@ export { useProfile } from "./hooks/useProfile.js";
 // Presets
 export { WEAPON_PRESETS, presetsForWeapon } from "./presets.js";
 export type { WeaponPreset } from "./presets.js";
+
+// Slot diff (Build comparison)
+export { slotDiff } from "./slot-diff.js";
+export type { SlotDiffStatus, SlotDiffInput, SlotDiffMap } from "./slot-diff.js";
+
+// Stat delta (Build comparison)
+export { statDelta } from "./stat-delta.js";
+export type { StatDeltaRow, StatDeltaResult, StatDirection, StatKey } from "./stat-delta.js";

@@ -1,4 +1,5 @@
 import { newBuildId, BUILD_ID_REGEX } from "./id.js";
+import { handlePostPair, handleGetPair, handleForkPair } from "./pairs.js";
 
 const MAX_BODY_BYTES = 32 * 1024;
 
@@ -58,6 +59,21 @@ export default {
     const buildMatch = /^\/builds\/([^/]+)$/.exec(path);
     if (buildMatch && request.method === "GET") {
       return handleGet(buildMatch[1] ?? "", env);
+    }
+
+    if (path === "/pairs") {
+      if (request.method === "POST") return handlePostPair(request, env);
+      return new Response("Method Not Allowed", { status: 405 });
+    }
+
+    const pairForkMatch = /^\/pairs\/([^/]+)\/fork$/.exec(path);
+    if (pairForkMatch && request.method === "POST") {
+      return handleForkPair(pairForkMatch[1] ?? "", request, env);
+    }
+
+    const pairMatch = /^\/pairs\/([^/]+)$/.exec(path);
+    if (pairMatch && request.method === "GET") {
+      return handleGetPair(pairMatch[1] ?? "", env);
     }
 
     return new Response("Not Found", { status: 404 });
