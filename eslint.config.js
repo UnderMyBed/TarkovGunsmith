@@ -46,6 +46,7 @@ export default tseslint.config(
             "apps/web/src/features/*/*.test.tsx",
             "apps/web/src/features/*/*/*.test.ts",
             "apps/web/src/features/*/*/*.test.tsx",
+            "apps/web/functions/lib/*.test.ts",
           ],
           defaultProject: "packages/ui/tsconfig.test.json",
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 30,
