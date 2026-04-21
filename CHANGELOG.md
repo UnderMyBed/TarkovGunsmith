@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.7.0...v1.8.0) (2026-04-21)
+
+
+### Features
+
+* **og:** @tarkov/og package — Satori card renderer ([#86](https://github.com/UnderMyBed/TarkovGunsmith/issues/86)) ([fc17727](https://github.com/UnderMyBed/TarkovGunsmith/commit/fc1772767a56822353e58f30ac1aee5df376f059))
+
+
+### Documentation
+
+* **m3:** OG share cards — spec + implementation plan ([#88](https://github.com/UnderMyBed/TarkovGunsmith/issues/88)) ([4539fdc](https://github.com/UnderMyBed/TarkovGunsmith/commit/4539fdce25ea8578b22f70c3c17db76ff887fcff))
+
 ## [1.7.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.6.0...v1.7.0) (2026-04-21)
 
 
