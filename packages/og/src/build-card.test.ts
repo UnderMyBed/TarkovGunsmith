@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import satori from "satori";
 import { buildCard } from "./build-card.js";
 import { loadFonts } from "./fonts.js";
 import type { BuildCardViewModel } from "./view-model.js";
+import { renderSvg, textContent } from "./__test-utils__/svg.js";
 
 const vm: BuildCardViewModel = {
   title: "RECOIL KING",
@@ -13,25 +13,9 @@ const vm: BuildCardViewModel = {
   stats: { ergo: 52, recoilV: 88, recoilH: 215, weight: 3.4, accuracy: 3.2 },
 };
 
-// `embedFont: false` makes satori emit literal `<text>` elements instead of
-// rasterizing glyphs to `<path>`, so these snapshot-on-SVG tests can regex
-// the rendered strings. Fonts still load (needed for metrics / layout).
 async function render(model: BuildCardViewModel): Promise<string> {
   const fonts = await loadFonts();
-  return satori(buildCard(model), { width: 1200, height: 630, fonts, embedFont: false });
-}
-
-/**
- * Satori splits multi-word strings into one `<text>` element per run and may
- * insert a whitespace-only element between them (e.g. "RECOIL KING" renders
- * as three sibling `<text>` nodes). Concatenate text content with a single
- * space so regexes like `/RECOIL KING/` match naturally.
- */
-function textContent(svg: string): string {
-  const re = /<text[^>]*>([\s\S]*?)<\/text>/g;
-  const parts: string[] = [];
-  for (const [, inner] of svg.matchAll(re)) parts.push(inner);
-  return parts.join(" ").replace(/\s+/g, " ");
+  return renderSvg(buildCard(model), fonts);
 }
 
 describe("buildCard", () => {
