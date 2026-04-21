@@ -1,4 +1,4 @@
-import type { SlotNode, WeaponTree, ItemAvailability } from "@tarkov/data";
+import type { SlotNode, WeaponTree, ItemAvailability, SlotDiffMap } from "@tarkov/data";
 import { Pill } from "@tarkov/ui";
 
 export interface SlotTreeProps {
@@ -7,9 +7,17 @@ export interface SlotTreeProps {
   onAttach: (path: string, itemId: string | null) => void;
   getAvailability?: (itemId: string) => ItemAvailability | null;
   showAll?: boolean;
+  diff?: SlotDiffMap;
 }
 
-export function SlotTree({ tree, attachments, onAttach, getAvailability, showAll }: SlotTreeProps) {
+export function SlotTree({
+  tree,
+  attachments,
+  onAttach,
+  getAvailability,
+  showAll,
+  diff,
+}: SlotTreeProps) {
   if (tree.slots.length === 0) {
     return (
       <p className="font-mono text-xs tracking-[0.15em] uppercase text-[var(--color-muted-foreground)]">
@@ -28,6 +36,7 @@ export function SlotTree({ tree, attachments, onAttach, getAvailability, showAll
           getAvailability={getAvailability}
           showAll={showAll}
           depth={0}
+          diff={diff}
         />
       ))}
     </ul>
@@ -41,6 +50,7 @@ function SlotRow({
   getAvailability,
   showAll,
   depth,
+  diff,
 }: {
   slot: SlotNode;
   attachments: Readonly<Record<string, string>>;
@@ -48,6 +58,7 @@ function SlotRow({
   getAvailability?: (itemId: string) => ItemAvailability | null;
   showAll?: boolean;
   depth: number;
+  diff?: SlotDiffMap;
 }) {
   const selectedId = attachments[slot.path] ?? null;
   const selectedItem = selectedId ? slot.allowedItems.find((i) => i.id === selectedId) : null;
@@ -55,10 +66,16 @@ function SlotRow({
     selectedItem && getAvailability ? getAvailability(selectedItem.id) : null;
 
   const indentPx = depth * 20;
+  const diffStatus = diff?.get(slot.path);
+  const diffDataAttr = diffStatus ? { "data-diff": diffStatus } : {};
 
   return (
     <li>
-      <details className="group border-b border-dashed border-[var(--color-border)]">
+      <details
+        data-slot-path={slot.path}
+        {...diffDataAttr}
+        className="group border-b border-dashed border-[var(--color-border)] data-[diff=differs]:border-dashed data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-l-2 data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-l-2 data-[diff=right-only]:border-[var(--color-primary)]"
+      >
         <summary
           className="flex cursor-pointer items-center gap-3 py-2 pr-3 hover:bg-[var(--color-muted)] transition-colors"
           style={{ paddingLeft: `${12 + indentPx}px` }}
@@ -157,6 +174,7 @@ function SlotRow({
                   getAvailability={getAvailability}
                   showAll={showAll}
                   depth={depth + 1}
+                  diff={diff}
                 />
               ))}
             </ul>

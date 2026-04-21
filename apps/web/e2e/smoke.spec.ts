@@ -14,6 +14,7 @@ const ROUTES: ReadonlyArray<{
   { path: "/aec", contains: "Armor Effectiveness" },
   { path: "/data", contains: "Data" },
   { path: "/charts", contains: "Effectiveness" },
+  { path: "/builder/compare", contains: "Add a second build" },
 ];
 
 /**
@@ -126,5 +127,118 @@ test.describe("smoke — builder interaction", () => {
       errors,
       `Console errors on /builder after selecting a weapon:\n${errors.join("\n")}`,
     ).toEqual([]);
+  });
+});
+
+test.describe("smoke — /builder/compare/<pairId>", () => {
+  // Requires the Pages Function at `apps/web/functions/api/pairs/[[path]].ts`
+  // to be serving live — i.e. a `wrangler pages dev` webServer. The Playwright
+  // config uses `vite preview`, which only serves the SPA bundle and falls
+  // back to index.html for unknown paths, so `POST /api/pairs` returns the
+  // SPA's HTML rather than the downstream builds-api Worker. Skip until the
+  // webServer gains `pages:dev`; the flow is already covered by pairsApi unit
+  // tests + the builds-api integration suite.
+  test.skip("seeds a pair via POST /api/pairs and loads it via deep link", async ({
+    page,
+    request,
+  }) => {
+    const seed = {
+      v: 1,
+      createdAt: new Date().toISOString(),
+      left: null,
+      right: null,
+      name: "smoke-pair",
+    };
+    const res = await request.post("/api/pairs", { data: seed });
+    expect(res.status()).toBe(201);
+    const body = (await res.json()) as { id: string };
+    const { errors } = captureConsoleErrors(page);
+    await page.goto(`/builder/compare/${body.id}`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("button", { name: /save/i }).first()).toBeVisible({
+      timeout: 10_000,
+    });
+    expect(errors, `Console errors on /builder/compare/${body.id}:\n${errors.join("\n")}`).toEqual(
+      [],
+    );
+  });
+});
+
+test.describe("smoke — compare interaction", () => {
+  test("selecting two different weapons shows stat deltas", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/builder/compare", { waitUntil: "networkidle" });
+
+    // Each CompareSide renders a <select id="compare-weapon-A|B"> for the
+    // weapon picker. Target both directly by id to avoid coupling to DOM
+    // order.
+    const leftPicker = page.locator("#compare-weapon-A");
+    const rightPicker = page.locator("#compare-weapon-B");
+    await expect(leftPicker).toBeVisible({ timeout: 10_000 });
+    await expect(rightPicker).toBeVisible({ timeout: 10_000 });
+
+    // Wait for the weapon list query to resolve (>2 options means the
+    // placeholder plus at least two real weapons).
+    await expect
+      .poll(async () => await leftPicker.locator("option").count(), { timeout: 15_000 })
+      .toBeGreaterThan(2);
+
+    // Grab two distinct real-weapon values (index 0 is the placeholder).
+    const leftValue = await leftPicker.locator("option").nth(1).getAttribute("value");
+    const rightValue = await rightPicker.locator("option").nth(2).getAttribute("value");
+    expect(leftValue, "expected at least one weapon option").toBeTruthy();
+    expect(rightValue, "expected at least two weapon options").toBeTruthy();
+    expect(leftValue).not.toBe(rightValue);
+
+    await leftPicker.selectOption(leftValue);
+    await rightPicker.selectOption(rightValue);
+
+    // Stat-delta strip renders `<span data-direction=...>` cells when both
+    // sides have a spec. Wait for at least one to appear.
+    const deltaCell = page.locator("[data-direction]").first();
+    await expect(deltaCell).toBeVisible({ timeout: 15_000 });
+
+    expect(errors, `Console errors on compare interaction:\n${errors.join("\n")}`).toEqual([]);
+  });
+});
+
+test.describe("smoke — compare save round-trip", () => {
+  // Same proxy caveat as /builder/compare/<pairId> seed-load above: the
+  // "Save comparison" button hits `POST /api/pairs`, which the `vite preview`
+  // webServer doesn't route to the Pages Function. Under `wrangler pages dev`
+  // the flow works end-to-end; un-skip this when the Playwright webServer
+  // gains proxy support.
+  test.skip("fills both sides, saves, follows redirect, state matches", async ({ page }) => {
+    await page.goto("/builder/compare", { waitUntil: "networkidle" });
+
+    const leftPicker = page.locator("#compare-weapon-A");
+    const rightPicker = page.locator("#compare-weapon-B");
+    await expect(leftPicker).toBeVisible({ timeout: 10_000 });
+    await expect(rightPicker).toBeVisible({ timeout: 10_000 });
+    await expect
+      .poll(async () => await leftPicker.locator("option").count(), { timeout: 15_000 })
+      .toBeGreaterThan(2);
+
+    const leftValue = await leftPicker.locator("option").nth(1).getAttribute("value");
+    const rightValue = await rightPicker.locator("option").nth(2).getAttribute("value");
+    expect(leftValue).toBeTruthy();
+    expect(rightValue).toBeTruthy();
+
+    await leftPicker.selectOption(leftValue);
+    await rightPicker.selectOption(rightValue);
+
+    await page.getByRole("button", { name: /save comparison/i }).click();
+
+    // Redirect to /builder/compare/<pairId> (builds-api mints an 8-char id
+    // from the `abcdefghjkmnpqrstuvwxyz23456789` alphabet).
+    await page.waitForURL(/\/builder\/compare\/[abcdefghjkmnpqrstuvwxyz23456789]{8}$/, {
+      timeout: 10_000,
+    });
+
+    // Once we have a pairId the Save button's label flips.
+    await expect(page.getByRole("button", { name: /save changes/i })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    await expect(page.locator("[data-direction]").first()).toBeVisible();
   });
 });

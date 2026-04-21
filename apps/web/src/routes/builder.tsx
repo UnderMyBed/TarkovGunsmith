@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -22,10 +22,30 @@ import { OrphanedBanner } from "../features/builder/orphaned-banner.js";
 import { ProfileEditor } from "../features/builder/profile-editor.js";
 import { BuildHeader } from "../features/builder/build-header.js";
 import { PresetPicker } from "../features/builder/preset-picker.js";
+import {
+  CompareFromBuildDialog,
+  type CompareFromBuildConfirm,
+} from "../features/builder/compare/compare-from-build-dialog.js";
 
 export const Route = createFileRoute("/builder")({
-  component: BuilderPage,
+  component: BuilderRouteLayout,
 });
+
+/**
+ * Layout wrapper for the `/builder` route tree.
+ *
+ * Child routes (`/builder/$id`, `/builder/compare`, `/builder/compare/$pairId`)
+ * are nested under this file in TanStack's file-based routing tree, so the
+ * parent must render an `<Outlet />` for them to mount. For the bare
+ * `/builder` URL there is no matching child and we render the page itself.
+ */
+function BuilderRouteLayout() {
+  const matchRoute = useMatchRoute();
+  // `fuzzy: false` → only true when the current location is exactly `/builder`
+  // with no child segments. Any deeper URL falls through to the `<Outlet />`.
+  const isExactBuilder = matchRoute({ to: "/builder" });
+  return isExactBuilder ? <BuilderPage /> : <Outlet />;
+}
 
 export interface BuilderPageProps {
   initialWeaponId?: string;
@@ -56,6 +76,8 @@ export function BuilderPage({
 }: BuilderPageProps = {}) {
   const weapons = useWeaponList();
   const mods = useModList();
+  const navigate = useNavigate();
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
   const [attachments, setAttachments] = useState<Record<string, string>>(
@@ -204,6 +226,29 @@ export function BuilderPage({
     return () => window.clearTimeout(id);
   }, [shareUrl]);
 
+  function handleCompareConfirm(result: CompareFromBuildConfirm) {
+    // Persist the "left prefill" via sessionStorage so the /builder/compare
+    // route can pick it up on mount. Small blob; cleared on consumption.
+    const leftBuild = {
+      version: CURRENT_BUILD_VERSION,
+      weaponId,
+      attachments,
+      orphaned,
+      createdAt: new Date().toISOString(),
+      ...(embedProfileOnSave ? { profileSnapshot: profile } : {}),
+      ...(buildName.trim().length > 0 ? { name: buildName.trim() } : {}),
+      ...(buildDescription.trim().length > 0 ? { description: buildDescription.trim() } : {}),
+    };
+    sessionStorage.setItem("compare:leftPrefill", JSON.stringify(leftBuild));
+    sessionStorage.setItem("compare:mode", result.mode);
+    if (result.mode === "paste-url") {
+      sessionStorage.setItem("compare:rightBuildId", result.rightBuildId);
+    } else {
+      sessionStorage.removeItem("compare:rightBuildId");
+    }
+    void navigate({ to: "/builder/compare" });
+  }
+
   function handleWeaponChange(newWeaponId: string) {
     setWeaponId(newWeaponId);
     setAttachments({});
@@ -225,6 +270,12 @@ export function BuilderPage({
         weaponName={selectedWeapon?.shortName ?? selectedWeapon?.name ?? null}
         modCount={Object.keys(attachments).length}
         sharedId={shareUrl?.split("/").pop() ?? null}
+        onCompare={selectedWeapon ? () => setCompareOpen(true) : undefined}
+      />
+      <CompareFromBuildDialog
+        open={compareOpen}
+        onClose={() => setCompareOpen(false)}
+        onConfirm={handleCompareConfirm}
       />
       {notice}
       {upstreamDrift}

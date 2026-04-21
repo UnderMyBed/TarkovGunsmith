@@ -108,6 +108,14 @@ function HomePage() {
               Run a simulation
             </Link>
           </div>
+          <div className="mt-3">
+            <Link
+              to="/builder/compare"
+              className="text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] transition-colors"
+            >
+              or compare two builds →
+            </Link>
+          </div>
         </div>
 
         {/* Hero right — sample build readout */}
