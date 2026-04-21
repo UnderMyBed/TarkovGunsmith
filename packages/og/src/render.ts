@@ -6,19 +6,26 @@ type SatoriFont = NonNullable<SatoriOptions["fonts"]>[number];
 let resvgReady: Promise<void> | null = null;
 
 /**
- * Lazy-initialize the resvg wasm binary. Memoized per isolate; `initWasm()`
- * throws if called twice.
- *
- * Node path: resolve the wasm file via `createRequire`, read its bytes, pass
- * to `initWasm`. This is the form resvg-wasm expects in Node — the native
- * wasm-ESM loader can't instantiate this module because its wbg imports
- * aren't resolvable as an npm package.
- *
- * Cloudflare Pages Functions need a different path (Wrangler bundles the
- * `.wasm` as a `WebAssembly.Module` binding). Phase 2 owns that wiring; this
- * Node-only loader is enough for package unit tests.
+ * Explicitly initialize resvg-wasm with a WebAssembly.Module or ArrayBuffer.
+ * Use from Cloudflare Pages Functions, where the wasm binary is imported
+ * by the bundler as a module binding. Idempotent — safe to call many times.
  */
-async function ensureResvgReady(): Promise<void> {
+export async function initResvg(
+  wasm: WebAssembly.Module | ArrayBuffer | Uint8Array,
+): Promise<void> {
+  if (resvgReady) return resvgReady;
+  resvgReady = (async () => {
+    await initWasm(wasm);
+  })();
+  return resvgReady;
+}
+
+/**
+ * Node-only fallback: resolve the wasm file via createRequire, read bytes,
+ * pass to initWasm. The native wasm-ESM loader can't instantiate resvg-wasm
+ * (its wbg imports aren't npm-resolvable). Memoized.
+ */
+async function ensureResvgReadyNode(): Promise<void> {
   if (resvgReady) return resvgReady;
   resvgReady = (async () => {
     const { createRequire } = await import("node:module");
@@ -38,13 +45,22 @@ export interface RenderOptions {
 
 /**
  * Render satori JSX → SVG → PNG. Cold start pays one wasm init per isolate.
+ *
+ * In CF Pages Functions: call `initResvg(wasmModule)` once at Function
+ * startup so `renderPng` skips the Node auto-init path.
+ *
+ * In Node (vitest, scripts): `renderPng` auto-initializes via `fs.readFile`.
  */
 export async function renderPng(
   jsx: Parameters<typeof satori>[0],
   fonts: SatoriFont[],
   opts: RenderOptions,
 ): Promise<Uint8Array> {
-  await ensureResvgReady();
+  if (!resvgReady) {
+    await ensureResvgReadyNode();
+  } else {
+    await resvgReady;
+  }
   const svg = await satori(jsx, { width: opts.width, height: opts.height, fonts });
   const resvg = new Resvg(svg, { fitTo: { mode: "width", value: opts.width } });
   return resvg.render().asPng();
