@@ -73,6 +73,9 @@ function dfs(
     if (
       best.value === null ||
       leafScore < best.value.score ||
+      // v8 ignore next — unreachable with tight bound + `>=` pruning;
+      // kept as a safety net for future looser heuristics. See
+      // tieBreakBetter's docblock.
       (leafScore === best.value.score && tieBreakBetter(runningPrice, attachments, best.value))
     ) {
       best.value = {
@@ -86,6 +89,9 @@ function dfs(
   }
 
   const [slot, ...rest] = remainingSlots;
+  // Defensive: `slot` is guaranteed defined by the `remainingSlots.length === 0`
+  // early-return above, but TS's `noUncheckedIndexedAccess` forces the guard.
+  /* v8 ignore next */
   if (!slot) return true;
   const candidates = slotCandidates(slot, state.modList, state.profile, state.pinnedSlots);
 
@@ -167,6 +173,12 @@ function singleItemScore(objective: Objective, item: ModListItem | null): number
   }
 }
 
+// Defensive tie-break for identical-score leaves. With the current tight
+// linear lower bound and `>=` pruning, equal-score sibling branches are
+// always pruned BEFORE reaching a leaf — so these helpers are structurally
+// unreachable today. They remain as a safety net for future objectives /
+// loose bounds that could legitimately produce score ties at leaves.
+/* v8 ignore start */
 function tieBreakBetter(
   newPrice: number,
   newAttachments: Readonly<Record<string, string>>,
@@ -182,3 +194,4 @@ function stableKey(attachments: Readonly<Record<string, string>>): string {
     .map((k) => `${k}=${attachments[k]}`)
     .join("|");
 }
+/* v8 ignore stop */

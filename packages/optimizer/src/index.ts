@@ -1,3 +1,4 @@
+export { optimize } from "./optimize.js";
 export type {
   Objective,
   OptimizationConstraints,
