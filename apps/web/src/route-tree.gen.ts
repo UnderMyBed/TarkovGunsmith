@@ -21,6 +21,7 @@ import { Route as AdcRouteImport } from './routes/adc'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuilderCompareRouteImport } from './routes/builder.compare'
 import { Route as BuilderIdRouteImport } from './routes/builder.$id'
+import { Route as BuilderComparePairIdRouteImport } from './routes/builder.compare.$pairId'
 
 const SmokeRoute = SmokeRouteImport.update({
   id: '/smoke',
@@ -82,6 +83,11 @@ const BuilderIdRoute = BuilderIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => BuilderRoute,
 } as any)
+const BuilderComparePairIdRoute = BuilderComparePairIdRouteImport.update({
+  id: '/$pairId',
+  path: '/$pairId',
+  getParentRoute: () => BuilderCompareRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -95,7 +101,8 @@ export interface FileRoutesByFullPath {
   '/sim': typeof SimRoute
   '/smoke': typeof SmokeRoute
   '/builder/$id': typeof BuilderIdRoute
-  '/builder/compare': typeof BuilderCompareRoute
+  '/builder/compare': typeof BuilderCompareRouteWithChildren
+  '/builder/compare/$pairId': typeof BuilderComparePairIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,7 +116,8 @@ export interface FileRoutesByTo {
   '/sim': typeof SimRoute
   '/smoke': typeof SmokeRoute
   '/builder/$id': typeof BuilderIdRoute
-  '/builder/compare': typeof BuilderCompareRoute
+  '/builder/compare': typeof BuilderCompareRouteWithChildren
+  '/builder/compare/$pairId': typeof BuilderComparePairIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,7 +132,8 @@ export interface FileRoutesById {
   '/sim': typeof SimRoute
   '/smoke': typeof SmokeRoute
   '/builder/$id': typeof BuilderIdRoute
-  '/builder/compare': typeof BuilderCompareRoute
+  '/builder/compare': typeof BuilderCompareRouteWithChildren
+  '/builder/compare/$pairId': typeof BuilderComparePairIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/smoke'
     | '/builder/$id'
     | '/builder/compare'
+    | '/builder/compare/$pairId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/smoke'
     | '/builder/$id'
     | '/builder/compare'
+    | '/builder/compare/$pairId'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/smoke'
     | '/builder/$id'
     | '/builder/compare'
+    | '/builder/compare/$pairId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -270,17 +282,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuilderIdRouteImport
       parentRoute: typeof BuilderRoute
     }
+    '/builder/compare/$pairId': {
+      id: '/builder/compare/$pairId'
+      path: '/$pairId'
+      fullPath: '/builder/compare/$pairId'
+      preLoaderRoute: typeof BuilderComparePairIdRouteImport
+      parentRoute: typeof BuilderCompareRoute
+    }
   }
 }
 
+interface BuilderCompareRouteChildren {
+  BuilderComparePairIdRoute: typeof BuilderComparePairIdRoute
+}
+
+const BuilderCompareRouteChildren: BuilderCompareRouteChildren = {
+  BuilderComparePairIdRoute: BuilderComparePairIdRoute,
+}
+
+const BuilderCompareRouteWithChildren = BuilderCompareRoute._addFileChildren(
+  BuilderCompareRouteChildren,
+)
+
 interface BuilderRouteChildren {
   BuilderIdRoute: typeof BuilderIdRoute
-  BuilderCompareRoute: typeof BuilderCompareRoute
+  BuilderCompareRoute: typeof BuilderCompareRouteWithChildren
 }
 
 const BuilderRouteChildren: BuilderRouteChildren = {
   BuilderIdRoute: BuilderIdRoute,
-  BuilderCompareRoute: BuilderCompareRoute,
+  BuilderCompareRoute: BuilderCompareRouteWithChildren,
 }
 
 const BuilderRouteWithChildren =
