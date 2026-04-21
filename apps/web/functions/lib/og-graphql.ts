@@ -1,4 +1,14 @@
 import type { HydrateMod, HydrateWeapon } from "@tarkov/og";
+import type { AvailabilityMod } from "./og-availability.js";
+
+/**
+ * The mods returned by this fetcher serve two consumers: `hydrateBuildCard`
+ * (reads `buyFor[].priceRUB`) and `availabilityPillText` (reads
+ * `buyFor[].vendor.normalizedName` + `minTraderLevel`). The GraphQL query
+ * selects all three fields, so the runtime row satisfies both contracts;
+ * this intersection type lets TypeScript see that.
+ */
+export type OgMod = HydrateMod & AvailabilityMod;
 
 const ENDPOINT = "https://api.tarkov.dev/graphql";
 
@@ -45,14 +55,14 @@ interface Args {
 interface ApiResp {
   data?: {
     weapon: HydrateWeapon | null;
-    mods: HydrateMod[];
+    mods: OgMod[];
   };
   errors?: { message: string }[];
 }
 
 export async function fetchOgRowsForBuild(
   args: Args,
-): Promise<{ weapon: HydrateWeapon; mods: HydrateMod[] }> {
+): Promise<{ weapon: HydrateWeapon; mods: OgMod[] }> {
   const res = await fetch(ENDPOINT, {
     method: "POST",
     headers: { "content-type": "application/json" },

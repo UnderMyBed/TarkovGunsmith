@@ -31,7 +31,6 @@ export default tseslint.config(
             "packages/og/src/*.test.ts",
             "packages/og/src/*.test.tsx",
             "packages/og/scripts/*.tsx",
-            "packages/og/src/__test-utils__/*.ts",
             "packages/tarkov-types/codegen.ts",
             "packages/tarkov-data/src/*.test.ts",
             "packages/tarkov-data/src/queries/*.test.ts",
