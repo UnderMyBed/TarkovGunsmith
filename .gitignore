@@ -7,6 +7,8 @@ dist/
 build/
 .turbo/
 *.tsbuildinfo
+# Pages Function route segment `build` (for /og/build/:id) — not a build artefact.
+!apps/web/functions/og/build/
 
 # env
 .env
