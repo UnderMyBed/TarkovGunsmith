@@ -242,3 +242,33 @@ test.describe("smoke — compare save round-trip", () => {
     await expect(page.locator("[data-direction]").first()).toBeVisible();
   });
 });
+
+test.describe("smoke — build optimizer", () => {
+  test("opens optimizer dialog, runs, sees result", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/builder", { waitUntil: "networkidle" });
+
+    // Pick a weapon.
+    const weaponPicker = page.locator("select").first();
+    await expect(weaponPicker).toBeVisible({ timeout: 10_000 });
+    await expect
+      .poll(async () => await weaponPicker.locator("option").count(), { timeout: 15_000 })
+      .toBeGreaterThan(1);
+    await weaponPicker.selectOption({ index: 1 });
+
+    // Open optimizer.
+    const optimizeBtn = page.getByRole("button", { name: /optimize/i });
+    await expect(optimizeBtn).toBeVisible({ timeout: 10_000 });
+    await optimizeBtn.click();
+
+    // Run with default constraints.
+    await page.getByRole("button", { name: /run optimization/i }).click();
+
+    // Result tab shows either Accept (success/partial) or Adjust constraints (failure).
+    await expect(
+      page.getByRole("button", { name: /(accept|adjust constraints)/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    expect(errors, `Console errors on optimizer flow:\n${errors.join("\n")}`).toEqual([]);
+  });
+});
