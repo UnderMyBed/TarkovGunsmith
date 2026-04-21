@@ -96,6 +96,9 @@ importers:
       '@tarkov/data':
         specifier: workspace:*
         version: link:../../packages/tarkov-data
+      '@tarkov/optimizer':
+        specifier: workspace:*
+        version: link:../../packages/optimizer
       '@tarkov/types':
         specifier: workspace:*
         version: link:../../packages/tarkov-types
@@ -144,6 +147,15 @@ importers:
         version: 4.83.0(@cloudflare/workers-types@4.20260418.1)
 
   packages/ballistics: {}
+
+  packages/optimizer:
+    dependencies:
+      '@tarkov/ballistics':
+        specifier: workspace:*
+        version: link:../ballistics
+      '@tarkov/data':
+        specifier: workspace:*
+        version: link:../tarkov-data
 
   packages/tarkov-data:
     dependencies:

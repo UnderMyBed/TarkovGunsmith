@@ -242,3 +242,41 @@ test.describe("smoke — compare save round-trip", () => {
     await expect(page.locator("[data-direction]").first()).toBeVisible();
   });
 });
+
+test.describe("smoke — build optimizer", () => {
+  test("opens optimizer dialog, runs, sees result", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/builder", { waitUntil: "networkidle" });
+
+    // Pick a weapon. The ProfileEditor's trader-LL <select> elements render
+    // above the Weapon card (inside a collapsed <details>), so `select.first()`
+    // would resolve to a hidden element. Filter by the "Select weapon" option
+    // the same way the builder-interaction smoke test does.
+    const weaponPicker = page
+      .locator("select")
+      .filter({ has: page.locator('option:has-text("Select weapon")') })
+      .first();
+    await expect(weaponPicker).toBeVisible({ timeout: 15_000 });
+    await expect
+      .poll(async () => await weaponPicker.locator("option").count(), { timeout: 15_000 })
+      .toBeGreaterThan(1);
+    const firstWeaponValue = await weaponPicker.locator("option").nth(1).getAttribute("value");
+    expect(firstWeaponValue, "expected at least one weapon option").toBeTruthy();
+    await weaponPicker.selectOption(firstWeaponValue);
+
+    // Open optimizer.
+    const optimizeBtn = page.getByRole("button", { name: /optimize/i });
+    await expect(optimizeBtn).toBeVisible({ timeout: 10_000 });
+    await optimizeBtn.click();
+
+    // Run with default constraints.
+    await page.getByRole("button", { name: /run optimization/i }).click();
+
+    // Result tab shows either Accept (success/partial) or Adjust constraints (failure).
+    await expect(
+      page.getByRole("button", { name: /(accept|adjust constraints)/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    expect(errors, `Console errors on optimizer flow:\n${errors.join("\n")}`).toEqual([]);
+  });
+});

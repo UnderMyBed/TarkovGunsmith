@@ -11,6 +11,7 @@ import {
   itemAvailability,
   CURRENT_BUILD_VERSION,
   type BuildV1,
+  type BuildV4,
   type PlayerProfile,
   type SlotNodeForMigration,
 } from "@tarkov/data";
@@ -26,6 +27,7 @@ import {
   CompareFromBuildDialog,
   type CompareFromBuildConfirm,
 } from "../features/builder/compare/compare-from-build-dialog.js";
+import { OptimizeDialog } from "../features/builder/optimize/optimize-dialog.js";
 
 export const Route = createFileRoute("/builder")({
   component: BuilderRouteLayout,
@@ -78,6 +80,7 @@ export function BuilderPage({
   const mods = useModList();
   const navigate = useNavigate();
   const [compareOpen, setCompareOpen] = useState(false);
+  const [optimizeOpen, setOptimizeOpen] = useState(false);
 
   const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
   const [attachments, setAttachments] = useState<Record<string, string>>(
@@ -271,12 +274,30 @@ export function BuilderPage({
         modCount={Object.keys(attachments).length}
         sharedId={shareUrl?.split("/").pop() ?? null}
         onCompare={selectedWeapon ? () => setCompareOpen(true) : undefined}
+        onOptimize={selectedWeapon ? () => setOptimizeOpen(true) : undefined}
       />
       <CompareFromBuildDialog
         open={compareOpen}
         onClose={() => setCompareOpen(false)}
         onConfirm={handleCompareConfirm}
       />
+      {selectedWeapon && tree.data && (
+        <OptimizeDialog
+          open={optimizeOpen}
+          onClose={() => setOptimizeOpen(false)}
+          onAccept={(build: BuildV4) => {
+            setAttachments(build.attachments);
+            setOrphaned(build.orphaned);
+            setOptimizeOpen(false);
+          }}
+          weapon={adaptWeapon(selectedWeapon)}
+          slotTree={tree.data}
+          modList={mods.data ?? []}
+          profile={profile}
+          currentAttachments={attachments}
+          currentStats={spec}
+        />
+      )}
       {notice}
       {upstreamDrift}
 
