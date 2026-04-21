@@ -1,5 +1,8 @@
 import { newBuildId, BUILD_ID_REGEX } from "./id.js";
+import { maybeSeedOgFixtures } from "./og-fixtures.js";
 import { handlePostPair, handleGetPair, handleForkPair } from "./pairs.js";
+
+let ogSeeded = false;
 
 const MAX_BODY_BYTES = 32 * 1024;
 
@@ -45,7 +48,11 @@ async function handleGet(id: string, env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    if (!ogSeeded) {
+      ogSeeded = true;
+      ctx.waitUntil(maybeSeedOgFixtures(env));
+    }
     const url = new URL(request.url);
     const path = url.pathname;
 
