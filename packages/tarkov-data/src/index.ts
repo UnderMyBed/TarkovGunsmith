@@ -96,3 +96,16 @@ export type { SlotDiffStatus, SlotDiffInput, SlotDiffMap } from "./slot-diff.js"
 // Stat delta (Build comparison)
 export { statDelta } from "./stat-delta.js";
 export type { StatDeltaRow, StatDeltaResult, StatDirection, StatKey } from "./stat-delta.js";
+
+// TarkovTracker integration
+export {
+  fetchProgression,
+  mapRawToProfile,
+  buildIdMap,
+  RawProgressionSchema,
+  TokenInvalidError,
+  RateLimitedError,
+  NetworkError,
+  ShapeMismatchError,
+} from "./tarkovtracker/index.js";
+export type { RawProgression, MapResult } from "./tarkovtracker/index.js";
