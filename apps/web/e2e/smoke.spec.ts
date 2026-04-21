@@ -1,4 +1,10 @@
-import { test, expect, type Page, type ConsoleMessage } from "@playwright/test";
+import {
+  test,
+  expect,
+  type APIRequestContext,
+  type Page,
+  type ConsoleMessage,
+} from "@playwright/test";
 
 /** Every route we ship today. Keep in sync with __root.tsx nav. */
 const ROUTES: ReadonlyArray<{
@@ -240,6 +246,89 @@ test.describe("smoke — compare save round-trip", () => {
     });
 
     await expect(page.locator("[data-direction]").first()).toBeVisible();
+  });
+});
+
+test.describe("smoke — OG cards", () => {
+  // These id values must pass BUILD_ID_REGEX in apps/builds-api
+  // (`^[abcdefghjkmnpqrstuvwxyz23456789]{8}$`) or the builds-api returns 400
+  // Invalid id, and both the OG Pages Function and middleware treat the entity
+  // as missing. The playwright.config.ts webServer seeds these same ids into
+  // KV via `wrangler dev --var OG_FIXTURE_BUILD_ID:... --var OG_FIXTURE_PAIR_ID:...`.
+  const FIXTURE_BUILD_ID = "abcd2345";
+  const FIXTURE_PAIR_ID = "efgh6789";
+
+  // The builds-api seeds fixtures on first request via `ctx.waitUntil`. Poking
+  // `/healthz` triggers the seed; a small delay lets the KV put settle before
+  // the Pages Function (or middleware) reads it.
+  async function primeFixtures(request: APIRequestContext) {
+    await request.get("http://127.0.0.1:8787/healthz").catch(() => {});
+    await new Promise((r) => setTimeout(r, 250));
+  }
+
+  test(`/og/build/${FIXTURE_BUILD_ID} returns a PNG`, async ({ request }) => {
+    await primeFixtures(request);
+
+    const res = await request.get(`/og/build/${FIXTURE_BUILD_ID}`);
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-type"]).toBe("image/png");
+    const body = await res.body();
+    // The embedded fallback PNG is exactly 21,229 bytes. Real Satori-rendered
+    // build cards come in around 33 KB for the seeded fixture. Threshold at
+    // 25 KB so the fallback is rejected but there is generous headroom for
+    // content variations — this assertion is what proves the GraphQL + render
+    // path actually worked instead of silently falling back.
+    expect(body.byteLength).toBeGreaterThan(25_000);
+    expect(body[0]).toBe(0x89); // PNG magic
+  });
+
+  test(`/og/pair/${FIXTURE_PAIR_ID} returns a PNG`, async ({ request }) => {
+    await primeFixtures(request);
+
+    const res = await request.get(`/og/pair/${FIXTURE_PAIR_ID}`);
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-type"]).toBe("image/png");
+    const body = await res.body();
+    // Same fallback-guard as the /og/build test above.
+    expect(body.byteLength).toBeGreaterThan(25_000);
+    expect(body[0]).toBe(0x89);
+  });
+
+  test("/og/build/<invalid> returns the fallback PNG", async ({ request }) => {
+    // Use a well-formed id that isn't seeded — builds-api returns 404, OG
+    // function returns the fallback card.
+    const res = await request.get("/og/build/zzzzzzzz");
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-type"]).toBe("image/png");
+    const body = await res.body();
+    expect(body.byteLength).toBeGreaterThan(5_000);
+    expect(body[0]).toBe(0x89);
+  });
+
+  test(`/builder/${FIXTURE_BUILD_ID} HTML has OG meta`, async ({ request }) => {
+    await primeFixtures(request);
+
+    const res = await request.get(`/builder/${FIXTURE_BUILD_ID}`);
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+    expect(html).toMatch(
+      new RegExp(`<meta property="og:image"[^>]*\\/og\\/build\\/${FIXTURE_BUILD_ID}`),
+    );
+    expect(html).toMatch(/<meta property="og:type" content="article"/);
+    expect(html).toMatch(/<meta name="twitter:card" content="summary_large_image"/);
+  });
+
+  test(`/builder/compare/${FIXTURE_PAIR_ID} HTML has OG meta pointing at /og/pair`, async ({
+    request,
+  }) => {
+    await primeFixtures(request);
+
+    const res = await request.get(`/builder/compare/${FIXTURE_PAIR_ID}`);
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+    expect(html).toMatch(
+      new RegExp(`<meta property="og:image"[^>]*\\/og\\/pair\\/${FIXTURE_PAIR_ID}`),
+    );
   });
 });
 
