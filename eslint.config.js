@@ -28,6 +28,8 @@ export default tseslint.config(
             "packages/ballistics/src/*/*.test.ts",
             "packages/optimizer/src/*.test.ts",
             "packages/optimizer/src/*/*.test.ts",
+            "packages/og/src/*.test.ts",
+            "packages/og/src/*.test.tsx",
             "packages/tarkov-types/codegen.ts",
             "packages/tarkov-data/src/*.test.ts",
             "packages/tarkov-data/src/queries/*.test.ts",
