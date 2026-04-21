@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { OPTIMIZER_PLACEHOLDER } from "./index.js";
+import type { Objective } from "./index.js";
 
-describe("@tarkov/optimizer scaffold", () => {
-  it("exports the placeholder sentinel", () => {
-    expect(OPTIMIZER_PLACEHOLDER).toBe("scaffold");
+describe("@tarkov/optimizer exports", () => {
+  it("exports the Objective type (compile-time)", () => {
+    const o: Objective = "min-recoil";
+    expect(o).toBe("min-recoil");
   });
 });

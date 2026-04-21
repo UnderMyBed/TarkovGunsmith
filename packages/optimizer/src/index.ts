@@ -1,1 +1,7 @@
-export const OPTIMIZER_PLACEHOLDER = "scaffold" as const;
+export type {
+  Objective,
+  OptimizationConstraints,
+  OptimizationInput,
+  OptimizationReason,
+  OptimizationResult,
+} from "./types.js";
