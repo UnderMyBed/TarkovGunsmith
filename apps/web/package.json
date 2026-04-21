@@ -23,6 +23,7 @@
     "@tanstack/react-router": "^1.95.0",
     "@tarkov/ballistics": "workspace:*",
     "@tarkov/data": "workspace:*",
+    "@tarkov/og": "workspace:^",
     "@tarkov/optimizer": "workspace:*",
     "@tarkov/types": "workspace:*",
     "@tarkov/ui": "workspace:*",
