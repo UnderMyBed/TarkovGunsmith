@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.10.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.9.0...v1.10.0) (2026-04-21)
+
+
+### Features
+
+* **web:** TarkovTracker profile import — M3 final differentiator ([#92](https://github.com/UnderMyBed/TarkovGunsmith/issues/92)) ([1401b31](https://github.com/UnderMyBed/TarkovGunsmith/commit/1401b31b0110575f2c8a2f3a685c1b00ad29385b))
+
+
+### Documentation
+
+* **m3:** TarkovTracker profile import — spec + plan (rebased) ([#94](https://github.com/UnderMyBed/TarkovGunsmith/issues/94)) ([5c065b5](https://github.com/UnderMyBed/TarkovGunsmith/commit/5c065b5c18fb4b826ce31577add093bba5c1a082))
+
 ## [1.9.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.8.0...v1.9.0) (2026-04-21)
 
 
