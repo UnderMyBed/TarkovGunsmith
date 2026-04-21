@@ -38,13 +38,17 @@ export function OptimizeDialog({
   const [state, dispatch] = useReducer(constraintsReducer, initialConstraintsState);
   const optimizer = useOptimizer();
 
+  // Reset dialog state on the false→true edge of `open`. `optimizer` returns a
+  // fresh object every render (see useOptimizer), so including it in deps
+  // would re-fire this effect on every state tick mid-run and clobber the
+  // result back to idle before the tab-transition effect below can latch.
   useEffect(() => {
     if (open) {
       dispatch({ type: "INIT_FROM_BUILD", attachments: currentAttachments });
       setTab("constraints");
       optimizer.reset();
     }
-  }, [open, currentAttachments, optimizer]);
+  }, [open]);
 
   useEffect(() => {
     if (optimizer.state === "done" || optimizer.state === "error") {

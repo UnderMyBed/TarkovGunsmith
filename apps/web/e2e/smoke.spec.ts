@@ -248,13 +248,21 @@ test.describe("smoke — build optimizer", () => {
     const { errors } = captureConsoleErrors(page);
     await page.goto("/builder", { waitUntil: "networkidle" });
 
-    // Pick a weapon.
-    const weaponPicker = page.locator("select").first();
-    await expect(weaponPicker).toBeVisible({ timeout: 10_000 });
+    // Pick a weapon. The ProfileEditor's trader-LL <select> elements render
+    // above the Weapon card (inside a collapsed <details>), so `select.first()`
+    // would resolve to a hidden element. Filter by the "Select weapon" option
+    // the same way the builder-interaction smoke test does.
+    const weaponPicker = page
+      .locator("select")
+      .filter({ has: page.locator('option:has-text("Select weapon")') })
+      .first();
+    await expect(weaponPicker).toBeVisible({ timeout: 15_000 });
     await expect
       .poll(async () => await weaponPicker.locator("option").count(), { timeout: 15_000 })
       .toBeGreaterThan(1);
-    await weaponPicker.selectOption({ index: 1 });
+    const firstWeaponValue = await weaponPicker.locator("option").nth(1).getAttribute("value");
+    expect(firstWeaponValue, "expected at least one weapon option").toBeTruthy();
+    await weaponPicker.selectOption(firstWeaponValue);
 
     // Open optimizer.
     const optimizeBtn = page.getByRole("button", { name: /optimize/i });
