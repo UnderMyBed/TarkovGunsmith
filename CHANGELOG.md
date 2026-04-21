@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.8.0...v1.9.0) (2026-04-21)
+
+
+### Features
+
+* **og:** Pages Functions + meta middleware + smoke — activates OG share cards ([#89](https://github.com/UnderMyBed/TarkovGunsmith/issues/89)) ([a7a5f20](https://github.com/UnderMyBed/TarkovGunsmith/commit/a7a5f204f22d796bc060264a2f0fea1f8ef55104))
+
 ## [1.8.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.7.0...v1.8.0) (2026-04-21)
 
 
