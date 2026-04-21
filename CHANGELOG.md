@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.6.0...v1.7.0) (2026-04-21)
+
+
+### Features
+
+* **m3:** Build optimization — exact solver + Builder integration ([#83](https://github.com/UnderMyBed/TarkovGunsmith/issues/83)) ([4f3d1b5](https://github.com/UnderMyBed/TarkovGunsmith/commit/4f3d1b56902c51ecf67c44df80dfc9c08fcb6ea9))
+
 ## [1.6.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.5.1...v1.6.0) (2026-04-21)
 
 
