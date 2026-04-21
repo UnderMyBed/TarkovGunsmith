@@ -6,7 +6,7 @@
     "tsBuildInfoFile": ".tsbuildinfo",
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM"],
-    "types": ["react"]
+    "types": ["react", "node"]
   },
   "include": ["src/**/*", "scripts/**/*"],
   "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.test.tsx"]
