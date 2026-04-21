@@ -84,6 +84,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@resvg/resvg-wasm':
+        specifier: ^2.6.2
+        version: 2.6.2
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.99.1(react@19.2.5)

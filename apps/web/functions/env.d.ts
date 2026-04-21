@@ -1,19 +1,18 @@
 // Ambient module declarations for non-TS assets imported by Pages Functions.
 //
-// Wrangler / the CF Pages bundler resolves these imports at build time:
-//  - `.wasm` → a `WebAssembly.Module` binding (passed to `initResvg`).
-//  - `.png`  → a raw `ArrayBuffer` (the pre-rendered fallback card).
+// Wrangler / the CF Pages bundler resolves `.wasm` imports to a
+// `WebAssembly.Module` binding (passed to `initResvg`).
 //
-// TypeScript doesn't know about either by default; these declarations make
-// the imports type-check without having to cast at the call site.
+// TypeScript doesn't know about this by default; the declaration makes the
+// import type-check without having to cast at the call site.
+//
+// Note: `.ttf` and `.png` imports are NOT used. The CF Pages bundler in
+// wrangler 4.83 does not honor `[[rules]]` for those types, so `@tarkov/og`
+// base64-embeds the font + fallback-PNG bytes and exposes them via
+// `embeddedFonts()` / `embeddedFallbackPng()` instead.
 
 declare module "*.wasm" {
   const content: WebAssembly.Module;
-  export default content;
-}
-
-declare module "*.png" {
-  const content: ArrayBuffer;
   export default content;
 }
 

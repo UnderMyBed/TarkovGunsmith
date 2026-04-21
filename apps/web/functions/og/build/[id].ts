@@ -14,15 +14,21 @@
  *
  * Fallback path returns the pre-rendered `BUILD NOT FOUND` PNG with a short
  * max-age so a successful follow-up render can displace it.
+ *
+ * Note on asset loading: we use the `embeddedFonts()` / `embeddedFallbackPng()`
+ * helpers from `@tarkov/og` — fonts + fallback PNG are base64-embedded as
+ * string literals and decoded at module-load time. This sidesteps the CF
+ * Pages bundler, which does NOT honor `[[rules]]` for `.png` / `.ttf` module
+ * imports in wrangler 4.83.
  */
 import {
   buildCard,
+  embeddedFallbackPng,
+  embeddedFonts,
   hydrateBuildCard,
   initResvg,
-  loadFonts,
   renderPng,
 } from "@tarkov/og";
-import fallbackPng from "@tarkov/og/assets/fallback-card.png";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
 import { type BuildV4, DEFAULT_PROFILE } from "@tarkov/data";
 import { fetchOgRowsForBuild } from "../../lib/og-graphql.js";
@@ -72,8 +78,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
       build.profileSnapshot ?? DEFAULT_PROFILE,
     );
 
-    const fonts = await loadFonts();
-    const png = await renderPng(buildCard(vm), fonts, { width: 1200, height: 630 });
+    const png = await renderPng(buildCard(vm), embeddedFonts(), { width: 1200, height: 630 });
     const body = new Uint8Array(png);
     const res = new Response(body, { status: 200, headers: HEADERS_PNG });
     console.log(
@@ -110,7 +115,11 @@ function fallback(
       ms: Date.now() - startedAt,
     }),
   );
-  return new Response(new Uint8Array(fallbackPng), {
+  // `embeddedFallbackPng()` returns a `Uint8Array`; cast through `BodyInit`
+  // because the DOM lib.d.ts `BodyInit` union lacks `Uint8Array` even though
+  // the runtime accepts it. (Workers types DO include it, but the DOM lib
+  // wins here.)
+  return new Response(embeddedFallbackPng() as unknown as BodyInit, {
     status: 200,
     headers: { ...HEADERS_FALLBACK, ...extra },
   });

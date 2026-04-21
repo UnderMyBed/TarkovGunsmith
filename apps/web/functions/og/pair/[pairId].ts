@@ -6,16 +6,20 @@
  * may be null (single-sided pair) — `hydratePairCard` tolerates that. The
  * upstream Worker returns a `BuildPairV1` JSON body with `left`/`right`
  * each potentially `null`.
+ *
+ * Note on asset loading: see `/og/build/[id].ts` — fonts + fallback PNG come
+ * from `@tarkov/og`'s `embeddedFonts()` / `embeddedFallbackPng()` helpers
+ * (base64-embedded literals decoded at module-load time).
  */
 import {
+  embeddedFallbackPng,
+  embeddedFonts,
   hydratePairCard,
   initResvg,
-  loadFonts,
   pairCard,
   renderPng,
   type HydrateWeapon,
 } from "@tarkov/og";
-import fallbackPng from "@tarkov/og/assets/fallback-card.png";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
 import { type BuildV4, DEFAULT_PROFILE } from "@tarkov/data";
 import { fetchOgRowsForBuild, type OgMod } from "../../lib/og-graphql.js";
@@ -102,8 +106,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
       );
     }
 
-    const fonts = await loadFonts();
-    const png = await renderPng(pairCard(vm), fonts, { width: 1200, height: 630 });
+    const png = await renderPng(pairCard(vm), embeddedFonts(), { width: 1200, height: 630 });
     const body = new Uint8Array(png);
     const res = new Response(body, { status: 200, headers: HEADERS_PNG });
     console.log(JSON.stringify({ route: "og/pair", id, status: 200, ms: Date.now() - startedAt }));
@@ -138,7 +141,11 @@ function fallback(
       ms: Date.now() - startedAt,
     }),
   );
-  return new Response(new Uint8Array(fallbackPng), {
+  // `embeddedFallbackPng()` returns a `Uint8Array`; cast through `BodyInit`
+  // because the DOM lib.d.ts `BodyInit` union lacks `Uint8Array` even though
+  // the runtime accepts it. (Workers types DO include it, but the DOM lib
+  // wins here.)
+  return new Response(embeddedFallbackPng() as unknown as BodyInit, {
     status: 200,
     headers: { ...HEADERS_FALLBACK, ...extra },
   });

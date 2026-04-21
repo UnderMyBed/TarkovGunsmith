@@ -19,6 +19,7 @@
     "pages:deploy": "wrangler pages deploy"
   },
   "dependencies": {
+    "@resvg/resvg-wasm": "^2.6.2",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.95.0",
     "@tarkov/ballistics": "workspace:*",
