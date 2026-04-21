@@ -1,0 +1,16 @@
+{
+  "tasksProgress": [
+    { "id": "5ac23c6186f7741247042bad", "complete": true },
+    { "id": "5936d90786f7742b1420ba5b", "complete": true },
+    { "id": "59674eb386f774539f14813a", "complete": true },
+    { "id": "5d25e2d386f77443e35162e5", "complete": false }
+  ],
+  "taskObjectivesProgress": [],
+  "hideoutModulesProgress": [],
+  "hideoutPartsProgress": [],
+  "displayName": "TestUser",
+  "userId": "abc123",
+  "playerLevel": 25,
+  "gameEdition": 1,
+  "pmcFaction": "USEC"
+}
