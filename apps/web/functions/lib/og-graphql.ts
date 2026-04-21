@@ -32,9 +32,11 @@ const QUERY = /* GraphQL */ `
       buyFor {
         vendor {
           normalizedName
+          ... on TraderOffer {
+            minTraderLevel
+          }
         }
         priceRUB
-        minTraderLevel
       }
       properties {
         ... on ItemPropertiesWeaponMod {
@@ -52,12 +54,43 @@ interface Args {
   modIds: readonly string[];
 }
 
+/**
+ * Raw shape coming back from tarkov.dev: `minTraderLevel` is a field on the
+ * `TraderOffer` implementation of `Vendor`, surfaced via an inline fragment.
+ * It is NOT on `ItemPrice` itself — selecting it there causes the upstream
+ * GraphQL API to return a validation error and the fetcher to throw.
+ */
+interface RawOffer {
+  vendor: { normalizedName: string; minTraderLevel?: number };
+  priceRUB: number;
+}
+
+interface RawMod extends Omit<OgMod, "buyFor"> {
+  buyFor: RawOffer[];
+}
+
 interface ApiResp {
   data?: {
     weapon: HydrateWeapon | null;
-    mods: OgMod[];
+    mods: RawMod[];
   };
   errors?: { message: string }[];
+}
+
+/**
+ * Hoist `minTraderLevel` from the `TraderOffer` inline fragment up to the
+ * offer level so `availabilityPillText` (which reads
+ * `AvailabilityOffer.minTraderLevel`) sees it where it expects.
+ */
+function flattenMod(raw: RawMod): OgMod {
+  return {
+    ...raw,
+    buyFor: raw.buyFor.map((o) => ({
+      vendor: { normalizedName: o.vendor.normalizedName },
+      priceRUB: o.priceRUB,
+      minTraderLevel: o.vendor.minTraderLevel,
+    })),
+  };
 }
 
 export async function fetchOgRowsForBuild(
@@ -80,5 +113,5 @@ export async function fetchOgRowsForBuild(
     throw new Error(`og-graphql: ${json.errors.map((e) => e.message).join(", ")}`);
   }
   if (!json.data?.weapon) throw new Error(`og-graphql: weapon ${args.weaponId} not found`);
-  return { weapon: json.data.weapon, mods: json.data.mods };
+  return { weapon: json.data.weapon, mods: json.data.mods.map(flattenMod) };
 }

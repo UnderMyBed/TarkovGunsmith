@@ -54,4 +54,45 @@ describe("fetchOgRowsForBuild", () => {
     );
     await expect(fetchOgRowsForBuild({ weaponId: "bad", modIds: [] })).rejects.toThrow(/bad id/);
   });
+
+  it("hoists minTraderLevel from the TraderOffer vendor inline fragment up to the offer", async () => {
+    // Upstream schema puts `minTraderLevel` on TraderOffer (a Vendor
+    // implementer), not on ItemPrice directly. The query selects it inside
+    // `vendor { ... on TraderOffer { minTraderLevel } }` and the fetcher
+    // flattens it so `AvailabilityOffer.minTraderLevel` still works.
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            weapon: {
+              id: "w1",
+              shortName: "M4A1",
+              properties: { ergonomics: 48, recoilVertical: 120, recoilHorizontal: 344 },
+            },
+            mods: [
+              {
+                id: "m1",
+                shortName: "PK-06",
+                weight: 0.1,
+                buyFor: [
+                  {
+                    vendor: { normalizedName: "peacekeeper", minTraderLevel: 4 },
+                    priceRUB: 100,
+                  },
+                ],
+                properties: { ergonomics: 3, recoilModifier: -2 },
+              },
+            ],
+          },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const out = await fetchOgRowsForBuild({ weaponId: "w1", modIds: ["m1"] });
+    expect(out.mods[0].buyFor[0]).toEqual({
+      vendor: { normalizedName: "peacekeeper" },
+      priceRUB: 100,
+      minTraderLevel: 4,
+    });
+  });
 });

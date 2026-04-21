@@ -273,7 +273,12 @@ test.describe("smoke — OG cards", () => {
     expect(res.status()).toBe(200);
     expect(res.headers()["content-type"]).toBe("image/png");
     const body = await res.body();
-    expect(body.byteLength).toBeGreaterThan(5_000);
+    // The embedded fallback PNG is exactly 21,229 bytes. Real Satori-rendered
+    // build cards come in around 33 KB for the seeded fixture. Threshold at
+    // 25 KB so the fallback is rejected but there is generous headroom for
+    // content variations — this assertion is what proves the GraphQL + render
+    // path actually worked instead of silently falling back.
+    expect(body.byteLength).toBeGreaterThan(25_000);
     expect(body[0]).toBe(0x89); // PNG magic
   });
 
@@ -284,7 +289,8 @@ test.describe("smoke — OG cards", () => {
     expect(res.status()).toBe(200);
     expect(res.headers()["content-type"]).toBe("image/png");
     const body = await res.body();
-    expect(body.byteLength).toBeGreaterThan(5_000);
+    // Same fallback-guard as the /og/build test above.
+    expect(body.byteLength).toBeGreaterThan(25_000);
     expect(body[0]).toBe(0x89);
   });
 
