@@ -5,6 +5,7 @@ import {
   type Page,
   type ConsoleMessage,
 } from "@playwright/test";
+import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with { type: "json" };
 
 /** Every route we ship today. Keep in sync with __root.tsx nav. */
 const ROUTES: ReadonlyArray<{
@@ -367,5 +368,38 @@ test.describe("smoke — build optimizer", () => {
     ).toBeVisible({ timeout: 15_000 });
 
     expect(errors, `Console errors on optimizer flow:\n${errors.join("\n")}`).toEqual([]);
+  });
+});
+
+test.describe("smoke — TarkovTracker import", () => {
+  test("pasting a fake token populates the sync banner with mapped quests", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+
+    // Mock the upstream BEFORE any page interaction.
+    await page.route("https://tarkovtracker.io/api/v2/progress", (route) =>
+      route.fulfill({
+        status: 200,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(fixtureProgression),
+      }),
+    );
+
+    await page.goto("/builder", { waitUntil: "networkidle" });
+
+    // Switch to Advanced mode.
+    await page.getByRole("button", { name: /^Advanced$/ }).click();
+
+    // Open the Connect popover.
+    await page.getByRole("button", { name: /Connect TarkovTracker/i }).click();
+
+    // Paste a fake token and submit.
+    await page.getByPlaceholder("Paste token").fill("fake-token");
+    await page.getByRole("button", { name: "Connect" }).last().click();
+
+    // Banner should populate with the fixture's player level + a non-zero quest count.
+    const banner = page.getByText(/TARKOVTRACKER · \d+ QUESTS · PMC LV 25/);
+    await expect(banner).toBeVisible({ timeout: 10_000 });
+
+    expect(errors, `Console errors on TarkovTracker connect:\n${errors.join("\n")}`).toEqual([]);
   });
 });

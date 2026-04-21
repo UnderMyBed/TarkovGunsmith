@@ -1,7 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import type { PlayerProfile } from "@tarkov/data";
 import { useTasks, MARQUEE_QUEST_NORMALIZED_NAMES } from "@tarkov/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from "@tarkov/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
+import { TarkovTrackerConnectPopover } from "./tarkovtracker-connect-popover.js";
+import { TarkovTrackerSyncBanner } from "./tarkovtracker-sync-banner.js";
+import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
 
 export interface ProfileEditorProps {
   profile: PlayerProfile;
@@ -28,33 +31,55 @@ const TRADER_LABELS: Record<(typeof TRADER_KEYS)[number], string> = {
   jaeger: "Jaeger",
 };
 
-export function ProfileEditor({ profile, onChange }: ProfileEditorProps) {
+type QuestFilter = "all" | "marquee" | "incomplete";
+
+export function ProfileEditor({ profile, onChange }: ProfileEditorProps): ReactElement {
   const tasks = useTasks();
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [filter, setFilter] = useState<QuestFilter>("marquee");
+  const [search, setSearch] = useState("");
 
-  const marqueeTasks = useMemo(() => {
-    const allowed = new Set(MARQUEE_QUEST_NORMALIZED_NAMES);
-    const byName = new Map((tasks.data ?? []).map((t) => [t.normalizedName, t]));
-    return MARQUEE_QUEST_NORMALIZED_NAMES.map((slug) => ({
-      slug,
-      task: byName.get(slug),
-    })).filter((entry) => allowed.has(entry.slug));
-  }, [tasks.data]);
+  const sync = useTarkovTrackerSync({
+    profile,
+    onChange,
+    tasks: tasks.data,
+  });
 
+  const marqueeSet = useMemo(() => new Set<string>(MARQUEE_QUEST_NORMALIZED_NAMES), []);
   const completedSet = new Set(profile.completedQuests ?? []);
 
-  function setMode(mode: "basic" | "advanced") {
+  const allTasks = tasks.data ?? [];
+  const visibleTasks = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allTasks
+      .filter((t) => {
+        if (filter === "marquee" && !marqueeSet.has(t.normalizedName)) return false;
+        if (filter === "incomplete" && completedSet.has(t.normalizedName)) return false;
+        if (q.length > 0 && !t.name.toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .slice(0, 200);
+  }, [allTasks, filter, search, marqueeSet, completedSet]);
+
+  const marqueeDoneCount = useMemo(
+    () => Array.from(marqueeSet).filter((slug) => completedSet.has(slug)).length,
+    [marqueeSet, completedSet],
+  );
+  const totalDoneCount = completedSet.size;
+
+  function setMode(mode: "basic" | "advanced"): void {
     onChange({ ...profile, mode });
   }
 
-  function setTraderLevel(key: (typeof TRADER_KEYS)[number], level: number) {
+  function setTraderLevel(key: (typeof TRADER_KEYS)[number], level: number): void {
     onChange({ ...profile, traders: { ...profile.traders, [key]: level } });
   }
 
-  function setFlea(flea: boolean) {
+  function setFlea(flea: boolean): void {
     onChange({ ...profile, flea });
   }
 
-  function toggleQuest(slug: string) {
+  function toggleQuest(slug: string): void {
     const next = new Set(completedSet);
     if (next.has(slug)) next.delete(slug);
     else next.add(slug);
@@ -92,9 +117,21 @@ export function ProfileEditor({ profile, onChange }: ProfileEditorProps) {
         </div>
       </CardHeader>
       <CardContent>
+        {profile.mode === "advanced" && (
+          <div className="mb-3">
+            {sync.state === "disconnected" ? (
+              <Button type="button" size="sm" variant="ghost" onClick={() => setPopoverOpen(true)}>
+                ▲ Connect TarkovTracker
+              </Button>
+            ) : (
+              <TarkovTrackerSyncBanner sync={sync} />
+            )}
+          </div>
+        )}
+
         <details className="group">
           <summary className="cursor-pointer text-sm text-[var(--color-muted-foreground)] hover:opacity-80">
-            Edit profile{" "}
+            {sync.state === "synced" ? "Override manually" : "Edit profile"}{" "}
             <span className="ml-1 inline-block transition-transform group-open:rotate-180">▾</span>
           </summary>
           <div className="mt-4 flex flex-col gap-4">
@@ -128,30 +165,89 @@ export function ProfileEditor({ profile, onChange }: ProfileEditorProps) {
 
             {profile.mode === "advanced" && (
               <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium">Marquee quests</span>
-                <span className="text-xs text-[var(--color-muted-foreground)]">
-                  {tasks.isLoading && "Loading quest list…"}
-                  {tasks.error && "Couldn't load quest list — toggles still work."}
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    Quests{" "}
+                    <span className="text-xs font-normal text-[var(--color-muted-foreground)]">
+                      — {totalDoneCount} complete
+                    </span>
+                  </span>
+                  {tasks.isLoading && (
+                    <span className="text-xs text-[var(--color-muted-foreground)]">
+                      Loading quest list…
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Filter quests…"
+                  className="h-8 rounded-[var(--radius)] border bg-[var(--color-input)] px-2 text-sm"
+                />
+                <div className="flex gap-1 text-xs">
+                  {(
+                    [
+                      ["all", "All"],
+                      [
+                        "marquee",
+                        `Marquee (${marqueeDoneCount}/${MARQUEE_QUEST_NORMALIZED_NAMES.length})`,
+                      ],
+                      ["incomplete", "Incomplete"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setFilter(key)}
+                      className={`border px-2 py-0.5 font-mono uppercase tracking-wider ${
+                        filter === key
+                          ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+                          : "border-[var(--color-border)] text-[var(--color-muted-foreground)]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {tasks.error && (
+                  <span className="text-xs text-[var(--color-muted-foreground)]">
+                    Couldn&apos;t load quest list — toggles still work against cached slugs.
+                  </span>
+                )}
                 <ul className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
-                  {marqueeTasks.map(({ slug, task }) => (
-                    <li key={slug}>
+                  {visibleTasks.map((t) => (
+                    <li key={t.normalizedName}>
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={completedSet.has(slug)}
-                          onChange={() => toggleQuest(slug)}
+                          checked={completedSet.has(t.normalizedName)}
+                          onChange={() => toggleQuest(t.normalizedName)}
                         />
-                        <span>{task?.name ?? slug}</span>
+                        <span>{t.name}</span>
                       </label>
                     </li>
                   ))}
                 </ul>
+                {sync.state === "synced" && (
+                  <p className="text-xs italic text-[var(--color-muted-foreground)]">
+                    Manual toggles override the TarkovTracker snapshot until the next Re-sync.
+                  </p>
+                )}
               </div>
             )}
           </div>
         </details>
       </CardContent>
+
+      <TarkovTrackerConnectPopover
+        open={popoverOpen}
+        onClose={() => setPopoverOpen(false)}
+        onConnect={(token) => {
+          setPopoverOpen(false);
+          void sync.connect(token);
+        }}
+      />
     </Card>
   );
 }

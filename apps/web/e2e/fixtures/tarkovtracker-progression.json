@@ -1,0 +1,15 @@
+{
+  "tasksProgress": [
+    { "id": "5ac23c6186f7741247042bad", "complete": true },
+    { "id": "5936d90786f7742b1420ba5b", "complete": true },
+    { "id": "59674eb386f774539f14813a", "complete": true }
+  ],
+  "taskObjectivesProgress": [],
+  "hideoutModulesProgress": [],
+  "hideoutPartsProgress": [],
+  "displayName": "SmokeUser",
+  "userId": "smoke",
+  "playerLevel": 25,
+  "gameEdition": 1,
+  "pmcFaction": "USEC"
+}
