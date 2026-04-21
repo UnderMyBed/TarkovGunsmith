@@ -27,7 +27,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build:fallback": "tsx scripts/build-fallback-png.ts"
+    "build:fallback": "tsx scripts/build-fallback-png.tsx"
   },
   "dependencies": {
     "@resvg/resvg-wasm": "^2.6.2",
