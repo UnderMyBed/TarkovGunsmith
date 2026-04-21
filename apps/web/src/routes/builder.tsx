@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -28,8 +28,24 @@ import {
 } from "../features/builder/compare/compare-from-build-dialog.js";
 
 export const Route = createFileRoute("/builder")({
-  component: BuilderPage,
+  component: BuilderRouteLayout,
 });
+
+/**
+ * Layout wrapper for the `/builder` route tree.
+ *
+ * Child routes (`/builder/$id`, `/builder/compare`, `/builder/compare/$pairId`)
+ * are nested under this file in TanStack's file-based routing tree, so the
+ * parent must render an `<Outlet />` for them to mount. For the bare
+ * `/builder` URL there is no matching child and we render the page itself.
+ */
+function BuilderRouteLayout() {
+  const matchRoute = useMatchRoute();
+  // `fuzzy: false` → only true when the current location is exactly `/builder`
+  // with no child segments. Any deeper URL falls through to the `<Outlet />`.
+  const isExactBuilder = matchRoute({ to: "/builder" });
+  return isExactBuilder ? <BuilderPage /> : <Outlet />;
+}
 
 export interface BuilderPageProps {
   initialWeaponId?: string;
