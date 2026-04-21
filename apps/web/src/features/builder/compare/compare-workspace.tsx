@@ -62,6 +62,46 @@ export function CompareWorkspace({
     return () => window.removeEventListener("beforeunload", handler);
   }, [draft.state.dirty]);
 
+  // One-shot sessionStorage prefill consumer. Runs on mount for the blank
+  // /builder/compare route (no loader-supplied initialPair). Lets the
+  // Builder "Compare ↔" button hand off a draft build without a share URL.
+  useEffect(() => {
+    if (initialPair) return;
+    const raw = sessionStorage.getItem("compare:leftPrefill");
+    const mode = sessionStorage.getItem("compare:mode");
+    const rightId = sessionStorage.getItem("compare:rightBuildId");
+    if (!raw || !mode) return;
+
+    try {
+      const left = JSON.parse(raw) as BuildV4;
+      // Only accept v4 for now; older versions get dropped gracefully.
+      if (left.version !== 4) return;
+      draft.setSide("left", left);
+      if (mode === "clone-both") {
+        draft.setSide("right", structuredClone(left));
+      } else if (mode === "paste-url" && rightId) {
+        // Dynamic import to avoid pulling loadBuild into every compare bundle.
+        void (async () => {
+          try {
+            const { loadBuild } = await import("@tarkov/data");
+            const right = await loadBuild(fetch, rightId);
+            if (right.version === 4) draft.setSide("right", right);
+          } catch {
+            // Swallow — user sees empty right side; can paste again.
+          }
+        })();
+      }
+    } catch {
+      // Malformed session storage — skip.
+    } finally {
+      sessionStorage.removeItem("compare:leftPrefill");
+      sessionStorage.removeItem("compare:mode");
+      sessionStorage.removeItem("compare:rightBuildId");
+      draft.markClean(); // fresh-clone from Builder shouldn't start "dirty"
+    }
+    // Run once on mount.
+  }, []);
+
   const diff = useMemo(() => {
     const l =
       draft.state.left && leftTree.data
