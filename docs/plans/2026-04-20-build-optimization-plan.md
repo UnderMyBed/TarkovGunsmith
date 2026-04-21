@@ -291,11 +291,7 @@ import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
  * Objective the solver minimizes (uniformly — `score()` inverts
  * higher-is-better stats so the DFS can always minimize).
  */
-export type Objective =
-  | "min-recoil"
-  | "max-ergonomics"
-  | "min-weight"
-  | "max-accuracy";
+export type Objective = "min-recoil" | "max-ergonomics" | "min-weight" | "max-accuracy";
 
 export interface OptimizationConstraints {
   /** Hard cap in RUB. `undefined` → no budget constraint. */
@@ -322,10 +318,7 @@ export interface OptimizationInput {
   readonly timeoutMs?: number;
 }
 
-export type OptimizationReason =
-  | "no-valid-combinations"
-  | "infeasible-budget"
-  | "timeout";
+export type OptimizationReason = "no-valid-combinations" | "infeasible-budget" | "timeout";
 
 export type OptimizationResult =
   | {
@@ -677,7 +670,14 @@ describe("score", () => {
   });
 
   it("smaller-is-better invariant holds for all objectives", () => {
-    const better: WeaponSpec = { ...stats, verticalRecoil: 50, horizontalRecoil: 150, ergonomics: 60, weight: 2.5, accuracy: 1.5 };
+    const better: WeaponSpec = {
+      ...stats,
+      verticalRecoil: 50,
+      horizontalRecoil: 150,
+      ergonomics: 60,
+      weight: 2.5,
+      accuracy: 1.5,
+    };
     for (const obj of ["min-recoil", "max-ergonomics", "min-weight", "max-accuracy"] as const) {
       expect(score(obj, better)).toBeLessThan(score(obj, stats));
     }
@@ -914,15 +914,19 @@ git commit -m "feat(optimizer): feasibility — cheapestPrice + slotCandidates"
 The lower bound answers: "for the remaining (unvisited) slots, what is the best possible additional contribution to the score?" Critical for B&B pruning effectiveness.
 
 For `min-recoil`:
+
 - Recoil in `weaponSpec` is computed as `base * (1 + Σ recoilModifierPercent/100)`. The best (most-negative) contribution from a slot is the smallest `recoilModifierPercent` among its candidates.
 
 For `max-ergonomics` (negated):
+
 - Ergonomics is additive. Best contribution = smallest `-ergonomics` = largest `ergonomics`.
 
 For `min-weight`:
+
 - Weight is additive. Best contribution = smallest `weight`. `null` (leave empty) contributes 0.
 
 For `max-accuracy` (minimize MOA):
+
 - Accuracy is additive. Best contribution = smallest `accuracyDelta`.
 
 Lower-bound math is slightly objective-specific. Implement a single `lowerBoundForRemaining(slots, modList, profile, pinnedSlots, objective, baseWeapon)` that returns the best-possible additional score contribution.
@@ -1055,7 +1059,14 @@ export function lowerBoundForRemaining(
       // Recoil is multiplicative; sum the best recoilModifierPercent per slot.
       let sumPercent = 0;
       for (const slot of remaining) {
-        sumPercent += bestContribution(slot, modList, profile, pinnedSlots, (m) => m?.properties.recoilModifier ?? 0, Math.min);
+        sumPercent += bestContribution(
+          slot,
+          modList,
+          profile,
+          pinnedSlots,
+          (m) => m?.properties.recoilModifier ?? 0,
+          Math.min,
+        );
       }
       const baseRecoil = weapon.baseVerticalRecoil + weapon.baseHorizontalRecoil;
       // Delta against base (before this slot-group's contribution): base * (sumPercent/100).
@@ -1064,21 +1075,42 @@ export function lowerBoundForRemaining(
     case "max-ergonomics": {
       let sumErgo = 0;
       for (const slot of remaining) {
-        sumErgo += bestContribution(slot, modList, profile, pinnedSlots, (m) => m?.properties.ergonomics ?? 0, Math.max);
+        sumErgo += bestContribution(
+          slot,
+          modList,
+          profile,
+          pinnedSlots,
+          (m) => m?.properties.ergonomics ?? 0,
+          Math.max,
+        );
       }
       return -sumErgo;
     }
     case "min-weight": {
       let sumWeight = 0;
       for (const slot of remaining) {
-        sumWeight += bestContribution(slot, modList, profile, pinnedSlots, (m) => m?.weight ?? 0, Math.min);
+        sumWeight += bestContribution(
+          slot,
+          modList,
+          profile,
+          pinnedSlots,
+          (m) => m?.weight ?? 0,
+          Math.min,
+        );
       }
       return sumWeight;
     }
     case "max-accuracy": {
       let sumMoa = 0;
       for (const slot of remaining) {
-        sumMoa += bestContribution(slot, modList, profile, pinnedSlots, (m) => m?.properties.accuracyModifier ?? 0, Math.min);
+        sumMoa += bestContribution(
+          slot,
+          modList,
+          profile,
+          pinnedSlots,
+          (m) => m?.properties.accuracyModifier ?? 0,
+          Math.min,
+        );
       }
       return sumMoa;
     }
@@ -1138,8 +1170,8 @@ interface BnbState {
   readonly pinnedSlots: ReadonlyMap<string, string | null>;
   readonly objective: Objective;
   readonly budgetRub: number | undefined;
-  readonly deadline: number;  // performance.now() deadline
-  readonly onNodeVisit: (count: number) => boolean;  // returns false to abort
+  readonly deadline: number; // performance.now() deadline
+  readonly onNodeVisit: (count: number) => boolean; // returns false to abort
 }
 
 interface BnbBest {
@@ -1190,9 +1222,9 @@ describe("branchAndBound", () => {
     const best = branchAndBound(makeState(), SMALL_TREE.slots);
     expect(best).not.toBeNull();
     expect(best!.attachments).toEqual({
-      muzzle: "muzzle_brake",    // -12%
-      grip: "grip_vertical",     // -4%
-      stock: "stock_standard",   // -6%
+      muzzle: "muzzle_brake", // -12%
+      grip: "grip_vertical", // -4%
+      stock: "stock_standard", // -6%
     });
   });
 
@@ -1219,10 +1251,7 @@ describe("branchAndBound", () => {
 
   it("aborts when onNodeVisit returns false (timeout simulation)", () => {
     let count = 0;
-    const best = branchAndBound(
-      makeState({ onNodeVisit: () => ++count < 2 }),
-      SMALL_TREE.slots,
-    );
+    const best = branchAndBound(makeState({ onNodeVisit: () => ++count < 2 }), SMALL_TREE.slots);
     // Aborted early; might return null or a partial-best. Either way, doesn't throw.
     expect(best === null || typeof best.score === "number").toBe(true);
   });
@@ -1292,10 +1321,7 @@ interface MutableBest {
  * reached before abort. Tie-breaking: lower price wins; then lex order
  * of the joined `attachments` map ensures determinism.
  */
-export function branchAndBound(
-  state: BnbState,
-  slots: readonly SlotNode[],
-): BnbBest | null {
+export function branchAndBound(state: BnbState, slots: readonly SlotNode[]): BnbBest | null {
   const best: { value: MutableBest | null } = { value: null };
   const visits = { count: 0 };
   dfs(state, slots, [], 0, {}, 0, best, visits);
@@ -1320,12 +1346,13 @@ function dfs(
 
   if (remainingSlots.length === 0) {
     // Leaf.
-    const stats = weaponSpec(
-      state.weapon,
-      partialMods.map(adaptModListItem),
-    );
+    const stats = weaponSpec(state.weapon, partialMods.map(adaptModListItem));
     const leafScore = score(state.objective, stats);
-    if (best.value === null || leafScore < best.value.score || (leafScore === best.value.score && tieBreakBetter(runningPrice, attachments, best.value))) {
+    if (
+      best.value === null ||
+      leafScore < best.value.score ||
+      (leafScore === best.value.score && tieBreakBetter(runningPrice, attachments, best.value))
+    ) {
       best.value = {
         attachments: { ...attachments },
         score: leafScore,
@@ -1342,7 +1369,9 @@ function dfs(
 
   // Sort candidates by single-item score descending so we try best choices
   // first (makes pruning more effective).
-  const sorted = [...candidates].sort((a, b) => singleItemScore(state.objective, a) - singleItemScore(state.objective, b));
+  const sorted = [...candidates].sort(
+    (a, b) => singleItemScore(state.objective, a) - singleItemScore(state.objective, b),
+  );
 
   for (const candidate of sorted) {
     // Budget check.
@@ -1374,7 +1403,10 @@ function dfs(
         state.weapon,
       );
       // Compute what our leaf score would be if the bound is achieved.
-      const runningStats = weaponSpec(state.weapon, [...partialMods, ...(candidate ? [candidate] : [])].map(adaptModListItem));
+      const runningStats = weaponSpec(
+        state.weapon,
+        [...partialMods, ...(candidate ? [candidate] : [])].map(adaptModListItem),
+      );
       const projectedScore = score(state.objective, runningStats) + bound;
       if (projectedScore >= best.value.score) continue;
     }
@@ -1383,7 +1415,16 @@ function dfs(
       attachments[slot.path] = candidate.id;
       partialMods.push(candidate);
     }
-    const keepGoing = dfs(state, newRemaining, partialMods, newPrice, attachments, _depth + 1, best, visits);
+    const keepGoing = dfs(
+      state,
+      newRemaining,
+      partialMods,
+      newPrice,
+      attachments,
+      _depth + 1,
+      best,
+      visits,
+    );
     if (candidate) {
       partialMods.pop();
       delete attachments[slot.path];
@@ -1908,7 +1949,15 @@ describe("toOptimizerInput", () => {
       pinnedSlots: new Map([["muzzle", "brake"]]),
     };
     const out = toOptimizerInput(state, {
-      weapon: { id: "w1", name: "W", baseErgonomics: 0, baseVerticalRecoil: 0, baseHorizontalRecoil: 0, baseWeight: 0, baseAccuracy: 0 },
+      weapon: {
+        id: "w1",
+        name: "W",
+        baseErgonomics: 0,
+        baseVerticalRecoil: 0,
+        baseHorizontalRecoil: 0,
+        baseWeight: 0,
+        baseAccuracy: 0,
+      },
       slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
       modList: [],
       profile,
@@ -1933,15 +1982,8 @@ Expected: FAIL — module missing.
 
 ```ts
 // apps/web/src/features/builder/optimize/optimize-constraints-reducer.ts
-import type {
-  ModListItem,
-  PlayerProfile,
-  WeaponTree,
-} from "@tarkov/data";
-import type {
-  Objective,
-  OptimizationInput,
-} from "@tarkov/optimizer";
+import type { ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
+import type { Objective, OptimizationInput } from "@tarkov/optimizer";
 import type { BallisticWeapon } from "@tarkov/ballistics";
 
 export interface ConstraintsState {
@@ -2141,10 +2183,7 @@ import type { ReactElement } from "react";
 import type { Objective } from "@tarkov/optimizer";
 import type { WeaponTree } from "@tarkov/data";
 import { Button, Input, SectionTitle } from "@tarkov/ui";
-import type {
-  ConstraintsAction,
-  ConstraintsState,
-} from "./optimize-constraints-reducer.js";
+import type { ConstraintsAction, ConstraintsState } from "./optimize-constraints-reducer.js";
 
 const OBJECTIVES: readonly { value: Objective; label: string }[] = [
   { value: "min-recoil", label: "Min recoil" },
@@ -2160,12 +2199,7 @@ interface Props {
   onRun: () => void;
 }
 
-export function OptimizeConstraintsForm({
-  state,
-  dispatch,
-  slotTree,
-  onRun,
-}: Props): ReactElement {
+export function OptimizeConstraintsForm({ state, dispatch, slotTree, onRun }: Props): ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -2218,7 +2252,7 @@ export function OptimizeConstraintsForm({
               </label>
               <span className="text-[var(--color-muted-foreground)]">
                 {state.pinnedSlots.has(slot.path)
-                  ? state.pinnedSlots.get(slot.path) ?? "(empty)"
+                  ? (state.pinnedSlots.get(slot.path) ?? "(empty)")
                   : "solver"}
               </span>
             </li>
@@ -2329,13 +2363,7 @@ const REASON_COPY: Readonly<Record<string, { title: string; body: string }>> = {
   },
 };
 
-function FailureView({
-  reason,
-  onAdjust,
-}: {
-  reason: string;
-  onAdjust: () => void;
-}): ReactElement {
+function FailureView({ reason, onAdjust }: { reason: string; onAdjust: () => void }): ReactElement {
   const copy = REASON_COPY[reason] ?? {
     title: "Couldn't optimize",
     body: "Unknown error.",
@@ -2385,12 +2413,7 @@ git commit -m "feat(builder/optimize): OptimizeResultView (Tab 2 success + failu
 ```tsx
 // apps/web/src/features/builder/optimize/optimize-dialog.tsx
 import { useEffect, useReducer, useState, type ReactElement } from "react";
-import type {
-  BuildV4,
-  ModListItem,
-  PlayerProfile,
-  WeaponTree,
-} from "@tarkov/data";
+import type { BuildV4, ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { Button, Card, CardContent } from "@tarkov/ui";
 import {
@@ -2471,10 +2494,7 @@ export function OptimizeDialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
       onClick={onClose}
     >
-      <Card
-        className="w-full max-w-2xl"
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-      >
+      <Card className="w-full max-w-2xl" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <CardContent className="p-6 flex flex-col gap-4">
           <h2 className="font-display text-xl uppercase tracking-wider">Optimize build</h2>
 
@@ -2556,11 +2576,13 @@ Edit `build-header.tsx`:
 2. In the action row (wherever the Compare ↔ button lives), add:
 
    ```tsx
-   {onOptimize && (
-     <Button variant="secondary" size="sm" onClick={onOptimize}>
-       Optimize ⚙
-     </Button>
-   )}
+   {
+     onOptimize && (
+       <Button variant="secondary" size="sm" onClick={onOptimize}>
+         Optimize ⚙
+       </Button>
+     );
+   }
    ```
 
 - [ ] **Step 2: Wire into `BuilderPage` (`apps/web/src/routes/builder.tsx`)**
@@ -2578,19 +2600,21 @@ Edit `build-header.tsx`:
    ```
 5. Render the dialog (after the `CompareFromBuildDialog`):
    ```tsx
-   {tree.data && selectedWeapon && (
-     <OptimizeDialog
-       open={optimizeOpen}
-       onClose={() => setOptimizeOpen(false)}
-       onAccept={handleOptimizeAccept}
-       weapon={adaptWeapon(selectedWeapon)}
-       slotTree={tree.data}
-       modList={mods.data ?? []}
-       profile={profile}
-       currentAttachments={attachments}
-       currentStats={currentSpec}
-     />
-   )}
+   {
+     tree.data && selectedWeapon && (
+       <OptimizeDialog
+         open={optimizeOpen}
+         onClose={() => setOptimizeOpen(false)}
+         onAccept={handleOptimizeAccept}
+         weapon={adaptWeapon(selectedWeapon)}
+         slotTree={tree.data}
+         modList={mods.data ?? []}
+         profile={profile}
+         currentAttachments={attachments}
+         currentStats={currentSpec}
+       />
+     );
+   }
    ```
    Fill in `currentSpec` the same way the existing code does (it's already computed for `BuildHeader`).
 
@@ -2610,6 +2634,7 @@ pnpm --filter @tarkov/web dev
 ```
 
 Navigate to `/builder`, pick a weapon, click "Optimize ⚙". Verify:
+
 - Modal opens with constraints form
 - Pin checkboxes reflect current attachments
 - "Run optimization" transitions to result view
@@ -2645,9 +2670,7 @@ test.describe("smoke — build optimizer", () => {
     // Pick a weapon.
     const weaponPicker = page.locator("select").first();
     await expect(weaponPicker).toBeVisible({ timeout: 10_000 });
-    await expect.poll(async () => (await weaponPicker.locator("option").count())).toBeGreaterThan(
-      1,
-    );
+    await expect.poll(async () => await weaponPicker.locator("option").count()).toBeGreaterThan(1);
     await weaponPicker.selectOption({ index: 1 });
 
     // Open optimizer.
@@ -2703,6 +2726,7 @@ pnpm --filter @tarkov/web test:e2e
 ```
 
 All should pass. Record new test counts (each should be up):
+
 - `@tarkov/optimizer`: ~30 tests (new package)
 - `@tarkov/data`: unchanged
 - `@tarkov/web`: +7 for the reducer = ~96
@@ -2775,6 +2799,7 @@ Report the PR URL, new test counts, and any follow-ups uncovered during QA.
 ## Self-review notes
 
 **Spec coverage:** Every spec section has a task:
+
 - §1 Purpose → Task 1 (package scaffold)
 - §2 Locked decisions → encoded across all tasks
 - §3 Non-goals → Task 17 audit
@@ -2792,6 +2817,7 @@ Report the PR URL, new test counts, and any follow-ups uncovered during QA.
 **Placeholder scan:** No TBDs, TODOs, "implement later," or vague steps. Every code block is complete code; every test block has concrete assertions; every command has an exact expected output.
 
 **Type consistency:**
+
 - `OptimizationInput` / `OptimizationResult` / `Objective` / `OptimizationConstraints` defined in Task 2, consumed identically in Tasks 7, 8, 10, 11, 14.
 - `BnbState` / `BnbBest` defined in Task 7, referenced only within Task 7.
 - `ConstraintsState` / `ConstraintsAction` defined in Task 10, consumed in Tasks 12, 14.
@@ -2805,6 +2831,7 @@ Report the PR URL, new test counts, and any follow-ups uncovered during QA.
 No naming drift. Method signatures match across use sites.
 
 **Known gaps / reminders for implementers:**
+
 1. Fixture type casts (`as ModListItem`) may need adjustment if the real schema has required fields my fixtures skip. Fix during Task 3.
 2. The `infeasible-budget` distinction is mentioned in the spec (§8) but the optimizer in Task 8 reports every "no feasible completion" case as `no-valid-combinations`. This is consistent with the spec's §10 open-question note but worth a code comment. The refinement — differentiating "pinned items over-budget" from "no compat items exist" — is a follow-up.
 3. Nested-slot defaults (spec §10): implementers verify via a unit test in Task 7 that picking an item with `AllowedItem.children` correctly recurses into those children.

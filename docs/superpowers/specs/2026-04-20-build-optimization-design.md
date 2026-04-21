@@ -14,17 +14,17 @@ The optimizer is a pure-TS constraint solver. It runs client-side on the main th
 
 ## 2. Locked decisions (from brainstorming)
 
-| # | Decision | Choice |
-| --- | --- | --- |
-| 1 | Entry point | **Button on `/builder`** (next to the existing "Compare ↔" button) → modal dialog → diff preview → accept/reject replaces build in-place |
-| 2 | Objective | **User picks one** — `min-recoil` (default) / `max-ergonomics` / `min-weight` / `max-accuracy` |
-| 3 | Constraints | Budget (₽, optional) + current `PlayerProfile` + **per-slot pin checkboxes** (default: currently-attached slots pinned, unpinned → solver chooses) |
-| 4 | Algorithm | **Exact branch-and-bound DFS**, synchronous, main thread, deterministic |
-| 5 | Output | **Single optimal build** + diff preview (stat deltas + slot-level diff) |
-| 6 | Package | **New `packages/optimizer`** — pure TS, sibling of `@tarkov/ballistics` |
-| 7 | Infeasibility | **Typed discriminated-union result** (`ok: false` with a `reason` code) |
-| 8 | Timeout | **2000 ms default**, configurable. Returns `partial: true` with best-so-far, or `reason: "timeout"` if nothing found |
-| 9 | Recoil semantics | `min-recoil` = minimize `verticalRecoil + horizontalRecoil` (unweighted sum) |
+| #   | Decision         | Choice                                                                                                                                             |
+| --- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Entry point      | **Button on `/builder`** (next to the existing "Compare ↔" button) → modal dialog → diff preview → accept/reject replaces build in-place           |
+| 2   | Objective        | **User picks one** — `min-recoil` (default) / `max-ergonomics` / `min-weight` / `max-accuracy`                                                     |
+| 3   | Constraints      | Budget (₽, optional) + current `PlayerProfile` + **per-slot pin checkboxes** (default: currently-attached slots pinned, unpinned → solver chooses) |
+| 4   | Algorithm        | **Exact branch-and-bound DFS**, synchronous, main thread, deterministic                                                                            |
+| 5   | Output           | **Single optimal build** + diff preview (stat deltas + slot-level diff)                                                                            |
+| 6   | Package          | **New `packages/optimizer`** — pure TS, sibling of `@tarkov/ballistics`                                                                            |
+| 7   | Infeasibility    | **Typed discriminated-union result** (`ok: false` with a `reason` code)                                                                            |
+| 8   | Timeout          | **2000 ms default**, configurable. Returns `partial: true` with best-so-far, or `reason: "timeout"` if nothing found                               |
+| 9   | Recoil semantics | `min-recoil` = minimize `verticalRecoil + horizontalRecoil` (unweighted sum)                                                                       |
 
 ## 3. Non-goals
 
@@ -82,25 +82,25 @@ import type { BuildV4, PlayerProfile } from "@tarkov/data";
 import type { WeaponSpec } from "@tarkov/ballistics";
 
 export type Objective =
-  | "min-recoil"         // minimize verticalRecoil + horizontalRecoil
+  | "min-recoil" // minimize verticalRecoil + horizontalRecoil
   | "max-ergonomics"
   | "min-weight"
-  | "max-accuracy";      // accuracy is MOA-like; lower is better
+  | "max-accuracy"; // accuracy is MOA-like; lower is better
 
 export interface OptimizationConstraints {
-  budgetRub?: number;                              // undefined = no budget cap
-  profile: PlayerProfile;                          // determines availability
+  budgetRub?: number; // undefined = no budget cap
+  profile: PlayerProfile; // determines availability
   pinnedSlots: ReadonlyMap<string, string | null>; // slotPath → itemId (pinned item) | null (pinned empty)
   // Unpinned slots = solver chooses.
 }
 
 export interface OptimizationInput {
-  weapon: AdaptedWeapon;                           // weapon adapted via @tarkov/web's existing adapter
-  slotTree: WeaponTree;                            // from @tarkov/data
-  modList: readonly ModListItem[];                 // from @tarkov/data
+  weapon: AdaptedWeapon; // weapon adapted via @tarkov/web's existing adapter
+  slotTree: WeaponTree; // from @tarkov/data
+  modList: readonly ModListItem[]; // from @tarkov/data
   constraints: OptimizationConstraints;
   objective: Objective;
-  timeoutMs?: number;                              // default 2000
+  timeoutMs?: number; // default 2000
 }
 
 export type OptimizationResult =
@@ -178,6 +178,7 @@ Under `apps/web/src/features/builder/optimize/`:
 ### 6.4 On Accept
 
 `OptimizeDialog` fires `onConfirm({ build: BuildV4 })`; `BuilderPage` replaces local state (`attachments`, `orphaned`) with the optimized build's values. Keeps:
+
 - `weaponId` (optimizer doesn't change weapon selection)
 - `buildName` / `buildDescription` (user-facing metadata unchanged)
 - `embedProfileOnSave` / `profile` (profile-snapshot intent preserved)
@@ -237,7 +238,7 @@ Optimizer result's `build.orphaned` will always be `[]` (solver only chooses ite
 
 ## 11. Dependencies on other M3 sub-projects
 
-- **Build comparison (shipped v1.6.0)** — optimizer *consumes* `statDelta`, `slotDiff`, `CompareStatDelta`, `SlotTree.diff` as black-box imports. No reverse coupling; Build comparison continues to work unchanged.
+- **Build comparison (shipped v1.6.0)** — optimizer _consumes_ `statDelta`, `slotDiff`, `CompareStatDelta`, `SlotTree.diff` as black-box imports. No reverse coupling; Build comparison continues to work unchanged.
 - **OG share cards (next sub-project)** — no relationship. The optimizer's result lands as a regular `BuildV4` which becomes shareable via the existing `/builder/$id` flow; OG cards will pick it up automatically when they ship.
 - **tarkov.dev profile import (last sub-project)** — no relationship. The optimizer uses whatever `PlayerProfile` is current; when import lands, profiles come pre-populated.
 
