@@ -1,0 +1,43 @@
+{
+  "name": "@tarkov/og",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure-TS Open Graph card rendering for TarkovGunsmith. Satori JSX + resvg-wasm.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./assets/fallback-card.png": "./assets/fallback-card.png",
+    "./fonts/*": "./fonts/*"
+  },
+  "files": [
+    "dist",
+    "assets",
+    "fonts"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "build:fallback": "tsx scripts/build-fallback-png.ts"
+  },
+  "dependencies": {
+    "@resvg/resvg-wasm": "^2.6.2",
+    "@tarkov/ballistics": "workspace:*",
+    "@tarkov/data": "workspace:*",
+    "react": "^19.0.0",
+    "satori": "^0.10.13"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "tsx": "^4.19.0"
+  }
+}
