@@ -200,3 +200,45 @@ test.describe("smoke — compare interaction", () => {
     expect(errors, `Console errors on compare interaction:\n${errors.join("\n")}`).toEqual([]);
   });
 });
+
+test.describe("smoke — compare save round-trip", () => {
+  // Same proxy caveat as /builder/compare/<pairId> seed-load above: the
+  // "Save comparison" button hits `POST /api/pairs`, which the `vite preview`
+  // webServer doesn't route to the Pages Function. Under `wrangler pages dev`
+  // the flow works end-to-end; un-skip this when the Playwright webServer
+  // gains proxy support.
+  test.skip("fills both sides, saves, follows redirect, state matches", async ({ page }) => {
+    await page.goto("/builder/compare", { waitUntil: "networkidle" });
+
+    const leftPicker = page.locator("#compare-weapon-A");
+    const rightPicker = page.locator("#compare-weapon-B");
+    await expect(leftPicker).toBeVisible({ timeout: 10_000 });
+    await expect(rightPicker).toBeVisible({ timeout: 10_000 });
+    await expect
+      .poll(async () => await leftPicker.locator("option").count(), { timeout: 15_000 })
+      .toBeGreaterThan(2);
+
+    const leftValue = await leftPicker.locator("option").nth(1).getAttribute("value");
+    const rightValue = await rightPicker.locator("option").nth(2).getAttribute("value");
+    expect(leftValue).toBeTruthy();
+    expect(rightValue).toBeTruthy();
+
+    await leftPicker.selectOption(leftValue);
+    await rightPicker.selectOption(rightValue);
+
+    await page.getByRole("button", { name: /save comparison/i }).click();
+
+    // Redirect to /builder/compare/<pairId> (builds-api mints an 8-char id
+    // from the `abcdefghjkmnpqrstuvwxyz23456789` alphabet).
+    await page.waitForURL(/\/builder\/compare\/[abcdefghjkmnpqrstuvwxyz23456789]{8}$/, {
+      timeout: 10_000,
+    });
+
+    // Once we have a pairId the Save button's label flips.
+    await expect(page.getByRole("button", { name: /save changes/i })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    await expect(page.locator("[data-direction]").first()).toBeVisible();
+  });
+});
