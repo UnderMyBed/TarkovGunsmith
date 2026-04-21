@@ -44,3 +44,29 @@ export async function loadFonts(): Promise<SatoriFont[]> {
   cached = fonts;
   return fonts;
 }
+
+/**
+ * Synchronous font-bundle constructor. Use from Cloudflare Pages Functions
+ * (or any environment that imports font bytes directly via a bundler rule)
+ * to skip the filesystem-based `loadFonts()` entirely.
+ */
+export interface FontBytes {
+  bungee400: ArrayBuffer | Uint8Array;
+  chivo700: ArrayBuffer | Uint8Array;
+  azeretMono500: ArrayBuffer | Uint8Array;
+  azeretMono700: ArrayBuffer | Uint8Array;
+}
+
+export function fontsFromBytes(bytes: FontBytes): SatoriFont[] {
+  // Satori's types declare `data: ArrayBuffer | Buffer` but its runtime
+  // accepts any typed array (it ends up in @resvg/resvg-js' FFI which
+  // normalizes). Cast via `unknown` so callers can pass Uint8Array directly
+  // without having to `.buffer`-slice at every call site.
+  const asData = (b: ArrayBuffer | Uint8Array): ArrayBuffer => b as unknown as ArrayBuffer;
+  return [
+    { name: "Bungee", weight: 400, style: "normal", data: asData(bytes.bungee400) },
+    { name: "Chivo", weight: 700, style: "normal", data: asData(bytes.chivo700) },
+    { name: "Azeret Mono", weight: 500, style: "normal", data: asData(bytes.azeretMono500) },
+    { name: "Azeret Mono", weight: 700, style: "normal", data: asData(bytes.azeretMono700) },
+  ];
+}
