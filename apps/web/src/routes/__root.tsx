@@ -1,17 +1,20 @@
 import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
+import { NavDropdown, type NavDropdownItem } from "../features/nav/nav-dropdown.js";
 
 export const Route = createRootRoute({
   component: RootLayout,
 });
 
-const NAV_ITEMS: ReadonlyArray<{ to: string; label: string; exact?: boolean }> = [
-  { to: "/builder", label: "Builder" },
+const CALC_ITEMS: readonly NavDropdownItem[] = [
   { to: "/calc", label: "Calc" },
-  { to: "/matrix", label: "Matrix" },
-  { to: "/sim", label: "Sim" },
-  { to: "/adc", label: "ADC" },
-  { to: "/aec", label: "AEC" },
-  { to: "/data", label: "Data" },
+  { to: "/sim", label: "Simulator" },
+  { to: "/adc", label: "Armor Damage" },
+  { to: "/aec", label: "Armor Effectiveness" },
+];
+
+const DATA_ITEMS: readonly NavDropdownItem[] = [
+  { to: "/matrix", label: "Ammo × Armor Matrix" },
+  { to: "/data", label: "Datasheets" },
   { to: "/charts", label: "Charts" },
 ];
 
@@ -30,21 +33,19 @@ function RootLayout() {
               · FIELD LEDGER / v2
             </span>
           </Link>
-          <nav className="flex flex-wrap gap-x-6 gap-y-2">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                activeProps={{
-                  className:
-                    "text-[var(--color-primary)] border-b-[1.5px] border-[var(--color-primary)]",
-                }}
-                activeOptions={item.exact ? { exact: true } : undefined}
-                className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
+          <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Link
+              to="/builder"
+              activeProps={{
+                className:
+                  "text-[var(--color-primary)] border-b-[1.5px] border-[var(--color-primary)]",
+              }}
+              className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors"
+            >
+              Builder
+            </Link>
+            <NavDropdown label="Calc" items={CALC_ITEMS} />
+            <NavDropdown label="Data" items={DATA_ITEMS} />
           </nav>
         </div>
       </header>

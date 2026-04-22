@@ -9,6 +9,7 @@ import { ShotQueue } from "../features/sim/ShotQueue.js";
 import { ScenarioSummary } from "../features/sim/ScenarioSummary.js";
 import { ShotTimeline } from "../features/sim/ShotTimeline.js";
 import { buildScenarioTarget } from "../features/sim/buildScenarioTarget.js";
+import { WipBanner } from "../features/nav/wip-banner.js";
 
 export const Route = createFileRoute("/sim")({
   component: SimPage,
@@ -80,6 +81,7 @@ function SimPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
         <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
           <span>FORWARD · SCENARIO</span>
