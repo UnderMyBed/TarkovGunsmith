@@ -2,8 +2,14 @@ import { z } from "zod";
 import type { GraphQLClient } from "../client.js";
 import type { SlotNodeForMigration } from "../build-migrations.js";
 
-/** Max tree depth we fetch in a single GraphQL request. */
-const RECURSION_DEPTH = 4;
+/**
+ * Max tree depth we fetch in a single GraphQL request.
+ *
+ * Held at 3 pending a query-redesign: depth 4 returns ~7.5 MB for the M4A1
+ * (depth 5 returns ~14.6 MB). A higher ceiling needs pagination or field
+ * pruning before it's viable. Tracked as an Arc 1 follow-up.
+ */
+const RECURSION_DEPTH = 3;
 
 /**
  * Build the recursive slot selection fragment to depth N. Hand-rolled because
