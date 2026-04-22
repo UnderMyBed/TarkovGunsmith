@@ -155,6 +155,17 @@ export function BuilderPage({
     return map;
   }, [mods.data, profile]);
 
+  const modSourcesById = useMemo(() => {
+    const map = new Map<string, { hasCraft: boolean; hasBarter: boolean }>();
+    for (const m of mods.data ?? []) {
+      map.set(m.id, {
+        hasCraft: (m.craftsFor?.length ?? 0) > 0,
+        hasBarter: (m.bartersFor?.length ?? 0) > 0,
+      });
+    }
+    return map;
+  }, [mods.data]);
+
   const spec = useMemo(() => {
     if (!selectedWeapon) return null;
     return weaponSpec(adaptWeapon(selectedWeapon), selectedMods.map(adaptMod));
@@ -450,6 +461,9 @@ export function BuilderPage({
                     })
                   }
                   getAvailability={(id) => availabilityById.get(id) ?? null}
+                  getModSources={(id) =>
+                    modSourcesById.get(id) ?? { hasCraft: false, hasBarter: false }
+                  }
                   showAll={showAll}
                 />
               )}
