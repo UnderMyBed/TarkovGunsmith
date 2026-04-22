@@ -14,7 +14,8 @@ function HomePage() {
           <div className="flex gap-4 font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] mb-6 flex-wrap">
             <span>WEAPON · MODS · PROFILE</span>
             <span>/ LIVE RECOMPUTE</span>
-            <span>/ SHARE URL</span>
+            <span>/ SHAREABLE URL</span>
+            <span>/ QUEST-GATED</span>
           </div>
           <h1 className="font-display text-[clamp(44px,7vw,88px)] leading-[0.95] tracking-tight">
             BUILD THE
@@ -24,11 +25,9 @@ function HomePage() {
             <span className="text-[var(--color-primary)]">KNOW THE NUMBERS.</span>
           </h1>
           <p className="mt-6 max-w-[560px] text-lg text-[var(--color-muted-foreground)]">
-            TarkovGunsmith rebuilds the defunct community tool for Escape from Tarkov ballistics.
-            The <strong className="text-[var(--color-foreground)]">Weapon Builder</strong> is the
-            core: pick a weapon, walk the slot tree, attach mods, watch ergo / recoil / accuracy /
-            weight recompute live — gated by your trader LLs and quest progress, and shareable by
-            URL.
+            Pick a weapon, walk the slot tree, attach mods — ergo, recoil, accuracy and weight
+            recompute live, gated by your trader levels and quest progress.{" "}
+            <strong className="text-[var(--color-foreground)]">Share any build by URL.</strong>
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -71,9 +70,9 @@ function HomePage() {
             </div>
           </div>
           <dl className="grid grid-cols-2 gap-4">
-            <HeroStat label="ERGONOMICS" value="72" delta="+18" deltaTone="up" />
-            <HeroStat label="RECOIL V" value="151" delta="−34%" deltaTone="up" />
-            <HeroStat label="WEIGHT" value="3.24" suffix="kg" delta="+0.80" deltaTone="down" />
+            <HeroStat label="ERGONOMICS" value="72" delta="+25" deltaTone="up" />
+            <HeroStat label="RECOIL V" value="37" delta="−34%" deltaTone="up" />
+            <HeroStat label="WEIGHT" value="3.90" suffix="kg" delta="+0.80" deltaTone="down" />
             <HeroStat label="ACCURACY" value="2.1" suffix="MoA" />
           </dl>
           <div className="flex gap-3 items-center text-[11px]">
@@ -81,6 +80,88 @@ function HomePage() {
             <Pill tone="reliable">FLEA UNLOCKED</Pill>
             <Pill tone="muted">12 QUESTS</Pill>
           </div>
+        </div>
+      </section>
+
+      {/* ─── optimizer promo strip ─── */}
+      <section
+        aria-label="Optimizer — new feature"
+        className="border border-[var(--color-primary)] bg-[rgba(245,158,11,0.06)] grid gap-6 px-6 py-5 items-center sm:grid-cols-[auto_1fr_auto]"
+      >
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-primary)]">
+            ◇ NEW · OPTIMIZER
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+            BRANCH-AND-BOUND · EXACT
+          </span>
+        </div>
+        <div>
+          <div className="font-display text-[20px] leading-tight text-[var(--color-foreground)]">
+            Set a budget. Pick an objective. The solver picks the mods.
+          </div>
+          <div className="mt-1 font-mono text-[12px] leading-[1.5] text-[var(--color-muted-foreground)]">
+            Pin any slot to keep fixed. Respects your trader LLs and flea status. Pure-TS, runs
+            client-side.
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Link
+            to="/builder"
+            className="inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-mono text-[11px] font-semibold tracking-[0.14em] uppercase h-8 px-3 hover:bg-[var(--color-amber-deep)] hover:border-[var(--color-amber-deep)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Try Optimizer
+          </Link>
+          <Link
+            to="/builder"
+            className="inline-flex items-center gap-2 border border-transparent text-[var(--color-muted-foreground)] font-mono text-[11px] tracking-[0.14em] uppercase h-8 px-3 hover:text-[var(--color-primary)] transition-colors"
+          >
+            Learn More
+          </Link>
+        </div>
+      </section>
+
+      {/* ─── what it does ─── */}
+      <section aria-label="What TarkovGunsmith does">
+        <div className="relative mb-5">
+          <div className="tick-rule" />
+          <span className="absolute -top-1.5 left-3 bg-[var(--color-background)] px-2 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+            WHAT IT DOES
+          </span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              n: "01",
+              title: "BUILDER",
+              body: "Slot tree editor with availability gating and live recompute.",
+            },
+            {
+              n: "02",
+              title: "OPTIMIZER",
+              body: "Solve for min-recoil, max-ergo, min-weight or max-accuracy.",
+            },
+            {
+              n: "03",
+              title: "COMPARE",
+              body: "Diff two builds, stat-by-stat, mod-by-mod.",
+            },
+            {
+              n: "04",
+              title: "SHARE",
+              body: "Every build lives at a URL. Import on any device.",
+            },
+          ].map((f) => (
+            <div key={f.n} className="bracket p-5">
+              <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-primary)]">
+                {f.n}
+              </div>
+              <div className="font-display text-[20px] mt-2">{f.title}</div>
+              <div className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-muted-foreground)]">
+                {f.body}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

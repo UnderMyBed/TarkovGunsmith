@@ -87,6 +87,19 @@ test.describe("smoke — design system", () => {
     const loaded = await page.evaluate(() => document.fonts.check('1em "Azeret Mono"'));
     expect(loaded).toBe(true);
   });
+
+  test("landing shows the optimizer promo strip + feature grid", async ({ page }) => {
+    await page.goto("/", { waitUntil: "networkidle" });
+    await expect(page.getByText("Try Optimizer", { exact: false })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByText("WHAT IT DOES", { exact: false })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByText("OPTIMIZER", { exact: true }).first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
 });
 
 test.describe("smoke — builder interaction", () => {
