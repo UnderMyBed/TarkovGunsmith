@@ -24,3 +24,10 @@ export { SectionTitle } from "./components/section-title.js";
 export type { SectionTitleProps } from "./components/section-title.js";
 export { StatRow } from "./components/stat-row.js";
 export type { StatRowProps } from "./components/stat-row.js";
+export { Dialog, DialogPanel, DialogTitle, DialogBody } from "./components/dialog.js";
+export type {
+  DialogProps,
+  DialogPanelProps,
+  DialogTitleProps,
+  DialogBodyProps,
+} from "./components/dialog.js";
