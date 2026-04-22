@@ -1,6 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLoadBuild, LoadBuildError } from "@tarkov/data";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+} from "@tarkov/ui";
 import { BuilderPage } from "./builder.js";
 
 export const Route = createFileRoute("/builder/$id")({
@@ -13,10 +21,9 @@ function LoadedBuilderPage() {
 
   if (query.isLoading) {
     return (
-      <div className="flex flex-col gap-6">
-        <Card>
-          <CardContent className="pt-6">Loading build…</CardContent>
-        </Card>
+      <div className="flex flex-col gap-4 p-4" role="status" aria-busy="true">
+        <Skeleton width="60%" height="2rem" />
+        <Skeleton rows={6} height="2.5rem" />
       </div>
     );
   }

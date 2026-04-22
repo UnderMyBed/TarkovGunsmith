@@ -1,7 +1,15 @@
 // apps/web/src/routes/builder.compare.$pairId.tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLoadPair, LoadPairError } from "@tarkov/data";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+} from "@tarkov/ui";
 import { CompareWorkspace } from "../features/builder/compare/compare-workspace.js";
 
 export const Route = createFileRoute("/builder/compare/$pairId")({
@@ -14,9 +22,16 @@ function LoadedComparePage() {
 
   if (query.isLoading) {
     return (
-      <Card>
-        <CardContent className="pt-6">Loading comparison…</CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-4 p-4" role="status" aria-busy="true">
+        <div className="flex flex-col gap-3">
+          <Skeleton width="50%" height="1.75rem" />
+          <Skeleton rows={4} height="2rem" />
+        </div>
+        <div className="flex flex-col gap-3">
+          <Skeleton width="50%" height="1.75rem" />
+          <Skeleton rows={4} height="2rem" />
+        </div>
+      </div>
     );
   }
 
