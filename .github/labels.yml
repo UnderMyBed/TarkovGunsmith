@@ -1,0 +1,34 @@
+# Source-of-truth label definitions for the TarkovGunsmith repo.
+# Apply to the live repo via `gh label create` manually after merge — there is
+# no automated sync at this stage.
+
+- name: good first issue
+  description: Approachable tasks for new contributors.
+  color: "7057ff"
+- name: help wanted
+  description: The maintainer would especially welcome help here.
+  color: "008672"
+- name: bug
+  description: Something is broken, wrong, or behaving unexpectedly.
+  color: "d73a4a"
+- name: enhancement
+  description: New feature or improvement.
+  color: "a2eeef"
+- name: docs
+  description: Documentation-only change.
+  color: "0075ca"
+- name: data
+  description: Game data correction or schema.
+  color: "fbca04"
+- name: ballistics
+  description: Penetration, damage, or related math.
+  color: "b60205"
+- name: ui
+  description: Visual / interaction / copy.
+  color: "c5def5"
+- name: needs-triage
+  description: New issue, awaiting maintainer review.
+  color: "ededed"
+- name: needs-repro
+  description: Maintainer needs a reproduction to proceed.
+  color: "ededed"

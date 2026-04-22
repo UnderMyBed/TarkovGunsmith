@@ -1,0 +1,42 @@
+name: Feature request
+description: Something you'd like the tool to do that it doesn't do yet.
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Lead with the problem, not the solution. "I can't figure out X" is better than "add button Y."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: If you have an idea for how it should work, describe it. If not, skip this.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Other ways to address the same problem, and why they're worse (or better) than your proposal.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Change size (your best guess)
+      options:
+        - Small — tweak to an existing screen
+        - Medium — new feature on an existing route
+        - Large — new route or architectural change
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Screenshots, links to other tools doing this well, EFT patch notes that motivated it, etc.
