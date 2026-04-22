@@ -1,73 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Pill,
-  SectionTitle,
-  Stamp,
-} from "@tarkov/ui";
+import { Pill, Stamp } from "@tarkov/ui";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
-
-interface ToolCard {
-  readonly to: string;
-  readonly title: string;
-  readonly description: string;
-  readonly meta: string;
-}
-
-const BALLISTICS_CARDS: readonly ToolCard[] = [
-  {
-    to: "/calc",
-    title: "Ballistic Calculator",
-    description: "One round, one armor, one distance. Deterministic shot outcome.",
-    meta: "FORWARD / SINGLE",
-  },
-  {
-    to: "/sim",
-    title: "Ballistics Simulator",
-    description: "Full engagement — multi-shot, multi-zone, kill detection.",
-    meta: "FORWARD / SCENARIO",
-  },
-  {
-    to: "/adc",
-    title: "Armor Damage Calc",
-    description: "Burst against one armor. Per-shot pen, damage, durability.",
-    meta: "FORWARD / BURST",
-  },
-  {
-    to: "/aec",
-    title: "Armor Effectiveness",
-    description: "Pick an armor. Every ammo ranked by shots-to-break.",
-    meta: "INVERSE / RANKING",
-  },
-];
-
-const DATA_CARDS: readonly ToolCard[] = [
-  {
-    to: "/matrix",
-    title: "AmmoVsArmor Matrix",
-    description: "Full ammo × armor grid. Color-coded shots-to-break.",
-    meta: "DATA / MATRIX",
-  },
-  {
-    to: "/data",
-    title: "DataSheets",
-    description: "Ammo, armor, weapons, modules. Sort and filter.",
-    meta: "DATA / TABLES",
-  },
-  {
-    to: "/charts",
-    title: "Effectiveness Charts",
-    description: "Visual shots-to-break per armor for a chosen ammo.",
-    meta: "DATA / CHARTS",
-  },
-];
 
 function HomePage() {
   return (
@@ -147,22 +83,6 @@ function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ─── ballistics tools ─── */}
-      <SectionTitle index={1} title="BALLISTICS TOOLS" meta="FORWARD + INVERSE" />
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {BALLISTICS_CARDS.map((card) => (
-          <ToolCardView key={card.to} card={card} />
-        ))}
-      </section>
-
-      {/* ─── data + charts ─── */}
-      <SectionTitle index={2} title="REFERENCE + DATA" meta="BROWSE · FILTER · CHART" />
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {DATA_CARDS.map((card) => (
-          <ToolCardView key={card.to} card={card} />
-        ))}
-      </section>
     </div>
   );
 }
@@ -204,26 +124,5 @@ function HeroStat({
         )}
       </dd>
     </div>
-  );
-}
-
-function ToolCardView({ card }: { card: ToolCard }) {
-  return (
-    <Link to={card.to} className="block group">
-      <Card className="h-full transition-colors group-hover:border-[var(--color-primary)]">
-        <CardHeader>
-          <div className="flex items-start justify-between gap-2">
-            <CardTitle>{card.title}</CardTitle>
-            <span className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-paper-dim)]">
-              {card.meta}
-            </span>
-          </div>
-          <CardDescription>{card.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)] group-hover:text-[var(--color-primary)] transition-colors">
-          OPEN ▸
-        </CardContent>
-      </Card>
-    </Link>
   );
 }
