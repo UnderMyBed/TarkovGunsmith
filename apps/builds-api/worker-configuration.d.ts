@@ -8,8 +8,6 @@ declare namespace Cloudflare {
   interface Env {
     BUILDS: KVNamespace;
     BUILD_TTL_SECONDS: "2592000";
-    OG_FIXTURE_BUILD_ID: "";
-    OG_FIXTURE_PAIR_ID: "";
   }
 }
 interface Env extends Cloudflare.Env {}

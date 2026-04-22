@@ -1,0 +1,5 @@
+# Override the upstream GraphQL endpoint for local staging-swap experiments.
+# The default (https://api.tarkov.dev/graphql) is set in wrangler.jsonc — only
+# copy this file to .dev.vars and edit if you need to point at a different
+# upstream for a session.
+UPSTREAM_GRAPHQL_URL=https://api.tarkov.dev/graphql

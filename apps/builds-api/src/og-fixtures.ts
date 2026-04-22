@@ -21,8 +21,8 @@ const SAMPLE_PAIR_RIGHT = {
 
 interface SeedEnv {
   BUILDS: KVNamespace;
-  OG_FIXTURE_BUILD_ID: string;
-  OG_FIXTURE_PAIR_ID: string;
+  OG_FIXTURE_BUILD_ID?: string;
+  OG_FIXTURE_PAIR_ID?: string;
 }
 
 /**

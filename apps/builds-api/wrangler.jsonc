@@ -4,6 +4,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2024-09-23",
   "observability": { "enabled": true },
+  "dev": { "port": 8788 },
   "kv_namespaces": [
     {
       "binding": "BUILDS",
@@ -12,7 +13,5 @@
   ],
   "vars": {
     "BUILD_TTL_SECONDS": "2592000",
-    "OG_FIXTURE_BUILD_ID": "",
-    "OG_FIXTURE_PAIR_ID": "",
   },
 }
