@@ -120,6 +120,50 @@ function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* ─── what it does ─── */}
+      <section aria-label="What TarkovGunsmith does">
+        <div className="relative mb-5">
+          <div className="tick-rule" />
+          <span className="absolute -top-1.5 left-3 bg-[var(--color-background)] px-2 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+            WHAT IT DOES
+          </span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              n: "01",
+              title: "BUILDER",
+              body: "Slot tree editor with availability gating and live recompute.",
+            },
+            {
+              n: "02",
+              title: "OPTIMIZER",
+              body: "Solve for min-recoil, max-ergo, min-weight or max-accuracy.",
+            },
+            {
+              n: "03",
+              title: "COMPARE",
+              body: "Diff two builds, stat-by-stat, mod-by-mod.",
+            },
+            {
+              n: "04",
+              title: "SHARE",
+              body: "Every build lives at a URL. Import on any device.",
+            },
+          ].map((f) => (
+            <div key={f.n} className="bracket p-5">
+              <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-primary)]">
+                {f.n}
+              </div>
+              <div className="font-display text-[20px] mt-2">{f.title}</div>
+              <div className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-muted-foreground)]">
+                {f.body}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
