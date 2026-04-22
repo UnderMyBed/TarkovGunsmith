@@ -14,7 +14,8 @@ function HomePage() {
           <div className="flex gap-4 font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] mb-6 flex-wrap">
             <span>WEAPON · MODS · PROFILE</span>
             <span>/ LIVE RECOMPUTE</span>
-            <span>/ SHARE URL</span>
+            <span>/ SHAREABLE URL</span>
+            <span>/ QUEST-GATED</span>
           </div>
           <h1 className="font-display text-[clamp(44px,7vw,88px)] leading-[0.95] tracking-tight">
             BUILD THE
@@ -24,11 +25,9 @@ function HomePage() {
             <span className="text-[var(--color-primary)]">KNOW THE NUMBERS.</span>
           </h1>
           <p className="mt-6 max-w-[560px] text-lg text-[var(--color-muted-foreground)]">
-            TarkovGunsmith rebuilds the defunct community tool for Escape from Tarkov ballistics.
-            The <strong className="text-[var(--color-foreground)]">Weapon Builder</strong> is the
-            core: pick a weapon, walk the slot tree, attach mods, watch ergo / recoil / accuracy /
-            weight recompute live — gated by your trader LLs and quest progress, and shareable by
-            URL.
+            Pick a weapon, walk the slot tree, attach mods — ergo, recoil, accuracy and weight
+            recompute live, gated by your trader levels and quest progress.{" "}
+            <strong className="text-[var(--color-foreground)]">Share any build by URL.</strong>
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -71,9 +70,9 @@ function HomePage() {
             </div>
           </div>
           <dl className="grid grid-cols-2 gap-4">
-            <HeroStat label="ERGONOMICS" value="72" delta="+18" deltaTone="up" />
-            <HeroStat label="RECOIL V" value="151" delta="−34%" deltaTone="up" />
-            <HeroStat label="WEIGHT" value="3.24" suffix="kg" delta="+0.80" deltaTone="down" />
+            <HeroStat label="ERGONOMICS" value="72" delta="+25" deltaTone="up" />
+            <HeroStat label="RECOIL V" value="37" delta="−34%" deltaTone="up" />
+            <HeroStat label="WEIGHT" value="3.90" suffix="kg" delta="+0.80" deltaTone="down" />
             <HeroStat label="ACCURACY" value="2.1" suffix="MoA" />
           </dl>
           <div className="flex gap-3 items-center text-[11px]">
