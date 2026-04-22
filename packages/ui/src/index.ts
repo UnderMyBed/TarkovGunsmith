@@ -33,3 +33,5 @@ export type {
 } from "./components/dialog.js";
 export { Skeleton } from "./components/skeleton.js";
 export type { SkeletonProps } from "./components/skeleton.js";
+export { WeaponSilhouette, weaponSilhouetteSrc } from "./components/weapon-silhouette.js";
+export type { WeaponSilhouetteProps } from "./components/weapon-silhouette.js";
