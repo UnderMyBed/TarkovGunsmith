@@ -66,7 +66,7 @@ export {
 
 // Weapon tree (slot-based compatibility)
 export { WEAPON_TREE_QUERY, fetchWeaponTree, normalizeSlots } from "./queries/weaponTree.js";
-export type { WeaponTree, SlotNode, AllowedItem } from "./queries/weaponTree.js";
+export type { WeaponTree, SlotNode, AllowedItem, SlotCategory } from "./queries/weaponTree.js";
 export { useWeaponTree } from "./hooks/useWeaponTree.js";
 
 // Build migrations

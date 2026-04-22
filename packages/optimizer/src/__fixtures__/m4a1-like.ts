@@ -99,6 +99,7 @@ function slotWithOptions(nameId: string, count: number) {
     required: false,
     allowedItemIds: new Set(ids),
     allowedItems: ids.map((id) => ({ id, name: id, children: [] })),
+    allowedCategories: [],
     children: [],
   };
 }
