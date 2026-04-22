@@ -1,5 +1,87 @@
 # Changelog
 
+## [1.0.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.12.0...v1.0.0) (2026-04-22)
+
+
+* seed initial release at 0.1.0 ([#2](https://github.com/UnderMyBed/TarkovGunsmith/issues/2)) ([1b94bfe](https://github.com/UnderMyBed/TarkovGunsmith/commit/1b94bfea59c008d270a4b3acf5f7a8ef03ccbbc8))
+
+
+### Features
+
+* **adc:** /adc route — Armor Damage Calculator (M2 sub-project 2) ([#58](https://github.com/UnderMyBed/TarkovGunsmith/issues/58)) ([afced05](https://github.com/UnderMyBed/TarkovGunsmith/commit/afced05c2d6455058a322aac33749b352cdf4d52))
+* **aec:** /aec route — Armor Effectiveness Calculator (M2 sub-project 3) ([#59](https://github.com/UnderMyBed/TarkovGunsmith/issues/59)) ([a135f81](https://github.com/UnderMyBed/TarkovGunsmith/commit/a135f81aa194dfa97c0a965605422e47f3383d8c))
+* **ballistics:** add @tarkov/ballistics package ([#8](https://github.com/UnderMyBed/TarkovGunsmith/issues/8)) ([d380d7b](https://github.com/UnderMyBed/TarkovGunsmith/commit/d380d7bbcaa07c0d740dbc70902145fda998e09b))
+* **ballistics:** scenario math (simulateScenario) — Simulator PR 1 ([#53](https://github.com/UnderMyBed/TarkovGunsmith/issues/53)) ([d27a325](https://github.com/UnderMyBed/TarkovGunsmith/commit/d27a3258aa24391091344788466b42f13e714ed0))
+* **builder:** filter weapon dropdown by profile + harden Builder smoke ([#72](https://github.com/UnderMyBed/TarkovGunsmith/issues/72)) ([27625b3](https://github.com/UnderMyBed/TarkovGunsmith/commit/27625b385490427936b1e3f55e614a8d88bfadbe))
+* **builder:** M3.5 Arc 1 — slot-tree categories, craft/barter pills, sticky headers, keyboard nav ([#102](https://github.com/UnderMyBed/TarkovGunsmith/issues/102)) ([2a94e24](https://github.com/UnderMyBed/TarkovGunsmith/commit/2a94e24f5545986695d459a82271ef1703bedad0))
+* **builder:** M3.5 Arc 4 — weapon silhouettes ([#104](https://github.com/UnderMyBed/TarkovGunsmith/issues/104)) ([77da5e8](https://github.com/UnderMyBed/TarkovGunsmith/commit/77da5e867e39dd4aaffdd7b519bdb3b3a31c758b))
+* **builder:** player-progression gating + schema v3 (M1.5 PR 3) ([#47](https://github.com/UnderMyBed/TarkovGunsmith/issues/47)) ([01292ce](https://github.com/UnderMyBed/TarkovGunsmith/commit/01292cebe19c45f225b22c6ef724307bf5bf6fa4))
+* **builder:** schema v1 + save/load round-trip (M1.5 PR 1) ([#43](https://github.com/UnderMyBed/TarkovGunsmith/issues/43)) ([8fb5540](https://github.com/UnderMyBed/TarkovGunsmith/commit/8fb55409ea8d597ebfa2cb2ec1ae03c510870809))
+* **builder:** slot-based mod compatibility + schema v2 (M1.5 PR 2) ([#45](https://github.com/UnderMyBed/TarkovGunsmith/issues/45)) ([4ec2226](https://github.com/UnderMyBed/TarkovGunsmith/commit/4ec2226212d9fa0708258a05ffa0316404c3bd23))
+* **builder:** UX depth — name/description + stock diff + preset scaffold (M1.5 PR 4) ([#49](https://github.com/UnderMyBed/TarkovGunsmith/issues/49)) ([d203b38](https://github.com/UnderMyBed/TarkovGunsmith/commit/d203b38005402448647093d2ad73cb67334da087))
+* **charts:** /charts Effectiveness Charts route — M2 sub-project 5 (final) ([#61](https://github.com/UnderMyBed/TarkovGunsmith/issues/61)) ([e0ccaef](https://github.com/UnderMyBed/TarkovGunsmith/commit/e0ccaef37bf1b4ca6e6bfe9390f50095cc1fce0e))
+* **ci:** auto-deploy workers + pages on main merges ([#27](https://github.com/UnderMyBed/TarkovGunsmith/issues/27)) ([edff779](https://github.com/UnderMyBed/TarkovGunsmith/commit/edff7796b49cbf971d5188f4022a1e80cfe6cb71))
+* **data:** /data DataSheets route (M2 sub-project 4) ([#60](https://github.com/UnderMyBed/TarkovGunsmith/issues/60)) ([c2fdb1a](https://github.com/UnderMyBed/TarkovGunsmith/commit/c2fdb1a1374ea68fc255b4ec42bb8a8989810777))
+* **data:** add @tarkov/data package ([#15](https://github.com/UnderMyBed/TarkovGunsmith/issues/15)) ([af88d53](https://github.com/UnderMyBed/TarkovGunsmith/commit/af88d53024a80179f5dc66a512536aac58b20fc6))
+* **m3:** Build comparison — live side-by-side workspace ([#81](https://github.com/UnderMyBed/TarkovGunsmith/issues/81)) ([cbba110](https://github.com/UnderMyBed/TarkovGunsmith/commit/cbba110ae49e12f59be16b8d22784a20911ff1c6))
+* **m3:** Build optimization — exact solver + Builder integration ([#83](https://github.com/UnderMyBed/TarkovGunsmith/issues/83)) ([1187fbc](https://github.com/UnderMyBed/TarkovGunsmith/commit/1187fbc913f881e3587e3a42bf522449d0cdf5f0))
+* Milestone 0a — Foundation (monorepo, CI, AI workflow Tier B) ([#1](https://github.com/UnderMyBed/TarkovGunsmith/issues/1)) ([f77e8fc](https://github.com/UnderMyBed/TarkovGunsmith/commit/f77e8fc086a1692965d7b6cd7f7b1e87a4f9a336))
+* **og:** @tarkov/og package — Satori card renderer ([#86](https://github.com/UnderMyBed/TarkovGunsmith/issues/86)) ([7114205](https://github.com/UnderMyBed/TarkovGunsmith/commit/71142051f7850cd3f59fafe7c4c0d93065e17f26))
+* **og:** Pages Functions + meta middleware + smoke — activates OG share cards ([#89](https://github.com/UnderMyBed/TarkovGunsmith/issues/89)) ([279676e](https://github.com/UnderMyBed/TarkovGunsmith/commit/279676e69182ce5063b346af00cdf33fd15e2363))
+* **ops:** M3.5 Arc 0 — local dev tooling + runbook ([#100](https://github.com/UnderMyBed/TarkovGunsmith/issues/100)) ([a4d68a6](https://github.com/UnderMyBed/TarkovGunsmith/commit/a4d68a6cd9edb7d7640bada838f5157b14668095))
+* rename cloudflare resources with tarkov-gunsmith prefix ([#28](https://github.com/UnderMyBed/TarkovGunsmith/issues/28)) ([294f4c0](https://github.com/UnderMyBed/TarkovGunsmith/commit/294f4c0cb93a5b6aee4e1026d943278815d51b13))
+* **sim:** /sim route skeleton — Simulator PR 3 ([#56](https://github.com/UnderMyBed/TarkovGunsmith/issues/56)) ([6c97bf2](https://github.com/UnderMyBed/TarkovGunsmith/commit/6c97bf26510c3bea01b265ac04e2ac9cfa27cd04))
+* **sim:** scenarioReducer + useScenario hook — Simulator PR 2 ([#55](https://github.com/UnderMyBed/TarkovGunsmith/issues/55)) ([6ff8146](https://github.com/UnderMyBed/TarkovGunsmith/commit/6ff81462a57c50d6898daa3f67b9eb98ec43ee70))
+* **sim:** wire Run + render results — Simulator PR 4 ([#57](https://github.com/UnderMyBed/TarkovGunsmith/issues/57)) ([e29ec57](https://github.com/UnderMyBed/TarkovGunsmith/commit/e29ec57773151392534265f05a86bf6205fc4b34))
+* **types:** add @tarkov/types package ([#12](https://github.com/UnderMyBed/TarkovGunsmith/issues/12)) ([61bdc41](https://github.com/UnderMyBed/TarkovGunsmith/commit/61bdc412e3ee7e2ec1c8e89a62adc0b3fea02136))
+* **ui:** /builder redesign — Field Ledger flagship (M3 PR 3) ([#65](https://github.com/UnderMyBed/TarkovGunsmith/issues/65)) ([402090a](https://github.com/UnderMyBed/TarkovGunsmith/commit/402090a90fe90e92419c04a548d5a5b8c54d9148))
+* **ui:** /data /charts /matrix sweep — closes M3 Field Ledger pass (M3 PR 5) ([#67](https://github.com/UnderMyBed/TarkovGunsmith/issues/67)) ([4e89b86](https://github.com/UnderMyBed/TarkovGunsmith/commit/4e89b86704ca88378b560edb1b6f56c7f9fc2dce))
+* **ui:** add @tarkov/ui package ([#18](https://github.com/UnderMyBed/TarkovGunsmith/issues/18)) ([00501fb](https://github.com/UnderMyBed/TarkovGunsmith/commit/00501fb25ee5d2870b2e2773f514afad5dacfd7e))
+* **ui:** ballistics routes sweep (/calc /sim /adc /aec) — Field Ledger (M3 PR 4) ([#66](https://github.com/UnderMyBed/TarkovGunsmith/issues/66)) ([d82815c](https://github.com/UnderMyBed/TarkovGunsmith/commit/d82815c43551fb8e968e920c189be0e251ad317a))
+* **ui:** Builder-forward landing + Field Ledger nav (M3 PR 2) ([#64](https://github.com/UnderMyBed/TarkovGunsmith/issues/64)) ([d0f657a](https://github.com/UnderMyBed/TarkovGunsmith/commit/d0f657abd2f678df25037de252a459c114f3243f))
+* **ui:** Field Ledger design tokens + primitive redesign (M3 PR 1) ([#63](https://github.com/UnderMyBed/TarkovGunsmith/issues/63)) ([d440745](https://github.com/UnderMyBed/TarkovGunsmith/commit/d440745edc050f8992affb5bd842baa1aa10133d))
+* **web:** add @tarkov/web SPA ([#24](https://github.com/UnderMyBed/TarkovGunsmith/issues/24)) ([6c69500](https://github.com/UnderMyBed/TarkovGunsmith/commit/6c69500cee74fe9ec56c87b8dee1111bfe736acf))
+* **web:** add /builder Weapon Builder route (no save yet) ([#39](https://github.com/UnderMyBed/TarkovGunsmith/issues/39)) ([a373e90](https://github.com/UnderMyBed/TarkovGunsmith/commit/a373e903eda07ec1af6ad8cb5cec63b6829da1b8))
+* **web:** add /calc Ballistic Calculator route ([#35](https://github.com/UnderMyBed/TarkovGunsmith/issues/35)) ([cbd131c](https://github.com/UnderMyBed/TarkovGunsmith/commit/cbd131ca339805766afc5c21c020e6fa328112d4))
+* **web:** add /matrix AmmoVsArmor route ([#37](https://github.com/UnderMyBed/TarkovGunsmith/issues/37)) ([4db1616](https://github.com/UnderMyBed/TarkovGunsmith/commit/4db161613d925904c74dc4425218c414a7bcb8ed))
+* **web:** Builder-focus nav — dropdowns + WIP banners + landing cleanup ([#96](https://github.com/UnderMyBed/TarkovGunsmith/issues/96)) ([0456d77](https://github.com/UnderMyBed/TarkovGunsmith/commit/0456d778f991d4daa64152cff43bcc8713454d62))
+* **web:** landing Field Ledger v2 — promo strip + feature grid ([#108](https://github.com/UnderMyBed/TarkovGunsmith/issues/108)) ([4ed5a17](https://github.com/UnderMyBed/TarkovGunsmith/commit/4ed5a1753945fc302b85e937afeca33c3c5f0ad4))
+* **web:** M3.5 Arc 2 — Dialog + Skeleton + keyboard overlay + favicon ([#103](https://github.com/UnderMyBed/TarkovGunsmith/issues/103)) ([1855b47](https://github.com/UnderMyBed/TarkovGunsmith/commit/1855b47c12135efef56096a1c5171a87c49ed434))
+* **web:** TarkovTracker profile import — M3 final differentiator ([#92](https://github.com/UnderMyBed/TarkovGunsmith/issues/92)) ([95c3065](https://github.com/UnderMyBed/TarkovGunsmith/commit/95c3065baa35e904bcf4cbf3bfa3b7c2e0cdf6c1))
+* **workers:** add data-proxy and builds-api Cloudflare Workers ([#21](https://github.com/UnderMyBed/TarkovGunsmith/issues/21)) ([956b8fc](https://github.com/UnderMyBed/TarkovGunsmith/commit/956b8fcd0f05be839c441fb6d343baf57f46d97d))
+
+
+### Bug Fixes
+
+* **ci:** apply release-gated if: to all three deploy jobs (not just data-proxy) ([#74](https://github.com/UnderMyBed/TarkovGunsmith/issues/74)) ([0389f9d](https://github.com/UnderMyBed/TarkovGunsmith/commit/0389f9dba6b4c590c401b33c0ab8bad210d7040c))
+* **ci:** build apps/web workspace deps in deploy workflow ([#30](https://github.com/UnderMyBed/TarkovGunsmith/issues/30)) ([8a5dd77](https://github.com/UnderMyBed/TarkovGunsmith/commit/8a5dd77b6abcaed7c825462b967e45e85796deda))
+* **ci:** grant pull-requests: read for dorny/paths-filter ([#77](https://github.com/UnderMyBed/TarkovGunsmith/issues/77)) ([fffdb9d](https://github.com/UnderMyBed/TarkovGunsmith/commit/fffdb9dd62ede2d6c759cfe0b4578b44e778375f))
+* **ci:** pass --repo to gh workflow run + document admin-merge for release PRs ([#9](https://github.com/UnderMyBed/TarkovGunsmith/issues/9)) ([f23f98b](https://github.com/UnderMyBed/TarkovGunsmith/commit/f23f98be8e824c1446dd9d91e87cf957c96d5823))
+* **ci:** paths-filter uses positive patterns (negation was inverted) ([#79](https://github.com/UnderMyBed/TarkovGunsmith/issues/79)) ([78576e9](https://github.com/UnderMyBed/TarkovGunsmith/commit/78576e98400e44d28d7a6e9e1d6027b63270758e))
+* **data:** filter non-ammo/armor items from upstream list responses + better error UX ([#33](https://github.com/UnderMyBed/TarkovGunsmith/issues/33)) ([21b84a7](https://github.com/UnderMyBed/TarkovGunsmith/commit/21b84a7329cc85db9e215cfadf2450c644762825))
+* **data:** skip inner `slots {}` at leaf depth — WeaponTree query was invalid GraphQL ([#71](https://github.com/UnderMyBed/TarkovGunsmith/issues/71)) ([90a034d](https://github.com/UnderMyBed/TarkovGunsmith/commit/90a034d7dbf9873c45ab5cf4b651ccd024b9772e))
+* **ui:** load Google Fonts via &lt;link&gt; in index.html (was silently stripped) ([#69](https://github.com/UnderMyBed/TarkovGunsmith/issues/69)) ([5da8276](https://github.com/UnderMyBed/TarkovGunsmith/commit/5da8276304e1ab9812ea51182e4cbcac5f5b8564))
+
+
+### Documentation
+
+* add apps/data-proxy + apps/builds-api implementation plan ([#19](https://github.com/UnderMyBed/TarkovGunsmith/issues/19)) ([ced940e](https://github.com/UnderMyBed/TarkovGunsmith/commit/ced940e4a37d1c6e92186aea5262af58eb3880aa))
+* add apps/web implementation plan ([#22](https://github.com/UnderMyBed/TarkovGunsmith/issues/22)) ([896807e](https://github.com/UnderMyBed/TarkovGunsmith/commit/896807e250e61faa9ea270fe712038f5e990e8b4))
+* add CI deploys implementation plan ([#25](https://github.com/UnderMyBed/TarkovGunsmith/issues/25)) ([3d9f792](https://github.com/UnderMyBed/TarkovGunsmith/commit/3d9f7927230e6802ffb9dfd7630711383df6bb03))
+* add milestone 0a foundation implementation plan ([5490f98](https://github.com/UnderMyBed/TarkovGunsmith/commit/5490f982e2183e0dcfbecfa026d677ec358e3b42))
+* add packages/ballistics implementation plan ([#6](https://github.com/UnderMyBed/TarkovGunsmith/issues/6)) ([d733f17](https://github.com/UnderMyBed/TarkovGunsmith/commit/d733f1740d42fd8d23ea04ba5adeb73e788db390))
+* add packages/tarkov-data implementation plan ([#13](https://github.com/UnderMyBed/TarkovGunsmith/issues/13)) ([1de987a](https://github.com/UnderMyBed/TarkovGunsmith/commit/1de987a95a77b1cefaabfe0127322c89733576cb))
+* add packages/tarkov-types implementation plan ([#11](https://github.com/UnderMyBed/TarkovGunsmith/issues/11)) ([aa08e85](https://github.com/UnderMyBed/TarkovGunsmith/commit/aa08e85a7f1739d5fc1e890d4391f260ade821a9))
+* add packages/ui implementation plan ([#16](https://github.com/UnderMyBed/TarkovGunsmith/issues/16)) ([b67bdd1](https://github.com/UnderMyBed/TarkovGunsmith/commit/b67bdd12b7cf44de6aa4d5a7117fbf3b684f7307))
+* Builder-focus nav + WIP banners — spec + plan (rebased) ([#98](https://github.com/UnderMyBed/TarkovGunsmith/issues/98)) ([bcfd242](https://github.com/UnderMyBed/TarkovGunsmith/commit/bcfd2427958aa14d5725195af9adb8088bad250b))
+* declare v1.0.0 — Milestone 1 complete ([#41](https://github.com/UnderMyBed/TarkovGunsmith/issues/41)) ([2f7189e](https://github.com/UnderMyBed/TarkovGunsmith/commit/2f7189ee40140d0c9286cb8879e707bba5923266))
+* initial design spec, ADR-0001, and AI workflow guides ([6a769d1](https://github.com/UnderMyBed/TarkovGunsmith/commit/6a769d197bf4400177e97561976091055fa00e0c))
+* **m3:** OG share cards — spec + implementation plan ([#88](https://github.com/UnderMyBed/TarkovGunsmith/issues/88)) ([50bb905](https://github.com/UnderMyBed/TarkovGunsmith/commit/50bb9054e7b249268b44e3da07c8c27263d2d45f))
+* **m3:** TarkovTracker profile import — spec + plan (rebased) ([#94](https://github.com/UnderMyBed/TarkovGunsmith/issues/94)) ([b4f7176](https://github.com/UnderMyBed/TarkovGunsmith/commit/b4f7176acbfead02aee8191d88606ddff99cfddf))
+* mark M3 frontend design pass shipped; list design-polish follow-ups ([#68](https://github.com/UnderMyBed/TarkovGunsmith/issues/68)) ([eed0e20](https://github.com/UnderMyBed/TarkovGunsmith/commit/eed0e20eef9be32889252dd03bd1e64686e7f4dc))
+* **repo:** prep repo for public visibility ([#105](https://github.com/UnderMyBed/TarkovGunsmith/issues/105)) ([ce96226](https://github.com/UnderMyBed/TarkovGunsmith/commit/ce96226d4bf57950b8eae1616665083af91fa12a))
+* update milestone status after M2 ship; reorder M3 starting with frontend design pass ([#62](https://github.com/UnderMyBed/TarkovGunsmith/issues/62)) ([e489324](https://github.com/UnderMyBed/TarkovGunsmith/commit/e48932473406ec22e089d43990cdee3547a2d8e4))
+
 ## [1.12.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.11.0...v1.12.0) (2026-04-22)
 
 
