@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useState, type ReactElement } from "react";
 import type { BuildV4, ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
-import { Button, Card, CardContent } from "@tarkov/ui";
+import { Button, Dialog, DialogPanel, DialogTitle, DialogBody } from "@tarkov/ui";
 import {
   constraintsReducer,
   initialConstraintsState,
@@ -56,8 +56,6 @@ export function OptimizeDialog({
     }
   }, [optimizer.state]);
 
-  if (!open) return null;
-
   const handleRun = () => {
     optimizer.run(toOptimizerInput(state, { weapon, slotTree, modList, profile }));
   };
@@ -80,14 +78,10 @@ export function OptimizeDialog({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-      onClick={onClose}
-    >
-      <Card className="w-full max-w-2xl" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-        <CardContent className="p-6 flex flex-col gap-4">
-          <h2 className="font-display text-xl uppercase tracking-wider">Optimize build</h2>
-
+    <Dialog open={open} onClose={onClose} labelledBy="optimize-dialog-title">
+      <DialogPanel className="w-full max-w-2xl">
+        <DialogTitle id="optimize-dialog-title">Optimize build</DialogTitle>
+        <DialogBody className="flex flex-col gap-4">
           {tab === "constraints" && (
             <OptimizeConstraintsForm
               state={state}
@@ -127,8 +121,8 @@ export function OptimizeDialog({
               Close
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </DialogBody>
+      </DialogPanel>
+    </Dialog>
   );
 }

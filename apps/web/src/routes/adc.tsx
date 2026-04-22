@@ -2,7 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useAmmoList, useArmorList } from "@tarkov/data";
 import { simulateBurst } from "@tarkov/ballistics";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Pill } from "@tarkov/ui";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Pill,
+  Skeleton,
+} from "@tarkov/ui";
 import { adaptAmmo, adaptArmor } from "../features/data-adapters/adapters.js";
 import { adcSummary } from "../features/adc/adcSummary.js";
 import { WipBanner } from "../features/nav/wip-banner.js";
@@ -180,10 +189,18 @@ function AdcPage() {
       <Card variant="bracket">
         <CardHeader>
           <CardTitle>Results</CardTitle>
-          {!results && (
+          {!results && !isLoading && (
             <CardDescription>Pick an ammo and an armor to see the burst.</CardDescription>
           )}
         </CardHeader>
+        {isLoading && (
+          <CardContent>
+            <div role="status" aria-busy="true" className="flex flex-col gap-3">
+              <Skeleton width="40%" height="1.25rem" />
+              <Skeleton rows={3} height="1rem" />
+            </div>
+          </CardContent>
+        )}
         {results && selectedArmor && summary && (
           <CardContent className="flex flex-col gap-4">
             <dl className="grid gap-2 sm:grid-cols-2">

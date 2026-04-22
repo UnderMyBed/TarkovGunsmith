@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useAmmoList, useArmorList } from "@tarkov/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Pill } from "@tarkov/ui";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Pill,
+  Skeleton,
+} from "@tarkov/ui";
 import { adaptAmmo, adaptArmor } from "../features/data-adapters/adapters.js";
 import { rankAmmos } from "../features/aec/rankAmmos.js";
 import { WipBanner } from "../features/nav/wip-banner.js";
@@ -129,8 +138,18 @@ function AecPage() {
       <Card variant="bracket">
         <CardHeader>
           <CardTitle>Ranked ammo</CardTitle>
-          {!rows && <CardDescription>Pick an armor to rank every ammo.</CardDescription>}
+          {!rows && !isLoading && (
+            <CardDescription>Pick an armor to rank every ammo.</CardDescription>
+          )}
         </CardHeader>
+        {isLoading && (
+          <CardContent>
+            <div role="status" aria-busy="true" className="flex flex-col gap-3">
+              <Skeleton width="40%" height="1.25rem" />
+              <Skeleton rows={3} height="1rem" />
+            </div>
+          </CardContent>
+        )}
         {rows && (
           <CardContent>
             <div className="overflow-x-auto">
