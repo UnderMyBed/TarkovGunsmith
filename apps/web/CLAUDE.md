@@ -42,8 +42,9 @@ Full setup runbook: [`docs/operations/cloudflare-deploys.md`](../../docs/operati
 ### Env vars on Cloudflare Pages
 
 - `BUILDS_API_URL` (required in production) — URL of the `apps/builds-api` Worker (e.g. `https://tarkov-gunsmith-builds-api.<subdomain>.workers.dev`). Used by `apps/web/functions/api/builds/[[path]].ts` to proxy build save/load requests same-origin.
+- Locally, set `BUILDS_API_URL=http://localhost:8788` in `apps/web/.dev.vars` (copy from `.dev.vars.example`) so `wrangler pages dev` can exercise the Pages Functions.
 
-Set via `wrangler pages secret put BUILDS_API_URL --project-name tarkov-gunsmith-web` or via the Cloudflare dashboard. The Pages deploy action does not set this automatically — if the var is missing, the Pages Function returns a 500.
+Production setup + verification + rotation commands live in [`docs/operations/local-development.md`](../../docs/operations/local-development.md#production-secrets-set-via-wrangler-not-committed).
 
 ## Conventions
 

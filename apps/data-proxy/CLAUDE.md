@@ -18,6 +18,10 @@ pnpm --filter @tarkov/data-proxy build  # wrangler --dry-run --outdir dist (no d
 
 `wrangler dev` simulates Cache API + bindings locally; state persists in `.wrangler/state/`. Use `wrangler dev --remote` to test against real Cloudflare resources before a production deploy.
 
+Copy `.dev.vars.example` → `.dev.vars` to override `UPSTREAM_GRAPHQL_URL` for local staging-swap experiments.
+
+Full local-dev workflow: [`docs/operations/local-development.md`](../../docs/operations/local-development.md).
+
 ## Deploy
 
 Auto-deploys to Cloudflare Workers on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-gunsmith-data-proxy.<your-subdomain>.workers.dev`.

@@ -13,6 +13,10 @@ export default tseslint.config(
       "**/coverage/**",
       "**/node_modules/**",
       "**/worker-configuration.d.ts",
+      // One-off dev utility scripts — not a workspace package, so no tsconfig
+      // project service entry. ESLint option B: exclude cleanly rather than
+      // add a bespoke tsconfig+allowDefaultProject entry for a single file.
+      "scripts/**",
     ],
   },
   js.configs.recommended,

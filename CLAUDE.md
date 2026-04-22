@@ -20,8 +20,6 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 > **Deferred M3 design-polish items:** Light theme; loading skeleton shimmers in the Field Ledger aesthetic; custom favicon + OG social cards (the latter pairs with M3 sub-project 4); keyboard shortcut overlay; real weapon silhouettes. Revisit after functional M3 work lands.
 >
 > **Cross-milestone deferred:** ~~Playwright e2e~~ — shipped in this PR.
->
-> **Production action still open:** `wrangler pages secret put BUILDS_API_URL --project-name tarkov-gunsmith-web` — without this, `/builder` save/load returns 500 in prod.
 
 ## What this project is
 
@@ -101,6 +99,15 @@ echo "feat: foo" | pnpm exec commitlint --stdin-only  # test a commit message
 ```
 
 Pre-commit (via Husky 9) runs `lint-staged` on changed files (`eslint --fix --max-warnings 0` and `prettier --write`). Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint).
+
+### Running the full stack locally
+
+```bash
+pnpm dev              # turbo fan-out → web (5173) + data-proxy (8787) + builds-api (8788)
+pnpm seed:build       # POST a fixture build to local builds-api; prints /builder/:id URL
+```
+
+Fresh-clone setup, `.dev.vars` conventions, OG-card local testing, and the production secret runbook all live in [`docs/operations/local-development.md`](docs/operations/local-development.md).
 
 ## CI
 

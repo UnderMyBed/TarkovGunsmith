@@ -12,12 +12,16 @@ Cloudflare Worker that backs the "share this build" feature. Saves arbitrary bui
 ## Local dev
 
 ```bash
-pnpm --filter @tarkov/builds-api dev    # wrangler dev → http://localhost:8787 (real KV simulated)
+pnpm --filter @tarkov/builds-api dev    # wrangler dev → http://localhost:8788 (real KV simulated)
 pnpm --filter @tarkov/builds-api test   # vitest in workerd, real KV per test
 pnpm --filter @tarkov/builds-api build  # wrangler --dry-run --outdir dist
 ```
 
 `wrangler dev` simulates the `BUILDS` KV namespace locally; values persist in `.wrangler/state/`.
+
+Copy `.dev.vars.example` → `.dev.vars` to override env vars for local runs (e.g. `OG_FIXTURE_BUILD_ID` for OG-card local testing).
+
+Full local-dev workflow (full stack in one terminal, seed-build helper, troubleshooting): [`docs/operations/local-development.md`](../../docs/operations/local-development.md).
 
 ## Deploy
 
