@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.12.0...v1.12.1) (2026-04-22)
+
+
+### Documentation
+
+* **repo:** prep repo for public visibility ([#105](https://github.com/UnderMyBed/TarkovGunsmith/issues/105)) ([f986701](https://github.com/UnderMyBed/TarkovGunsmith/commit/f98670188a53c2ae98801865bffe1b92a640f676))
+
 ## [1.12.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.11.0...v1.12.0) (2026-04-22)
 
 
