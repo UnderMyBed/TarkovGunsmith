@@ -41,6 +41,12 @@ export const MOD_LIST_QUERY = /* GraphQL */ `
           }
         }
       }
+      craftsFor {
+        id
+      }
+      bartersFor {
+        id
+      }
     }
   }
 `;
@@ -52,6 +58,9 @@ const modPropertiesSchema = z.object({
   accuracyModifier: z.number(),
 });
 
+const craftReferenceSchema = z.object({ id: z.string() });
+const barterReferenceSchema = z.object({ id: z.string() });
+
 const modListItemSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -62,6 +71,8 @@ const modListItemSchema = z.object({
   minLevelForFlea: z.number().int().nullable(),
   properties: modPropertiesSchema,
   buyFor: z.array(buyForEntrySchema).nullable(),
+  craftsFor: z.array(craftReferenceSchema).nullable(),
+  bartersFor: z.array(barterReferenceSchema).nullable(),
 });
 
 export const modListSchema = z.object({
