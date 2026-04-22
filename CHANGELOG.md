@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.10.0...v1.11.0) (2026-04-22)
+
+
+### Features
+
+* **web:** Builder-focus nav — dropdowns + WIP banners + landing cleanup ([#96](https://github.com/UnderMyBed/TarkovGunsmith/issues/96)) ([b990a67](https://github.com/UnderMyBed/TarkovGunsmith/commit/b990a67440766c9064d60290dd207e87aa78750b))
+
 ## [1.10.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.9.0...v1.10.0) (2026-04-21)
 
 
