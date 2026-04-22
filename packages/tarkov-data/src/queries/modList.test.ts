@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchModList, modListSchema } from "./modList.js";
+import { fetchModList, modListSchema, MOD_LIST_QUERY } from "./modList.js";
 import { createTarkovClient } from "../client.js";
 
 const sampleMod = {
@@ -38,6 +38,8 @@ const sampleMod = {
       },
     },
   ],
+  craftsFor: [{ id: "craft-1" }, { id: "craft-2" }],
+  bartersFor: [{ id: "barter-1" }],
 };
 
 const fixture = { data: { items: [sampleMod] } };
@@ -45,6 +47,39 @@ const fixture = { data: { items: [sampleMod] } };
 describe("modListSchema", () => {
   it("parses a valid response", () => {
     expect(modListSchema.safeParse(fixture.data).success).toBe(true);
+  });
+
+  it("parses craftsFor and bartersFor when populated", () => {
+    const result = modListSchema.safeParse({ items: [sampleMod] });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const item = result.data.items[0]!;
+      expect(item.craftsFor).toHaveLength(2);
+      expect(item.craftsFor?.[0]?.id).toBe("craft-1");
+      expect(item.bartersFor).toHaveLength(1);
+      expect(item.bartersFor?.[0]?.id).toBe("barter-1");
+    }
+  });
+
+  it("accepts null craftsFor / bartersFor", () => {
+    const nulled = { ...sampleMod, id: "mod-nulled", craftsFor: null, bartersFor: null };
+    const result = modListSchema.safeParse({ items: [nulled] });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.items[0]!.craftsFor).toBeNull();
+      expect(result.data.items[0]!.bartersFor).toBeNull();
+    }
+  });
+
+  it("accepts empty craftsFor / bartersFor arrays", () => {
+    const empty = { ...sampleMod, id: "mod-empty", craftsFor: [], bartersFor: [] };
+    const result = modListSchema.safeParse({ items: [empty] });
+    expect(result.success).toBe(true);
+  });
+
+  it("MOD_LIST_QUERY queries craftsFor and bartersFor", () => {
+    expect(MOD_LIST_QUERY).toMatch(/craftsFor\s*\{/);
+    expect(MOD_LIST_QUERY).toMatch(/bartersFor\s*\{/);
   });
 });
 

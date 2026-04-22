@@ -1,20 +1,86 @@
 import type { SlotNode, WeaponTree, ItemAvailability, SlotDiffMap } from "@tarkov/data";
 import { Pill } from "@tarkov/ui";
 
+// ---------- Keyboard navigation handler ----------
+
+function handleSlotTreeKeyDown(e: React.KeyboardEvent<HTMLUListElement>) {
+  const root = e.currentTarget;
+  const key = e.key;
+
+  if (key !== "ArrowDown" && key !== "ArrowUp" && key !== "ArrowLeft" && key !== "ArrowRight") {
+    return;
+  }
+
+  const targets = Array.from(
+    root.querySelectorAll<HTMLElement>(
+      "details[data-slot-path] > summary, details[data-slot-path] > div button",
+    ),
+  );
+  const active = document.activeElement as HTMLElement | null;
+  const idx = active ? targets.indexOf(active) : -1;
+
+  if (key === "ArrowDown") {
+    const next = targets[Math.min(idx + 1, targets.length - 1)];
+    if (next && next !== active) {
+      e.preventDefault();
+      next.focus();
+    }
+    return;
+  }
+
+  if (key === "ArrowUp") {
+    const prev = targets[Math.max(idx - 1, 0)];
+    if (prev && prev !== active) {
+      e.preventDefault();
+      prev.focus();
+    }
+    return;
+  }
+
+  // ArrowRight / ArrowLeft only affect summary elements.
+  if (!active || active.tagName !== "SUMMARY") return;
+
+  const details = active.closest<HTMLDetailsElement>("details[data-slot-path]");
+  if (!details || details.tagName !== "DETAILS") return;
+
+  if (key === "ArrowRight" && !details.open) {
+    e.preventDefault();
+    details.open = true;
+    return;
+  }
+
+  if (key === "ArrowLeft" && details.open) {
+    e.preventDefault();
+    details.open = false;
+    return;
+  }
+}
+
+// ---------- Types ----------
+
+export interface ModSources {
+  readonly hasCraft: boolean;
+  readonly hasBarter: boolean;
+}
+
 export interface SlotTreeProps {
   tree: WeaponTree;
   attachments: Readonly<Record<string, string>>;
   onAttach: (path: string, itemId: string | null) => void;
   getAvailability?: (itemId: string) => ItemAvailability | null;
+  getModSources?: (itemId: string) => ModSources;
   showAll?: boolean;
   diff?: SlotDiffMap;
 }
+
+// ---------- SlotTree root ----------
 
 export function SlotTree({
   tree,
   attachments,
   onAttach,
   getAvailability,
+  getModSources,
   showAll,
   diff,
 }: SlotTreeProps) {
@@ -26,7 +92,7 @@ export function SlotTree({
     );
   }
   return (
-    <ul className="flex flex-col">
+    <ul className="flex flex-col" onKeyDown={handleSlotTreeKeyDown}>
       {tree.slots.map((slot) => (
         <SlotRow
           key={slot.path}
@@ -34,6 +100,7 @@ export function SlotTree({
           attachments={attachments}
           onAttach={onAttach}
           getAvailability={getAvailability}
+          getModSources={getModSources}
           showAll={showAll}
           depth={0}
           diff={diff}
@@ -43,11 +110,14 @@ export function SlotTree({
   );
 }
 
+// ---------- SlotRow ----------
+
 function SlotRow({
   slot,
   attachments,
   onAttach,
   getAvailability,
+  getModSources,
   showAll,
   depth,
   diff,
@@ -56,6 +126,7 @@ function SlotRow({
   attachments: Readonly<Record<string, string>>;
   onAttach: (path: string, itemId: string | null) => void;
   getAvailability?: (itemId: string) => ItemAvailability | null;
+  getModSources?: (itemId: string) => ModSources;
   showAll?: boolean;
   depth: number;
   diff?: SlotDiffMap;
@@ -77,7 +148,10 @@ function SlotRow({
         className="group border-b border-dashed border-[var(--color-border)] data-[diff=differs]:border-dashed data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-l-2 data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-l-2 data-[diff=right-only]:border-[var(--color-primary)]"
       >
         <summary
-          className="flex cursor-pointer items-center gap-3 py-2 pr-3 hover:bg-[var(--color-muted)] transition-colors"
+          tabIndex={0}
+          className={`flex cursor-pointer items-center gap-3 py-2 pr-3 hover:bg-[var(--color-muted)] transition-colors ${
+            depth === 0 ? "sticky top-0 z-10 bg-[var(--color-background)]" : ""
+          }`}
           style={{ paddingLeft: `${12 + indentPx}px` }}
         >
           <span
@@ -113,9 +187,17 @@ function SlotRow({
           style={{ paddingLeft: `${24 + indentPx}px` }}
         >
           {slot.allowedItems.length === 0 ? (
-            <p className="p-2 font-mono text-[10px] tracking-[0.15em] uppercase text-[var(--color-paper-dim)]">
-              No explicit allowed items — category-based slot (deferred).
-            </p>
+            slot.allowedCategories.length > 0 ? (
+              <p className="p-2 font-mono text-[10px] tracking-[0.15em] uppercase text-[var(--color-paper-dim)]">
+                <span className="text-[var(--color-foreground)]">ACCEPTS</span>
+                {" · "}
+                {slot.allowedCategories.map((c) => c.name).join(" · ")}
+              </p>
+            ) : (
+              <p className="p-2 font-mono text-[10px] tracking-[0.15em] uppercase text-[var(--color-paper-dim)]">
+                No explicit allowed items or categories.
+              </p>
+            )
           ) : (
             <ul className="flex flex-col">
               <li>
@@ -155,6 +237,7 @@ function SlotRow({
                             {requirementLabel}
                           </span>
                         )}
+                        <SourcePills sources={getModSources?.(item.id)} />
                         <AvailabilityPill availability={availability} />
                       </div>
                     </button>
@@ -172,6 +255,7 @@ function SlotRow({
                   attachments={attachments}
                   onAttach={onAttach}
                   getAvailability={getAvailability}
+                  getModSources={getModSources}
                   showAll={showAll}
                   depth={depth + 1}
                   diff={diff}
@@ -184,6 +268,20 @@ function SlotRow({
     </li>
   );
 }
+
+// ---------- SourcePills ----------
+
+function SourcePills({ sources }: { sources: ModSources | undefined }) {
+  if (!sources) return null;
+  return (
+    <>
+      {sources.hasCraft && <Pill tone="muted">CRAFT</Pill>}
+      {sources.hasBarter && <Pill tone="muted">BARTER</Pill>}
+    </>
+  );
+}
+
+// ---------- AvailabilityPill ----------
 
 function AvailabilityPill({ availability }: { availability: ItemAvailability | null }) {
   if (!availability) return null;

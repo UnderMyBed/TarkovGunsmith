@@ -427,3 +427,68 @@ test.describe("smoke — Builder-focus nav + WIP banners", () => {
     expect(errors).toEqual([]);
   });
 });
+
+test.describe("smoke — slot-tree keyboard nav", () => {
+  test("ArrowDown moves focus to the next slot summary", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/builder", { waitUntil: "networkidle" });
+
+    // Find and wait for the weapon <select> (same pattern as builder-interaction
+    // smoke tests — filter by the "Select weapon" placeholder option).
+    const weaponPicker = page
+      .locator("select")
+      .filter({ has: page.locator('option:has-text("Select weapon")') })
+      .first();
+    await expect(weaponPicker).toBeVisible({ timeout: 15_000 });
+    await expect
+      .poll(async () => (await weaponPicker.locator("option").count()) > 1, {
+        timeout: 15_000,
+      })
+      .toBe(true);
+
+    // Select the first real weapon (index 0 is the placeholder).
+    const firstWeaponValue = await weaponPicker.locator("option").nth(1).getAttribute("value");
+    expect(firstWeaponValue, "expected at least one weapon option").toBeTruthy();
+    await weaponPicker.selectOption(firstWeaponValue);
+
+    // Wait for the slot tree to render — at least two slot summaries must appear
+    // so ArrowDown has somewhere to go.
+    const summaries = page.locator("details[data-slot-path] > summary");
+    await expect(summaries.first()).toBeVisible({ timeout: 20_000 });
+    await expect.poll(async () => await summaries.count(), { timeout: 10_000 }).toBeGreaterThan(1);
+
+    // Click the first summary to open its <details> panel. This makes the item
+    // buttons inside the panel visible and focusable, which is required for
+    // the keyboard handler to move focus to the next interactive target. With
+    // the panel closed, the buttons are hidden and focus() on them is a no-op.
+    await summaries.first().click();
+    // Wait for the panel to open (the div inside <details> becomes visible).
+    await expect(page.locator("details[data-slot-path]").first().locator("> div")).toBeVisible({
+      timeout: 5_000,
+    });
+
+    // Re-focus the summary (clicking it may have shifted focus to a button inside).
+    await summaries.first().focus();
+
+    // Use locator.press() to fire ArrowDown directly on the first summary.
+    // The keydown bubbles up to the <ul>'s onKeyDown handler which moves focus
+    // to the next target in DOM order (the first visible button inside the open
+    // panel, or the next summary if the panel is empty).
+    await summaries.first().press("ArrowDown");
+
+    // The active element should no longer be the first summary — the keyboard
+    // handler moves focus to the next target in the tree.
+    const activeIsFirst = await page.evaluate(() => {
+      const summaryEls = Array.from(
+        document.querySelectorAll<HTMLElement>("details[data-slot-path] > summary"),
+      );
+      const first = summaryEls[0];
+      return document.activeElement === first;
+    });
+    expect(activeIsFirst, "ArrowDown should move focus away from the first slot summary").toBe(
+      false,
+    );
+
+    expect(errors, `Console errors on slot-tree keyboard nav:\n${errors.join("\n")}`).toEqual([]);
+  });
+});

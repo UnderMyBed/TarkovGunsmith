@@ -84,6 +84,7 @@ function slot(nameId: string, itemIds: readonly string[]) {
     required: false,
     allowedItemIds: new Set(itemIds),
     allowedItems: itemIds.map((id) => ({ id, name: id, children: [] })),
+    allowedCategories: [],
     children: [],
   };
 }
