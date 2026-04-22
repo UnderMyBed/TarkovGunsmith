@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.12.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.11.0...v1.12.0) (2026-04-22)
+
+
+### Features
+
+* **builder:** M3.5 Arc 1 — slot-tree categories, craft/barter pills, sticky headers, keyboard nav ([#102](https://github.com/UnderMyBed/TarkovGunsmith/issues/102)) ([790c2ee](https://github.com/UnderMyBed/TarkovGunsmith/commit/790c2eea6c43b7f2d67b3cd174ec9b103a964424))
+* **builder:** M3.5 Arc 4 — weapon silhouettes ([#104](https://github.com/UnderMyBed/TarkovGunsmith/issues/104)) ([8fdd1d4](https://github.com/UnderMyBed/TarkovGunsmith/commit/8fdd1d477820352659883d208943a840c6b294b2))
+* **ops:** M3.5 Arc 0 — local dev tooling + runbook ([#100](https://github.com/UnderMyBed/TarkovGunsmith/issues/100)) ([e1c1f75](https://github.com/UnderMyBed/TarkovGunsmith/commit/e1c1f75b9e38ce6218ff95a19633153415992ba2))
+* **web:** M3.5 Arc 2 — Dialog + Skeleton + keyboard overlay + favicon ([#103](https://github.com/UnderMyBed/TarkovGunsmith/issues/103)) ([a4b2a21](https://github.com/UnderMyBed/TarkovGunsmith/commit/a4b2a214aa6ae77387d426705ce5efbda6a7199c))
+
+
+### Documentation
+
+* Builder-focus nav + WIP banners — spec + plan (rebased) ([#98](https://github.com/UnderMyBed/TarkovGunsmith/issues/98)) ([5d25fe1](https://github.com/UnderMyBed/TarkovGunsmith/commit/5d25fe1cb23d0337729643bc20d4fe9ac8828c36))
+
 ## [1.11.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.10.0...v1.11.0) (2026-04-22)
 
 
