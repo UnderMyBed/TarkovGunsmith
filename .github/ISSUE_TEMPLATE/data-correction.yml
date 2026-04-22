@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ⚠️ **Important:** Most game data here comes from [`api.tarkov.dev`](https://api.tarkov.dev), maintained by [the-hideout](https://github.com/the-hideout). If the data is wrong there, it's wrong here — **please report data issues upstream** at [the-hideout/tarkov-data](https://github.com/the-hideout/tarkov-data) or [tarkov-dev/tarkov-dev](https://github.com/tarkov-dev/tarkov-dev).
+        ⚠️ **Important:** Most game data here comes from [`api.tarkov.dev`](https://api.tarkov.dev), maintained by [the-hideout](https://github.com/the-hideout). If the data is wrong there, it's wrong here — **please report data issues upstream** at [`the-hideout/tarkov-api`](https://github.com/the-hideout/tarkov-api) (the GraphQL API) or [`the-hideout/tarkov-dev`](https://github.com/the-hideout/tarkov-dev) (the tarkov.dev website).
 
         This issue type is for:
 
