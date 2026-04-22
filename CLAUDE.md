@@ -1,3 +1,7 @@
+> **For external contributors:** This file is the maintainer handbook for working on this repo with Claude. You are **not required** to adopt the spec → plan → TDD → review workflow described here to submit a PR. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor bar and [`docs/ai-workflow/`](./docs/ai-workflow/) for methodology detail.
+
+---
+
 # TarkovGunsmith
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
