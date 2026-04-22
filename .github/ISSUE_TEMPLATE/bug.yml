@@ -1,0 +1,73 @@
+name: Bug report
+description: Something is broken, wrong, or behaving unexpectedly.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: One or two sentences. What did you see?
+      placeholder: "I opened /builder, picked an M4A1, and the recoil value didn't update when I added a stock."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, minimal, exact.
+      placeholder: |
+        1. Go to /builder
+        2. Pick M4A1
+        3. Add Magpul CTR stock
+        4. Look at the recoil stat
+    validations:
+      required: true
+
+  - type: input
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "Recoil should drop."
+    validations:
+      required: true
+
+  - type: input
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: "Recoil stayed the same."
+    validations:
+      required: true
+
+  - type: input
+    id: share_url
+    attributes:
+      label: Share URL (if the bug involves a specific build)
+      description: Paste the /builder/:id or similar URL.
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome / Chromium / Edge
+        - Firefox
+        - Safari
+        - Mobile browser
+        - Other / not browser-specific
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "Windows 11, macOS 14, Arch Linux, …"
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Console errors, screenshots, suspicions about the cause, etc.

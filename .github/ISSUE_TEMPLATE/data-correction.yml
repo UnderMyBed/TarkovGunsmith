@@ -1,0 +1,54 @@
+name: Game data correction
+description: A weapon / ammo / armor / trader stat is wrong or missing.
+title: "data: "
+labels: ["data", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **Important:** Most game data here comes from [`api.tarkov.dev`](https://api.tarkov.dev), maintained by [the-hideout](https://github.com/the-hideout). If the data is wrong there, it's wrong here — **please report data issues upstream** at [the-hideout/tarkov-data](https://github.com/the-hideout/tarkov-data) or [tarkov-dev/tarkov-dev](https://github.com/tarkov-dev/tarkov-dev).
+
+        This issue type is for:
+
+        - Data that's correct upstream but displayed wrong here (our bug)
+        - Ballistics math results that don't match expected behavior (our bug)
+        - Data that we generate or derive ourselves (mod-compatibility rules, slot trees)
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of data is wrong?
+      options:
+        - Weapon stat
+        - Ammo stat
+        - Armor stat
+        - Trader unlock / barter / craft
+        - Mod compatibility (slot tree)
+        - Ballistics calculation result
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: input
+    id: item
+    attributes:
+      label: Which item?
+      placeholder: "M4A1 / 5.56x45 M995 / 6B43 / …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What's wrong?
+      placeholder: "Penetration value shows 45, should be 53 per the in-game tooltip."
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Source of the correction
+      description: Screenshot, wiki link, patch notes, tarkov.dev link.
+    validations:
+      required: true
