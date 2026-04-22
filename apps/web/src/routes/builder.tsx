@@ -282,6 +282,7 @@ export function BuilderPage({
         currentSpec={spec}
         stockSpec={stockSpec}
         weaponName={selectedWeapon?.shortName ?? selectedWeapon?.name ?? null}
+        weaponId={weaponId || null}
         modCount={Object.keys(attachments).length}
         sharedId={shareUrl?.split("/").pop() ?? null}
         onCompare={selectedWeapon ? () => setCompareOpen(true) : undefined}

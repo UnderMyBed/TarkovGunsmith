@@ -130,6 +130,13 @@ test.describe("smoke — builder interaction", () => {
       page.getByText(/couldn.?t load slot tree|failed to load|graphql error/i),
     ).toHaveCount(0);
 
+    // Arc 4: weapon silhouette backdrop should render (CDN image on md:+).
+    // Set viewport wide enough that the md: breakpoint applies (default Tailwind
+    // md: is 768px).
+    await page.setViewportSize({ width: 1200, height: 900 });
+    const silhouette = page.locator("img[src*='-base-image.webp']");
+    await expect(silhouette.first()).toBeVisible({ timeout: 5_000 });
+
     expect(
       errors,
       `Console errors on /builder after selecting a weapon:\n${errors.join("\n")}`,
