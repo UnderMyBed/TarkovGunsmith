@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.11.0...v1.11.1) (2026-04-22)
+
+
+### Documentation
+
+* Builder-focus nav + WIP banners — spec + plan (rebased) ([#98](https://github.com/UnderMyBed/TarkovGunsmith/issues/98)) ([5d25fe1](https://github.com/UnderMyBed/TarkovGunsmith/commit/5d25fe1cb23d0337729643bc20d4fe9ac8828c36))
+
 ## [1.11.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.10.0...v1.11.0) (2026-04-22)
 
 
