@@ -82,6 +82,44 @@ function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ─── optimizer promo strip ─── */}
+      <section
+        aria-label="Optimizer — new feature"
+        className="border border-[var(--color-primary)] bg-[rgba(245,158,11,0.06)] grid gap-6 px-6 py-5 items-center sm:grid-cols-[auto_1fr_auto]"
+      >
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-primary)]">
+            ◇ NEW · OPTIMIZER
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+            BRANCH-AND-BOUND · EXACT
+          </span>
+        </div>
+        <div>
+          <div className="font-display text-[20px] leading-tight text-[var(--color-foreground)]">
+            Set a budget. Pick an objective. The solver picks the mods.
+          </div>
+          <div className="mt-1 font-mono text-[12px] leading-[1.5] text-[var(--color-muted-foreground)]">
+            Pin any slot to keep fixed. Respects your trader LLs and flea status. Pure-TS, runs
+            client-side.
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Link
+            to="/builder"
+            className="inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-mono text-[11px] font-semibold tracking-[0.14em] uppercase h-8 px-3 hover:bg-[var(--color-amber-deep)] hover:border-[var(--color-amber-deep)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Try Optimizer
+          </Link>
+          <Link
+            to="/builder"
+            className="inline-flex items-center gap-2 border border-transparent text-[var(--color-muted-foreground)] font-mono text-[11px] tracking-[0.14em] uppercase h-8 px-3 hover:text-[var(--color-primary)] transition-colors"
+          >
+            Learn More
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
