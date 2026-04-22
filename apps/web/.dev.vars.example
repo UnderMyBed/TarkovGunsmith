@@ -1,0 +1,4 @@
+# Read by `wrangler pages dev` for apps/web Pages Functions. Without this,
+# functions/api/builds/[[path]].ts returns 500 (same root cause as the
+# outstanding prod-secret gap documented in docs/operations/local-development.md).
+BUILDS_API_URL=http://localhost:8788

@@ -1,0 +1,9 @@
+{
+  "version": 4,
+  "weaponId": "5447a9cd4bdc2dbd208b4567",
+  "attachments": {},
+  "orphaned": [],
+  "createdAt": "2026-04-21T00:00:00.000Z",
+  "name": "M4A1 — seed build",
+  "description": "Local dev fixture. Regenerate via `pnpm seed:build`."
+}

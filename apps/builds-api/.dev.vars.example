@@ -1,0 +1,5 @@
+# Local-only dev fixture hooks. Copy to .dev.vars (gitignored) and fill in
+# to exercise the OG card Pages Functions in local dev. Leave blank in
+# production — OG_FIXTURE_* is never set in prod wrangler.jsonc.
+OG_FIXTURE_BUILD_ID=
+OG_FIXTURE_PAIR_ID=
