@@ -4,6 +4,7 @@ import { useAmmoList, useArmorList } from "@tarkov/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Pill } from "@tarkov/ui";
 import { adaptAmmo, adaptArmor } from "../features/data-adapters/adapters.js";
 import { rankAmmos } from "../features/aec/rankAmmos.js";
+import { WipBanner } from "../features/nav/wip-banner.js";
 
 export const Route = createFileRoute("/aec")({
   component: AecPage,
@@ -42,6 +43,7 @@ function AecPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
         <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
           <span>INVERSE · RANKING</span>

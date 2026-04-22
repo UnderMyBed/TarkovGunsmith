@@ -403,3 +403,27 @@ test.describe("smoke — TarkovTracker import", () => {
     expect(errors, `Console errors on TarkovTracker connect:\n${errors.join("\n")}`).toEqual([]);
   });
 });
+
+test.describe("smoke — Builder-focus nav + WIP banners", () => {
+  test("Calc dropdown opens and navigates to /sim", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/", { waitUntil: "networkidle" });
+
+    await page.getByRole("button", { name: "Calc", exact: true }).click();
+
+    const simLink = page.getByRole("menuitem", { name: "Simulator" });
+    await expect(simLink).toBeVisible({ timeout: 5_000 });
+
+    await simLink.click();
+    await expect(page).toHaveURL(/\/sim$/);
+
+    expect(errors, `Console errors on dropdown navigation:\n${errors.join("\n")}`).toEqual([]);
+  });
+
+  test("/calc shows the WIP banner", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/calc", { waitUntil: "networkidle" });
+    await expect(page.getByText(/Subject to change or removal/)).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+});
