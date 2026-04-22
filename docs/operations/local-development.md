@@ -31,7 +31,9 @@ Open the printed share URL (`http://localhost:5173/builder/<id>`) to confirm the
 | `apps/builds-api`          | `8788`           | `pnpm dev`                            | KV-backed build save/load.                                                                                                                       |
 | `apps/web` Pages Functions | `8789` (default) | `pnpm --filter @tarkov/web pages:dev` | Power-user escape hatch — needed to exercise `/og/build/:id`, `/og/pair/:pairId`, and `/functions/api/builds/*` locally. Not part of `pnpm dev`. |
 
-Ports are pinned in each app's `wrangler.jsonc` (`dev.port`) + `apps/web/vite.config.ts`. If you hit "port already in use," see "Troubleshooting" below.
+Both Workers also open a devtools inspector: `data-proxy` on `9229`, `builds-api` on `9230` — pinned so the two processes don't collide on the shared default.
+
+Ports are pinned in each app's `wrangler.jsonc` (`dev.port` + `dev.inspector_port`) and in `apps/web/vite.config.ts`. If you hit "port already in use," see "Troubleshooting" below.
 
 ## Secrets & env vars
 

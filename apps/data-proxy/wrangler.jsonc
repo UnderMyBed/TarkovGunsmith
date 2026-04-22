@@ -5,7 +5,7 @@
   "compatibility_date": "2024-09-23",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  "dev": { "port": 8787 },
+  "dev": { "port": 8787, "inspector_port": 9229 },
   "vars": {
     "UPSTREAM_GRAPHQL_URL": "https://api.tarkov.dev/graphql",
   },
