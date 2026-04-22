@@ -2,7 +2,13 @@ import { z } from "zod";
 import type { GraphQLClient } from "../client.js";
 import type { SlotNodeForMigration } from "../build-migrations.js";
 
-/** Max tree depth we fetch in a single GraphQL request. */
+/**
+ * Max tree depth we fetch in a single GraphQL request.
+ *
+ * Held at 3 pending a query-redesign: depth 4 returns ~7.5 MB for the M4A1
+ * (depth 5 returns ~14.6 MB). A higher ceiling needs pagination or field
+ * pruning before it's viable. Tracked as an Arc 1 follow-up.
+ */
 const RECURSION_DEPTH = 3;
 
 /**
@@ -35,6 +41,11 @@ function buildSlotSelection(depth: number): string {
       allowedItems {
         id
         name${propertiesBlock}
+      }
+      allowedCategories {
+        id
+        name
+        normalizedName
       }
     }`;
 }
@@ -69,10 +80,17 @@ const WeaponTreeEnvelope = z.object({
 
 // ---------- Normalized output types ----------
 
+export interface SlotCategory {
+  readonly id: string;
+  readonly name: string;
+  readonly normalizedName: string;
+}
+
 export interface SlotNode extends SlotNodeForMigration {
   readonly name: string;
   readonly required: boolean;
   readonly allowedItems: readonly AllowedItem[];
+  readonly allowedCategories: readonly SlotCategory[];
   readonly children: readonly SlotNode[];
 }
 
@@ -123,7 +141,10 @@ interface RawSlotShape {
   nameId: string;
   name: string;
   required: boolean;
-  filters: { allowedItems: RawItemShape[] } | null;
+  filters: {
+    allowedItems: RawItemShape[];
+    allowedCategories?: Array<SlotCategory | null> | null;
+  } | null;
 }
 
 export function normalizeSlots(slots: readonly unknown[], parentPath: string): readonly SlotNode[] {
@@ -140,12 +161,16 @@ export function normalizeSlots(slots: readonly unknown[], parentPath: string): r
         path,
       ),
     }));
+    const categories: readonly SlotCategory[] = (s.filters?.allowedCategories ?? []).filter(
+      (c): c is SlotCategory => c != null,
+    );
     return {
       nameId: s.nameId,
       name: s.name,
       path,
       required: s.required,
       allowedItems: items,
+      allowedCategories: categories,
       allowedItemIds: new Set(items.map((i) => i.id)),
       children: items.flatMap((i) => i.children),
     };

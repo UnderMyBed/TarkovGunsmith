@@ -43,11 +43,16 @@ const responseFixture = {
                               properties: { __typename: "ItemPropertiesWeaponMod", slots: [] },
                             },
                           ],
+                          allowedCategories: [],
                         },
                       },
                     ],
                   },
                 },
+              ],
+              allowedCategories: [
+                { id: "cat-scope", name: "Scope", normalizedName: "scope" },
+                { id: "cat-sight", name: "Iron Sight", normalizedName: "iron-sight" },
               ],
             },
           },
@@ -57,6 +62,19 @@ const responseFixture = {
             name: "Muzzle",
             required: false,
             filters: null,
+          },
+          {
+            id: "slot-rail",
+            nameId: "mod_rail",
+            name: "Rail",
+            required: false,
+            filters: {
+              allowedItems: [],
+              allowedCategories: [
+                { id: "cat-rail", name: "Rail accessory", normalizedName: "rail-accessory" },
+                null,
+              ],
+            },
           },
         ],
       },
@@ -78,7 +96,7 @@ describe("fetchWeaponTree", () => {
     const tree = await fetchWeaponTree(client, "w1");
     expect(tree.weaponId).toBe("w1");
     expect(tree.weaponName).toBe("Test Weapon");
-    expect(tree.slots).toHaveLength(2);
+    expect(tree.slots).toHaveLength(3);
 
     const scope = tree.slots[0]!;
     expect(scope.nameId).toBe("mod_scope");
@@ -152,6 +170,28 @@ describe("normalizeSlots", () => {
     const scopeB = normalized[0]!.allowedItems[1]!;
     expect(scopeB.children[0]!.path).toBe("mod_scope/mod_mount");
   });
+
+  it("populates allowedCategories on slots that have them", () => {
+    const result = normalizeSlots(responseFixture.data.item.properties.slots as unknown[], "");
+    const scope = result.find((s) => s.nameId === "mod_scope");
+    expect(scope?.allowedCategories).toEqual([
+      { id: "cat-scope", name: "Scope", normalizedName: "scope" },
+      { id: "cat-sight", name: "Iron Sight", normalizedName: "iron-sight" },
+    ]);
+  });
+
+  it("drops null entries from allowedCategories (upstream tolerance)", () => {
+    const result = normalizeSlots(responseFixture.data.item.properties.slots as unknown[], "");
+    const rail = result.find((s) => s.nameId === "mod_rail");
+    expect(rail?.allowedCategories).toHaveLength(1);
+    expect(rail?.allowedCategories[0]?.normalizedName).toBe("rail-accessory");
+  });
+
+  it("returns empty allowedCategories when filters are null", () => {
+    const result = normalizeSlots(responseFixture.data.item.properties.slots as unknown[], "");
+    const muzzle = result.find((s) => s.nameId === "mod_muzzle");
+    expect(muzzle?.allowedCategories).toEqual([]);
+  });
 });
 
 describe("WEAPON_TREE_QUERY", () => {
@@ -168,6 +208,14 @@ describe("WEAPON_TREE_QUERY", () => {
     // field or fragment. The old buildSlotSelection(0) === "" path violated
     // this. Guard explicitly so the regression message is obvious.
     expect(WEAPON_TREE_QUERY).not.toMatch(/\{\s*\}/);
+  });
+
+  it("WEAPON_TREE_QUERY parses as valid GraphQL (recursive depth guard)", () => {
+    expect(() => parseGraphQL(WEAPON_TREE_QUERY)).not.toThrow();
+  });
+
+  it("WEAPON_TREE_QUERY queries allowedCategories", () => {
+    expect(WEAPON_TREE_QUERY).toMatch(/allowedCategories\s*\{[^}]*normalizedName/);
   });
 });
 
