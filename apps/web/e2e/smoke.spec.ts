@@ -428,6 +428,31 @@ test.describe("smoke — Builder-focus nav + WIP banners", () => {
   });
 });
 
+test.describe("smoke — keyboard shortcut overlay", () => {
+  test("? opens the overlay, Esc closes it", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/", { waitUntil: "networkidle" });
+
+    // The overlay is not visible on load.
+    await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeHidden();
+
+    // Press `?` (Shift+/).
+    await page.keyboard.press("Shift+?");
+
+    // Overlay appears with the shortcut list.
+    await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible({
+      timeout: 3_000,
+    });
+    await expect(page.getByText("Go to /builder")).toBeVisible();
+
+    // Escape closes it.
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeHidden();
+
+    expect(errors, `Console errors on shortcut overlay:\n${errors.join("\n")}`).toEqual([]);
+  });
+});
+
 test.describe("smoke — slot-tree keyboard nav", () => {
   test("ArrowDown moves focus to the next slot summary", async ({ page }) => {
     const { errors } = captureConsoleErrors(page);
