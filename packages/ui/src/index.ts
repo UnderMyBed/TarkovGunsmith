@@ -31,3 +31,5 @@ export type {
   DialogTitleProps,
   DialogBodyProps,
 } from "./components/dialog.js";
+export { Skeleton } from "./components/skeleton.js";
+export type { SkeletonProps } from "./components/skeleton.js";
