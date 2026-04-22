@@ -13,7 +13,7 @@ import {
   type ItemAvailability,
 } from "@tarkov/data";
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
-import { Card, CardContent, SectionTitle } from "@tarkov/ui";
+import { Card, CardContent, SectionTitle, WeaponSilhouette } from "@tarkov/ui";
 import { adaptMod, adaptWeapon } from "../../data-adapters/adapters.js";
 import { SlotTree } from "../slot-tree.js";
 import { OrphanedBanner } from "../orphaned-banner.js";
@@ -109,78 +109,92 @@ export function CompareSide({
   const loadError = weapons.error ?? mods.error;
 
   return (
-    <Card variant="bracket">
-      <CardContent className="flex flex-col gap-4 p-5">
-        <SectionTitle
-          index={sectionIndex}
-          title={`Build ${label}`}
-          meta={build ? `${Object.keys(build.attachments).length} attached` : "empty"}
-        />
-
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor={`compare-weapon-${label}`}
-            className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]"
-          >
-            Weapon
-          </label>
-          <select
-            id={`compare-weapon-${label}`}
-            className="h-9 w-full rounded-[var(--radius)] border bg-[var(--color-input)] px-3 text-sm"
-            value={build?.weaponId ?? ""}
-            onChange={(e) => handleWeaponChange(e.target.value)}
-            disabled={isLoading || weaponOptions.length === 0}
-          >
-            <option value="">{isLoading ? "Loading…" : "Select weapon…"}</option>
-            {weaponOptions.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
+    <Card variant="bracket" className="relative overflow-hidden">
+      {build?.weaponId && (
+        <div
+          aria-hidden
+          className="hidden md:block absolute inset-y-0 right-0 w-1/2 pointer-events-none"
+        >
+          <WeaponSilhouette
+            itemId={build.weaponId}
+            alt=""
+            className="h-full w-full object-contain object-right"
+          />
         </div>
+      )}
+      <div className="relative z-10">
+        <CardContent className="flex flex-col gap-4 p-5">
+          <SectionTitle
+            index={sectionIndex}
+            title={`Build ${label}`}
+            meta={build ? `${Object.keys(build.attachments).length} attached` : "empty"}
+          />
 
-        {loadError && (
-          <p className="text-sm text-[var(--color-destructive)]">
-            Failed to load data: {loadError.message}
-          </p>
-        )}
-
-        {!build && (
-          <div className="py-6 text-center text-sm text-[var(--color-muted-foreground)]">
-            No build selected.
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor={`compare-weapon-${label}`}
+              className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]"
+            >
+              Weapon
+            </label>
+            <select
+              id={`compare-weapon-${label}`}
+              className="h-9 w-full rounded-[var(--radius)] border bg-[var(--color-input)] px-3 text-sm"
+              value={build?.weaponId ?? ""}
+              onChange={(e) => handleWeaponChange(e.target.value)}
+              disabled={isLoading || weaponOptions.length === 0}
+            >
+              <option value="">{isLoading ? "Loading…" : "Select weapon…"}</option>
+              {weaponOptions.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
 
-        {build && (
-          <>
-            <OrphanedBanner
-              orphanedIds={build.orphaned}
-              names={modNamesById}
-              onDismiss={handleDismissOrphans}
-            />
-            {tree.isLoading && (
-              <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
-                Loading slot tree…
-              </p>
-            )}
-            {tree.error && (
-              <p className="text-sm text-[var(--color-destructive)]">
-                Couldn&apos;t load slot tree: {tree.error.message}
-              </p>
-            )}
-            {tree.data && (
-              <SlotTree
-                tree={tree.data}
-                attachments={build.attachments}
-                onAttach={handleAttach}
-                getAvailability={getAvailability}
-                diff={diff ?? undefined}
+          {loadError && (
+            <p className="text-sm text-[var(--color-destructive)]">
+              Failed to load data: {loadError.message}
+            </p>
+          )}
+
+          {!build && (
+            <div className="py-6 text-center text-sm text-[var(--color-muted-foreground)]">
+              No build selected.
+            </div>
+          )}
+
+          {build && (
+            <>
+              <OrphanedBanner
+                orphanedIds={build.orphaned}
+                names={modNamesById}
+                onDismiss={handleDismissOrphans}
               />
-            )}
-          </>
-        )}
-      </CardContent>
+              {tree.isLoading && (
+                <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+                  Loading slot tree…
+                </p>
+              )}
+              {tree.error && (
+                <p className="text-sm text-[var(--color-destructive)]">
+                  Couldn&apos;t load slot tree: {tree.error.message}
+                </p>
+              )}
+              {tree.data && (
+                <SlotTree
+                  tree={tree.data}
+                  attachments={build.attachments}
+                  onAttach={handleAttach}
+                  getAvailability={getAvailability}
+                  diff={diff ?? undefined}
+                />
+              )}
+            </>
+          )}
+        </CardContent>
+      </div>
     </Card>
   );
 }
