@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 import type { VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn.js";
 
-const cardVariants = cva(
+export const cardVariants = cva(
   "relative rounded-[var(--radius)] border bg-[var(--color-card)] text-[var(--color-card-foreground)]",
   {
     variants: {
@@ -12,6 +12,8 @@ const cardVariants = cva(
         plain: "",
         bracket:
           "before:content-[''] before:absolute before:top-[-1px] before:left-[-1px] before:w-3.5 before:h-3.5 before:border-[2px] before:border-b-0 before:border-r-0 before:border-[var(--color-primary)] after:content-[''] after:absolute after:bottom-[-1px] after:right-[-1px] after:w-3.5 after:h-3.5 after:border-[2px] after:border-t-0 after:border-l-0 after:border-[var(--color-primary)]",
+        "bracket-olive":
+          "before:content-[''] before:absolute before:top-[-1px] before:left-[-1px] before:w-3.5 before:h-3.5 before:border-[2px] before:border-b-0 before:border-r-0 before:border-[var(--color-olive)] after:content-[''] after:absolute after:bottom-[-1px] after:right-[-1px] after:w-3.5 after:h-3.5 after:border-[2px] after:border-t-0 after:border-l-0 after:border-[var(--color-olive)]",
       },
     },
     defaultVariants: { variant: "plain" },
