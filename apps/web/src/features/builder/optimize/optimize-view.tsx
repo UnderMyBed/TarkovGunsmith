@@ -172,12 +172,7 @@ export function OptimizeView({
             <span className="font-display text-base tracking-wide">SOLVER</span>
             <Pill tone="reliable">BRANCH-AND-BOUND</Pill>
           </div>
-          <OptimizeConstraintsForm
-            state={state}
-            dispatch={dispatch}
-            slotTree={slotTree}
-            onRun={handleRun}
-          />
+          <OptimizeConstraintsForm state={state} dispatch={dispatch} slotTree={slotTree} />
           <ProfileReadout profile={profile} sync={sync} onEditProfile={onEditProfile} />
           <Button onClick={handleRun} disabled={optimizer.state === "running"}>
             RE-RUN OPTIMIZATION

@@ -115,8 +115,7 @@ describe("OptimizeView", () => {
         onEditProfile={vi.fn()}
       />,
     );
-    // Two buttons match /Run optimization/i — pick the form's primary one (index 0).
-    fireEvent.click(screen.getAllByRole("button", { name: /Run optimization/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }));
     // The result state is set on the next microtask; wait one tick.
     await new Promise((r) => queueMicrotask(() => r(undefined)));
     expect(await screen.findByTestId("triptych-optimized-ergo")).toHaveTextContent("58");
@@ -146,8 +145,7 @@ describe("OptimizeView", () => {
         onEditProfile={vi.fn()}
       />,
     );
-    // Two buttons match /Run optimization/i — pick the form's primary one (index 0).
-    fireEvent.click(screen.getAllByRole("button", { name: /Run optimization/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }));
     await new Promise((r) => queueMicrotask(() => r(undefined)));
     // Proposal changes both muzzle and handguard (m-new / h-new vs m-old / h-old).
     // Uncheck handguard row — expect merged build to keep h-old.

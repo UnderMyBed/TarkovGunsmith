@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import type { Objective } from "@tarkov/optimizer";
 import type { WeaponTree } from "@tarkov/data";
-import { Button, Input, SectionTitle } from "@tarkov/ui";
+import { Input, SectionTitle } from "@tarkov/ui";
 import type { ConstraintsAction, ConstraintsState } from "./optimize-constraints-reducer.js";
 
 const OBJECTIVES: readonly { value: Objective; label: string }[] = [
@@ -15,10 +15,9 @@ interface Props {
   state: ConstraintsState;
   dispatch: (action: ConstraintsAction) => void;
   slotTree: WeaponTree;
-  onRun: () => void;
 }
 
-export function OptimizeConstraintsForm({ state, dispatch, slotTree, onRun }: Props): ReactElement {
+export function OptimizeConstraintsForm({ state, dispatch, slotTree }: Props): ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -77,10 +76,6 @@ export function OptimizeConstraintsForm({ state, dispatch, slotTree, onRun }: Pr
             </li>
           ))}
         </ul>
-      </div>
-
-      <div className="flex justify-end">
-        <Button onClick={onRun}>Run optimization</Button>
       </div>
     </div>
   );
