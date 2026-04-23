@@ -50,7 +50,7 @@ function computeScoreDelta(objective: string, current: WeaponSpec, proposed: Wea
     case "min-recoil":
       return proposed.verticalRecoil - current.verticalRecoil;
     case "max-ergonomics":
-      return -(proposed.ergonomics - current.ergonomics);
+      return proposed.ergonomics - current.ergonomics;
     case "min-weight":
       return proposed.weight - current.weight;
     case "max-accuracy":
@@ -155,8 +155,8 @@ export function OptimizeView({
         <button
           type="button"
           onClick={onExit}
-          className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)]"
           aria-label="Back to builder editor"
+          className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)]"
         >
           ← EDITOR
         </button>

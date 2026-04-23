@@ -153,4 +153,16 @@ describe("slotDiff", () => {
       priceDelta: 12_000, // 22_000 - 10_000
     });
   });
+
+  it("appends fallback rows for slot paths outside the tree, after tree-ordered rows", () => {
+    const rows = slotDiff(
+      { muzzle: "m-old", "tac-device": "t-old" },
+      { muzzle: "m-new", handguard: "h-new", "tac-device": "t-new" },
+      slotTree,
+      modList,
+    );
+    expect(rows.map((r) => r.slotId)).toEqual(["muzzle", "handguard", "tac-device"]);
+    // Fallback rows get an uppercased slotLabel since they aren't in the tree.
+    expect(rows[2]).toMatchObject({ slotId: "tac-device", slotLabel: "TAC-DEVICE" });
+  });
 });
