@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.13.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.12.0...v1.13.0) (2026-04-23)
+
+
+### Features
+
+* **builder:** Arc 2 — optimizer-first diff view ([#109](https://github.com/UnderMyBed/TarkovGunsmith/issues/109)) ([4f62a07](https://github.com/UnderMyBed/TarkovGunsmith/commit/4f62a07d39f61d7efe478a3121aeba633f2b52a5))
+* **web:** landing Field Ledger v2 — promo strip + feature grid ([#108](https://github.com/UnderMyBed/TarkovGunsmith/issues/108)) ([4ed5a17](https://github.com/UnderMyBed/TarkovGunsmith/commit/4ed5a1753945fc302b85e937afeca33c3c5f0ad4))
+
+
+### Documentation
+
+* **repo:** prep repo for public visibility ([#105](https://github.com/UnderMyBed/TarkovGunsmith/issues/105)) ([ce96226](https://github.com/UnderMyBed/TarkovGunsmith/commit/ce96226d4bf57950b8eae1616665083af91fa12a))
+
 ## [1.12.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.11.0...v1.12.0) (2026-04-22)
 
 
