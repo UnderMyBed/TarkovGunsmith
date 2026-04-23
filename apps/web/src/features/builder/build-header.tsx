@@ -80,8 +80,13 @@ export function BuildHeader({
               </Button>
             )}
             {onOptimize && (
-              <Button variant="secondary" size="sm" onClick={onOptimize}>
-                Optimize ⚙
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onOptimize}
+                className="font-mono tracking-[0.15em]"
+              >
+                ◇ OPTIMIZE
               </Button>
             )}
             {sharedId && <Stamp tone="amber">SHARED</Stamp>}

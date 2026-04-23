@@ -108,6 +108,7 @@ function HomePage() {
         <div className="flex gap-2">
           <Link
             to="/builder"
+            search={{ view: "optimize" }}
             className="inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-mono text-[11px] font-semibold tracking-[0.14em] uppercase h-8 px-3 hover:bg-[var(--color-amber-deep)] hover:border-[var(--color-amber-deep)] hover:text-[var(--color-foreground)] transition-colors"
           >
             Try Optimizer
