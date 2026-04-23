@@ -38,7 +38,9 @@ function sumPrice(
   let total = 0;
   for (const id of Object.values(attachments)) {
     const m = modList.find((x) => x.id === id);
-    total += m?.price ?? 0;
+    const fleaPrice =
+      (m?.buyFor ?? []).find((b) => b.vendor.__typename === "FleaMarket")?.priceRUB ?? 0;
+    total += fleaPrice;
   }
   return total;
 }

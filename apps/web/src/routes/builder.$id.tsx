@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { z } from "zod";
 import { useLoadBuild, LoadBuildError } from "@tarkov/data";
 import {
   Button,
@@ -11,12 +12,18 @@ import {
 } from "@tarkov/ui";
 import { BuilderPage } from "./builder.js";
 
+const builderIdSearchSchema = z.object({
+  view: z.enum(["editor", "optimize"]).optional(),
+});
+
 export const Route = createFileRoute("/builder/$id")({
   component: LoadedBuilderPage,
+  validateSearch: (s) => builderIdSearchSchema.parse(s),
 });
 
 function LoadedBuilderPage() {
   const { id } = Route.useParams();
+  const { view } = Route.useSearch();
   const query = useLoadBuild(id);
 
   if (query.isLoading) {
@@ -53,6 +60,7 @@ function LoadedBuilderPage() {
   const commonProps = {
     initialWeaponId: build.weaponId,
     notice,
+    view,
   } as const;
 
   if (build.version === 1) {
