@@ -20,16 +20,16 @@ Bring the live `/builder` route in line with the `builder-b` mockup. The `◇ OP
 
 ## Framing decisions (locked during brainstorming)
 
-| Decision                          | Choice                                                                                                                                                                                                                                                     |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route model                       | `?view=optimize` search param on `/builder` and `/builder/$id`. No new route files. Validated via TanStack Router `validateSearch`; default `"editor"`.                                                                                                    |
-| Selection behavior                | Per-row checkboxes, all checked by default. Footer: `ACCEPT ALL` · `ACCEPT SELECTED (N)` · `DISCARD`. `(N)` updates live.                                                                                                                                  |
-| Left-rail PROFILE scope           | Read-only trader-LL grid + timestamp + `RE-IMPORT` button wired to the existing `useTarkovTrackerSync.reSync()` (the hook is lifted out of `ProfileEditor` up to `routes/builder.tsx` and passed to both consumers — see §11) + `EDIT PROFILE ▸` link that clears `?view=optimize` and focuses the `ProfileEditor` in the main builder. No inline edit UI.                  |
-| Idle state                        | `CURRENT` card renders live stats. `OPTIMIZED` and `DELTA` render `—` placeholders at 60% opacity. Diff table shows a single `RUN THE SOLVER TO SEE PROPOSED CHANGES` row. No auto-run on land, no sessionStorage cache.                                   |
-| Fate of `OptimizeDialog`          | Retired entirely. Narrow screens reflow the full-page view; no modal fallback.                                                                                                                                                                             |
-| Component organization            | All new files under existing `apps/web/src/features/builder/optimize/`. Keep `OptimizeConstraintsForm` + reducer + `useOptimizer`; delete `OptimizeDialog` + `OptimizeResultView`; add `optimize-view.tsx`, `optimize-triptych.tsx`, `mod-changes-table.tsx`, `profile-readout.tsx`, `slot-diff.ts`, `build-from-selection.ts`. |
-| New `@tarkov/ui` primitives       | None planned. The `bracket` variant on `Card` already exists; the mockup uses a `bracket-olive` variant on the `OPTIMIZED` card — add the olive corner colour as a prop on the existing bracket class rather than as a new primitive.                       |
-| Branch + PR scope                 | Single branch (`feat/builder-optimizer-diff-view`), single PR. Spec + plan + implementation commits all land together.                                                                                                                                     |
+| Decision                    | Choice                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Route model                 | `?view=optimize` search param on `/builder` and `/builder/$id`. No new route files. Validated via TanStack Router `validateSearch`; default `"editor"`.                                                                                                                                                                                                    |
+| Selection behavior          | Per-row checkboxes, all checked by default. Footer: `ACCEPT ALL` · `ACCEPT SELECTED (N)` · `DISCARD`. `(N)` updates live.                                                                                                                                                                                                                                  |
+| Left-rail PROFILE scope     | Read-only trader-LL grid + timestamp + `RE-IMPORT` button wired to the existing `useTarkovTrackerSync.reSync()` (the hook is lifted out of `ProfileEditor` up to `routes/builder.tsx` and passed to both consumers — see §11) + `EDIT PROFILE ▸` link that clears `?view=optimize` and focuses the `ProfileEditor` in the main builder. No inline edit UI. |
+| Idle state                  | `CURRENT` card renders live stats. `OPTIMIZED` and `DELTA` render `—` placeholders at 60% opacity. Diff table shows a single `RUN THE SOLVER TO SEE PROPOSED CHANGES` row. No auto-run on land, no sessionStorage cache.                                                                                                                                   |
+| Fate of `OptimizeDialog`    | Retired entirely. Narrow screens reflow the full-page view; no modal fallback.                                                                                                                                                                                                                                                                             |
+| Component organization      | All new files under existing `apps/web/src/features/builder/optimize/`. Keep `OptimizeConstraintsForm` + reducer + `useOptimizer`; delete `OptimizeDialog` + `OptimizeResultView`; add `optimize-view.tsx`, `optimize-triptych.tsx`, `mod-changes-table.tsx`, `profile-readout.tsx`, `slot-diff.ts`, `build-from-selection.ts`.                            |
+| New `@tarkov/ui` primitives | None planned. The `bracket` variant on `Card` already exists; the mockup uses a `bracket-olive` variant on the `OPTIMIZED` card — add the olive corner colour as a prop on the existing bracket class rather than as a new primitive.                                                                                                                      |
+| Branch + PR scope           | Single branch (`feat/builder-optimizer-diff-view`), single PR. Spec + plan + implementation commits all land together.                                                                                                                                                                                                                                     |
 
 ## Non-goals
 
@@ -118,6 +118,7 @@ interface OptimizeViewProps {
 Owns `state, dispatch` (constraints reducer), `optimizer` (useOptimizer), `selection: Set<string>` of slot IDs selected for accept (defaults to all changed slot IDs when a result arrives).
 
 Layout: `grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 px-8 py-6`.
+
 - Left cell: bracket card containing `SOLVER` title + `BRANCH-AND-BOUND` pill + `OptimizeConstraintsForm` (re-slotted — no `DialogBody` wrapper) + `ProfileReadout` + `RE-RUN OPTIMIZATION` button.
 - Right cell: stacks `OptimizeTriptych` + `ModChangesTable` with `gap-5`.
 
@@ -129,9 +130,9 @@ Secondary header at top of the view: `← EDITOR` link, `OPTIMIZER` display-font
 interface OptimizeTriptychProps {
   current: WeaponSpec | null;
   optimized: WeaponSpec | null; // null = idle placeholder
-  priceCurrent: number | null;   // ruble totals for the ₽ stat
+  priceCurrent: number | null; // ruble totals for the ₽ stat
   priceOptimized: number | null;
-  running?: boolean;             // render Skeleton shimmers over OPTIMIZED + DELTA
+  running?: boolean; // render Skeleton shimmers over OPTIMIZED + DELTA
 }
 ```
 
@@ -167,7 +168,7 @@ Where `ChangedRow`:
 ```ts
 interface ChangedRow {
   slotId: string;
-  slotLabel: string;          // "MUZZLE", "HANDGUARD"
+  slotLabel: string; // "MUZZLE", "HANDGUARD"
   currentName: string | null; // null = slot was empty
   proposedName: string | null; // null = slot becomes empty ("— (removed)")
   ergoDelta: number;
@@ -201,6 +202,7 @@ interface ProfileReadoutProps {
 Renders `03 · PROFILE` section-title (reuse `SectionTitle`) + timestamp meta + 9-trader LL grid (reuse existing trader names from `@tarkov/types`, format mirrors mockup's 3×3 grid with amber LLs for ≥3 and foreground for <3) + `RE-IMPORT` secondary button (calls `sync.reSync()` directly) + `EDIT PROFILE ▸` ghost link (calls `onEditProfile`).
 
 Timestamp meta:
+
 - If `sync.syncState.state === "synced"`: `TARKOVTRACKER · Nh AGO` (format with a `formatRelativeTime` helper derived from `sync.syncState.lastSyncedAt`).
 - Else (`"disconnected"` / `"syncing"` / `"error"`): meta reads `MANUAL` and `RE-IMPORT` is disabled.
 - If `sync.syncState.state === "syncing"`: `RE-IMPORT` renders a small spinner.
@@ -279,6 +281,7 @@ Update `apps/web/e2e/smoke.spec.ts` — no change to `ROUTES` (the route path is
 Today `profile-editor.tsx` calls `useTarkovTrackerSync({ profile, onChange, tasks })` locally. If `ProfileReadout` also called the hook, the two would own independent sync state (two different `syncState`s, two different tokens-in-memory, two independent `reSync` calls).
 
 Refactor plan:
+
 1. Move the `useTarkovTrackerSync(...)` call from `ProfileEditor` up to `routes/builder.tsx` (next to the existing `profile`/`setProfile` state).
 2. `ProfileEditor` gains a `sync: UseTarkovTrackerSyncResult` prop (replacing the internal hook call). Its `TarkovTrackerConnectPopover` + `TarkovTrackerSyncBanner` usage is unchanged — they already take the sync object as a prop today.
 3. `OptimizeView` also receives the same `sync` prop and forwards it to `ProfileReadout`.
@@ -297,10 +300,10 @@ This is a narrow refactor — one lifted hook call + one new prop on `ProfileEdi
    4. Lift `useTarkovTrackerSync` from `ProfileEditor` up to `routes/builder.tsx`; add `sync` prop on `ProfileEditor` (§9).
    5. `ProfileReadout`.
    6. `OptimizeView` wiring all three, plus `useOptimizer` and constraints reducer.
-   6. `@tarkov/ui` bracket-olive variant (tiny CSS tweak + Storybook-equivalent visual check by `pnpm --filter @tarkov/web dev`).
-   7. `validateSearch` on `/builder` routes + `BuildHeader` button re-wire.
-   8. Delete `optimize-dialog.tsx` + `optimize-result-view.tsx`; update `features/builder/optimize/index.ts` exports.
-   9. Unit tests (`optimize-view.test.tsx`) + Playwright spec (`builder-optimizer.spec.ts`).
+   7. `@tarkov/ui` bracket-olive variant (tiny CSS tweak + Storybook-equivalent visual check by `pnpm --filter @tarkov/web dev`).
+   8. `validateSearch` on `/builder` routes + `BuildHeader` button re-wire.
+   9. Delete `optimize-dialog.tsx` + `optimize-result-view.tsx`; update `features/builder/optimize/index.ts` exports.
+   10. Unit tests (`optimize-view.test.tsx`) + Playwright spec (`builder-optimizer.spec.ts`).
 4. Local gate: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm --filter @tarkov/web test:e2e`.
 5. Visual walkthrough in browser (`pnpm --filter @tarkov/web dev`, seed a build with `pnpm seed:build`, open `/builder/<id>`, click `◇ OPTIMIZE`, exercise all three accept paths + the error path by temporarily throwing from `useOptimizer`).
 6. Open PR, CI green, squash-merge.

@@ -58,6 +58,7 @@ packages/ui/src/
 **Purpose:** Walk current vs proposed attachment maps and emit one `ChangedRow` per differing slot. Stats are looked up from `modList`; sort mirrors the slot tree's flat walk.
 
 **Files:**
+
 - Create: `apps/web/src/features/builder/optimize/slot-diff.ts`
 - Create: `apps/web/src/features/builder/optimize/slot-diff.test.ts`
 
@@ -79,9 +80,27 @@ const slotTree: WeaponTree = {
 } as unknown as WeaponTree;
 
 const modList: readonly ModListItem[] = [
-  { id: "m-old", name: "Old Muzzle", ergonomics: 2, recoilModifier: -5, price: 10_000 } as ModListItem,
-  { id: "m-new", name: "New Muzzle", ergonomics: 3, recoilModifier: -9, price: 22_000 } as ModListItem,
-  { id: "h-new", name: "New Handguard", ergonomics: 4, recoilModifier: -2, price: 8_000 } as ModListItem,
+  {
+    id: "m-old",
+    name: "Old Muzzle",
+    ergonomics: 2,
+    recoilModifier: -5,
+    price: 10_000,
+  } as ModListItem,
+  {
+    id: "m-new",
+    name: "New Muzzle",
+    ergonomics: 3,
+    recoilModifier: -9,
+    price: 22_000,
+  } as ModListItem,
+  {
+    id: "h-new",
+    name: "New Handguard",
+    ergonomics: 4,
+    recoilModifier: -2,
+    price: 8_000,
+  } as ModListItem,
 ];
 
 describe("slotDiff", () => {
@@ -102,7 +121,11 @@ describe("slotDiff", () => {
       slotTree,
       modList,
     );
-    expect(hg).toMatchObject({ slotId: "handguard", currentName: null, proposedName: "New Handguard" });
+    expect(hg).toMatchObject({
+      slotId: "handguard",
+      currentName: null,
+      proposedName: "New Handguard",
+    });
   });
 
   it("marks removed slot with proposedName=null", () => {
@@ -112,7 +135,11 @@ describe("slotDiff", () => {
       slotTree,
       modList,
     );
-    expect(row).toMatchObject({ slotId: "handguard", currentName: "New Handguard", proposedName: null });
+    expect(row).toMatchObject({
+      slotId: "handguard",
+      currentName: "New Handguard",
+      proposedName: null,
+    });
   });
 
   it("excludes unchanged slots", () => {
@@ -127,14 +154,19 @@ describe("slotDiff", () => {
 
   it("falls back to the mod id when the mod is missing from modList", () => {
     const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-missing" }, slotTree, modList);
-    expect(row).toMatchObject({ proposedName: "m-missing", proposedErgo: 0, proposedRecoil: 0, proposedPrice: 0 });
+    expect(row).toMatchObject({
+      proposedName: "m-missing",
+      proposedErgo: 0,
+      proposedRecoil: 0,
+      proposedPrice: 0,
+    });
   });
 
   it("computes per-row deltas (proposed minus current)", () => {
     const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-new" }, slotTree, modList);
     expect(row).toMatchObject<Partial<ChangedRow>>({
-      ergoDelta: 1,      // 3 - 2
-      recoilDelta: -4,   // -9 - -5
+      ergoDelta: 1, // 3 - 2
+      recoilDelta: -4, // -9 - -5
       priceDelta: 12_000, // 22_000 - 10_000
     });
   });
@@ -268,6 +300,7 @@ git commit -m "feat(builder): slotDiff pure helper for optimizer diff view"
 **Purpose:** Given the current build, the solver's proposed build, and a `Set<slotId>` of accepted rows, return a merged `BuildV4` whose attachments are `currentBuild.attachments` overlaid with only the selected slots from `proposedBuild.attachments`.
 
 **Files:**
+
 - Create: `apps/web/src/features/builder/optimize/build-from-selection.ts`
 - Create: `apps/web/src/features/builder/optimize/build-from-selection.test.ts`
 
@@ -304,7 +337,12 @@ describe("buildFromSelection", () => {
   it("applies every proposed change when all slots selected", () => {
     const out = buildFromSelection(current, proposed, new Set(["muzzle", "handguard", "optic"]));
     // stock stays because proposed dropped it; optic is a new addition from the proposal.
-    expect(out.attachments).toEqual({ muzzle: "m-new", handguard: "h-new", stock: "s-keep", optic: "o-new" });
+    expect(out.attachments).toEqual({
+      muzzle: "m-new",
+      handguard: "h-new",
+      stock: "s-keep",
+      optic: "o-new",
+    });
   });
 
   it("applies only the selected slots (partial)", () => {
@@ -386,12 +424,14 @@ git commit -m "feat(builder): buildFromSelection pure helper for partial accept"
 **Purpose:** The `◇ OPTIMIZED` triptych card uses olive corner L-markers instead of amber. Extend the existing `bracket` variant with a sibling `bracket-olive`.
 
 **Files:**
+
 - Modify: `packages/ui/src/components/card.tsx`
 - Modify: `packages/ui/src/styles/index.css`
 
 - [ ] **Step 1: Read current card component and bracket CSS**
 
 Run:
+
 ```bash
 grep -n "variant\|bracket" /mnt/c/Users/Matt/Source/TarkovGunsmith/.worktrees/builder-optimizer-diff-view/packages/ui/src/components/card.tsx
 grep -n "bracket\|::before\|::after" /mnt/c/Users/Matt/Source/TarkovGunsmith/.worktrees/builder-optimizer-diff-view/packages/ui/src/styles/index.css
@@ -426,6 +466,7 @@ Expected: FAIL — type error on `variant="bracket-olive"` OR assertion failure.
 - [ ] **Step 4: Update the Card component**
 
 Edit `packages/ui/src/components/card.tsx`:
+
 - Change the `variant` prop type to `"default" | "bracket" | "bracket-olive"`.
 - In the className switch, map `"bracket-olive"` to `"card-bracket-olive"`.
 
@@ -499,6 +540,7 @@ git commit -m "feat(ui): Card bracket-olive variant for optimizer triptych"
 **Purpose:** Render three bracket cards (`CURRENT BUILD`, `◇ OPTIMIZED`, `DELTA`) with a 2×2 stat grid each: `RECOIL V`, `ERGO`, `WT kg`, `₽`. Idle state renders `—` placeholders at 60% opacity. Running renders `<Skeleton>` shimmers on OPTIMIZED + DELTA.
 
 **Files:**
+
 - Create: `apps/web/src/features/builder/optimize/optimize-triptych.tsx`
 - Create: `apps/web/src/features/builder/optimize/optimize-triptych.test.tsx`
 
@@ -793,6 +835,7 @@ git commit -m "feat(builder): OptimizeTriptych component — CURRENT / OPTIMIZED
 **Purpose:** Render the diff table. Per-row checkboxes drive selection. Header shows N-changed / M-unchanged pills + score-delta. Footer has `ACCEPT ALL` · `ACCEPT SELECTED (N)` · `DISCARD`.
 
 **Files:**
+
 - Create: `apps/web/src/features/builder/optimize/mod-changes-table.tsx`
 - Create: `apps/web/src/features/builder/optimize/mod-changes-table.test.tsx`
 
@@ -1106,6 +1149,7 @@ git commit -m "feat(builder): ModChangesTable with per-row accept-selectable dif
 **Purpose:** Read-only 9-trader LL grid + TarkovTracker timestamp + `RE-IMPORT` + `EDIT PROFILE ▸` link.
 
 **Files:**
+
 - Create: `apps/web/src/features/builder/optimize/profile-readout.tsx`
 - Create: `apps/web/src/features/builder/optimize/profile-readout.test.tsx`
 
@@ -1129,10 +1173,16 @@ const profile: PlayerProfile = {
 function sync(state: "disconnected" | "syncing" | "synced" | "error"): UseTarkovTrackerSyncResult {
   const detail =
     state === "synced"
-      ? { state, lastSyncedAt: Date.now() - 2 * 3600_000, questCount: 50, playerLevel: 20, unmappedCount: 0 }
+      ? {
+          state,
+          lastSyncedAt: Date.now() - 2 * 3600_000,
+          questCount: 50,
+          playerLevel: 20,
+          unmappedCount: 0,
+        }
       : state === "error"
-      ? { state, kind: "network" as const, message: "offline" }
-      : { state };
+        ? { state, kind: "network" as const, message: "offline" }
+        : { state };
   return {
     state,
     detail: detail as never,
@@ -1167,14 +1217,20 @@ describe("ProfileReadout", () => {
   it("calls onEditProfile when EDIT PROFILE link clicked", () => {
     const onEditProfile = vi.fn();
     render(
-      <ProfileReadout profile={profile} sync={sync("disconnected")} onEditProfile={onEditProfile} />,
+      <ProfileReadout
+        profile={profile}
+        sync={sync("disconnected")}
+        onEditProfile={onEditProfile}
+      />,
     );
     fireEvent.click(screen.getByRole("button", { name: /EDIT PROFILE/ }));
     expect(onEditProfile).toHaveBeenCalled();
   });
 
   it("renders all 7 trader rows with level values", () => {
-    render(<ProfileReadout profile={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />);
+    render(
+      <ProfileReadout profile={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />,
+    );
     expect(screen.getByText(/PRAPOR/)).toBeInTheDocument();
     expect(screen.getByText(/JAEGER/)).toBeInTheDocument();
   });
@@ -1254,7 +1310,8 @@ export function ProfileReadout({
       <div className="grid grid-cols-3 gap-1">
         {TRADER_KEYS.map((key) => {
           const level = profile.traders?.[key] ?? 1;
-          const colour = level >= 3 ? "text-[var(--color-primary)]" : "text-[var(--color-foreground)]";
+          const colour =
+            level >= 3 ? "text-[var(--color-primary)]" : "text-[var(--color-foreground)]";
           return (
             <div
               key={key}
@@ -1308,12 +1365,14 @@ git commit -m "feat(builder): ProfileReadout for optimizer solver rail"
 **Purpose:** Move the hook call up so `ProfileEditor` and `ProfileReadout` share one sync state machine.
 
 **Files:**
+
 - Modify: `apps/web/src/features/builder/profile-editor.tsx`
 - Modify: `apps/web/src/routes/builder.tsx`
 
 - [ ] **Step 1: Edit `profile-editor.tsx` — accept `sync` prop**
 
 In `apps/web/src/features/builder/profile-editor.tsx`:
+
 - Add `sync: UseTarkovTrackerSyncResult` to `ProfileEditorProps`.
 - Remove the local `useTarkovTrackerSync({...})` call.
 - Remove the `useTasks()` call if it was only used to feed the lifted hook. (Check — if `ProfileEditor` uses `tasks.data` for the quest list UI, keep `useTasks` for that purpose.)
@@ -1412,6 +1471,7 @@ git commit -m "refactor(builder): lift useTarkovTrackerSync to BuilderPage for s
 **Purpose:** Compose `OptimizeConstraintsForm` + `ProfileReadout` in a solver rail; `OptimizeTriptych` + `ModChangesTable` in the right column. Own constraints reducer, `useOptimizer`, and selection `Set<string>`.
 
 **Files:**
+
 - Create: `apps/web/src/features/builder/optimize/optimize-view.tsx`
 - Create: `apps/web/src/features/builder/optimize/optimize-view.test.tsx`
 
@@ -1617,7 +1677,10 @@ export interface OptimizeViewProps {
   onEditProfile: () => void;
 }
 
-function sumPrice(attachments: Readonly<Record<string, string>>, modList: readonly ModListItem[]): number {
+function sumPrice(
+  attachments: Readonly<Record<string, string>>,
+  modList: readonly ModListItem[],
+): number {
   let total = 0;
   for (const id of Object.values(attachments)) {
     const m = modList.find((x) => x.id === id);
@@ -1670,10 +1733,12 @@ export function OptimizeView({
   );
   const unchangedCount = slotTree.slots.length - rows.length;
 
-  const mode: TableMode =
-    optimizer.state === "running" ? "running" : proposed ? "result" : "idle";
+  const mode: TableMode = optimizer.state === "running" ? "running" : proposed ? "result" : "idle";
 
-  const scoreDelta = proposed && currentStats && proposed.stats ? computeScoreDelta(state.objective, currentStats, proposed.stats) : null;
+  const scoreDelta =
+    proposed && currentStats && proposed.stats
+      ? computeScoreDelta(state.objective, currentStats, proposed.stats)
+      : null;
 
   function handleRun(): void {
     optimizer.run(toOptimizerInput(state, { weapon, slotTree, modList, profile }));
@@ -1703,7 +1768,8 @@ export function OptimizeView({
     onExit();
   }
 
-  const isError = optimizer.state === "error" || (proposed === null && optimizer.result && !optimizer.result.ok);
+  const isError =
+    optimizer.state === "error" || (proposed === null && optimizer.result && !optimizer.result.ok);
 
   return (
     <div className="flex flex-col gap-5">
@@ -1719,7 +1785,17 @@ export function OptimizeView({
         <h1 className="font-display text-2xl uppercase tracking-wide text-[var(--color-foreground)]">
           OPTIMIZER
         </h1>
-        <Pill tone={optimizer.state === "idle" ? "muted" : optimizer.state === "running" ? "accent" : optimizer.state === "error" ? "destructive" : "reliable"}>
+        <Pill
+          tone={
+            optimizer.state === "idle"
+              ? "muted"
+              : optimizer.state === "running"
+                ? "accent"
+                : optimizer.state === "error"
+                  ? "destructive"
+                  : "reliable"
+          }
+        >
           {optimizer.state.toUpperCase()}
         </Pill>
       </div>
@@ -1780,11 +1856,7 @@ export function OptimizeView({
   );
 }
 
-function computeScoreDelta(
-  objective: string,
-  current: WeaponSpec,
-  proposed: WeaponSpec,
-): number {
+function computeScoreDelta(objective: string, current: WeaponSpec, proposed: WeaponSpec): number {
   switch (objective) {
     case "min-recoil":
       return proposed.verticalRecoil - current.verticalRecoil;
@@ -1819,6 +1891,7 @@ git commit -m "feat(builder): OptimizeView composes triptych + diff + solver rai
 **Purpose:** Add `view: "editor" | "optimize"` search param to `/builder` and `/builder/$id`; render `<OptimizeView>` when `view === "optimize"`; remove `OptimizeDialog` mount.
 
 **Files:**
+
 - Modify: `apps/web/src/routes/builder.tsx`
 - Modify: `apps/web/src/routes/builder.$id.tsx`
 
@@ -1929,41 +2002,41 @@ const handleEditProfile = () => {
 Wrap the existing editor body in a `{view === "editor" ? ( ... ) : ( <OptimizeView ... /> )}`. The `BuildHeader` stays outside the branch (visible in both views).
 
 ```tsx
-{view === "editor" ? (
-  <>
-    {/* existing editor body: CompareFromBuildDialog, notice, upstreamDrift, snapshot banner, ProfileEditor, error card, weapon card, PresetPicker, Mods card, Spec card */}
-  </>
-) : selectedWeapon && tree.data && spec ? (
-  <OptimizeView
-    weapon={adaptWeapon(selectedWeapon)}
-    slotTree={tree.data}
-    modList={mods.data ?? []}
-    profile={profile}
-    sync={sync}
-    currentAttachments={attachments}
-    currentBuild={currentBuild}
-    currentStats={spec}
-    currentPrice={currentPrice}
-    onAccept={(build) => {
-      setAttachments(build.attachments);
-      setOrphaned(build.orphaned);
-      handleExitOptimizer();
-    }}
-    onExit={handleExitOptimizer}
-    onEditProfile={handleEditProfile}
-  />
-) : (
-  <Card>
-    <CardContent className="pt-6">
-      <p className="text-sm">
-        Pick a weapon in the editor before running the optimizer.
-      </p>
-      <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
-        ← Back to editor
-      </Button>
-    </CardContent>
-  </Card>
-)}
+{
+  view === "editor" ? (
+    <>
+      {/* existing editor body: CompareFromBuildDialog, notice, upstreamDrift, snapshot banner, ProfileEditor, error card, weapon card, PresetPicker, Mods card, Spec card */}
+    </>
+  ) : selectedWeapon && tree.data && spec ? (
+    <OptimizeView
+      weapon={adaptWeapon(selectedWeapon)}
+      slotTree={tree.data}
+      modList={mods.data ?? []}
+      profile={profile}
+      sync={sync}
+      currentAttachments={attachments}
+      currentBuild={currentBuild}
+      currentStats={spec}
+      currentPrice={currentPrice}
+      onAccept={(build) => {
+        setAttachments(build.attachments);
+        setOrphaned(build.orphaned);
+        handleExitOptimizer();
+      }}
+      onExit={handleExitOptimizer}
+      onEditProfile={handleEditProfile}
+    />
+  ) : (
+    <Card>
+      <CardContent className="pt-6">
+        <p className="text-sm">Pick a weapon in the editor before running the optimizer.</p>
+        <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
+          ← Back to editor
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 ```
 
 Also mark the ProfileEditor block so the scroll-into-view works:
@@ -2012,7 +2085,7 @@ If any existing e2e test failed to pass `view`, the loader's `view={view}` defau
 - [ ] **Step 4: Run vitest**
 
 Run: `pnpm --filter @tarkov/web test`
-Expected: all existing tests PASS. The new optimize-* tests pass. No regressions on profile-editor or builder tests.
+Expected: all existing tests PASS. The new optimize-\* tests pass. No regressions on profile-editor or builder tests.
 
 - [ ] **Step 5: Commit**
 
@@ -2028,6 +2101,7 @@ git commit -m "feat(builder): route view=optimize branches to OptimizeView"
 **Purpose:** Update the button label/style from `Optimize ⚙` to the mockup's `◇ OPTIMIZE`.
 
 **Files:**
+
 - Modify: `apps/web/src/features/builder/build-header.tsx`
 
 - [ ] **Step 1: Edit the button label**
@@ -2067,6 +2141,7 @@ git commit -m "feat(builder): rename BuildHeader optimize button to ◇ OPTIMIZE
 **Purpose:** Retire the modal codepath. Task 9 already removed the import.
 
 **Files:**
+
 - Delete: `apps/web/src/features/builder/optimize/optimize-dialog.tsx`
 - Delete: `apps/web/src/features/builder/optimize/optimize-result-view.tsx`
 - Modify: `apps/web/src/features/builder/optimize/index.ts` (if it exists and re-exports the dialog)
@@ -2074,9 +2149,11 @@ git commit -m "feat(builder): rename BuildHeader optimize button to ◇ OPTIMIZE
 - [ ] **Step 1: Check for remaining imports**
 
 Run:
+
 ```bash
 grep -rn "optimize-dialog\|OptimizeDialog\|optimize-result-view\|OptimizeResultView" apps/web/src packages/
 ```
+
 Expected: zero matches (Task 9 removed the last one).
 
 If anything matches, resolve the import first.
@@ -2084,6 +2161,7 @@ If anything matches, resolve the import first.
 - [ ] **Step 2: Delete the files**
 
 Run:
+
 ```bash
 rm apps/web/src/features/builder/optimize/optimize-dialog.tsx
 rm apps/web/src/features/builder/optimize/optimize-result-view.tsx
@@ -2125,11 +2203,13 @@ git commit -m "refactor(builder): delete OptimizeDialog and OptimizeResultView"
 **Purpose:** Arc 1's landing strip links `TRY OPTIMIZER` and `LEARN MORE` to `/builder`. Point `TRY OPTIMIZER` at `/builder?view=optimize` now that the view exists.
 
 **Files:**
+
 - Modify: `apps/web/src/routes/index.tsx`
 
 - [ ] **Step 1: Find the TRY OPTIMIZER link**
 
 Run:
+
 ```bash
 grep -n "TRY OPTIMIZER\|LEARN MORE" apps/web/src/routes/index.tsx
 ```
@@ -2168,6 +2248,7 @@ git commit -m "feat(web): landing TRY OPTIMIZER deep-links into /builder?view=op
 **Purpose:** One new Playwright spec covers the full optimizer flow.
 
 **Files:**
+
 - Create: `apps/web/e2e/builder-optimizer.spec.ts`
 
 - [ ] **Step 1: Write the spec**
@@ -2246,6 +2327,7 @@ test.describe("builder optimizer diff view", () => {
 - [ ] **Step 2: Run the e2e suite**
 
 Run:
+
 ```bash
 pnpm --filter @tarkov/web build
 pnpm --filter @tarkov/web test:e2e
@@ -2269,6 +2351,7 @@ git commit -m "test(web): e2e coverage for optimizer diff view flow"
 - [ ] **Step 1: Run the full local gate**
 
 Run:
+
 ```bash
 pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm --filter @tarkov/web test:e2e
 ```
@@ -2280,11 +2363,13 @@ If any step fails, fix and recommit before proceeding. Do NOT push a broken bran
 - [ ] **Step 2: Visual walkthrough**
 
 Run:
+
 ```bash
 pnpm dev
 ```
 
 Open http://localhost:5173 in a browser. Steps to exercise:
+
 1. Landing page: click `TRY OPTIMIZER` → assert URL becomes `/builder?view=optimize`.
 2. Pick a weapon, click `◇ OPTIMIZE`.
 3. Verify triptych + diff table appear.
