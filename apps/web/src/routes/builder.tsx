@@ -7,6 +7,7 @@ import {
   useSaveBuild,
   useWeaponTree,
   useProfile,
+  useTasks,
   migrateV1ToV2,
   itemAvailability,
   CURRENT_BUILD_VERSION,
@@ -15,6 +16,7 @@ import {
   type PlayerProfile,
   type SlotNodeForMigration,
 } from "@tarkov/data";
+import { useTarkovTrackerSync } from "../features/builder/useTarkovTrackerSync.js";
 import { weaponSpec } from "@tarkov/ballistics";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { adaptMod, adaptWeapon } from "../features/data-adapters/adapters.js";
@@ -89,6 +91,8 @@ export function BuilderPage({
   const [orphaned, setOrphaned] = useState<string[]>(() => initialOrphaned ?? []);
 
   const [profile, setProfile] = useProfile();
+  const tasks = useTasks();
+  const sync = useTarkovTrackerSync({ profile, onChange: setProfile, tasks: tasks.data });
   const [showAll, setShowAll] = useState(false);
   const [showAllWeapons, setShowAllWeapons] = useState(false);
   const [embedProfileOnSave, setEmbedProfileOnSave] = useState(false);
@@ -345,7 +349,7 @@ export function BuilderPage({
         </Card>
       )}
 
-      <ProfileEditor profile={profile} onChange={setProfile} />
+      <ProfileEditor profile={profile} onChange={setProfile} sync={sync} />
 
       {error && (
         <Card>

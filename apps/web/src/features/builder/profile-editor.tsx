@@ -4,11 +4,12 @@ import { useTasks, MARQUEE_QUEST_NORMALIZED_NAMES } from "@tarkov/data";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { TarkovTrackerConnectPopover } from "./tarkovtracker-connect-popover.js";
 import { TarkovTrackerSyncBanner } from "./tarkovtracker-sync-banner.js";
-import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
+import type { UseTarkovTrackerSyncResult } from "./useTarkovTrackerSync.js";
 
 export interface ProfileEditorProps {
   profile: PlayerProfile;
   onChange: (next: PlayerProfile) => void;
+  sync: UseTarkovTrackerSyncResult;
 }
 
 const TRADER_KEYS = [
@@ -33,17 +34,11 @@ const TRADER_LABELS: Record<(typeof TRADER_KEYS)[number], string> = {
 
 type QuestFilter = "all" | "marquee" | "incomplete";
 
-export function ProfileEditor({ profile, onChange }: ProfileEditorProps): ReactElement {
+export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): ReactElement {
   const tasks = useTasks();
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [filter, setFilter] = useState<QuestFilter>("marquee");
   const [search, setSearch] = useState("");
-
-  const sync = useTarkovTrackerSync({
-    profile,
-    onChange,
-    tasks: tasks.data,
-  });
 
   const marqueeSet = useMemo(() => new Set<string>(MARQUEE_QUEST_NORMALIZED_NAMES), []);
   const completedSet = new Set(profile.completedQuests ?? []);
