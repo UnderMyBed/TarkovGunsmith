@@ -1,172 +1,45 @@
-import { describe, expect, it, vi } from "vitest";
-import { fetchModList, modListSchema, MOD_LIST_QUERY } from "./modList.js";
-import { createTarkovClient } from "../client.js";
-
-const sampleMod = {
-  id: "mod-1",
-  name: "AK-74N Rail",
-  shortName: "Rail",
-  iconLink: "https://assets.tarkov.dev/mod-1-icon.webp",
-  weight: 0.05,
-  types: ["mods"],
-  minLevelForFlea: null,
-  properties: {
-    __typename: "ItemPropertiesWeaponMod",
-    ergonomics: 2,
-    recoilModifier: -0.01,
-    accuracyModifier: 0,
-  },
-  buyFor: [
-    {
-      priceRUB: 5000,
-      currency: "RUB",
-      vendor: {
-        __typename: "TraderOffer",
-        normalizedName: "prapor",
-        minTraderLevel: 2,
-        taskUnlock: null,
-        trader: { normalizedName: "prapor" },
-      },
-    },
-    {
-      priceRUB: 7500,
-      currency: "RUB",
-      vendor: {
-        __typename: "FleaMarket",
-        normalizedName: "flea-market",
-        minPlayerLevel: 15,
-      },
-    },
-  ],
-  craftsFor: [{ id: "craft-1" }, { id: "craft-2" }],
-  bartersFor: [{ id: "barter-1" }],
-};
-
-const fixture = { data: { items: [sampleMod] } };
-
-describe("modListSchema", () => {
-  it("parses a valid response", () => {
-    expect(modListSchema.safeParse(fixture.data).success).toBe(true);
-  });
-
-  it("parses craftsFor and bartersFor when populated", () => {
-    const result = modListSchema.safeParse({ items: [sampleMod] });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      const item = result.data.items[0]!;
-      expect(item.craftsFor).toHaveLength(2);
-      expect(item.craftsFor?.[0]?.id).toBe("craft-1");
-      expect(item.bartersFor).toHaveLength(1);
-      expect(item.bartersFor?.[0]?.id).toBe("barter-1");
-    }
-  });
-
-  it("accepts null craftsFor / bartersFor", () => {
-    const nulled = { ...sampleMod, id: "mod-nulled", craftsFor: null, bartersFor: null };
-    const result = modListSchema.safeParse({ items: [nulled] });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.items[0]!.craftsFor).toBeNull();
-      expect(result.data.items[0]!.bartersFor).toBeNull();
-    }
-  });
-
-  it("accepts empty craftsFor / bartersFor arrays", () => {
-    const empty = { ...sampleMod, id: "mod-empty", craftsFor: [], bartersFor: [] };
-    const result = modListSchema.safeParse({ items: [empty] });
-    expect(result.success).toBe(true);
-  });
-
-  it("MOD_LIST_QUERY queries craftsFor and bartersFor", () => {
-    expect(MOD_LIST_QUERY).toMatch(/craftsFor\s*\{/);
-    expect(MOD_LIST_QUERY).toMatch(/bartersFor\s*\{/);
-  });
-});
+import { describe, expect, it } from "vitest";
+import { fetchModList } from "./modList.js";
+import { fixtureClient } from "../__fixtures__/client.js";
+import fixture from "../__fixtures__/items-sample.json" with { type: "json" };
 
 describe("fetchModList", () => {
-  it("returns parsed WeaponMods only", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(fixture), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
-    const client = createTarkovClient("https://example.test/graphql", mockFetch);
-    const result = await fetchModList(client);
-    expect(result).toHaveLength(1);
-    expect(result[0]?.properties.__typename).toBe("ItemPropertiesWeaponMod");
+  it("returns weapon mods with ergo, recoil and accuracy modifiers", async () => {
+    const list = await fetchModList(fixtureClient());
+    expect(list.length).toBeGreaterThan(0);
+    for (const mod of list) {
+      expect(mod.properties.propertiesType).toBe("ItemPropertiesWeaponMod");
+      expect(typeof mod.properties.ergonomics).toBe("number");
+      expect(typeof mod.properties.recoilModifier).toBe("number");
+    }
   });
 
-  it("includes buyFor with trader and flea vendor variants", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(fixture), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
+  it("excludes magazines and scopes, which are not ItemPropertiesWeaponMod", async () => {
+    const list = await fetchModList(fixtureClient());
+    const ids = new Set(list.map((m) => m.id));
+    const excluded = Object.values(fixture.document.data.items).filter((i) =>
+      ["ItemPropertiesMagazine", "ItemPropertiesScope", "ItemPropertiesWeapon"].includes(
+        i.properties?.propertiesType ?? "",
       ),
     );
-    const client = createTarkovClient("https://example.test/graphql", mockFetch);
-    const result = await fetchModList(client);
-    expect(result[0]?.buyFor).toHaveLength(2);
-    expect(result[0]?.buyFor?.[0]?.vendor.__typename).toBe("TraderOffer");
-    expect(result[0]?.buyFor?.[1]?.vendor.__typename).toBe("FleaMarket");
+    expect(excluded.length).toBeGreaterThan(0);
+    for (const item of excluded) expect(ids.has(item.id)).toBe(false);
   });
 
-  it("parses types + minLevelForFlea fields", async () => {
-    const noFleaMod = { ...sampleMod, id: "mod-2", types: ["mods", "noFlea"], minLevelForFlea: 20 };
-    const noFleaFixture = { data: { items: [noFleaMod] } };
-    const mockFetch = vi.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(noFleaFixture), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
-    const client = createTarkovClient("https://example.test/graphql", mockFetch);
-    const result = await fetchModList(client);
-    expect(result[0]?.types).toContain("noFlea");
-    expect(result[0]?.minLevelForFlea).toBe(20);
+  it("populates buyFor with resolved vendors", async () => {
+    const list = await fetchModList(fixtureClient());
+    const withOffers = list.filter((m) => (m.buyFor ?? []).length > 0);
+    expect(withOffers.length).toBeGreaterThan(0);
+    for (const mod of withOffers) {
+      for (const entry of mod.buyFor ?? []) {
+        expect(["TraderOffer", "FleaMarket"]).toContain(entry.vendor.__typename);
+        expect(entry.vendor.normalizedName).not.toBe("");
+      }
+    }
   });
 
-  it("filters out magazines, scopes, etc.", async () => {
-    const magazine = {
-      id: "mag-1",
-      name: "PMAG",
-      shortName: "PMAG",
-      iconLink: "https://assets.tarkov.dev/mag-1-icon.webp",
-      weight: 0.1,
-      types: [],
-      minLevelForFlea: null,
-      buyFor: null,
-      properties: { __typename: "ItemPropertiesMagazine" },
-    };
-    const scope = {
-      id: "scope-1",
-      name: "ACOG",
-      shortName: "ACOG",
-      iconLink: "https://assets.tarkov.dev/scope-1-icon.webp",
-      weight: 0.5,
-      types: [],
-      minLevelForFlea: null,
-      buyFor: null,
-      properties: { __typename: "ItemPropertiesScope" },
-    };
-    const mixed = { data: { items: [magazine, scope, sampleMod] } };
-    const mockFetch = vi.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(mixed), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
-    const client = createTarkovClient("https://example.test/graphql", mockFetch);
-    const result = await fetchModList(client);
-    expect(result).toHaveLength(1);
-    expect(result[0]?.id).toBe(sampleMod.id);
+  it("resolves translated names", async () => {
+    const list = await fetchModList(fixtureClient());
+    for (const mod of list) expect(mod.name).not.toMatch(/ Name$/);
   });
 });

@@ -1,58 +1,13 @@
 import { z } from "zod";
-import type { GraphQLClient } from "../client.js";
+import type { TarkovJsonClient } from "../client.js";
+import type { ItemsDocument } from "./documents.js";
+import { resolveBuyFor } from "./shared/buy-for.js";
+import { fetchTraders } from "./traders.js";
+import { fetchTasks } from "./tasks.js";
 import { buyForEntrySchema } from "./shared/buy-for.js";
 
-export const MOD_LIST_QUERY = /* GraphQL */ `
-  query ModList {
-    items(type: mods) {
-      id
-      name
-      shortName
-      iconLink
-      weight
-      types
-      minLevelForFlea
-      properties {
-        __typename
-        ... on ItemPropertiesWeaponMod {
-          ergonomics
-          recoilModifier
-          accuracyModifier
-        }
-      }
-      buyFor {
-        priceRUB
-        currency
-        vendor {
-          __typename
-          normalizedName
-          ... on TraderOffer {
-            minTraderLevel
-            taskUnlock {
-              id
-              normalizedName
-            }
-            trader {
-              normalizedName
-            }
-          }
-          ... on FleaMarket {
-            minPlayerLevel
-          }
-        }
-      }
-      craftsFor {
-        id
-      }
-      bartersFor {
-        id
-      }
-    }
-  }
-`;
-
 const modPropertiesSchema = z.object({
-  __typename: z.literal("ItemPropertiesWeaponMod"),
+  propertiesType: z.literal("ItemPropertiesWeaponMod"),
   ergonomics: z.number(),
   recoilModifier: z.number(),
   accuracyModifier: z.number(),
@@ -79,10 +34,6 @@ export const modListSchema = z.object({
   items: z.array(modListItemSchema),
 });
 
-const modListEnvelopeSchema = z.object({
-  items: z.array(z.unknown()),
-});
-
 export type ModListItem = z.infer<typeof modListItemSchema>;
 // Re-exported for backward compat with existing consumers.
 export type { BuyForEntry as ModListBuyFor, Vendor as ModListVendor } from "./shared/buy-for.js";
@@ -93,17 +44,32 @@ export type { BuyForEntry as ModListBuyFor, Vendor as ModListVendor } from "./sh
  * are filtered out for v0.12.0; they ship in a follow-up plan that wires
  * slot-based compatibility).
  */
-export async function fetchModList(client: GraphQLClient): Promise<ModListItem[]> {
-  const raw = await client.request<unknown>(MOD_LIST_QUERY);
-  const { items } = modListEnvelopeSchema.parse(raw);
+export async function fetchModList(client: TarkovJsonClient): Promise<ModListItem[]> {
+  // All three come from the client cache, so this is one network round trip in practice.
+  const [doc, traders, tasks] = await Promise.all([
+    client.fetchResource<ItemsDocument>("items"),
+    fetchTraders(client),
+    fetchTasks(client),
+  ]);
+
+  const all = Object.values(doc.items);
   const out: ModListItem[] = [];
-  for (const item of items) {
-    const result = modListItemSchema.safeParse(item);
-    if (result.success) out.push(result.data);
+  for (const item of all) {
+    // craftsFor / bartersFor moved to separate /crafts and /barters resources upstream.
+    // Both are nullable in the domain type and their consumers are still deferred, so they
+    // are null rather than fabricated.
+    const candidate = {
+      ...(item as object),
+      buyFor: resolveBuyFor(item, traders, tasks),
+      craftsFor: null,
+      bartersFor: null,
+    };
+    const parsed = modListItemSchema.safeParse(candidate);
+    if (parsed.success) out.push(parsed.data);
   }
-  if (out.length < items.length && typeof console !== "undefined") {
+  if (out.length < all.length && typeof console !== "undefined") {
     console.debug(
-      `[fetchModList] filtered ${items.length - out.length} non-WeaponMod items (kept ${out.length}/${items.length})`,
+      `[fetchModList] filtered ${all.length - out.length} non-mod items (kept ${out.length}/${all.length})`,
     );
   }
   return out;
