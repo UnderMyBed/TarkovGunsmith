@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "TarkovGunsmith — Vite + React SPA. Cloudflare Pages.",
+  "description": "TarkovGunsmith \u2014 Vite + React SPA. Cloudflare Pages.",
   "license": "MIT",
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit && vite build",
@@ -26,7 +26,6 @@
     "@tarkov/data": "workspace:*",
     "@tarkov/og": "workspace:^",
     "@tarkov/optimizer": "workspace:*",
-    "@tarkov/types": "workspace:*",
     "@tarkov/ui": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

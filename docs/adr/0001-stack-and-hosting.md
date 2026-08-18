@@ -3,7 +3,7 @@
 **Date:** 2026-04-18
 **Status:** Accepted
 **Supersedes:** N/A
-**Superseded by:** N/A
+**Superseded by:** [ADR-0002](./0002-json-api-migration.md), in part — the data-source, edge-backend and routing/data decisions. The rest stands.
 
 ## Context
 
