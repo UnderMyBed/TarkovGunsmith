@@ -1,29 +1,9 @@
 import { z } from "zod";
-import type { GraphQLClient } from "../client.js";
-
-export const AMMO_LIST_QUERY = /* GraphQL */ `
-  query AmmoList {
-    items(type: ammo) {
-      id
-      name
-      shortName
-      iconLink
-      properties {
-        __typename
-        ... on ItemPropertiesAmmo {
-          caliber
-          penetrationPower
-          damage
-          armorDamage
-          projectileCount
-        }
-      }
-    }
-  }
-`;
+import type { TarkovJsonClient } from "../client.js";
+import type { ItemsDocument } from "./documents.js";
 
 const ammoPropertiesSchema = z.object({
-  __typename: z.literal("ItemPropertiesAmmo"),
+  propertiesType: z.literal("ItemPropertiesAmmo"),
   caliber: z.string(),
   penetrationPower: z.number(),
   damage: z.number(),
@@ -43,36 +23,29 @@ export const ammoListSchema = z.object({
   items: z.array(ammoItemSchema),
 });
 
-const ammoListEnvelopeSchema = z.object({
-  items: z.array(z.unknown()),
-});
-
 export type AmmoListItem = z.infer<typeof ammoItemSchema>;
 
 /**
  * Fetch the full list of ammo items.
  *
- * The upstream `items(type: ammo)` query returns mixed types — actual ammo
- * (`ItemPropertiesAmmo`) plus grenades (`ItemPropertiesGrenade`). We validate
- * the outer envelope strictly, then `safeParse` each item against
- * {@link ammoItemSchema} and silently drop the ones that don't match. A single
- * unrelated item shape never fails the whole call.
+ * The upstream document holds every item type in one map keyed by id, so this selects by
+ * `propertiesType` and `safeParse`s each candidate, dropping the ones that do not match —
+ * grenades, mods, armor and the rest. A single unrelated item shape never fails the call.
  *
- * Logs a `console.debug` line listing how many items were filtered, so unusual
- * upstream changes (a new `ItemPropertiesX` variant we should map) are
- * discoverable in the browser console.
+ * Logs a `console.debug` line with the filtered count, so an upstream change (a new
+ * `ItemPropertiesX` variant we should be mapping) is discoverable in the browser console.
  */
-export async function fetchAmmoList(client: GraphQLClient): Promise<AmmoListItem[]> {
-  const raw = await client.request<unknown>(AMMO_LIST_QUERY);
-  const { items } = ammoListEnvelopeSchema.parse(raw);
+export async function fetchAmmoList(client: TarkovJsonClient): Promise<AmmoListItem[]> {
+  const doc = await client.fetchResource<ItemsDocument>("items");
+  const all = Object.values(doc.items);
   const ammoItems: AmmoListItem[] = [];
-  for (const item of items) {
+  for (const item of all) {
     const result = ammoItemSchema.safeParse(item);
     if (result.success) ammoItems.push(result.data);
   }
-  if (ammoItems.length < items.length && typeof console !== "undefined") {
+  if (ammoItems.length < all.length && typeof console !== "undefined") {
     console.debug(
-      `[fetchAmmoList] filtered ${items.length - ammoItems.length} non-ammo items (kept ${ammoItems.length}/${items.length})`,
+      `[fetchAmmoList] filtered ${all.length - ammoItems.length} non-ammo items (kept ${ammoItems.length}/${all.length})`,
     );
   }
   return ammoItems;
