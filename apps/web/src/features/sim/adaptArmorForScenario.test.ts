@@ -8,7 +8,7 @@ const paca: ArmorListItem = {
   shortName: "PACA",
   iconLink: "",
   properties: {
-    __typename: "ItemPropertiesArmor",
+    propertiesType: "ItemPropertiesArmor",
     class: 3,
     durability: 40,
     material: { name: "Aramid", destructibility: 0.55 },

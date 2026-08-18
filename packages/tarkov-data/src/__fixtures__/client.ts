@@ -5,9 +5,9 @@ import tasksFixture from "./tasks-sample.json" with { type: "json" };
 import tradersFixture from "./traders-sample.json" with { type: "json" };
 
 const FIXTURES: Record<string, { document: unknown; lang: Record<string, string> }> = {
-  items: itemsFixture as never,
-  tasks: tasksFixture as never,
-  traders: tradersFixture as never,
+  items: itemsFixture,
+  tasks: tasksFixture,
+  traders: tradersFixture,
 };
 
 /**
@@ -26,7 +26,7 @@ export function fixtureClient(): TarkovJsonClient {
         return Promise.reject(new Error(`no fixture for resource "${resource}"`));
       }
       return Promise.resolve(
-        mergeTranslations(structuredClone(fixture.document) as never, fixture.lang) as T,
+        mergeTranslations(structuredClone(fixture.document) as never, fixture.lang),
       );
     },
   };

@@ -9,7 +9,7 @@ const paca: ArmorListItem = {
   shortName: "PACA",
   iconLink: "",
   properties: {
-    __typename: "ItemPropertiesArmor",
+    propertiesType: "ItemPropertiesArmor",
     class: 3,
     durability: 40,
     material: { name: "Aramid", destructibility: 0.55 },
@@ -23,7 +23,7 @@ const altyn: ArmorListItem = {
   shortName: "Altyn",
   iconLink: "",
   properties: {
-    __typename: "ItemPropertiesArmor",
+    propertiesType: "ItemPropertiesArmor",
     class: 4,
     durability: 50,
     material: { name: "Aramid", destructibility: 0.4 },

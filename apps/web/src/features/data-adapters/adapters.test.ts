@@ -8,7 +8,7 @@ const sampleAmmoListItem: AmmoListItem = {
   shortName: "BP",
   iconLink: "https://assets.tarkov.dev/ammo-1-icon.webp",
   properties: {
-    __typename: "ItemPropertiesAmmo",
+    propertiesType: "ItemPropertiesAmmo",
     caliber: "Caliber545x39",
     penetrationPower: 45,
     damage: 48,
@@ -23,7 +23,7 @@ const sampleArmorListItem: ArmorListItem = {
   shortName: "Kord",
   iconLink: "https://assets.tarkov.dev/armor-1-icon.webp",
   properties: {
-    __typename: "ItemPropertiesArmor",
+    propertiesType: "ItemPropertiesArmor",
     class: 4,
     durability: 60,
     material: { name: "UHMWPE", destructibility: 0.5 },
@@ -82,7 +82,7 @@ const sampleWeaponListItem: WeaponListItem = {
   iconLink: "https://assets.tarkov.dev/weapon-1-icon.webp",
   weight: 2.7,
   properties: {
-    __typename: "ItemPropertiesWeapon",
+    propertiesType: "ItemPropertiesWeapon",
     caliber: "Caliber556x45NATO",
     ergonomics: 50,
     recoilVertical: 56,
@@ -98,7 +98,7 @@ const sampleModListItem: ModListItem = {
   iconLink: "https://assets.tarkov.dev/mod-1-icon.webp",
   weight: 0.1,
   properties: {
-    __typename: "ItemPropertiesWeaponMod",
+    propertiesType: "ItemPropertiesWeaponMod",
     ergonomics: -3,
     recoilModifier: -15,
     accuracyModifier: -0.5,

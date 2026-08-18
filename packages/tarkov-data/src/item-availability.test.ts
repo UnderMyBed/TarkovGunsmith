@@ -58,7 +58,7 @@ function mod(overrides: Partial<ModListItem> = {}): ModListItem {
     types: ["mods"],
     minLevelForFlea: null,
     properties: {
-      __typename: "ItemPropertiesWeaponMod",
+      propertiesType: "ItemPropertiesWeaponMod",
       ergonomics: 0,
       recoilModifier: 0,
       accuracyModifier: 0,

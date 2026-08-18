@@ -92,7 +92,9 @@ export function normalizeSlots(
     const nameId = typeof slot.nameId === "string" ? slot.nameId : "";
     const path = parentPath ? `${parentPath}/${nameId}` : nameId;
 
-    const allowedIds = Array.isArray(slot.filters?.allowedItems) ? slot.filters.allowedItems : [];
+    const allowedIds: readonly unknown[] = Array.isArray(slot.filters?.allowedItems)
+      ? (slot.filters.allowedItems as unknown[])
+      : [];
     const items: AllowedItem[] = [];
     for (const id of allowedIds) {
       if (typeof id !== "string") continue;
@@ -113,8 +115,8 @@ export function normalizeSlots(
       });
     }
 
-    const rawCategories = Array.isArray(slot.filters?.allowedCategories)
-      ? slot.filters.allowedCategories
+    const rawCategories: readonly unknown[] = Array.isArray(slot.filters?.allowedCategories)
+      ? (slot.filters.allowedCategories as unknown[])
       : [];
     const categories: SlotCategory[] = [];
     for (const entry of rawCategories) {

@@ -158,7 +158,7 @@ describe("branchAndBound", () => {
         types: ["mods"],
         minLevelForFlea: null,
         properties: {
-          __typename: "ItemPropertiesWeaponMod",
+          propertiesType: "ItemPropertiesWeaponMod",
           ergonomics: 0,
           recoilModifier: 0,
           accuracyModifier: 0,
@@ -268,7 +268,7 @@ function tieMod(id: string, recoil: number, ergo: number, weight: number, price:
     types: ["mods"],
     minLevelForFlea: null,
     properties: {
-      __typename: "ItemPropertiesWeaponMod",
+      propertiesType: "ItemPropertiesWeaponMod",
       ergonomics: ergo,
       recoilModifier: recoil,
       accuracyModifier: 0,
