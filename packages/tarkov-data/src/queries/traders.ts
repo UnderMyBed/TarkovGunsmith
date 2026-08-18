@@ -1,15 +1,5 @@
 import { z } from "zod";
-import type { GraphQLClient } from "../client.js";
-
-export const TRADERS_QUERY = /* GraphQL */ `
-  query Traders {
-    traders {
-      id
-      name
-      normalizedName
-    }
-  }
-`;
+import type { TarkovJsonClient } from "../client.js";
 
 const traderListItemSchema = z.object({
   id: z.string(),
@@ -34,12 +24,19 @@ const PROFILE_TRADERS = new Set([
   "jaeger",
 ]);
 
+/** The traders document: `data` is the trader map directly, with no wrapper key. */
+export type TradersDocument = Record<string, unknown>;
+
 /**
- * Fetch the list of traders, filtered to the 7 that have loyalty-level gating
- * relevant to builds (excludes Fence, Ref, and any future non-LL-gated vendors).
+ * Fetch the list of traders, filtered to the 7 that have loyalty-level gating relevant to
+ * builds (excludes Fence, Ref, and any future non-LL-gated vendors).
  */
-export async function fetchTraders(client: GraphQLClient): Promise<TraderListItem[]> {
-  const raw = await client.request<unknown>(TRADERS_QUERY);
-  const { traders } = tradersSchema.parse(raw);
-  return traders.filter((t) => PROFILE_TRADERS.has(t.normalizedName));
+export async function fetchTraders(client: TarkovJsonClient): Promise<TraderListItem[]> {
+  const doc = await client.fetchResource<TradersDocument>("traders");
+  const out: TraderListItem[] = [];
+  for (const raw of Object.values(doc)) {
+    const parsed = traderListItemSchema.safeParse(raw);
+    if (parsed.success && PROFILE_TRADERS.has(parsed.data.normalizedName)) out.push(parsed.data);
+  }
+  return out;
 }
