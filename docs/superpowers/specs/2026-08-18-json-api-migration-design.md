@@ -141,8 +141,38 @@ Two upstream shape differences to absorb inside the query layer, invisible to ca
 - GraphQL's `properties.__typename` discriminator is `properties.propertiesType` here. The Zod
   discriminators change accordingly; the parsed output type does not.
 
-`queries/shared/buy-for.ts` maps onto the item's `buyFor`-equivalent fields from the same document,
-keeping `itemAvailability` working without changes.
+#### 3.1 `buyFor` becomes a cross-resource join
+
+This is the one place the upstream shape genuinely lost information rather than moving it.
+GraphQL embedded the resolved vendor:
+
+```graphql
+buyFor { priceRUB currency vendor { normalizedName minTraderLevel taskUnlock { normalizedName } } }
+```
+
+The JSON API returns bare ids instead:
+
+```json
+{
+  "trader": "5a7c2eca46aef81a7ca2145d",
+  "priceRUB": 22997,
+  "currency": "RUB",
+  "minTraderLevel": 3,
+  "taskUnlock": null,
+  "buyLimit": 5
+}
+```
+
+So `buy-for.ts` must join `buyFromTrader[].trader` against `/traders` and `.taskUnlock` against
+`/tasks` to recover the `normalizedName` values `itemAvailability` matches on. Flea availability is
+no longer a `FleaMarket` vendor entry — it is the item's top-level `minLevelForFlea`.
+
+That join is why `/tasks` and `/traders` are fetched in **Arc 2** rather than Arc 3: availability
+gating is part of a working Builder, and it cannot be expressed without them. Arc 3 is then purely
+the quest restructure.
+
+The join happens once, inside the query layer, producing the existing `buyFor`-shaped output. No
+consumer learns that the upstream shape changed.
 
 ### 4. Arc 3 — tasks, traders, and the Gunsmith restructure
 
@@ -203,6 +233,9 @@ being up — the failure mode this whole spec exists to answer.
 - Adopting `ballisticCoeficient`, `bulletMassGrams`, `bulletDiameterMilimeters` for real drag
   modelling. Genuinely new capability; needs its own spec and verification against the C# reference.
 - Weapon `presets` content, which the JSON API supplies and the deferred M1.5 `PresetPicker` wanted.
+- `allowedCategories` slot filtering — another deferred M1.5 item. `slot.filters` now carries
+  `allowedCategories`, `excludedCategories` and `excludedItems` alongside `allowedItems`, so the
+  data is present the moment Arc 2 lands; only the filtering logic is missing.
 - `crafts` / `barters` resources, which close out the deferred `craftsFor` / `bartersFor` work.
 - Re-pointing `data-proxy` at the JSON API as an edge cache, if client-side payloads prove too heavy.
 - Resuming the parked repo-security arcs (T, 0, 1 committed; 2 and 3 unstarted).
