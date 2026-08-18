@@ -40,6 +40,7 @@ export default tseslint.config(
             "packages/tarkov-data/src/queries/*.test.ts",
             "packages/tarkov-data/src/queries/shared/*.test.ts",
             "packages/tarkov-data/src/tarkovtracker/*.test.ts",
+            "packages/repo-guards/src/*.test.ts",
             "packages/ui/src/lib/*.test.ts",
             "packages/ui/src/components/*.test.ts",
             "apps/*/vitest.config.ts",
