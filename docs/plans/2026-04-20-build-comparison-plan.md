@@ -2268,9 +2268,7 @@ const BUILD_ID_REGEX = /^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/;
 type Mode = "clone-both" | "paste-url" | "empty-right";
 
 export type CompareFromBuildConfirm =
-  | { mode: "clone-both" }
-  | { mode: "paste-url"; rightBuildId: string }
-  | { mode: "empty-right" };
+  { mode: "clone-both" } | { mode: "paste-url"; rightBuildId: string } | { mode: "empty-right" };
 
 interface CompareFromBuildDialogProps {
   open: boolean;

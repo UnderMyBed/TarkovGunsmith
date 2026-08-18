@@ -8,7 +8,6 @@ How CI auto-deploys the Workers and the SPA, what the API token needs to be allo
 
 | Job          | Deploys                            | Wrangler invocation                                               |
 | ------------ | ---------------------------------- | ----------------------------------------------------------------- |
-| `data-proxy` | `apps/data-proxy` Worker           | `wrangler deploy` (from `apps/data-proxy/`)                       |
 | `builds-api` | `apps/builds-api` Worker (uses KV) | `wrangler deploy` (from `apps/builds-api/`)                       |
 | `pages`      | `apps/web` (Vite build output)     | `wrangler pages deploy ./dist --project-name=tarkov-gunsmith-web` |
 
@@ -33,7 +32,7 @@ Create at https://dash.cloudflare.com/profile/api-tokens → **Create Token** �
 
 | Scope       | Permission         | Access | Why                                                            |
 | ----------- | ------------------ | ------ | -------------------------------------------------------------- |
-| **Account** | Workers Scripts    | Edit   | `wrangler deploy` for `data-proxy` + `builds-api`              |
+| **Account** | Workers Scripts    | Edit   | `wrangler deploy` for `builds-api`                             |
 | **Account** | Workers KV Storage | Edit   | Read/write the `BUILDS` namespace from the `builds-api` Worker |
 | **Account** | Cloudflare Pages   | Edit   | `wrangler pages deploy` for `apps/web`                         |
 | **Account** | Account Settings   | Read   | Wrangler validates the token against the account on startup    |
@@ -79,7 +78,6 @@ Wrangler is installed per-Worker in this monorepo (each `apps/*` has it as a dev
 
 ```bash
 pnpm --filter @tarkov/builds-api exec wrangler <command>
-pnpm --filter @tarkov/data-proxy exec wrangler <command>
 pnpm --filter @tarkov/web exec wrangler <command>
 ```
 
@@ -114,7 +112,6 @@ gh run view <run-id> --log
 
 The three jobs should complete within ~30 seconds each. Live URLs:
 
-- `https://tarkov-gunsmith-data-proxy.<your-subdomain>.workers.dev/healthz` → `ok`
 - `https://tarkov-gunsmith-builds-api.<your-subdomain>.workers.dev/healthz` → `ok`
 - `https://tarkov-gunsmith-web.pages.dev` → the SPA's landing page
 

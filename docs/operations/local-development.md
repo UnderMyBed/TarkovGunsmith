@@ -11,7 +11,6 @@ pnpm install
 
 # Copy .dev.vars templates (see "Secrets & env vars" below for what each file does)
 cp apps/builds-api/.dev.vars.example apps/builds-api/.dev.vars
-cp apps/data-proxy/.dev.vars.example apps/data-proxy/.dev.vars
 cp apps/web/.dev.vars.example apps/web/.dev.vars
 
 pnpm dev        # starts web + both workers in one terminal
@@ -27,11 +26,10 @@ Open the printed share URL (`http://localhost:5173/builder/<id>`) to confirm the
 | Service                    | Port             | Started by                            | Notes                                                                                                                                            |
 | -------------------------- | ---------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `apps/web` (Vite)          | `5173`           | `pnpm dev`                            | SPA. Proxies `/api/data/*` → `:8787`, `/api/builds/*` → `:8788`.                                                                                 |
-| `apps/data-proxy`          | `8787`           | `pnpm dev`                            | GraphQL cache in front of `api.tarkov.dev`.                                                                                                      |
 | `apps/builds-api`          | `8788`           | `pnpm dev`                            | KV-backed build save/load.                                                                                                                       |
 | `apps/web` Pages Functions | `8789` (default) | `pnpm --filter @tarkov/web pages:dev` | Power-user escape hatch — needed to exercise `/og/build/:id`, `/og/pair/:pairId`, and `/functions/api/builds/*` locally. Not part of `pnpm dev`. |
 
-Both Workers also open a devtools inspector: `data-proxy` on `9229`, `builds-api` on `9230` — pinned so the two processes don't collide on the shared default.
+`builds-api` opens a devtools inspector on `9230`.
 
 Ports are pinned in each app's `wrangler.jsonc` (`dev.port` + `dev.inspector_port`) and in `apps/web/vite.config.ts`. If you hit "port already in use," see "Troubleshooting" below.
 
@@ -41,12 +39,11 @@ Wrangler reads `.dev.vars` automatically during `wrangler dev` (Workers) and `wr
 
 ### Committed templates (copy to `.dev.vars` to activate)
 
-| File                                | Variable               | Purpose                                                                                         |
-| ----------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
-| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_BUILD_ID`  | Set to a seeded build id to unlock `/og/build/:id` rendering in `wrangler pages dev`.           |
-| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_PAIR_ID`   | Same, for pair OG cards.                                                                        |
-| `apps/data-proxy/.dev.vars.example` | `UPSTREAM_GRAPHQL_URL` | Override the GraphQL endpoint (default `https://api.tarkov.dev/graphql`).                       |
-| `apps/web/.dev.vars.example`        | `BUILDS_API_URL`       | Must be `http://localhost:8788` for Pages Functions `/api/builds/*` to proxy correctly locally. |
+| File                                | Variable              | Purpose                                                                                         |
+| ----------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------- |
+| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_BUILD_ID` | Set to a seeded build id to unlock `/og/build/:id` rendering in `wrangler pages dev`.           |
+| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_PAIR_ID`  | Same, for pair OG cards.                                                                        |
+| `apps/web/.dev.vars.example`        | `BUILDS_API_URL`      | Must be `http://localhost:8788` for Pages Functions `/api/builds/*` to proxy correctly locally. |
 
 ### Production secrets (set via wrangler, NOT committed)
 
@@ -129,5 +126,5 @@ The Pages emulator reads `apps/web/.dev.vars` (for `BUILDS_API_URL`) and speaks 
 ## Deeper references
 
 - Full deploy runbook (tokens, KV setup, Pages project): [`docs/operations/cloudflare-deploys.md`](./cloudflare-deploys.md)
-- Per-app local-dev notes: [`apps/builds-api/CLAUDE.md`](../../apps/builds-api/CLAUDE.md), [`apps/data-proxy/CLAUDE.md`](../../apps/data-proxy/CLAUDE.md), [`apps/web/CLAUDE.md`](../../apps/web/CLAUDE.md)
+- Per-app local-dev notes: [`apps/builds-api/CLAUDE.md`](../../apps/builds-api/CLAUDE.md), [`apps/web/CLAUDE.md`](../../apps/web/CLAUDE.md)
 - Build schema: [`packages/tarkov-data/src/build-schema.ts`](../../packages/tarkov-data/src/build-schema.ts)

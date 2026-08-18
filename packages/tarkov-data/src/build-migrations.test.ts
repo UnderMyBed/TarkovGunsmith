@@ -3,6 +3,7 @@ import {
   migrateV1ToV2,
   migrateV2ToV3,
   migrateV3ToV4,
+  migrateV4ToV5,
   type SlotNodeForMigration,
 } from "./build-migrations.js";
 import type { BuildV1, BuildV2, BuildV3 } from "./build-schema.js";
@@ -118,5 +119,86 @@ describe("migrateV3ToV4", () => {
     expect(v4.attachments).toEqual({ s: "m" });
     expect(v4.name).toBeUndefined();
     expect(v4.description).toBeUndefined();
+  });
+});
+
+describe("migrateV4ToV5", () => {
+  const baseV4 = {
+    version: 4 as const,
+    weaponId: "w1",
+    attachments: [],
+    orphaned: [],
+    createdAt: new Date(0).toISOString(),
+  };
+
+  const withQuests = (completedQuests: string[]) => ({
+    ...baseV4,
+    profileSnapshot: {
+      mode: "advanced" as const,
+      traders: {
+        prapor: 1,
+        therapist: 1,
+        skier: 1,
+        peacekeeper: 1,
+        mechanic: 1,
+        ragman: 1,
+        jaeger: 1,
+      },
+      flea: false,
+      completedQuests,
+    },
+  });
+
+  it("remaps a retired gunsmith-part-N name", () => {
+    const v5 = migrateV4ToV5(withQuests(["gunsmith-part-3"]));
+    expect(v5.profileSnapshot?.completedQuests).toEqual(["gunsmith-master-part-3"]);
+  });
+
+  it("remaps part-10 without colliding with part-1", () => {
+    const v5 = migrateV4ToV5(withQuests(["gunsmith-part-10", "gunsmith-part-1"]));
+    expect(v5.profileSnapshot?.completedQuests).toEqual([
+      "gunsmith-master-part-10",
+      "gunsmith-master-part-1",
+    ]);
+  });
+
+  it("leaves already-current names alone", () => {
+    const v5 = migrateV4ToV5(withQuests(["gunsmith-m4a1", "setup"]));
+    expect(v5.profileSnapshot?.completedQuests).toEqual(["gunsmith-m4a1", "setup"]);
+  });
+
+  it("preserves unrecognised names rather than dropping them", () => {
+    const v5 = migrateV4ToV5(withQuests(["some-future-quest"]));
+    expect(v5.profileSnapshot?.completedQuests).toEqual(["some-future-quest"]);
+  });
+
+  it("handles a build with no profile snapshot", () => {
+    const v5 = migrateV4ToV5(baseV4);
+    expect(v5.version).toBe(5);
+    expect(v5.profileSnapshot).toBeUndefined();
+  });
+
+  it("handles a snapshot with no completed quests", () => {
+    const v5 = migrateV4ToV5({
+      ...baseV4,
+      profileSnapshot: {
+        mode: "basic" as const,
+        traders: {
+          prapor: 1,
+          therapist: 1,
+          skier: 1,
+          peacekeeper: 1,
+          mechanic: 1,
+          ragman: 1,
+          jaeger: 1,
+        },
+        flea: false,
+      },
+    });
+    expect(v5.profileSnapshot?.completedQuests).toBeUndefined();
+  });
+
+  it("sets version 5", () => {
+    expect(migrateV4ToV5(baseV4).version).toBe(5);
   });
 });

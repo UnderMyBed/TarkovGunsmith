@@ -69,7 +69,7 @@ function generateSlotMods(
       types: ["mods"],
       minLevelForFlea: null,
       properties: {
-        __typename: "ItemPropertiesWeaponMod",
+        propertiesType: "ItemPropertiesWeaponMod",
         ergonomics,
         recoilModifier,
         accuracyModifier,

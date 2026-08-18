@@ -1,4 +1,4 @@
-import type { BuildV4 } from "@tarkov/data";
+import type { BuildV5 } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
 import type { BuildCardViewModel, PairCardViewModel, SideViewModel } from "./view-model.js";
 
@@ -34,13 +34,13 @@ export interface HydrateMod {
 }
 
 export interface HydrateBuildArgs {
-  build: BuildV4;
+  build: BuildV5;
   weapon: HydrateWeapon;
   mods: readonly HydrateMod[];
 }
 
 /**
- * Pure hydrator — turns a `BuildV4` + already-fetched weapon/mods rows into a
+ * Pure hydrator — turns a `BuildV5` + already-fetched weapon/mods rows into a
  * `BuildCardViewModel`. No network, no `@tarkov/data` hooks. The Pages
  * Function (Phase 2) handles the GraphQL fetch and calls this.
  *

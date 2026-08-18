@@ -13,7 +13,7 @@ const profile: PlayerProfile = {
   traders: { prapor: 4, therapist: 3, skier: 3, peacekeeper: 2, mechanic: 3, ragman: 2, jaeger: 3 },
   flea: true,
   completedQuests: [],
-} as PlayerProfile;
+};
 
 function sync(state: "disconnected" | "syncing" | "synced" | "error"): UseTarkovTrackerSyncResult {
   const detail =
@@ -30,7 +30,7 @@ function sync(state: "disconnected" | "syncing" | "synced" | "error"): UseTarkov
         : { state };
   return {
     state,
-    detail: detail as never,
+    detail: detail,
     connect: vi.fn(),
     reSync: vi.fn(),
     disconnect: vi.fn(),

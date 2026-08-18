@@ -1,30 +1,34 @@
-import { describe, expect, it, vi } from "vitest";
-import { fetchTraders, tradersSchema } from "./traders.js";
-import { createTarkovClient } from "../client.js";
-
-const prapor = { id: "t1", name: "Prapor", normalizedName: "prapor" };
-const fence = { id: "t8", name: "Fence", normalizedName: "fence" };
-
-const fixture = { data: { traders: [prapor, fence] } };
-
-describe("tradersSchema", () => {
-  it("parses a valid response", () => {
-    expect(tradersSchema.safeParse(fixture.data).success).toBe(true);
-  });
-});
+import { describe, expect, it } from "vitest";
+import { fetchTraders } from "./traders.js";
+import { fixtureClient } from "../__fixtures__/client.js";
 
 describe("fetchTraders", () => {
-  it("returns only profile-gating traders (excludes Fence)", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(fixture), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
-    const client = createTarkovClient("https://example.test/graphql", mockFetch);
-    const result = await fetchTraders(client);
-    expect(result.map((t) => t.normalizedName)).toEqual(["prapor"]);
+  it("returns traders with id, name and normalizedName", async () => {
+    const traders = await fetchTraders(fixtureClient());
+    expect(traders.length).toBeGreaterThan(0);
+    for (const t of traders) {
+      expect(typeof t.id).toBe("string");
+      expect(typeof t.normalizedName).toBe("string");
+    }
+  });
+
+  it("resolves translated names rather than translation keys", async () => {
+    const traders = await fetchTraders(fixtureClient());
+    for (const t of traders) expect(t.name).not.toMatch(/ Nickname$/);
+  });
+
+  it("returns only profile-gating traders", async () => {
+    const traders = await fetchTraders(fixtureClient());
+    for (const t of traders) {
+      expect([
+        "prapor",
+        "therapist",
+        "skier",
+        "peacekeeper",
+        "mechanic",
+        "ragman",
+        "jaeger",
+      ]).toContain(t.normalizedName);
+    }
   });
 });

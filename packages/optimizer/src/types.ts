@@ -1,4 +1,4 @@
-import type { BuildV4, PlayerProfile, WeaponTree, ModListItem } from "@tarkov/data";
+import type { BuildV5, PlayerProfile, WeaponTree, ModListItem } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 
 /**
@@ -37,7 +37,7 @@ export type OptimizationReason = "no-valid-combinations" | "infeasible-budget" |
 export type OptimizationResult =
   | {
       readonly ok: true;
-      readonly build: BuildV4;
+      readonly build: BuildV5;
       readonly stats: WeaponSpec;
       /** `true` when the timeout fired before the search completed. */
       readonly partial?: boolean;

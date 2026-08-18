@@ -1,0 +1,12 @@
+# Toolchain pin for this repo. mise reads this on `cd` into the directory.
+#
+# All three of these values are held together by tests in packages/repo-guards:
+#   node  MUST equal .nvmrc                     (CI reads .nvmrc via actions/setup-node)
+#   pnpm  MUST equal package.json packageManager
+#
+# CI deliberately still uses .nvmrc rather than jdx/mise-action — see the spec's
+# "CI is deliberately left alone" note. If CI ever moves to mise, .nvmrc retires
+# and the node guard goes with it.
+[tools]
+node = "22"
+pnpm = "10.34.5"

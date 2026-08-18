@@ -21,7 +21,7 @@ const modList: readonly ModListItem[] = [
     types: [],
     minLevelForFlea: null,
     properties: {
-      __typename: "ItemPropertiesWeaponMod",
+      propertiesType: "ItemPropertiesWeaponMod",
       ergonomics: 2,
       recoilModifier: -5,
       accuracyModifier: 0,
@@ -35,7 +35,7 @@ const modList: readonly ModListItem[] = [
     ],
     craftsFor: null,
     bartersFor: null,
-  } as ModListItem,
+  },
   {
     id: "m-new",
     name: "New Muzzle",
@@ -45,7 +45,7 @@ const modList: readonly ModListItem[] = [
     types: [],
     minLevelForFlea: null,
     properties: {
-      __typename: "ItemPropertiesWeaponMod",
+      propertiesType: "ItemPropertiesWeaponMod",
       ergonomics: 3,
       recoilModifier: -9,
       accuracyModifier: 0,
@@ -59,7 +59,7 @@ const modList: readonly ModListItem[] = [
     ],
     craftsFor: null,
     bartersFor: null,
-  } as ModListItem,
+  },
   {
     id: "h-new",
     name: "New Handguard",
@@ -69,7 +69,7 @@ const modList: readonly ModListItem[] = [
     types: [],
     minLevelForFlea: null,
     properties: {
-      __typename: "ItemPropertiesWeaponMod",
+      propertiesType: "ItemPropertiesWeaponMod",
       ergonomics: 4,
       recoilModifier: -2,
       accuracyModifier: 0,
@@ -83,7 +83,7 @@ const modList: readonly ModListItem[] = [
     ],
     craftsFor: null,
     bartersFor: null,
-  } as ModListItem,
+  },
 ];
 
 describe("slotDiff", () => {

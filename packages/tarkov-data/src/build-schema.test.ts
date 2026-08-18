@@ -225,6 +225,6 @@ describe("Build (discriminated union) — v4", () => {
 
 describe("CURRENT_BUILD_VERSION", () => {
   it("matches the latest BuildV* variant in the discriminated union", () => {
-    expect(CURRENT_BUILD_VERSION).toBe(4);
+    expect(CURRENT_BUILD_VERSION).toBe(5);
   });
 });

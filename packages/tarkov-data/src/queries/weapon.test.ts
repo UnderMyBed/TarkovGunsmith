@@ -1,75 +1,48 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { fetchWeapon, weaponSchema } from "./weapon.js";
-import { createTarkovClient } from "../client.js";
-import fixture from "../__fixtures__/weapon.json" with { type: "json" };
+import { fetchWeaponList } from "./weaponList.js";
+import { fixtureClient } from "../__fixtures__/client.js";
+
+const validItem = {
+  id: "5447a9cd4bdc2dbd208b4567",
+  name: "M4A1",
+  shortName: "M4A1",
+  iconLink: "https://assets.tarkov.dev/x-icon.webp",
+  weight: 3.1,
+  properties: {
+    propertiesType: "ItemPropertiesWeapon",
+    ergonomics: 50,
+    recoilVertical: 70,
+    recoilHorizontal: 250,
+    caliber: "Caliber556x45NATO",
+    fireRate: 800,
+  },
+};
 
 describe("weaponSchema", () => {
-  it("parses the recorded fixture without error", () => {
-    const result = weaponSchema.safeParse(fixture.data);
-    expect(result.success).toBe(true);
+  it("accepts a well-formed weapon", () => {
+    expect(weaponSchema.safeParse({ item: validItem }).success).toBe(true);
   });
 
   it("rejects responses where item is null", () => {
-    const result = weaponSchema.safeParse({ item: null });
-    expect(result.success).toBe(false);
+    expect(weaponSchema.safeParse({ item: null }).success).toBe(false);
   });
 
   it("rejects items with non-numeric ergonomics", () => {
-    const bad = {
-      item: {
-        ...fixture.data.item,
-        properties: { ...fixture.data.item.properties, ergonomics: "high" },
-      },
-    };
-    const result = weaponSchema.safeParse(bad);
-    expect(result.success).toBe(false);
+    const bad = { ...validItem, properties: { ...validItem.properties, ergonomics: "fast" } };
+    expect(weaponSchema.safeParse({ item: bad }).success).toBe(false);
   });
 });
 
 describe("fetchWeapon", () => {
-  it("sends the id as a variable", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(fixture), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
-    const client = createTarkovClient("https://example.test/graphql", mockFetch);
-    await fetchWeapon(client, "5447a9cd4bdc2dbd208b4567");
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    const callBody = JSON.parse(String(mockFetch.mock.calls[0]?.[1]?.body ?? "{}")) as {
-      variables?: { id?: string };
-    };
-    expect(callBody.variables?.id).toBe("5447a9cd4bdc2dbd208b4567");
+  it("returns the weapon for a known id", async () => {
+    const list = await fetchWeaponList(fixtureClient());
+    const found = await fetchWeapon(fixtureClient(), list[0]!.id);
+    expect(found.id).toBe(list[0]!.id);
+    expect(found.properties.propertiesType).toBe("ItemPropertiesWeapon");
   });
 
-  it("returns the parsed weapon", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(fixture), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
-    const client = createTarkovClient("https://example.test/graphql", mockFetch);
-    const result = await fetchWeapon(client, "5447a9cd4bdc2dbd208b4567");
-    expect(result.shortName).toBe("M4A1");
-    expect(result.weight).toBe(2.7);
-  });
-
-  it("throws when the api returns no item for the id", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ data: { item: null } }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
-    const client = createTarkovClient("https://example.test/graphql", mockFetch);
-    await expect(fetchWeapon(client, "missing")).rejects.toThrow();
+  it("throws for an unknown id rather than returning a partial object", async () => {
+    await expect(fetchWeapon(fixtureClient(), "no-such-id")).rejects.toThrow();
   });
 });

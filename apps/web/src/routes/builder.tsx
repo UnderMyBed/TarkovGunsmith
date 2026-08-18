@@ -13,9 +13,8 @@ import {
   itemAvailability,
   CURRENT_BUILD_VERSION,
   type BuildV1,
-  type BuildV4,
+  type BuildV5,
   type PlayerProfile,
-  type SlotNodeForMigration,
 } from "@tarkov/data";
 import { useTarkovTrackerSync } from "../features/builder/useTarkovTrackerSync.js";
 import { weaponSpec } from "@tarkov/ballistics";
@@ -123,7 +122,7 @@ export function BuilderPage({
       createdAt: new Date(0).toISOString(),
     };
     // The tree's SlotNode structurally extends SlotNodeForMigration.
-    const v2 = migrateV1ToV2(v1, tree.data.slots as unknown as readonly SlotNodeForMigration[]);
+    const v2 = migrateV1ToV2(v1, tree.data.slots);
     setAttachments(v2.attachments);
     setOrphaned(v2.orphaned);
     migratedRef.current = true;
@@ -281,9 +280,9 @@ export function BuilderPage({
     setOrphaned([]);
   }
 
-  const currentBuild = useMemo<BuildV4>(
+  const currentBuild = useMemo<BuildV5>(
     () => ({
-      version: 4,
+      version: 5,
       weaponId,
       attachments,
       orphaned,

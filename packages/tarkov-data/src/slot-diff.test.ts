@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { slotDiff, type SlotDiffStatus, type SlotDiffInput } from "./slot-diff.js";
 
 function leaf(nameId: string): SlotDiffInput["tree"][number] {
-  return { nameId, path: nameId, children: [] } as unknown as SlotDiffInput["tree"][number];
+  return { nameId, path: nameId, children: [] };
 }
 
 const tree = [leaf("mod_scope"), leaf("mod_barrel"), leaf("mod_stock")];

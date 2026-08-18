@@ -3,13 +3,13 @@ import { hydrateBuildCard } from "./hydrate.js";
 import { m4a1Build, m4a1Weapon, m4a1Mods } from "./__fixtures__/m4a1-build.js";
 
 describe("hydrateBuildCard", () => {
-  it("uses BuildV4.name as title and weapon shortName as subtitle", () => {
+  it("uses BuildV5.name as title and weapon shortName as subtitle", () => {
     const vm = hydrateBuildCard({ build: m4a1Build, weapon: m4a1Weapon, mods: m4a1Mods });
     expect(vm.title).toBe("RECOIL KING");
     expect(vm.subtitle).toBe("M4A1");
   });
 
-  it("falls back to weapon shortName when BuildV4.name is empty", () => {
+  it("falls back to weapon shortName when BuildV5.name is empty", () => {
     const vm = hydrateBuildCard({
       build: { ...m4a1Build, name: "" },
       weapon: m4a1Weapon,

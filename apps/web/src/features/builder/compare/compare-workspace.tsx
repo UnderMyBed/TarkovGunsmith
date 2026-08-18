@@ -9,7 +9,7 @@ import {
   useForkPair,
   slotDiff,
   CURRENT_PAIR_VERSION,
-  type BuildV4,
+  type BuildV5,
   type BuildPair,
 } from "@tarkov/data";
 import { CompareToolbar } from "./compare-toolbar.js";
@@ -32,8 +32,8 @@ export function CompareWorkspace({
   const draft = useCompareDraft(
     initialPair
       ? {
-          left: initialPair.left?.version === 4 ? initialPair.left : null,
-          right: initialPair.right?.version === 4 ? initialPair.right : null,
+          left: initialPair.left?.version === 5 ? initialPair.left : null,
+          right: initialPair.right?.version === 5 ? initialPair.right : null,
           leftProfile: initialPair.leftProfile,
           rightProfile: initialPair.rightProfile,
           name: initialPair.name,
@@ -73,9 +73,9 @@ export function CompareWorkspace({
     if (!raw || !mode) return;
 
     try {
-      const left = JSON.parse(raw) as BuildV4;
-      // Only accept v4 for now; older versions get dropped gracefully.
-      if (left.version !== 4) return;
+      const left = JSON.parse(raw) as BuildV5;
+      // Only accept the current version; loadBuild upgrades v3/v4 on the way in.
+      if (left.version !== 5) return;
       draft.setSide("left", left);
       if (mode === "clone-both") {
         draft.setSide("right", structuredClone(left));
@@ -85,7 +85,7 @@ export function CompareWorkspace({
           try {
             const { loadBuild } = await import("@tarkov/data");
             const right = await loadBuild(fetch, rightId);
-            if (right.version === 4) draft.setSide("right", right);
+            if (right.version === 5) draft.setSide("right", right);
           } catch {
             // Swallow — user sees empty right side; can paste again.
           }
@@ -200,7 +200,7 @@ export function CompareWorkspace({
           build={draft.state.left}
           profile={draft.state.leftProfile}
           diff={diff}
-          onBuildChange={(b: BuildV4 | null) => draft.setSide("left", b)}
+          onBuildChange={(b: BuildV5 | null) => draft.setSide("left", b)}
         />
         <CompareSide
           label="B"
@@ -208,7 +208,7 @@ export function CompareWorkspace({
           build={draft.state.right}
           profile={draft.state.rightProfile}
           diff={diff}
-          onBuildChange={(b: BuildV4 | null) => draft.setSide("right", b)}
+          onBuildChange={(b: BuildV5 | null) => draft.setSide("right", b)}
         />
       </div>
     </div>

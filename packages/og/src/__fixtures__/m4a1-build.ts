@@ -1,11 +1,11 @@
-import type { BuildV4 } from "@tarkov/data";
+import type { BuildV5 } from "@tarkov/data";
 
 /**
- * Hand-constructed BuildV4 + weapon/mod lookups. IDs are real Tarkov item IDs;
+ * Hand-constructed BuildV5 + weapon/mod lookups. IDs are real Tarkov item IDs;
  * numeric values are representative but not guaranteed to match live data.
  */
-export const m4a1Build: BuildV4 = {
-  version: 4,
+export const m4a1Build: BuildV5 = {
+  version: 5,
   weaponId: "5447a9cd4bdc2dbd208b4567", // M4A1
   attachments: {
     mod_pistol_grip: "55d4af3a4bdc2d972f8b456f",

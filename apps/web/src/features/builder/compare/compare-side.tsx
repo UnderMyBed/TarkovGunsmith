@@ -5,7 +5,7 @@ import {
   useWeaponTree,
   itemAvailability,
   CURRENT_BUILD_VERSION,
-  type BuildV4,
+  type BuildV5,
   type ModListItem,
   type WeaponListItem,
   type PlayerProfile,
@@ -24,13 +24,13 @@ export interface CompareSideProps {
   /** Section index used by the field-ledger SectionTitle (01, 02, …). */
   sectionIndex: number;
   /** Current build for this side, or null if the user hasn't picked a weapon yet. */
-  build: BuildV4 | null;
+  build: BuildV5 | null;
   /** Profile used for availability gating (falls back to builder default when unset). */
   profile: PlayerProfile | undefined;
   /** Per-slot diff statuses from `slotDiff` — undefined/null skips diff highlighting. */
   diff: SlotDiffMap | null;
   /** Fires when the user edits weapon, attachments, or dismisses orphans. */
-  onBuildChange: (build: BuildV4 | null) => void;
+  onBuildChange: (build: BuildV5 | null) => void;
 }
 
 /**
@@ -80,7 +80,7 @@ export function CompareSide({
       onBuildChange(null);
       return;
     }
-    const base: BuildV4 = build
+    const base: BuildV5 = build
       ? { ...build, weaponId: newWeaponId, attachments: {}, orphaned: [] }
       : {
           version: CURRENT_BUILD_VERSION,
@@ -208,7 +208,7 @@ export function CompareSide({
  * or the referenced weapon isn't in the current data set (upstream drift).
  */
 export function computeSideSpec(
-  build: BuildV4 | null,
+  build: BuildV5 | null,
   weapons: readonly WeaponListItem[] | undefined,
   mods: readonly ModListItem[] | undefined,
 ): WeaponSpec | null {

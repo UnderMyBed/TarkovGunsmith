@@ -85,11 +85,22 @@ export const BuildV4 = BuildV3.extend({
 export type BuildV4 = z.infer<typeof BuildV4>;
 
 /**
+ * v5 is structurally identical to v4. The version exists to mark that
+ * `profileSnapshot.completedQuests` has been remapped onto upstream's restructured Gunsmith
+ * quest names — see `migrateV4ToV5`.
+ */
+export const BuildV5 = BuildV4.extend({
+  version: z.literal(5),
+});
+
+export type BuildV5 = z.infer<typeof BuildV5>;
+
+/**
  * Discriminated union over all known build versions. Grows one variant per
  * Builder Robustness PR. Never mutates existing variants — old shared URLs
  * must keep parsing forever (modulo the 30-day KV TTL on builds-api).
  */
-export const Build = z.discriminatedUnion("version", [BuildV1, BuildV2, BuildV3, BuildV4]);
+export const Build = z.discriminatedUnion("version", [BuildV1, BuildV2, BuildV3, BuildV4, BuildV5]);
 export type Build = z.infer<typeof Build>;
 
 /**
@@ -97,4 +108,4 @@ export type Build = z.infer<typeof Build>;
  * so callers can use this literal in `{ version: CURRENT_BUILD_VERSION }`
  * without a cast.
  */
-export const CURRENT_BUILD_VERSION = 4 as const;
+export const CURRENT_BUILD_VERSION = 5 as const;

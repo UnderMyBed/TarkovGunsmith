@@ -1,16 +1,16 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
-import type { GraphQLClient } from "./client.js";
+import type { TarkovJsonClient } from "./client.js";
 
-const TarkovClientContext = createContext<GraphQLClient | null>(null);
+const TarkovClientContext = createContext<TarkovJsonClient | null>(null);
 
 export interface TarkovDataProviderProps {
-  client: GraphQLClient;
+  client: TarkovJsonClient;
   children: ReactNode;
 }
 
 /**
- * Plumb a GraphQL client down to all `useX` hooks in this package.
+ * Plumb the tarkov.dev JSON client down to all `useX` hooks in this package.
  * Wrap your app once near the root.
  */
 export function TarkovDataProvider({ client, children }: TarkovDataProviderProps) {
@@ -18,9 +18,9 @@ export function TarkovDataProvider({ client, children }: TarkovDataProviderProps
 }
 
 /**
- * Read the GraphQL client from context. Throws if no provider is mounted.
+ * Read the JSON client from context. Throws if no provider is mounted.
  */
-export function useTarkovClient(): GraphQLClient {
+export function useTarkovClient(): TarkovJsonClient {
   const client = useContext(TarkovClientContext);
   if (!client) {
     throw new Error(

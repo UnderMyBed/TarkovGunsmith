@@ -1,4 +1,5 @@
 import { Build } from "./build-schema.js";
+import { migrateV3ToV4, migrateV4ToV5 } from "./build-migrations.js";
 
 const BUILDS_ENDPOINT = "/api/builds";
 
@@ -89,5 +90,22 @@ export async function loadBuild(fetchImpl: typeof fetch, id: string): Promise<Bu
   if (!parsed.success) {
     throw new LoadBuildError("invalid-schema", "Build failed schema validation", parsed.error);
   }
-  return parsed.data;
+  return upgradeLoadedBuild(parsed.data);
+}
+
+/**
+ * Bring a loaded build forward to the current version where that can be done without extra
+ * inputs.
+ *
+ * v3 and v4 upgrade cleanly. v1 and v2 are left alone: `migrateV1ToV2` needs the weapon's slot
+ * tree to place attachments, which this module has no access to, so `/builder` performs that
+ * step once the tree has loaded.
+ *
+ * This exists because the quest rename in v5 is otherwise invisible — an un-upgraded v4 build
+ * keeps its retired `gunsmith-part-N` names and silently loses those unlocks.
+ */
+function upgradeLoadedBuild(build: Build): Build {
+  if (build.version === 3) return migrateV4ToV5(migrateV3ToV4(build));
+  if (build.version === 4) return migrateV4ToV5(build);
+  return build;
 }

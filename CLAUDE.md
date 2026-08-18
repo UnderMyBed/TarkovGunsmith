@@ -30,8 +30,8 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Built explicitly to be developed _with_ Claude as the primary collaborator.
 
 - **Frontend:** Vite + React + TypeScript SPA → Cloudflare Pages
-- **Edge backend:** Two Cloudflare Workers (`data-proxy` for GraphQL caching, `builds-api` for KV-backed share URLs)
-- **Data:** [`api.tarkov.dev`](https://api.tarkov.dev) (community GraphQL API)
+- **Edge backend:** One Cloudflare Worker (`builds-api` for KV-backed share URLs)
+- **Data:** [`json.tarkov.dev`](https://json.tarkov.dev/endpoints) (community JSON API). The GraphQL API this project was built on went down in July 2026 ([the-hideout/tarkov-api#474](https://github.com/the-hideout/tarkov-api/issues/474)) and tarkov.dev itself now runs on the JSON API.
 - **Math:** Pure-TS ballistics package, runs client-side
 - **UI:** Tailwind v4 + shadcn/ui, dark-first
 
@@ -78,10 +78,8 @@ Skip none of these steps. Even "simple" changes warrant a plan — it takes a mi
 
 ```
 apps/web              Vite SPA (the user-facing site)
-apps/data-proxy       CF Worker — GraphQL cache layer
 apps/builds-api       CF Worker — KV-backed build sharing
 packages/ballistics   Pure TS — penetration & damage math
-packages/tarkov-types Generated GraphQL types + Zod schemas
 packages/tarkov-data  Typed query layer (TanStack Query hooks)
 packages/ui           Shared shadcn components, design tokens
 docs/                 Specs, plans, ADRs, AI workflow guides
@@ -107,7 +105,7 @@ Pre-commit (via Husky 9) runs `lint-staged` on changed files (`eslint --fix --ma
 ### Running the full stack locally
 
 ```bash
-pnpm dev              # turbo fan-out → web (5173) + data-proxy (8787) + builds-api (8788)
+pnpm dev              # turbo fan-out → web (5173) + builds-api (8788)
 pnpm seed:build       # POST a fixture build to local builds-api; prints /builder/:id URL
 ```
 

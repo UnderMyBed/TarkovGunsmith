@@ -30,7 +30,7 @@ import {
   renderPng,
 } from "@tarkov/og";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
-import { type BuildV4, DEFAULT_PROFILE } from "@tarkov/data";
+import { type BuildV5, DEFAULT_PROFILE } from "@tarkov/data";
 import { fetchOgRowsForBuild } from "../../lib/og-graphql.js";
 import { availabilityPillText } from "../../lib/og-availability.js";
 
@@ -67,7 +67,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
       return fallback("upstream", id, startedAt, { "cache-control": "no-store" });
     }
 
-    const build = (await upstream.json()) as BuildV4;
+    const build = (await upstream.json()) as BuildV5;
     const rows = await fetchOgRowsForBuild({
       weaponId: build.weaponId,
       modIds: Object.values(build.attachments),

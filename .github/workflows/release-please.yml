@@ -24,14 +24,23 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      # Every expression reaches this script through `env:`, never spliced into the `run:`
+      # scalar. Actions substitutes ${{ }} before bash parses it, so a spliced value is
+      # source code — and this job holds contents/pull-requests/actions write plus GH_TOKEN.
       - name: Trigger CI on release PR
         if: steps.release.outputs.pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PR: ${{ steps.release.outputs.pr }}
+          REPO: ${{ github.repository }}
         run: |
-          PR_BRANCH=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.headBranchName')
+          set -euo pipefail
+          PR_BRANCH=$(printf '%s' "$RELEASE_PR" | jq -r '.headBranchName')
+          # Without this guard a failed jq yields an empty ref and `gh workflow run --ref ""`
+          # fires against an unintended target. There was no `set -e` here before either.
+          [ -n "$PR_BRANCH" ] && [ "$PR_BRANCH" != "null" ] || {
+            echo "::error::could not read headBranchName from the release-please output"
+            exit 1
+          }
           echo "Triggering CI workflow on $PR_BRANCH"
-          gh workflow run ci.yml \
-            --repo "${{ github.repository }}" \
-            --ref "$PR_BRANCH" \
-            --field ref="$PR_BRANCH"
+          gh workflow run ci.yml --repo "$REPO" --ref "$PR_BRANCH" --field ref="$PR_BRANCH"
