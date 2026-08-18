@@ -53,22 +53,6 @@ const OTHER_MARQUEE = [
   "the-tarkov-shooter-part-5",
 ] as const;
 
-export interface MarqueeQuestGroup {
-  readonly label: string;
-  readonly quests: readonly string[];
-}
-
-/**
- * Grouped for the profile editor. 36 flat checkboxes is a worse control than 20 was, and the
- * split is meaningful rather than cosmetic: the master series is a linear progression, the
- * weapon quests are independent of each other.
- */
-export const MARQUEE_QUEST_GROUPS: readonly MarqueeQuestGroup[] = [
-  { label: "GUNSMITH · MASTER", quests: GUNSMITH_MASTER },
-  { label: "GUNSMITH · WEAPON", quests: GUNSMITH_WEAPON },
-  { label: "OTHER", quests: OTHER_MARQUEE },
-];
-
 export const MARQUEE_QUEST_NORMALIZED_NAMES: readonly string[] = [
   ...GUNSMITH_MASTER,
   ...GUNSMITH_WEAPON,

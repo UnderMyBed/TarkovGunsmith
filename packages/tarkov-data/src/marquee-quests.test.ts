@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MARQUEE_QUEST_NORMALIZED_NAMES, MARQUEE_QUEST_GROUPS } from "./marquee-quests.js";
+import { MARQUEE_QUEST_NORMALIZED_NAMES } from "./marquee-quests.js";
 import tasksFixture from "./__fixtures__/tasks-sample.json" with { type: "json" };
 
 describe("marquee quests", () => {
@@ -17,19 +17,6 @@ describe("marquee quests", () => {
     expect(new Set(MARQUEE_QUEST_NORMALIZED_NAMES).size).toBe(
       MARQUEE_QUEST_NORMALIZED_NAMES.length,
     );
-  });
-
-  it("groups cover every quest exactly once", () => {
-    const grouped = MARQUEE_QUEST_GROUPS.flatMap((g) => g.quests);
-    expect([...grouped].sort()).toEqual([...MARQUEE_QUEST_NORMALIZED_NAMES].sort());
-    expect(new Set(grouped).size).toBe(grouped.length);
-  });
-
-  it("every group has a label and at least one quest", () => {
-    for (const group of MARQUEE_QUEST_GROUPS) {
-      expect(group.label.length).toBeGreaterThan(0);
-      expect(group.quests.length).toBeGreaterThan(0);
-    }
   });
 
   it("names sampled from the list exist in live-shaped upstream data", () => {
