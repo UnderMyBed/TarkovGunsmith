@@ -40,7 +40,7 @@
 - Consumes: nothing.
 - Produces: a working `pnpm` on `PATH` at 10.34.5 and `node` at 22.x. Every later task depends on this.
 
-- [ ] **Step 1: Create `mise.toml`**
+- [x] **Step 1: Create `mise.toml`**
 
 ```toml
 # Toolchain pin for this repo. mise reads this on `cd` into the directory.
@@ -57,17 +57,17 @@ node = "22"
 pnpm = "10.34.5"
 ```
 
-- [ ] **Step 2: Install the toolchain**
+- [x] **Step 2: Install the toolchain**
 
 Run: `mise install`
 Expected: mise downloads node 22.x and pnpm 10.34.5. Re-running prints "already installed".
 
-- [ ] **Step 3: Verify the pins resolve**
+- [x] **Step 3: Verify the pins resolve**
 
 Run: `mise exec -- node -v && mise exec -- pnpm -v`
 Expected: `v22.` prefix on the first line, `10.34.5` on the second.
 
-- [ ] **Step 4: Bump `packageManager` to match**
+- [x] **Step 4: Bump `packageManager` to match**
 
 In `package.json`, change:
 
@@ -81,7 +81,7 @@ to:
   "packageManager": "pnpm@10.34.5",
 ```
 
-- [ ] **Step 5: Put mise shims on PATH so git hooks can find pnpm**
+- [x] **Step 5: Put mise shims on PATH so git hooks can find pnpm**
 
 This is a machine change, not a repo change. Husky's `pre-commit` hook runs `pnpm` and inherits
 `PATH` from whatever shell invoked `git commit`.
@@ -94,13 +94,13 @@ echo 'export PATH="$HOME/.local/share/mise/shims:$PATH"' >> ~/.zprofile
 Open a new shell, then run: `pnpm -v`
 Expected: `10.34.5`, with no `mise exec` prefix needed.
 
-- [ ] **Step 6: Reinstall dependencies under the pinned pnpm**
+- [x] **Step 6: Reinstall dependencies under the pinned pnpm**
 
 Run: `pnpm install`
 Expected: completes without an `ERR_PNPM_BAD_PM_VERSION` error. `pnpm-lock.yaml` should be
 unchanged — if it is not, stop and inspect the diff before continuing.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add mise.toml package.json
@@ -130,7 +130,7 @@ CI keeps reading .nvmrc this pass; mise-action parity is deferred."
 - Consumes: Task 1's `mise.toml`.
 - Produces: `REPO_ROOT: string`, `readMiseTools(): Record<string, string>`, `readRepoFile(relPath: string): string` — all exported from `packages/repo-guards/src/repo.ts` and used by every later guard.
 
-- [ ] **Step 1: Create the package manifest**
+- [x] **Step 1: Create the package manifest**
 
 `packages/repo-guards/package.json`:
 
@@ -154,7 +154,7 @@ CI keeps reading .nvmrc this pass; mise-action parity is deferred."
 }
 ```
 
-- [ ] **Step 2: Create `packages/repo-guards/tsconfig.json`**
+- [x] **Step 2: Create `packages/repo-guards/tsconfig.json`**
 
 ```json
 {
@@ -171,7 +171,7 @@ CI keeps reading .nvmrc this pass; mise-action parity is deferred."
 Note: unlike the other packages this one has no `outDir` and sets `noEmit` — nothing here is
 built or imported by another package.
 
-- [ ] **Step 3: Create `packages/repo-guards/vitest.config.ts`**
+- [x] **Step 3: Create `packages/repo-guards/vitest.config.ts`**
 
 ```ts
 import { defineConfig } from "vitest/config";
@@ -185,7 +185,7 @@ export default defineConfig({
 
 No coverage thresholds: this package is assertions about repo files, not shipped logic.
 
-- [ ] **Step 4: Create the shared helper `packages/repo-guards/src/repo.ts`**
+- [x] **Step 4: Create the shared helper `packages/repo-guards/src/repo.ts`**
 
 ```ts
 import { readFileSync } from "node:fs";
@@ -226,7 +226,7 @@ export function readMiseTools(): Record<string, string> {
 }
 ```
 
-- [ ] **Step 5: Write the failing test `packages/repo-guards/src/toolchain.test.ts`**
+- [x] **Step 5: Write the failing test `packages/repo-guards/src/toolchain.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -240,7 +240,7 @@ describe("toolchain pins agree", () => {
 });
 ```
 
-- [ ] **Step 6: Register the test glob with ESLint**
+- [x] **Step 6: Register the test glob with ESLint**
 
 In `eslint.config.js`, inside `parserOptions.projectService.allowDefaultProject`, add these two
 entries next to the other `packages/*` entries:
@@ -252,24 +252,24 @@ entries next to the other `packages/*` entries:
 Without this, `eslint --fix` in the pre-commit hook fails with "was not found by the project
 service" — see CLAUDE.md's "Gotcha: per-package `tsconfig.json` is required".
 
-- [ ] **Step 7: Install the new dependency**
+- [x] **Step 7: Install the new dependency**
 
 Run: `pnpm install`
 Expected: `yaml` is added under `packages/repo-guards`; `pnpm-lock.yaml` changes.
 
-- [ ] **Step 8: Run the test to verify it passes**
+- [x] **Step 8: Run the test to verify it passes**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: PASS — `mise.toml` says `22` and `.nvmrc` says `22`.
 
-- [ ] **Step 9: Prove the guard actually guards**
+- [x] **Step 9: Prove the guard actually guards**
 
 Temporarily change `mise.toml` to `node = "24"`, re-run `pnpm --filter @tarkov/repo-guards test`.
 Expected: FAIL with `expected '24' to be '22'`. Revert to `22` and confirm it passes again.
 
 A guard you have never seen fail is a guard you have not tested.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add packages/repo-guards eslint.config.js pnpm-lock.yaml
@@ -290,7 +290,7 @@ holds mise.toml's node pin to .nvmrc, which CI reads."
 - Consumes: `readMiseTools`, `readRepoFile` from Task 2.
 - Produces: nothing new.
 
-- [ ] **Step 1: Add the failing test**
+- [x] **Step 1: Add the failing test**
 
 Append inside the existing `describe` block in `packages/repo-guards/src/toolchain.test.ts`:
 
@@ -301,19 +301,19 @@ it("mise.toml pnpm matches package.json packageManager", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: PASS — Task 1 Step 4 already bumped `packageManager` to `pnpm@10.34.5`.
 
 If it FAILS, Task 1 Step 4 was skipped. Fix `package.json`, do not weaken the test.
 
-- [ ] **Step 3: Prove the guard guards**
+- [x] **Step 3: Prove the guard guards**
 
 Temporarily set `packageManager` to `pnpm@10.0.0`, re-run the test.
 Expected: FAIL with `expected 'pnpm@10.0.0' to be 'pnpm@10.34.5'`. Revert.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/repo-guards/src/toolchain.test.ts
@@ -335,7 +335,7 @@ git commit -m "build(guards): hold packageManager to the mise pnpm pin"
 runtime you do not run is how code typechecks and then fails on an API the pinned runtime lacks.
 Arc 2 adds a Dependabot `ignore` so this cannot silently drift forward again.
 
-- [ ] **Step 1: Pin `@types/node` to the 22 line**
+- [x] **Step 1: Pin `@types/node` to the 22 line**
 
 In root `package.json`, change:
 
@@ -349,11 +349,11 @@ to:
     "@types/node": "^22.19.1",
 ```
 
-- [ ] **Step 2: Install**
+- [x] **Step 2: Install**
 
 Run: `pnpm install`
 
-- [ ] **Step 3: Typecheck the whole repo**
+- [x] **Step 3: Typecheck the whole repo**
 
 Run: `pnpm typecheck`
 Expected: PASS.
@@ -363,12 +363,12 @@ Record the file and symbol in the PR body, then either raise the node pin in `mi
 `.nvmrc` in the same commit (Guard 1 enforces they move together), or rewrite the call. Do not
 revert `@types/node` to paper over it.
 
-- [ ] **Step 4: Run the full gate**
+- [x] **Step 4: Run the full gate**
 
 Run: `pnpm lint && pnpm test && pnpm build`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add package.json pnpm-lock.yaml
@@ -378,7 +378,7 @@ git commit -m "build(deps): align @types/node with the pinned node 22 runtime
 not run produces code that typechecks and then fails at runtime."
 ```
 
-- [ ] **Step 6: Open the Arc T PR**
+- [x] **Step 6: Open the Arc T PR**
 
 ```bash
 git push -u origin build/mise-toolchain-pin
@@ -416,7 +416,7 @@ BODY
 - Consumes: `REPO_ROOT`, `readRepoFile` from Task 2.
 - Produces: `WORKFLOW_DIR: string`, `workflowFiles(): string[]`, `parseWorkflow(file: string): unknown`, `collectRunBlocks(node: unknown, path?: string[]): RunBlock[]` where `RunBlock = { path: string; script: string }` — Arc 3 reuses all four.
 
-- [ ] **Step 1: Create the workflow helper `packages/repo-guards/src/workflows.ts`**
+- [x] **Step 1: Create the workflow helper `packages/repo-guards/src/workflows.ts`**
 
 ```ts
 import { readdirSync } from "node:fs";
@@ -470,7 +470,7 @@ export function collectRunBlocks(node: unknown, path: string[] = []): RunBlock[]
 }
 ```
 
-- [ ] **Step 2: Write the failing test `packages/repo-guards/src/workflow-injection.test.ts`**
+- [x] **Step 2: Write the failing test `packages/repo-guards/src/workflow-injection.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -499,7 +499,7 @@ describe("no ${{ }} expressions inside run: blocks", () => {
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [x] **Step 3: Run the test to verify it fails**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: FAIL on `release-please.yml`, listing two offenders — the `steps.release.outputs.pr`
@@ -507,7 +507,7 @@ splice and the `github.repository` splice, both inside the same `run:` block.
 
 If any other workflow also fails, fix it the same way in this task rather than deferring it.
 
-- [ ] **Step 4: Fix `.github/workflows/release-please.yml`**
+- [x] **Step 4: Fix `.github/workflows/release-please.yml`**
 
 Replace the `Trigger CI on release PR` step (lines 27-37) entirely with:
 
@@ -534,24 +534,24 @@ Replace the `Trigger CI on release PR` step (lines 27-37) entirely with:
     gh workflow run ci.yml --repo "$REPO" --ref "$PR_BRANCH" --field ref="$PR_BRANCH"
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: PASS for every workflow file.
 
-- [ ] **Step 6: Lint the workflow YAML**
+- [x] **Step 6: Lint the workflow YAML**
 
 Run: `mise exec -- actionlint .github/workflows/release-please.yml`
 Expected: no output (actionlint is silent on success).
 
 If `actionlint` is not installed, run `mise use -g actionlint@latest` first.
 
-- [ ] **Step 7: Run the full gate**
+- [x] **Step 7: Run the full gate**
 
 Run: `pnpm lint && pnpm typecheck && pnpm test`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add .github/workflows/release-please.yml packages/repo-guards/src
@@ -567,7 +567,7 @@ absent before, and a repo-guards test that fails on the pattern anywhere
 in .github/workflows."
 ```
 
-- [ ] **Step 9: Open the Arc 0 PR**
+- [x] **Step 9: Open the Arc 0 PR**
 
 ```bash
 git push -u origin fix/release-please-expression-injection
@@ -605,7 +605,7 @@ BODY
 - Consumes: Arc T's toolchain.
 - Produces: a lockfile with a recorded advisory delta, consumed by Task 7's decisions.
 
-- [ ] **Step 1: Record the baseline**
+- [x] **Step 1: Record the baseline**
 
 ```bash
 pnpm audit --json > /tmp/audit-before.json || true
@@ -617,18 +617,18 @@ pnpm audit || true
 Expected at time of writing: `50 vulnerabilities found. Severity: 5 low | 15 moderate | 28 high | 2 critical`.
 Record the actual numbers you see — they will have moved.
 
-- [ ] **Step 2: Update within existing semver ranges**
+- [x] **Step 2: Update within existing semver ranges**
 
 Run: `pnpm update -r`
 Expected: many packages updated. This respects the ranges in each `package.json`, so it lifts
 transitives (`undici`, `brace-expansion`, `fast-uri`, `nanoid`, `postcss`, `seroval`) without
 touching any manifest.
 
-- [ ] **Step 3: Deduplicate**
+- [x] **Step 3: Deduplicate**
 
 Run: `pnpm dedupe`
 
-- [ ] **Step 4: Re-audit and capture the delta**
+- [x] **Step 4: Re-audit and capture the delta**
 
 ```bash
 pnpm audit --json > /tmp/audit-after.json || true
@@ -637,7 +637,7 @@ pnpm audit || true
 
 Write down the new counts. You will paste the before/after into the PR body.
 
-- [ ] **Step 5: Confirm the SPA-bundled critical is gone**
+- [x] **Step 5: Confirm the SPA-bundled critical is gone**
 
 Run: `pnpm why seroval`
 Expected: every resolved copy is `>= 1.5.3`.
@@ -650,12 +650,12 @@ If it is still `1.5.2`, `@tanstack/react-router`'s own range is pinning it. In t
 `@tanstack/react-router` in `apps/web/package.json` to a version whose `router-core` depends on
 `seroval >= 1.5.3`, as its own commit within this PR. Do not leave it unresolved.
 
-- [ ] **Step 6: Run the full gate**
+- [x] **Step 6: Run the full gate**
 
 Run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`
 Expected: PASS.
 
-- [ ] **Step 7: Run the e2e suite**
+- [x] **Step 7: Run the e2e suite**
 
 Run: `pnpm --filter @tarkov/web test:e2e`
 Expected: PASS, all routes, no console errors.
@@ -663,7 +663,7 @@ Expected: PASS, all routes, no console errors.
 This is the step that catches a bad transitive bump. Do not skip it. If Playwright browsers are
 missing, run `pnpm --filter @tarkov/web test:e2e:install` first.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add pnpm-lock.yaml
@@ -688,7 +688,7 @@ explaining which advisory forced it.
 - Consumes: Task 6's `/tmp/audit-after.json`.
 - Produces: the documented residue list that Arc 2 Task 9 turns into `dependabot.yml` `ignore` entries.
 
-- [ ] **Step 1: List what survived**
+- [x] **Step 1: List what survived**
 
 ```bash
 pnpm audit --json 2>/dev/null | node -e '
@@ -703,7 +703,7 @@ let raw = ""; process.stdin.on("data", (d) => (raw += d)); process.stdin.on("end
 });'
 ```
 
-- [ ] **Step 2: Classify each survivor**
+- [x] **Step 2: Classify each survivor**
 
 For every advisory still listed, decide exactly one of:
 
@@ -719,7 +719,7 @@ Known case at time of writing: the two `vite` advisories want `>= 6.4.3` and `>=
 spans a major. If the major is required, land it as its own commit in this PR so the e2e result is
 bisectable against it.
 
-- [ ] **Step 3: Write `docs/operations/dependency-residue.md`**
+- [x] **Step 3: Write `docs/operations/dependency-residue.md`**
 
 ```markdown
 # Dependency advisory residue
@@ -737,12 +737,12 @@ command that proves it resolvable. Reviewed whenever Dependabot's weekly PR land
 Fill one row per survivor. An empty table is a valid and excellent outcome — say so explicitly
 rather than deleting the file.
 
-- [ ] **Step 4: Re-run the full gate**
+- [x] **Step 4: Re-run the full gate**
 
 Run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build && pnpm --filter @tarkov/web test:e2e`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/operations/dependency-residue.md
@@ -754,7 +754,7 @@ command that proves it resolvable. Arc 2 turns the blocked-upstream
 rows into dependabot ignore entries."
 ```
 
-- [ ] **Step 6: Open the Arc 1 PR**
+- [x] **Step 6: Open the Arc 1 PR**
 
 ```bash
 git push -u origin fix/dependency-catch-up
@@ -1532,8 +1532,7 @@ function triggersOf(parsed: unknown): Record<string, unknown> {
 
 function watchedWorkflows(): string[] {
   const workflowRun = triggersOf(parseWorkflow(WATCHER_FILE))["workflow_run"] as
-    | { workflows?: string[] }
-    | undefined;
+    { workflows?: string[] } | undefined;
   return workflowRun?.workflows ?? [];
 }
 

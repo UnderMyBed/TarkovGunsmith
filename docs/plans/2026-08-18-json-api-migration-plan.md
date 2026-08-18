@@ -43,7 +43,7 @@
 - Consumes: nothing.
 - Produces: `interface TranslatedDocument<T> { data: T; translations?: readonly string[] }` and `mergeTranslations<T>(doc: TranslatedDocument<T>, lang: Record<string, string>): T`.
 
-- [ ] **Step 1: Add the dependency**
+- [x] **Step 1: Add the dependency**
 
 In `packages/tarkov-data/package.json` `dependencies`, add:
 
@@ -53,7 +53,7 @@ In `packages/tarkov-data/package.json` `dependencies`, add:
 
 Run: `pnpm install`
 
-- [ ] **Step 2: Write the failing test `packages/tarkov-data/src/translations.test.ts`**
+- [x] **Step 2: Write the failing test `packages/tarkov-data/src/translations.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -103,12 +103,12 @@ describe("mergeTranslations", () => {
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [x] **Step 3: Run the test to verify it fails**
 
 Run: `pnpm --filter @tarkov/data test -- translations`
 Expected: FAIL — `translations.js` does not exist.
 
-- [ ] **Step 4: Implement `packages/tarkov-data/src/translations.ts`**
+- [x] **Step 4: Implement `packages/tarkov-data/src/translations.ts`**
 
 ```ts
 import { JSONPath } from "jsonpath-plus";
@@ -153,18 +153,18 @@ export function mergeTranslations<T>(doc: TranslatedDocument<T>, lang: Record<st
 }
 ```
 
-- [ ] **Step 5: Register the test glob with ESLint**
+- [x] **Step 5: Register the test glob with ESLint**
 
 In `eslint.config.js`, inside `parserOptions.projectService.allowDefaultProject`, next to the
 other `packages/tarkov-data` entries, confirm `"packages/tarkov-data/src/*.test.ts"` is present.
 It already is — no edit needed unless the array has changed.
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run: `pnpm --filter @tarkov/data test -- translations`
 Expected: PASS, 5 tests.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add packages/tarkov-data/src/translations.ts packages/tarkov-data/src/translations.test.ts \
@@ -188,7 +188,7 @@ hard-coded, so new translated fields do not silently stop translating."
 - Consumes: `mergeTranslations`, `TranslatedDocument` from Task 1.
 - Produces: `interface TarkovJsonClient { fetchResource<T>(resource: string): Promise<T> }`, `class TarkovApiError extends Error { resource: string; status: number }`, and `createTarkovClient(baseUrl: string, fetchImpl?: typeof fetch): TarkovJsonClient`.
 
-- [ ] **Step 1: Write the failing test `packages/tarkov-data/src/client.test.ts`**
+- [x] **Step 1: Write the failing test `packages/tarkov-data/src/client.test.ts`**
 
 ```ts
 import { describe, expect, it, vi } from "vitest";
@@ -244,12 +244,12 @@ describe("createTarkovClient", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `pnpm --filter @tarkov/data test -- client`
 Expected: FAIL — `createTarkovClient` still returns a `GraphQLClient` and `TarkovApiError` does not exist.
 
-- [ ] **Step 3: Rewrite `packages/tarkov-data/src/client.ts`**
+- [x] **Step 3: Rewrite `packages/tarkov-data/src/client.ts`**
 
 ```ts
 import { mergeTranslations } from "./translations.js";
@@ -317,7 +317,7 @@ export function createTarkovClient(baseUrl: string, fetchImpl?: typeof fetch): T
 export type { TranslatedDocument };
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `pnpm --filter @tarkov/data test -- client`
 Expected: PASS, 3 tests.
@@ -325,7 +325,7 @@ Expected: PASS, 3 tests.
 Other query tests will now fail to typecheck because they pass a `GraphQLClient`. That is
 expected and Arc 2 fixes them; do not patch them here.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/client.ts packages/tarkov-data/src/client.test.ts
@@ -349,7 +349,7 @@ missing translation document degrades to raw keys rather than failing."
 - Consumes: `createTarkovClient`, `TarkovJsonClient` from Task 2.
 - Produces: `TARKOV_JSON_API_BASE = "https://json.tarkov.dev/regular/"`; `useTarkovClient(): TarkovJsonClient`.
 
-- [ ] **Step 1: Update the endpoint test `apps/web/src/tarkov-client.test.ts`**
+- [x] **Step 1: Update the endpoint test `apps/web/src/tarkov-client.test.ts`**
 
 Replace the existing endpoint assertion with:
 
@@ -361,7 +361,7 @@ it("is configured for the json.tarkov.dev regular game mode", () => {
 
 Update the import at the top of the file from `TARKOV_GRAPHQL_ENDPOINT` to `TARKOV_JSON_API_BASE`.
 
-- [ ] **Step 2: Rewrite `apps/web/src/tarkov-client.ts`**
+- [x] **Step 2: Rewrite `apps/web/src/tarkov-client.ts`**
 
 ```ts
 import { createTarkovClient } from "@tarkov/data";
@@ -379,13 +379,13 @@ export const TARKOV_JSON_API_BASE = "https://json.tarkov.dev/regular/";
 export const tarkovClient: TarkovJsonClient = createTarkovClient(TARKOV_JSON_API_BASE);
 ```
 
-- [ ] **Step 3: Update the provider's client type**
+- [x] **Step 3: Update the provider's client type**
 
 In `packages/tarkov-data/src/provider.tsx`, replace every `GraphQLClient` type reference with
 `TarkovJsonClient`, importing it from `./client.js`. The context value, provider props, and
 `useTarkovClient` return type all change type only — no behaviour changes.
 
-- [ ] **Step 4: Export the new surface**
+- [x] **Step 4: Export the new surface**
 
 In `packages/tarkov-data/src/index.ts`, replace the `GraphQLClient` export with:
 
@@ -396,14 +396,14 @@ export { mergeTranslations } from "./translations.js";
 export type { TranslatedDocument } from "./translations.js";
 ```
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 Run: `pnpm --filter @tarkov/web test -- tarkov-client`
 Expected: PASS.
 
 `pnpm typecheck` still fails in `packages/tarkov-data/src/queries/*` — those are Arc 2's job.
 
-- [ ] **Step 6: Commit and open the Arc 1 PR**
+- [x] **Step 6: Commit and open the Arc 1 PR**
 
 ```bash
 git add apps/web/src/tarkov-client.ts apps/web/src/tarkov-client.test.ts \
@@ -448,7 +448,7 @@ document is 1.36 MB gzipped. Caching inside the client keeps every existing `fet
 signature — and therefore every hook — completely unchanged, which is worth far more than
 restructuring the hooks to share one TanStack entry.
 
-- [ ] **Step 1: Add the failing tests to `packages/tarkov-data/src/client.test.ts`**
+- [x] **Step 1: Add the failing tests to `packages/tarkov-data/src/client.test.ts`**
 
 ```ts
 it("fetches a resource once and serves repeats from cache", async () => {
@@ -480,12 +480,12 @@ it("does not cache a failure", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `pnpm --filter @tarkov/data test -- client`
 Expected: FAIL — the first test sees 4 fetch calls, not 2.
 
-- [ ] **Step 3: Add the cache to `packages/tarkov-data/src/client.ts`**
+- [x] **Step 3: Add the cache to `packages/tarkov-data/src/client.ts`**
 
 Inside `createTarkovClient`, above the returned object:
 
@@ -533,12 +533,12 @@ export function createTarkovClient(
 ): TarkovJsonClient {
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `pnpm --filter @tarkov/data test -- client`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/client.ts packages/tarkov-data/src/client.test.ts
@@ -567,7 +567,7 @@ never cached, so an upstream blip cannot poison the client for an hour."
 migration answers. Fixtures are trimmed to a handful of representative items so they stay
 reviewable in a diff.
 
-- [ ] **Step 1: Capture and trim**
+- [x] **Step 1: Capture and trim**
 
 ```bash
 mkdir -p packages/tarkov-data/src/__fixtures__
@@ -613,7 +613,7 @@ console.log("fixtures written");
 '
 ```
 
-- [ ] **Step 2: Write `packages/tarkov-data/src/__fixtures__/README.md`**
+- [x] **Step 2: Write `packages/tarkov-data/src/__fixtures__/README.md`**
 
 ```markdown
 # Upstream fixtures
@@ -629,7 +629,7 @@ project used to call went down for over a month; tests that need a live API stop
 `docs/plans/2026-08-18-json-api-migration-plan.md` when upstream shapes change.
 ```
 
-- [ ] **Step 3: Sanity-check the fixture**
+- [x] **Step 3: Sanity-check the fixture**
 
 Run:
 
@@ -640,7 +640,7 @@ console.log("items:", Object.keys(f.document.data.items).length, "lang keys:", O
 
 Expected: `items: 11` and a non-zero lang key count.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/tarkov-data/src/__fixtures__
@@ -665,7 +665,7 @@ migration exists to answer."
 
 This task is the template for Tasks 7-9. Read it fully before those.
 
-- [ ] **Step 1: Rewrite the test to drive from the fixture**
+- [x] **Step 1: Rewrite the test to drive from the fixture**
 
 Replace `packages/tarkov-data/src/queries/ammoList.test.ts` with:
 
@@ -712,12 +712,12 @@ describe("fetchAmmoList", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `pnpm --filter @tarkov/data test -- ammoList`
 Expected: FAIL — `fetchAmmoList` still takes a `GraphQLClient` and issues a GraphQL request.
 
-- [ ] **Step 3: Rewrite `packages/tarkov-data/src/queries/ammoList.ts`**
+- [x] **Step 3: Rewrite `packages/tarkov-data/src/queries/ammoList.ts`**
 
 Delete `AMMO_LIST_QUERY` and `ammoListEnvelopeSchema`. Keep `ammoItemSchema` and
 `AmmoListItem` **exactly as they are**, with one change — the discriminator key:
@@ -777,12 +777,12 @@ export async function fetchAmmoList(client: TarkovJsonClient): Promise<AmmoListI
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `pnpm --filter @tarkov/data test -- ammoList`
 Expected: PASS, 3 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/queries/ammoList.ts packages/tarkov-data/src/queries/ammoList.test.ts
@@ -804,7 +804,7 @@ __typename to propertiesType. The values are identical strings."
 - Consumes: `TarkovJsonClient` (Task 2), `ItemsDocument` from `queries/documents.js` (Task 6).
 - Produces: `fetchArmorList(client: TarkovJsonClient): Promise<ArmorListItem[]>` — `ArmorListItem` unchanged.
 
-- [ ] **Step 1: Rewrite the test**
+- [x] **Step 1: Rewrite the test**
 
 Use the same `fixtureClient()` helper shown in Task 6 Step 1, then:
 
@@ -826,12 +826,12 @@ describe("fetchArmorList", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `pnpm --filter @tarkov/data test -- armorList`
 Expected: FAIL.
 
-- [ ] **Step 3: Rewrite the module**
+- [x] **Step 3: Rewrite the module**
 
 Change the properties discriminator from `__typename: z.literal("ItemPropertiesArmor")` to
 `propertiesType: z.literal("ItemPropertiesArmor")`, delete the GraphQL string and envelope
@@ -860,12 +860,12 @@ export async function fetchArmorList(client: TarkovJsonClient): Promise<ArmorLis
 `z.enum(["ItemPropertiesArmor", "ItemPropertiesHelmet"])` — check the pre-migration schema and
 preserve whichever set it accepted. Do not silently narrow the list.
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `pnpm --filter @tarkov/data test -- armorList`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/queries/armorList.ts packages/tarkov-data/src/queries/armorList.test.ts
@@ -884,7 +884,7 @@ git commit -m "feat(data): select armor from the items document"
 - Consumes: `TarkovJsonClient` (Task 2), `ItemsDocument` from `queries/documents.js` (Task 6).
 - Produces: `fetchModList(client: TarkovJsonClient): Promise<ModListItem[]>` — `ModListItem` unchanged.
 
-- [ ] **Step 1: Rewrite the test using the Task 6 `fixtureClient()` helper**
+- [x] **Step 1: Rewrite the test using the Task 6 `fixtureClient()` helper**
 
 ```ts
 describe("fetchModList", () => {
@@ -908,9 +908,9 @@ describe("fetchModList", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- modList`
+- [x] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- modList`
 
-- [ ] **Step 3: Rewrite the module**
+- [x] **Step 3: Rewrite the module**
 
 Discriminator becomes `propertiesType: z.literal("ItemPropertiesWeaponMod")`. Delete the GraphQL
 string and envelope schema. Fetch body:
@@ -938,9 +938,9 @@ export async function fetchModList(client: TarkovJsonClient): Promise<ModListIte
 which `__typename` values the pre-migration schema accepted and widen the literal to a
 `z.enum([...])` covering the same set. Narrowing here silently removes mods from the Builder.
 
-- [ ] **Step 4: Run to verify it passes** — expected PASS.
+- [x] **Step 4: Run to verify it passes** — expected PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/queries/modList.ts packages/tarkov-data/src/queries/modList.test.ts
@@ -961,7 +961,7 @@ git commit -m "feat(data): select weapon mods from the items document"
 - Consumes: `TarkovJsonClient` (Task 2), `ItemsDocument` from `queries/documents.js` (Task 6).
 - Produces: `fetchWeaponList(client: TarkovJsonClient): Promise<WeaponListItem[]>` and `fetchWeapon(client: TarkovJsonClient, id: string): Promise<WeaponDetail | null>` — both output types unchanged.
 
-- [ ] **Step 1: Rewrite both tests**
+- [x] **Step 1: Rewrite both tests**
 
 ```ts
 describe("fetchWeaponList", () => {
@@ -988,9 +988,9 @@ describe("fetchWeapon", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify they fail** — `pnpm --filter @tarkov/data test -- weapon`
+- [x] **Step 2: Run to verify they fail** — `pnpm --filter @tarkov/data test -- weapon`
 
-- [ ] **Step 3: Rewrite both modules**
+- [x] **Step 3: Rewrite both modules**
 
 Discriminator becomes `propertiesType: z.literal("ItemPropertiesWeapon")`.
 
@@ -1027,9 +1027,9 @@ export async function fetchWeapon(
 }
 ```
 
-- [ ] **Step 4: Run to verify they pass** — expected PASS.
+- [x] **Step 4: Run to verify they pass** — expected PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/queries/weapon.ts packages/tarkov-data/src/queries/weapon.test.ts \
@@ -1053,7 +1053,7 @@ fetchWeapon indexes the id-keyed map directly rather than scanning."
 
 This is the highest-risk selector: the Builder's whole slot UI depends on its shape.
 
-- [ ] **Step 1: Rewrite the test**
+- [x] **Step 1: Rewrite the test**
 
 ```ts
 describe("fetchWeaponTree", () => {
@@ -1086,9 +1086,9 @@ describe("fetchWeaponTree", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- weaponTree`
+- [x] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- weaponTree`
 
-- [ ] **Step 3: Rewrite the module**
+- [x] **Step 3: Rewrite the module**
 
 The upstream slot shape is:
 
@@ -1109,9 +1109,9 @@ Two differences from GraphQL to absorb here:
 Recursion depth stays exactly as it is today. Do not raise it in this task — depth 5 is a separate
 deferred item and changing it here would confound a migration with a behaviour change.
 
-- [ ] **Step 4: Run to verify it passes** — expected PASS.
+- [x] **Step 4: Run to verify it passes** — expected PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/queries/weaponTree.ts packages/tarkov-data/src/queries/weaponTree.test.ts
@@ -1136,7 +1136,7 @@ filtering is a separate deferred item."
 - Consumes: `TarkovJsonClient`, fixtures from Task 5.
 - Produces: `fetchTasks(client: TarkovJsonClient): Promise<TaskItem[]>`, `fetchTraders(client: TarkovJsonClient): Promise<TraderItem[]>` — both output types unchanged.
 
-- [ ] **Step 1: Rewrite both tests to read the tasks/traders fixtures**
+- [x] **Step 1: Rewrite both tests to read the tasks/traders fixtures**
 
 ```ts
 import tasksFixture from "../__fixtures__/tasks-sample.json" with { type: "json" };
@@ -1167,9 +1167,9 @@ describe("fetchTasks", () => {
 
 Mirror the same shape for `traders` against `traders-sample.json`.
 
-- [ ] **Step 2: Run to verify they fail** — `pnpm --filter @tarkov/data test -- tasks traders`
+- [x] **Step 2: Run to verify they fail** — `pnpm --filter @tarkov/data test -- tasks traders`
 
-- [ ] **Step 3: Rewrite both modules**
+- [x] **Step 3: Rewrite both modules**
 
 ```ts
 import type { TasksDocument } from "./documents.js";
@@ -1189,9 +1189,9 @@ export async function fetchTasks(client: TarkovJsonClient): Promise<TaskItem[]> 
 The traders document's `data` is the trader map directly (no `traders` wrapper) — confirm against
 `traders-sample.json` and select accordingly.
 
-- [ ] **Step 4: Run to verify they pass** — expected PASS.
+- [x] **Step 4: Run to verify they pass** — expected PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/queries/tasks.ts packages/tarkov-data/src/queries/tasks.test.ts \
@@ -1232,7 +1232,7 @@ The JSON API returns bare ids and moves flea to a top-level field:
 
 plus `"minLevelForFlea": 15` on the item itself.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 describe("resolveBuyFor", () => {
@@ -1297,24 +1297,24 @@ describe("resolveBuyFor", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- buy-for`
+- [x] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- buy-for`
 
-- [ ] **Step 3: Implement the join**
+- [x] **Step 3: Implement the join**
 
 Delete `BUY_FOR_FRAGMENT`. Keep the output schemas. Build lookup maps once per call and resolve
 each offer; emit a synthetic flea entry when `minLevelForFlea` is present. An offer whose trader id
 resolves to nothing is dropped — a vendor with a missing `normalizedName` would silently fail every
 availability comparison rather than erroring, which is worse than not offering it.
 
-- [ ] **Step 4: Run to verify it passes** — expected PASS, 5 tests.
+- [x] **Step 4: Run to verify it passes** — expected PASS, 5 tests.
 
-- [ ] **Step 5: Verify `itemAvailability` still behaves**
+- [x] **Step 5: Verify `itemAvailability` still behaves**
 
 Run: `pnpm --filter @tarkov/data test -- item-availability`
 Expected: PASS with no changes to `item-availability.ts`. If it fails, the join is producing a
 different shape — fix the join, not the consumer.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/tarkov-data/src/queries/shared/buy-for.ts packages/tarkov-data/src/queries/shared/buy-for.test.ts
@@ -1336,17 +1336,17 @@ minLevelForFlea. itemAvailability is unchanged."
 - Consumes: everything in Arc 2.
 - Produces: a working site.
 
-- [ ] **Step 1: Update hook client types**
+- [x] **Step 1: Update hook client types**
 
 Each hook calls `useTarkovClient()` and passes the result to `fetchX`. The only change is the
 inferred type; if any hook annotates `GraphQLClient` explicitly, change it to `TarkovJsonClient`.
 
-- [ ] **Step 2: Full gate**
+- [x] **Step 2: Full gate**
 
 Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build`
 Expected: all PASS. Zero references to `graphql-request` should remain outside `package.json`.
 
-- [ ] **Step 3: Run the app and look at it**
+- [x] **Step 3: Run the app and look at it**
 
 ```bash
 pnpm dev
@@ -1356,7 +1356,7 @@ Open `http://localhost:5173/calc`, `/matrix`, `/data` and `/builder`. Confirm re
 appear — not `<id> Name` strings. A page full of translation keys means Task 1's merge is not
 being applied on that path.
 
-- [ ] **Step 4: e2e**
+- [x] **Step 4: e2e**
 
 Run: `pnpm --filter @tarkov/web test:e2e`
 Expected: PASS, including the console-error gate.
@@ -1364,7 +1364,7 @@ Expected: PASS, including the console-error gate.
 This is the real acceptance test for the migration. If a route fails here, fix the selector rather
 than relaxing the test.
 
-- [ ] **Step 5: Commit and open the Arc 2 PR**
+- [x] **Step 5: Commit and open the Arc 2 PR**
 
 ```bash
 git add -A packages/tarkov-data/src/hooks
@@ -1408,7 +1408,7 @@ BODY
 **Measured 2026-08-18:** `gunsmith-part-1` … `gunsmith-part-10` no longer exist upstream. There
 are now 26 Gunsmith tasks. The other 10 curated quests are unchanged.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1447,9 +1447,9 @@ describe("marquee quests", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- marquee`
+- [x] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- marquee`
 
-- [ ] **Step 3: Rewrite `packages/tarkov-data/src/marquee-quests.ts`**
+- [x] **Step 3: Rewrite `packages/tarkov-data/src/marquee-quests.ts`**
 
 ```ts
 /**
@@ -1519,9 +1519,9 @@ export const MARQUEE_QUEST_NORMALIZED_NAMES: readonly string[] = [
 ];
 ```
 
-- [ ] **Step 4: Run to verify it passes** — expected PASS, 4 tests.
+- [x] **Step 4: Run to verify it passes** — expected PASS, 4 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tarkov-data/src/marquee-quests.ts packages/tarkov-data/src/marquee-quests.test.ts
@@ -1548,7 +1548,7 @@ weapon-specific quests replace it, taking the marquee list to 36."
 behind share URLs. Every build saved before Task 14 stores `gunsmith-part-N`, which now matches
 no task — those unlocks would silently vanish rather than error.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 describe("migrateV4ToV5", () => {
@@ -1595,9 +1595,9 @@ describe("migrateV4ToV5", () => {
 
 Define `baseV4` from the existing test file's fixture builder.
 
-- [ ] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- build-migrations`
+- [x] **Step 2: Run to verify it fails** — `pnpm --filter @tarkov/data test -- build-migrations`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `build-schema.ts`, add `buildV5Schema` (identical to V4 but `version: z.literal(5)`), export
 `BuildV5`, and set `CURRENT_BUILD_VERSION = 5 as const`.
@@ -1630,14 +1630,14 @@ export function migrateV4ToV5(v4: BuildV4): BuildV5 {
 
 Wire `migrateV4ToV5` into the existing migration chain wherever `migrateV3ToV4` is applied.
 
-- [ ] **Step 4: Run to verify it passes** — expected PASS, 5 tests.
+- [x] **Step 4: Run to verify it passes** — expected PASS, 5 tests.
 
-- [ ] **Step 5: Verify the chain end to end**
+- [x] **Step 5: Verify the chain end to end**
 
 Run: `pnpm --filter @tarkov/data test`
 Expected: PASS, including existing V1→V4 migration tests, which must now terminate at version 5.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/tarkov-data/src/build-schema.ts packages/tarkov-data/src/build-migrations.ts \
@@ -1661,14 +1661,14 @@ Gunsmith unlocks. Unknown names are preserved, never dropped."
 - Consumes: `MARQUEE_QUEST_GROUPS` (Task 14).
 - Produces: no new exports.
 
-- [ ] **Step 1: Render the groups**
+- [x] **Step 1: Render the groups**
 
 Replace the flat `MARQUEE_QUEST_NORMALIZED_NAMES.map(...)` list with a loop over
 `MARQUEE_QUEST_GROUPS`, emitting the existing `SectionTitle` primitive per group label and the
 existing checkbox row per quest. No new primitives, no new styling — 36 checkboxes under three
 headings, in the current Field Ledger idiom.
 
-- [ ] **Step 2: Extend the e2e spec**
+- [x] **Step 2: Extend the e2e spec**
 
 Add to `apps/web/e2e/smoke.spec.ts`:
 
@@ -1684,12 +1684,12 @@ test("profile editor groups the marquee quests", async ({ page }) => {
 
 Adjust the selector for opening the profile editor to match the current markup.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm --filter @tarkov/web test:e2e`
 Expected: all PASS.
 
-- [ ] **Step 4: Commit and open the Arc 3 PR**
+- [x] **Step 4: Commit and open the Arc 3 PR**
 
 ```bash
 git add apps/web/src/features/builder/profile-editor.tsx apps/web/e2e/smoke.spec.ts
@@ -1727,7 +1727,7 @@ BODY
 - Modify: `.github/workflows/deploy.yml`
 - Modify: `CLAUDE.md`
 
-- [ ] **Step 1: Confirm nothing still imports them**
+- [x] **Step 1: Confirm nothing still imports them**
 
 ```bash
 grep -rn "graphql-request\|@tarkov/types\|data-proxy" apps packages --include='*.ts' --include='*.tsx' --include='*.json' | grep -v node_modules
@@ -1736,30 +1736,30 @@ grep -rn "graphql-request\|@tarkov/types\|data-proxy" apps packages --include='*
 Anything that still references `@tarkov/types` must be resolved before deleting it. If it has
 live consumers, keep the package and delete only `codegen.ts` plus `src/generated/`.
 
-- [ ] **Step 2: Drop the dependencies**
+- [x] **Step 2: Drop the dependencies**
 
 Remove `graphql` and `graphql-request` from `packages/tarkov-data/package.json`.
 
 Run: `pnpm install`
 
-- [ ] **Step 3: Delete `apps/data-proxy`**
+- [x] **Step 3: Delete `apps/data-proxy`**
 
 It is a GraphQL cache Worker for an API that no longer exists, and `tarkov-client.ts` shows it was
 never in the production request path. Remove its deploy job from `.github/workflows/deploy.yml` in
 the same commit — a deploy step pointing at a deleted directory fails the whole workflow.
 
-- [ ] **Step 4: Update `CLAUDE.md`**
+- [x] **Step 4: Update `CLAUDE.md`**
 
 Its "What this project is" section still describes "Two Cloudflare Workers (`data-proxy` for
 GraphQL caching…)" and `api.tarkov.dev` as the data source. Correct both, and correct the repo
 layout table.
 
-- [ ] **Step 5: Full gate**
+- [x] **Step 5: Full gate**
 
 Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm --filter @tarkov/web test:e2e`
 Expected: all PASS.
 
-- [ ] **Step 6: Commit and open the Arc 4 PR**
+- [x] **Step 6: Commit and open the Arc 4 PR**
 
 ```bash
 git add -A
