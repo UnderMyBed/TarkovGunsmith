@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.13.0...v1.14.0) (2026-08-18)
+
+
+### Features
+
+* **data:** migrate off the dead GraphQL API to json.tarkov.dev ([#113](https://github.com/UnderMyBed/TarkovGunsmith/issues/113)) ([30e2671](https://github.com/UnderMyBed/TarkovGunsmith/commit/30e267131195fe606ef292f8f671c60cb211fcb2))
+
 ## [1.13.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.12.0...v1.13.0) (2026-04-23)
 
 
