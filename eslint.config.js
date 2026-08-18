@@ -21,6 +21,9 @@ export default tseslint.config(
       // project service entry. ESLint option B: exclude cleanly rather than
       // add a bespoke tsconfig+allowDefaultProject entry for a single file.
       "scripts/**",
+      // Workflow helper scripts — plain .mjs with no tsconfig project entry, same reasoning
+      // as scripts/** above. Correctness is covered by unit tests in packages/repo-guards.
+      ".github/scripts/**",
     ],
   },
   js.configs.recommended,
@@ -39,16 +42,13 @@ export default tseslint.config(
             "packages/og/src/*.test.ts",
             "packages/og/src/*.test.tsx",
             "packages/og/scripts/*.tsx",
-            "packages/tarkov-types/codegen.ts",
             "packages/tarkov-data/src/*.test.ts",
             "packages/tarkov-data/src/queries/*.test.ts",
             "packages/tarkov-data/src/queries/shared/*.test.ts",
             "packages/tarkov-data/src/tarkovtracker/*.test.ts",
-            "packages/repo-guards/src/*.test.ts",
             "packages/ui/src/lib/*.test.ts",
             "packages/ui/src/components/*.test.ts",
             "apps/*/vitest.config.ts",
-            "apps/data-proxy/src/*.test.ts",
             "apps/builds-api/src/*.test.ts",
             "apps/builds-api/worker-configuration.d.ts",
             "apps/web/src/*.test.ts",

@@ -41,14 +41,15 @@ pinning `miniflare` to `^4` fixed nothing and produced
 `miniflare.convertV4MiniflareOptions is not a function`, because wrangler 4.124 requires
 miniflare 5. It was reverted.
 
-So overrides are only added with a **green e2e run** proving them safe. The e2e suite could not be
-run to completion on 2026-08-18 because `https://api.tarkov.dev/graphql` returned
-`{"errors":["GraphQL server unavailable. Try again later."]}` to every POST. Until that is
-verified, adding five more overrides would be changing resolution for the entire dependency tree
-with no integration test behind it.
+So overrides are only added with a **green e2e run** proving them safe. On 2026-08-18 the e2e
+suite could not be run at all, because `https://api.tarkov.dev/graphql` returned
+`{"errors":["GraphQL server unavailable. Try again later."]}` to every POST.
 
-**Next step:** once e2e is green, add overrides one package at a time, re-running e2e between
-each. Record here whichever ones stick.
+**That blocker is now cleared.** The JSON API migration retired GraphQL entirely and the suite
+runs green (28 passed, 2 skipped). The gate these overrides were waiting on exists again.
+
+**Next step:** add overrides one package at a time, re-running `pnpm --filter @tarkov/web test:e2e`
+between each. Record here whichever ones stick.
 
 ## Overrides currently in force
 

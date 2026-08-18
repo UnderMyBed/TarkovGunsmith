@@ -10,3 +10,10 @@
 [tools]
 node = "22"
 pnpm = "10.34.5"
+
+# Workflow linting. Not in CI — the repo-guards suite is the enforced gate — but the
+# security runbook and the alerting plan both tell you to run `mise exec -- actionlint`,
+# and an instruction that errors on a missing shim is an instruction nobody follows.
+# actionlint shells out to shellcheck for every `run:` block, so both must be pinned.
+actionlint = "1.7.12"
+shellcheck = "0.11.0"

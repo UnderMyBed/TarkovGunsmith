@@ -794,7 +794,7 @@ BODY
 - Consumes: `REPO_ROOT`, `readRepoFile` from Task 2; the residue table from Task 7.
 - Produces: `readDependabotUpdates(): DependabotUpdate[]`, `compositeActionDirs(): string[]`.
 
-- [ ] **Step 1: Create `.github/dependabot.yml`**
+- [x] **Step 1: Create `.github/dependabot.yml`**
 
 ```yaml
 version: 2
@@ -852,7 +852,7 @@ updates:
 Add one `ignore` entry per **blocked-upstream** row from `docs/operations/dependency-residue.md`,
 each carrying the same three things: the reason, a bounded range, and the literal unblock command.
 
-- [ ] **Step 2: Create `packages/repo-guards/src/dependabot.ts`**
+- [x] **Step 2: Create `packages/repo-guards/src/dependabot.ts`**
 
 ```ts
 import { existsSync, readdirSync } from "node:fs";
@@ -888,7 +888,7 @@ export function compositeActionDirs(): string[] {
 }
 ```
 
-- [ ] **Step 3: Write the test `packages/repo-guards/src/dependabot.test.ts`**
+- [x] **Step 3: Write the test `packages/repo-guards/src/dependabot.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -915,12 +915,12 @@ describe("dependabot coverage", () => {
 });
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: PASS.
 
-- [ ] **Step 5: Prove the composite-action guard actually guards**
+- [x] **Step 5: Prove the composite-action guard actually guards**
 
 ```bash
 mkdir -p .github/actions/scratch
@@ -932,7 +932,7 @@ Expected: FAIL with `expected [ '/.github/actions/scratch' ] to deeply equal []`
 
 Then clean up: `rm -rf .github/actions/scratch` and confirm the test passes again.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .github/dependabot.yml packages/repo-guards/src
@@ -954,7 +954,7 @@ own dependabot entry — directory: / scans workflows and nothing else."
 
 **Interfaces:** none.
 
-- [ ] **Step 1: Create `SECURITY.md`**
+- [x] **Step 1: Create `SECURITY.md`**
 
 ```markdown
 # Security Policy
@@ -994,7 +994,7 @@ The realistic risk surface is supply-chain (a compromised dependency reaching th
 bundle or a Worker), the share-URL deserialization path, and the GitHub Actions workflows.
 ```
 
-- [ ] **Step 2: Format and commit**
+- [x] **Step 2: Format and commit**
 
 ```bash
 pnpm format
@@ -1010,7 +1010,7 @@ git commit -m "docs(security): add SECURITY.md with disclosure channel and scope
 
 **Interfaces:** none.
 
-- [ ] **Step 1: Create `docs/operations/repo-security.md`**
+- [x] **Step 1: Create `docs/operations/repo-security.md`**
 
 ````markdown
 # Repository security settings runbook
@@ -1078,23 +1078,23 @@ issues authored by `github-actions[bot]`. It `@`-mentions and assigns you precis
 bot-authored issue in an unwatched repository notifies no one.
 ````
 
-- [ ] **Step 2: Run the enable block**
+- [x] **Step 2: Run the enable block**
 
 Run the commands from the runbook's "Enable" section.
 Expected: three `204`s and a JSON body from the PATCH.
 
-- [ ] **Step 3: Run the verify block**
+- [x] **Step 3: Run the verify block**
 
 Run the commands from the runbook's "Verify" section.
 Expected: exactly the output shown. If anything differs, fix it before continuing.
 
-- [ ] **Step 4: Check the secret-scanning results**
+- [x] **Step 4: Check the secret-scanning results**
 
 Visit `https://github.com/UnderMyBed/TarkovGunsmith/security/secret-scanning`.
 Record the finding count in the PR body. Any finding is follow-up work, not a blocker for
 this PR — but it must be written down, not noticed and forgotten.
 
-- [ ] **Step 5: Commit and open the Arc 2 PR**
+- [x] **Step 5: Commit and open the Arc 2 PR**
 
 ```bash
 pnpm format
@@ -1139,7 +1139,7 @@ BODY
 - Consumes: nothing.
 - Produces: `ALERTING_CONCLUSIONS: string[]`, `ALERT_LABELS: string[]`, `alertTitle(workflowName: string): string`, and `assess(input): { fileIssue: boolean; reason?: string; title?: string; body?: string }` where `input = { workflowName, conclusion, runEvent, runUrl, openIssues: { title: string }[] }`. Task 12's workflow and guards consume all four.
 
-- [ ] **Step 1: Create `.github/scripts/scheduled-failure.mjs`**
+- [x] **Step 1: Create `.github/scripts/scheduled-failure.mjs`**
 
 ```js
 #!/usr/bin/env node
@@ -1245,7 +1245,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 ```
 
-- [ ] **Step 2: Let the TypeScript project see the `.mjs` file**
+- [x] **Step 2: Let the TypeScript project see the `.mjs` file**
 
 In `packages/repo-guards/tsconfig.json`, replace the whole file with:
 
@@ -1265,7 +1265,7 @@ In `packages/repo-guards/tsconfig.json`, replace the whole file with:
 `rootDir` is dropped because nothing is emitted, and `allowJs` lets the test import the script
 without a declaration file.
 
-- [ ] **Step 3: Exclude `.github/scripts` from ESLint**
+- [x] **Step 3: Exclude `.github/scripts` from ESLint**
 
 In `eslint.config.js`, in the top-level `ignores` array, add below the existing `"scripts/**"`
 entry:
@@ -1276,7 +1276,7 @@ entry:
       ".github/scripts/**",
 ```
 
-- [ ] **Step 4: Write the tests `packages/repo-guards/src/scheduled-failure.test.ts`**
+- [x] **Step 4: Write the tests `packages/repo-guards/src/scheduled-failure.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1331,18 +1331,18 @@ describe("assess", () => {
 });
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: PASS, 7 new tests.
 
-- [ ] **Step 6: Typecheck and lint**
+- [x] **Step 6: Typecheck and lint**
 
 Run: `pnpm typecheck && pnpm lint`
 Expected: PASS. If ESLint reports `.github/scripts/scheduled-failure.mjs` "was not found by the
 project service", Step 3 was not applied correctly.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add .github/scripts packages/repo-guards eslint.config.js
@@ -1366,7 +1366,7 @@ cancellation is usually deliberate and paging on it gets the alert muted."
 - Consumes: `ALERTING_CONCLUSIONS`, `ALERT_LABELS` from Task 11; `parseWorkflow`, `workflowFiles` from Task 5.
 - Produces: a workflow named `Scheduled failure alert`.
 
-- [ ] **Step 1: Add the two labels to `.github/labels.yml`**
+- [x] **Step 1: Add the two labels to `.github/labels.yml`**
 
 Append:
 
@@ -1379,7 +1379,7 @@ Append:
   color: "a02c2c"
 ```
 
-- [ ] **Step 2: Create `.github/workflows/scheduled-failure.yml`**
+- [x] **Step 2: Create `.github/workflows/scheduled-failure.yml`**
 
 ```yaml
 name: Scheduled failure alert
@@ -1509,7 +1509,7 @@ jobs:
             || echo "::warning::could not assign $OWNER — the @mention in the body is the fallback"
 ```
 
-- [ ] **Step 3: Write the wiring guards `packages/repo-guards/src/alerting.test.ts`**
+- [x] **Step 3: Write the wiring guards `packages/repo-guards/src/alerting.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1570,24 +1570,24 @@ describe("failure alerting is wired to everything that can fail silently", () =>
 });
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: PASS. No workflow has a `schedule:` trigger yet, so the first test passes vacuously —
 Task 13 is what makes it bite.
 
-- [ ] **Step 5: Verify the injection guard still passes on the new workflow**
+- [x] **Step 5: Verify the injection guard still passes on the new workflow**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 The `no ${{ }} expressions inside run: blocks` suite now covers `scheduled-failure.yml`.
 Expected: PASS — every expression in that file is in `env:`, `if:`, or `concurrency:`.
 
-- [ ] **Step 6: Lint the workflow**
+- [x] **Step 6: Lint the workflow**
 
 Run: `mise exec -- actionlint .github/workflows/scheduled-failure.yml`
 Expected: no output.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add .github/workflows/scheduled-failure.yml .github/labels.yml packages/repo-guards/src
@@ -1614,7 +1614,7 @@ unknown label, and labels.yml has no automated sync."
 - Consumes: the guards from Task 12.
 - Produces: a workflow named `CodeQL`.
 
-- [ ] **Step 1: Create `.github/workflows/codeql.yml`**
+- [x] **Step 1: Create `.github/workflows/codeql.yml`**
 
 ```yaml
 name: CodeQL
@@ -1661,7 +1661,7 @@ jobs:
           category: /language:${{ matrix.language }}
 ```
 
-- [ ] **Step 2: Run the tests to verify the watch-list guard now fails**
+- [x] **Step 2: Run the tests to verify the watch-list guard now fails**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: FAIL with `expected [ 'CodeQL' ] to deeply equal []` — `codeql.yml` has a `schedule:`
@@ -1669,7 +1669,7 @@ trigger and is not in the watcher's list.
 
 This is the guard doing its job. Do not weaken it.
 
-- [ ] **Step 3: Add CodeQL to the watch list**
+- [x] **Step 3: Add CodeQL to the watch list**
 
 In `.github/workflows/scheduled-failure.yml`, change:
 
@@ -1683,17 +1683,17 @@ to:
 workflows: ["CodeQL", "Deploy", "Release Please"]
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `pnpm --filter @tarkov/repo-guards test`
 Expected: PASS.
 
-- [ ] **Step 5: Lint and run the full gate**
+- [x] **Step 5: Lint and run the full gate**
 
 Run: `mise exec -- actionlint .github/workflows/codeql.yml && pnpm typecheck && pnpm lint && pnpm test`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .github/workflows/codeql.yml .github/workflows/scheduled-failure.yml
@@ -1711,7 +1711,7 @@ fail until CodeQL was added to the watcher, which is the guard working."
 
 **Files:** none.
 
-- [ ] **Step 1: Confirm the `actions` CodeQL language is available**
+- [x] **Step 1: Confirm the `actions` CodeQL language is available**
 
 Push the branch and open the PR:
 
@@ -1741,7 +1741,7 @@ If the `actions` leg errors with an unsupported-language message, remove `action
 matrix, commit that with a message recording the error verbatim, and add a follow-up row to the
 spec's §9. The `javascript-typescript` leg and the repo-guards grep test still stand.
 
-- [ ] **Step 2: Merge, then prove the alert path end to end**
+- [x] **Step 2: Merge, then prove the alert path end to end**
 
 `workflow_run` always executes the **default-branch** copy of a workflow, so this cannot be
 tested before merge.
@@ -1752,7 +1752,7 @@ After merging:
 gh workflow run scheduled-failure.yml -f simulate="Smoke test of the alert path"
 ```
 
-- [ ] **Step 3: Confirm the issue was filed correctly**
+- [x] **Step 3: Confirm the issue was filed correctly**
 
 ```bash
 gh issue list --label scheduled-red --state open --json number,title,assignees,labels
@@ -1761,13 +1761,13 @@ gh issue list --label scheduled-red --state open --json number,title,assignees,l
 Expected: one issue titled `Smoke test of the alert path is failing`, labelled `critical` and
 `scheduled-red`, assigned to `UnderMyBed`.
 
-- [ ] **Step 4: Confirm it actually notified you**
+- [x] **Step 4: Confirm it actually notified you**
 
 Check your GitHub notifications and email. If neither arrived, the alert is working and reaching
 nobody — which is the failure this whole arc exists to prevent. Fix it via the notification
 check in `docs/operations/repo-security.md` before closing this out.
 
-- [ ] **Step 5: Confirm the dedupe holds**
+- [x] **Step 5: Confirm the dedupe holds**
 
 Run the same dispatch again:
 
@@ -1778,7 +1778,7 @@ gh workflow run scheduled-failure.yml -f simulate="Smoke test of the alert path"
 Expected: the run succeeds and logs `::notice::not filing an alert — an alert titled "..." is
 already open`. No second issue appears.
 
-- [ ] **Step 6: Clean up**
+- [x] **Step 6: Clean up**
 
 ```bash
 gh issue close <number> --comment "Alert path verified end to end."
@@ -1791,7 +1791,7 @@ gh issue close <number> --comment "Alert path verified end to end."
 - [ ] Dependabot's first run opened **one** grouped PR, not ten. Check
       `https://github.com/UnderMyBed/TarkovGunsmith/network/updates` for the job logs.
 - [ ] Those logs show `apps/*` and `packages/*` were scanned, not just the root.
-- [ ] Secret-scanning history results reviewed and any findings recorded as follow-up issues.
-- [ ] `docs/operations/dependency-residue.md` reflects the post-merge advisory state.
-- [ ] `CLAUDE.md`'s roadmap block updated — it still claims "4 of 5 M3 differentiators
+- [x] Secret-scanning history results reviewed and any findings recorded as follow-up issues.
+- [x] `docs/operations/dependency-residue.md` reflects the post-merge advisory state.
+- [x] `CLAUDE.md`'s roadmap block updated — it still claims "4 of 5 M3 differentiators
       remaining" when all five shipped. Tracked in the spec's §9.

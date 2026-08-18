@@ -1,0 +1,50 @@
+version: 2
+updates:
+  # `directories` (plural) supports globbing; `directory` (singular) does not. The workspace
+  # root is NOT assumed to cover its members — GitHub's docs never promise that, and the
+  # composite-action entry below exists because implicit coverage failed once already.
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/apps/*"
+      - "/packages/*"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Deploys fire ONLY on release-please PR merges, and release-please hides `chore` and
+    # bumps nothing for it. A production-dependency security patch committed as chore(deps)
+    # would land on main and never reach Cloudflare. `fix` opens the release PR; merging it
+    # is still a human decision, so the promotion gate is preserved — it can just SEE the fix.
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+      # Security updates are UNGROUPED by default — one PR per advisory. Against the backlog
+      # this repo carried in 2026-08 that would have been roughly twenty PRs in a morning.
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      # @types/node MUST track mise.toml's node pin rather than float ahead of it. Dependabot
+      # cannot see mise.toml. Typing a runtime you do not run is how code typechecks and then
+      # fails on an API the pinned runtime lacks — this repo shipped ^25 against a node 22 pin.
+      # Unblock: raise `node` in mise.toml AND .nvmrc first, then raise this range in the SAME
+      # commit. The next major after the blocked one still arrives, which is the re-evaluation
+      # point.
+      - dependency-name: "@types/node"
+        versions: [">=23.0.0"]
+
+  # `directory: /` scans .github/workflows/ and NOTHING ELSE. Composite actions under
+  # .github/actions/*/action.yml need their own entry, one per directory. None exist today;
+  # packages/repo-guards fails the build if one appears without an entry here.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      actions:
+        update-types: [minor, patch]
