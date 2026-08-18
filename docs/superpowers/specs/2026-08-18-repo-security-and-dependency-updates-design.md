@@ -29,7 +29,7 @@ found while surveying the repo.
    either an accepted risk or a documented `dependabot.yml` `ignore` carrying a bounded version
    range and a literal command that proves it unblocked.
 3. Dependabot files **one grouped PR** per week for minor+patch across all 10 workspace packages;
-   majors and security updates arrive per the grouping rules in §4.
+   majors and security updates arrive per the grouping rules in §5.
 4. Dependabot alerts, Dependabot security updates, secret scanning, push protection, and private
    vulnerability reporting are all enabled, with the exact commands and expected output recorded
    in `docs/operations/repo-security.md`.
@@ -39,19 +39,22 @@ found while surveying the repo.
 7. A `workflow_run` watcher files a deduped, labelled, `@`-mentioned, assigned issue when CodeQL,
    Deploy, or Release Please fails — and cannot be defeated by a missing label.
 8. `packages/repo-guards` holds tests that fail when any of the above coverage rules lapse.
-9. Ships as four implementation PRs on four branches (§1), preceded by this spec and its
-   plan as a `docs:` PR. No unrelated changes in any of them.
+9. `mise.toml` pins node and pnpm, `.nvmrc` and `packageManager` agree with it, and guards fail
+   if any of the three drift.
+10. Ships as five implementation PRs on five branches (§1), preceded by this spec and its
+    plan as a `docs:` PR. No unrelated changes in any of them.
 
 ## Framing decisions (locked during brainstorming)
 
 | Decision                  | Choice                                                                                                                                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Scope                     | All four upguage layers, not a subset.                                                                                                                                                                   |
+| Toolchain                 | mise owns node + pnpm via a repo `mise.toml`; `.nvmrc` and `packageManager` are held to it by test. mise already manages every other tool on this machine.                                               |
 | Slicing                   | Four arcs, one PR each (§1). Matches the repo's existing M3.5 arc convention and keeps a red CI run attributable to one cause.                                                                           |
 | Backlog vs. tooling order | Catch-up **first**. Dependabot's first run should be a trickle, not a wall of PRs against a repo whose CI has not run in four months.                                                                    |
 | Dependabot PR volume      | One grouped `minor-and-patch` PR per week across every package. Majors always arrive alone. Security updates grouped (they are ungrouped by default).                                                    |
 | Workspace coverage        | Explicit `directories: ["/", "/apps/*", "/packages/*"]`. GitHub's docs never promise that a workspace root covers its members; `directories` (plural) globs, `directory` (singular) does not.            |
-| Commit prefixes           | `fix(deps)` for production deps, `chore(deps-dev)` for dev deps. See §4.1 — this is load-bearing, not cosmetic.                                                                                          |
+| Commit prefixes           | `fix(deps)` for production deps, `chore(deps-dev)` for dev deps. See §5.1 — this is load-bearing, not cosmetic.                                                                                          |
 | Repo settings durability  | Enabled via `gh api`, recorded in a runbook. No automated drift check — that needs repo-admin scope, which `GITHUB_TOKEN` cannot grant, and a fine-grained PAT is out of scope for this pass.            |
 | CodeQL triggers           | `pull_request` + weekly cron + `workflow_dispatch`. **No `push: main`**, per CLAUDE.md's budget rule.                                                                                                    |
 | Watcher scope             | `CodeQL`, `Deploy`, `Release Please`. Broader than upguage's scheduled-only rule because this repo has two non-scheduled dark guards. CI is excluded — its failures are already visible in the PR.       |
@@ -70,26 +73,62 @@ found while surveying the repo.
   pass is supply-chain and repo hygiene. Application hardening is its own spec.
 - No secret rotation. Enabling secret scanning may surface history findings; acting on them is
   follow-up work, not a precondition.
+- No switch of CI to `jdx/mise-action`. `.nvmrc` stays CI's source of truth this pass; see §9.
 - No changes to `ci.yml`'s existing job structure.
 
 ## Design
 
 ### 1. Arc sequencing
 
-| Arc | Branch                                    | Commit type | Contents                                                                                            |
-| --- | ----------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
-| 0   | `fix/release-please-expression-injection` | `fix(ci)`   | The injection fix. One file.                                                                        |
-| 1   | `fix/dependency-catch-up`                 | `fix(deps)` | Lockfile refresh, fallout fixes, residue documented.                                                |
-| 2   | `ci/dependabot-and-repo-security`         | `ci`        | `dependabot.yml`, repo settings, `SECURITY.md`, runbook, `packages/repo-guards` + first two guards. |
-| 3   | `ci/codeql-and-failure-alerting`          | `ci`        | CodeQL, the watcher, its script, labels, remaining guards.                                          |
+| Arc | Branch                                    | Commit type | Contents                                                                                |
+| --- | ----------------------------------------- | ----------- | --------------------------------------------------------------------------------------- |
+| T   | `build/mise-toolchain-pin`                | `build`     | `mise.toml`, `packageManager` bump, `packages/repo-guards` scaffold + toolchain guards. |
+| 0   | `fix/release-please-expression-injection` | `fix(ci)`   | The injection fix, plus the guard test that locks it in.                                |
+| 1   | `fix/dependency-catch-up`                 | `fix(deps)` | Lockfile refresh, fallout fixes, residue documented.                                    |
+| 2   | `ci/dependabot-and-repo-security`         | `ci`        | `dependabot.yml`, repo settings, `SECURITY.md`, runbook, composite-action guard.        |
+| 3   | `ci/codeql-and-failure-alerting`          | `ci`        | CodeQL, the watcher, its script, labels, remaining guards.                              |
 
 Arc 3 keeps the first cron workflow and its watcher in the **same** PR. Splitting them recreates
 upguage's "red at nobody" gap for however long the split lasts.
 
-This spec and its implementation plan land as their own `docs:` PR ahead of Arc 0, following the
+This spec and its implementation plan land as their own `docs:` PR ahead of Arc T, following the
 precedent of PRs #88, #94, and #98.
 
-### 2. Arc 0 — release-please expression injection
+### 2. Arc T — toolchain pinning
+
+The repo pins its toolchain in two places that nothing enforces: `.nvmrc` (`22`) and
+`package.json`'s `packageManager` (`pnpm@10.0.0`). Measured 2026-08-18 on the maintainer's
+machine, neither holds — `pnpm` is not installed at all, `corepack` is gone (Node 26 dropped it),
+the global mise pin (`nodejs 24.13.1`) is reported missing, and the `node` on `PATH` is
+linuxbrew's v26.7.0. Every other arc's verification depends on being able to run `pnpm`, so this
+goes first.
+
+mise already manages node, python, uv, actionlint, and shellcheck on this machine, and `pnpm` is
+in its registry (`aqua:pnpm/pnpm`). The repo gains:
+
+```toml
+# mise.toml
+[tools]
+node = "22"        # must equal .nvmrc
+pnpm = "10.34.5"   # must equal package.json packageManager
+```
+
+`packageManager` moves from `pnpm@10.0.0` to `pnpm@10.34.5`. 10.0.0 is far behind the 10.x line
+and nothing currently enforces it, so the bump costs nothing and makes the pin real.
+
+This arc also scaffolds `packages/repo-guards` (§7), because the toolchain pin is the first thing
+needing a guard and every later arc adds to the same package.
+
+**CI is deliberately left alone.** upguage uses `jdx/mise-action`, which is the cleaner end state,
+but adopting it here means replacing `pnpm/action-setup@v4`, `actions/setup-node@v4`, and
+`cache: pnpm` in a pipeline that has not run in four months, while Arc 1 is simultaneously
+changing every dependency — two unrelated failure sources at once. `.nvmrc` remains CI's source of
+truth, the guard keeps it honest, and mise/CI parity is deferred (§9).
+
+Verification: `mise install`, then inside the repo `pnpm -v` reports 10.34.5, `node -v` reports
+22.x, and the husky pre-commit hook runs without `pnpm: not found`.
+
+### 3. Arc 0 — release-please expression injection
 
 `.github/workflows/release-please.yml:32` currently reads:
 
@@ -130,10 +169,11 @@ Three changes, not one: the expression moves to `env:` so it arrives as data; `s
 is added (absent today, so a failed `jq` currently sails on and fires `gh workflow run --ref ""`);
 and an empty or `null` branch now fails loudly.
 
-Verification is `actionlint` locally (already in the maintainer's mise toolchain) plus the
-guard test added in Arc 2, which retroactively locks the fix in.
+Verification is `actionlint` locally (already in the maintainer's mise toolchain) plus a
+`packages/repo-guards` test shipped in this same arc, so the fix arrives with its own
+regression net rather than acquiring one two arcs later.
 
-### 3. Arc 1 — dependency catch-up
+### 4. Arc 1 — dependency catch-up
 
 Baseline measured 2026-08-18 on the v1.13.0 lockfile: **50 advisories (2 critical, 28 high,
 15 moderate, 5 low)**. The two criticals:
@@ -156,16 +196,16 @@ Sequence:
 3. Full gate: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`,
    then `pnpm --filter @tarkov/web test:e2e`.
 4. Re-audit. Every survivor gets an explicit decision: bump the manifest range, accept with a
-   stated reason, or record a `dependabot.yml` `ignore` per §4.2. **No silent residue.**
+   stated reason, or record a `dependabot.yml` `ignore` per §5.2. **No silent residue.**
 5. The PR body records before/after counts and names every survivor with its reason.
 
 Known friction: the two `vite` advisories want `>=6.4.3` and `>=8.0.16`, which spans a major.
 `pnpm update -r` will not lift a manifest range, so this becomes an Arc 1 decision rather than a
 surprise. If a major is required it lands as its own commit inside this PR so it stays bisectable.
 
-### 4. Arc 2 — Dependabot, repo settings, SECURITY.md
+### 5. Arc 2 — Dependabot, repo settings, SECURITY.md
 
-#### 4.1 Commit prefixes are load-bearing
+#### 5.1 Commit prefixes are load-bearing
 
 Deploys fire **only on release-please PR merges** (CLAUDE.md, "Deploys"). Release-please hides
 `chore` and bumps nothing for it. So a security patch to a production dependency committed as
@@ -184,7 +224,7 @@ so the promotion gate is preserved — it can now simply _see_ security fixes.
 `commitlint` runs only in husky's `commit-msg` hook, not in CI, so Dependabot's commits are not
 rejected regardless. The prefix choice is about release-please, not about linting.
 
-#### 4.2 `.github/dependabot.yml`
+#### 5.2 `.github/dependabot.yml`
 
 ```yaml
 version: 2
@@ -223,12 +263,12 @@ Notes carried into the file as comments:
   are pinned at `v4` while `v7` is current, so that catch-up arrives as its own reviewable PR.
 - `directory: "/"` for github-actions scans `.github/workflows/` and **nothing else**. Composite
   actions under `.github/actions/*/action.yml` need their own entry, one per directory. None exist
-  today; §6 makes that a test rather than a comment.
+  today; §7 makes that a test rather than a comment.
 
 Each `ignore` added from Arc 1's residue must name the blocker, bound the version range so the
 next major still arrives, and give the literal command that proves it unblocked.
 
-#### 4.3 Repo settings + runbook
+#### 5.3 Repo settings + runbook
 
 Recorded in `docs/operations/repo-security.md` with expected output and a re-verify one-liner:
 
@@ -248,7 +288,7 @@ The runbook also carries one manual check with no API equivalent: confirm the ma
 actually watching this repository, since upguage's measured failure was an alert that fired
 perfectly and notified nobody.
 
-#### 4.4 `SECURITY.md`
+#### 5.4 `SECURITY.md`
 
 - Reports go through GitHub private vulnerability reporting. No email address published.
 - In scope: this repo, `data-proxy`, `builds-api`, and the deployed site.
@@ -257,9 +297,9 @@ perfectly and notified nobody.
 - Stated plainly: no accounts, no auth, no PII; the KV store holds anonymous build JSON.
 - No bounty. Best-effort response, described as a hobby project.
 
-### 5. Arc 3 — CodeQL and the failure watcher
+### 6. Arc 3 — CodeQL and the failure watcher
 
-#### 5.1 `codeql.yml`
+#### 6.1 `codeql.yml`
 
 ```yaml
 on:
@@ -284,15 +324,15 @@ Deviations from upguage, each deliberate:
 - **No `push: main`.** CLAUDE.md's budget rule: branch protection already requires up-to-date and
   green PRs, so push-to-main CI duplicates the check that just passed.
 - **`actions` in the matrix.** CodeQL's `actions` pack finds expression injection — the Arc 0 bug.
-  It is the regression net, with §6's grep test as the cheap fast-fail underneath it.
+  It is the regression net, with §7's grep test as the cheap fast-fail underneath it.
 - **`paths-ignore`, and not a required check.** Mirrors `ci.yml`'s docs-only skip. Adding it to
   branch protection while it skips docs PRs would block them permanently.
 
 The `actions` CodeQL language is confirmed available during implementation before the workflow is
-relied upon; if it is unavailable, the matrix drops to `javascript-typescript` and §6's test
+relied upon; if it is unavailable, the matrix drops to `javascript-typescript` and §7's test
 carries workflow coverage alone.
 
-#### 5.2 `scheduled-failure.yml`
+#### 6.2 `scheduled-failure.yml`
 
 Watch list: `["CodeQL", "Deploy", "Release Please"]`.
 
@@ -318,7 +358,7 @@ Ported from upguage without change:
   a permissions hiccup cannot lose the alert.
 - Every `workflow_run` field reaches the script through `env:`, never spliced into `run:`.
 
-#### 5.3 The missing-label trap
+#### 6.3 The missing-label trap
 
 `gh issue create` fails outright on an unknown label, turning the alert into a failed run whose
 only symptom is a red tick nobody watches. upguage requires the label to pre-exist. This repo
@@ -335,10 +375,10 @@ gh label create critical --color d93f0b \
 ```
 
 `issues: write` already covers label creation. Both labels are still declared in `labels.yml` as
-source of truth, and §6 asserts that every label referenced by a workflow is declared there — but
+source of truth, and §7 asserts that every label referenced by a workflow is declared there — but
 the alarm no longer depends on anyone having run a manual command.
 
-#### 5.4 Decision logic
+#### 6.4 Decision logic
 
 `.github/scripts/scheduled-failure.mjs` — plain ESM, zero dependencies, no build step, which
 sidesteps the per-package `tsconfig.json` gotcha while remaining importable by Vitest. The YAML
@@ -348,7 +388,7 @@ ESLint's `projectService` covers `.ts`/`.tsx` only, so a `.mjs` file needs no pa
 tsconfig — but the root ESLint config is checked during implementation to confirm
 `.github/scripts/**` is either linted or explicitly ignored, not silently unmatched.
 
-### 6. `packages/repo-guards`
+### 7. `packages/repo-guards`
 
 A private, unpublished workspace package (`"private": true`) with its own `tsconfig.json`
 extending `tsconfig.base.json`, per the CLAUDE.md gotcha. Vitest only; no build output.
@@ -357,35 +397,40 @@ Guards, with the arc that introduces each:
 
 | #   | Guard                                                                                | Arc |
 | --- | ------------------------------------------------------------------------------------ | --- |
-| 1   | No `${{ }}` interpolation inside any `run:` block in `.github/workflows/`            | 2   |
-| 2   | Every `.github/actions/*/action.yml` directory has a matching `dependabot.yml` entry | 2   |
-| 3   | Every workflow with `on.schedule` appears in the watcher's `workflows:` list         | 3   |
-| 4   | The watcher's YAML `if:` prefilter and the script's conclusion set agree             | 3   |
-| 5   | Every label referenced by a workflow is declared in `.github/labels.yml`             | 3   |
-| 6   | Dedupe: an open `scheduled-red` issue suppresses a second file                       | 3   |
+| 1   | `mise.toml` node agrees with `.nvmrc`                                                | T   |
+| 2   | `mise.toml` pnpm agrees with `package.json`'s `packageManager`                       | T   |
+| 3   | No `${{ }}` interpolation inside any `run:` block in `.github/workflows/`            | 0   |
+| 4   | Every `.github/actions/*/action.yml` directory has a matching `dependabot.yml` entry | 2   |
+| 5   | Every workflow with `on.schedule` appears in the watcher's `workflows:` list         | 3   |
+| 6   | The watcher's YAML `if:` prefilter and the script's conclusion set agree             | 3   |
+| 7   | Every label referenced by a workflow is declared in `.github/labels.yml`             | 3   |
+| 8   | Dedupe: an open `scheduled-red` issue suppresses a second file                       | 3   |
 
-Guards 1–5 are static analysis over repo files and need no network. Guard 6 unit-tests the script
+Guards 1–7 are static analysis over repo files and need no network. Guard 8 unit-tests the script
 against fixture inputs.
 
-### 7. Verification
+### 8. Verification
 
-| Arc | Pre-merge                                                            | Post-merge                                                                                                                                                               |
-| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0   | `actionlint .github/workflows/release-please.yml`; existing CI       | Next release PR triggers CI on its branch as before                                                                                                                      |
-| 1   | Full gate incl. `test:e2e`; re-run `pnpm audit` and record the delta | —                                                                                                                                                                        |
-| 2   | `pnpm test` (guards 1–2); `dependabot.yml` parses                    | Run the four `gh api` calls; confirm the first Dependabot run opens **one** grouped PR, not ten; confirm it covers `apps/*` and `packages/*` via the Dependabot job logs |
-| 3   | `pnpm test` (guards 3–6); `actionlint` on both new workflows         | Dispatch the watcher's `simulate` input and confirm an issue is filed, labelled, mentioned, assigned — **and that it reaches a human**                                   |
+| Arc | Pre-merge                                                               | Post-merge                                                                                                                                                               |
+| --- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T   | `mise install`; `pnpm -v` and `node -v` match the pins; husky hook runs | —                                                                                                                                                                        |
+| 0   | `actionlint .github/workflows/release-please.yml`; existing CI          | Next release PR triggers CI on its branch as before                                                                                                                      |
+| 1   | Full gate incl. `test:e2e`; re-run `pnpm audit` and record the delta    | —                                                                                                                                                                        |
+| 2   | `pnpm test` (guards 1–2); `dependabot.yml` parses                       | Run the four `gh api` calls; confirm the first Dependabot run opens **one** grouped PR, not ten; confirm it covers `apps/*` and `packages/*` via the Dependabot job logs |
+| 3   | `pnpm test` (guards 3–6); `actionlint` on both new workflows            | Dispatch the watcher's `simulate` input and confirm an issue is filed, labelled, mentioned, assigned — **and that it reaches a human**                                   |
 
 `workflow_run` always executes the default-branch copy of a workflow, so Arc 3's end-to-end proof
 is only possible after merge. That is a post-merge step in the plan, not a pre-merge one, and the
 `simulate` dispatch input exists so it does not require waiting for a genuine failure.
 
-### 8. Follow-up items (explicitly deferred)
+### 9. Follow-up items (explicitly deferred)
 
 - Automated drift detection on repo security settings, once a fine-grained PAT exists (the same
   one CLAUDE.md already wants for release-please).
 - Triage of whatever the secret-scanning history scan surfaces.
 - `pnpm audit` or OSV scanning as a CI gate, if Dependabot's weekly cadence proves too slow.
+- Switching CI to `jdx/mise-action` so `mise.toml` becomes the single toolchain source of truth
+  for local and CI alike, retiring `.nvmrc`.
 - OpenSSF Scorecard.
 - Application-level hardening for `builds-api` (authz, rate limiting, payload caps) and CSP
   headers on the Pages deployment — its own spec.
