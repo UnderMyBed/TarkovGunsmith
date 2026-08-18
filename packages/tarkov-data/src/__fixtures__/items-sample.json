@@ -13,10 +13,7 @@
           "height": 1,
           "weight": 0.012,
           "lastOfferCount": 8,
-          "types": [
-            "ammo",
-            "noFlea"
-          ],
+          "types": ["ammo", "noFlea"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/5.56x45mm_M855",
           "link": "https://tarkov.dev/item/556x45mm-m855",
           "iconLink": "https://assets.tarkov.dev/54527a984bdc2d4e668b4567-icon.webp",
@@ -33,10 +30,7 @@
             "5661632d4bdc2d903d8b456b",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b47574386f77428ca22b33b",
-            "5b47574386f77428ca22b346"
-          ],
+          "handbookCategories": ["5b47574386f77428ca22b33b", "5b47574386f77428ca22b346"],
           "lastLowPrice": null,
           "avg24hPrice": null,
           "high24hPrice": null,
@@ -158,10 +152,7 @@
           "height": 1,
           "weight": 0.012,
           "lastOfferCount": 1,
-          "types": [
-            "ammo",
-            "noFlea"
-          ],
+          "types": ["ammo", "noFlea"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/5.56x45mm_M855A1",
           "link": "https://tarkov.dev/item/556x45mm-m855a1",
           "iconLink": "https://assets.tarkov.dev/54527ac44bdc2d36668b4567-icon.webp",
@@ -178,10 +169,7 @@
             "5661632d4bdc2d903d8b456b",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b47574386f77428ca22b33b",
-            "5b47574386f77428ca22b346"
-          ],
+          "handbookCategories": ["5b47574386f77428ca22b33b", "5b47574386f77428ca22b346"],
           "lastLowPrice": null,
           "avg24hPrice": null,
           "high24hPrice": null,
@@ -291,10 +279,7 @@
           "height": 1,
           "weight": 0.05,
           "lastOfferCount": 3,
-          "types": [
-            "ammo",
-            "noFlea"
-          ],
+          "types": ["ammo", "noFlea"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/12/70_7mm_buckshot",
           "link": "https://tarkov.dev/item/1270-7mm-buckshot",
           "iconLink": "https://assets.tarkov.dev/560d5e524bdc2d25448b4571-icon.webp",
@@ -311,10 +296,7 @@
             "5661632d4bdc2d903d8b456b",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b47574386f77428ca22b33b",
-            "5b47574386f77428ca22b346"
-          ],
+          "handbookCategories": ["5b47574386f77428ca22b33b", "5b47574386f77428ca22b346"],
           "lastLowPrice": null,
           "avg24hPrice": null,
           "high24hPrice": null,
@@ -447,11 +429,7 @@
           "height": 4,
           "weight": 10.8,
           "lastOfferCount": null,
-          "types": [
-            "armor",
-            "noFlea",
-            "wearable"
-          ],
+          "types": ["armor", "noFlea", "wearable"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/6B43_Zabralo-Sh_body_armor_(EMR)",
           "link": "https://tarkov.dev/item/6b43-zabralo-sh-body-armor-emr",
           "iconLink": "https://assets.tarkov.dev/545cdb794bdc2d3a198b456a-icon.webp",
@@ -470,10 +448,7 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b5f701386f774093f2ecf0f",
-            "5b47574386f77428ca22b33f"
-          ],
+          "handbookCategories": ["5b5f701386f774093f2ecf0f", "5b47574386f77428ca22b33f"],
           "lastLowPrice": null,
           "avg24hPrice": null,
           "high24hPrice": null,
@@ -510,9 +485,7 @@
             "armorSlots": [
               {
                 "nameId": "Front_plate",
-                "zones": [
-                  "Armor Zone Plate_Granit_SAPI_chest"
-                ],
+                "zones": ["Armor Zone Plate_Granit_SAPI_chest"],
                 "allowedPlates": [
                   "656f9d5900d62bcd2e02407c",
                   "656fa8d700d62bcd2e024084",
@@ -540,9 +513,7 @@
               },
               {
                 "nameId": "Back_plate",
-                "zones": [
-                  "Armor Zone Plate_Granit_SAPI_back"
-                ],
+                "zones": ["Armor Zone Plate_Granit_SAPI_back"],
                 "allowedPlates": [
                   "656f9d5900d62bcd2e02407c",
                   "656fa8d700d62bcd2e024084",
@@ -570,9 +541,7 @@
               },
               {
                 "nameId": "Left_side_plate",
-                "zones": [
-                  "Armor Zone Plate_Granit_SSAPI_side_left_low"
-                ],
+                "zones": ["Armor Zone Plate_Granit_SSAPI_side_left_low"],
                 "allowedPlates": [
                   "64afd81707e2cf40e903a316",
                   "6557458f83942d705f0c4962",
@@ -582,9 +551,7 @@
               },
               {
                 "nameId": "Right_side_plate",
-                "zones": [
-                  "Armor Zone Plate_Granit_SSAPI_side_right_low"
-                ],
+                "zones": ["Armor Zone Plate_Granit_SSAPI_side_right_low"],
                 "allowedPlates": [
                   "6557458f83942d705f0c4962",
                   "64afdb577bb3bfe8fe03fd1d",
@@ -601,10 +568,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type RibcageLow",
-                  "Collider Type RibcageUp"
-                ],
+                "zones": ["Collider Type RibcageLow", "Collider Type RibcageUp"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -622,10 +586,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type SpineTop",
-                  "Collider Type SpineDown"
-                ],
+                "zones": ["Collider Type SpineTop", "Collider Type SpineDown"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -643,9 +604,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type LeftSideChestDown"
-                ],
+                "zones": ["Collider Type LeftSideChestDown"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -663,9 +622,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type RightSideChestDown"
-                ],
+                "zones": ["Collider Type RightSideChestDown"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -683,10 +640,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type NeckFront",
-                  "Collider Type NeckBack"
-                ],
+                "zones": ["Collider Type NeckFront", "Collider Type NeckBack"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -704,9 +658,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type LeftUpperArm"
-                ],
+                "zones": ["Collider Type LeftUpperArm"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -724,9 +676,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type RightUpperArm"
-                ],
+                "zones": ["Collider Type RightUpperArm"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -744,9 +694,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type Pelvis"
-                ],
+                "zones": ["Collider Type Pelvis"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -818,10 +766,7 @@
           "height": 3,
           "weight": 3.5,
           "lastOfferCount": 14,
-          "types": [
-            "armor",
-            "wearable"
-          ],
+          "types": ["armor", "wearable"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PACA_Soft_Armor",
           "link": "https://tarkov.dev/item/paca-soft-armor",
           "iconLink": "https://assets.tarkov.dev/5648a7494bdc2d9d488b4583-icon.webp",
@@ -840,10 +785,7 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b5f701386f774093f2ecf0f",
-            "5b47574386f77428ca22b33f"
-          ],
+          "handbookCategories": ["5b5f701386f774093f2ecf0f", "5b47574386f77428ca22b33f"],
           "lastLowPrice": 36510,
           "avg24hPrice": 36550,
           "low24hPrice": 29000,
@@ -879,10 +821,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type RibcageLow",
-                  "Collider Type RibcageUp"
-                ],
+                "zones": ["Collider Type RibcageLow", "Collider Type RibcageUp"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -900,10 +839,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type SpineDown",
-                  "Collider Type SpineTop"
-                ],
+                "zones": ["Collider Type SpineDown", "Collider Type SpineTop"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -921,9 +857,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type LeftSideChestDown"
-                ],
+                "zones": ["Collider Type LeftSideChestDown"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -941,9 +875,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type RightSideChestDown"
-                ],
+                "zones": ["Collider Type RightSideChestDown"],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -1027,10 +959,7 @@
           "height": 1,
           "weight": 0.75,
           "lastOfferCount": 38,
-          "types": [
-            "gun",
-            "wearable"
-          ],
+          "types": ["gun", "wearable"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Colt_M4A1_5.56x45_assault_rifle",
           "link": "https://tarkov.dev/item/colt-m4a1-556x45-assault-rifle",
           "iconLink": "https://assets.tarkov.dev/5447a9cd4bdc2dbd208b4567-icon.webp",
@@ -1109,10 +1038,7 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b5f78fc86f77409407a7f90",
-            "5b5f78dc86f77409407a7f8e"
-          ],
+          "handbookCategories": ["5b5f78fc86f77409407a7f90", "5b5f78dc86f77409407a7f8e"],
           "lastLowPrice": 33999,
           "avg24hPrice": 48800,
           "low24hPrice": 24390,
@@ -1326,9 +1252,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "675307301f7c19a9780f2668"
-                  ],
+                  "allowedItems": ["675307301f7c19a9780f2668"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -1336,10 +1260,7 @@
               }
             ],
             "defaultPreset": "5af08cf886f774223c269184",
-            "fireModes": [
-              "single",
-              "fullauto"
-            ],
+            "fireModes": ["single", "fullauto"],
             "presets": [
               "5a32808386f774764a3226d9",
               "5a8ae36686f774377d6ce226",
@@ -1447,10 +1368,7 @@
           "height": 1,
           "weight": 0.333,
           "lastOfferCount": 4,
-          "types": [
-            "gun",
-            "wearable"
-          ],
+          "types": ["gun", "wearable"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Makarov_PM_9x18PM_pistol",
           "link": "https://tarkov.dev/item/makarov-pm-9x18pm-pistol",
           "iconLink": "https://assets.tarkov.dev/5448bd6b4bdc2dfc2f8b4569-icon.webp",
@@ -1489,10 +1407,7 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b5f792486f77447ed5636b3",
-            "5b5f78dc86f77409407a7f8e"
-          ],
+          "handbookCategories": ["5b5f792486f77447ed5636b3", "5b5f78dc86f77409407a7f8e"],
           "lastLowPrice": 9999,
           "avg24hPrice": 12290,
           "low24hPrice": 9999,
@@ -1540,10 +1455,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "55d485be4bdc2d962f8b456f",
-                    "5448c12b4bdc2d02308b456f"
-                  ],
+                  "allowedItems": ["55d485be4bdc2d962f8b456f", "5448c12b4bdc2d02308b456f"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -1555,9 +1467,7 @@
                 "required": true,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "6374a822e629013b9c0645c8"
-                  ],
+                  "allowedItems": ["6374a822e629013b9c0645c8"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -1583,12 +1493,8 @@
               }
             ],
             "defaultPreset": "58414967245977598f1ad391",
-            "fireModes": [
-              "single"
-            ],
-            "presets": [
-              "58414967245977598f1ad391"
-            ],
+            "fireModes": ["single"],
+            "presets": ["58414967245977598f1ad391"],
             "defaultWidth": 2,
             "defaultHeight": 1,
             "defaultErgonomics": null,
@@ -1664,9 +1570,7 @@
           "height": 1,
           "weight": 0.21,
           "lastOfferCount": 14,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/L3Harris_AN/PEQ-15_tactical_device",
           "link": "https://tarkov.dev/item/l3harris-anpeq-15-tactical-device",
           "iconLink": "https://assets.tarkov.dev/544909bb4bdc2d6f028b4577-icon.webp",
@@ -1685,10 +1589,7 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b5f737886f774093e6cb4fb",
-            "5b5f736886f774094242f193"
-          ],
+          "handbookCategories": ["5b5f737886f774093e6cb4fb", "5b5f736886f774094242f193"],
           "lastLowPrice": 10780,
           "avg24hPrice": 15419,
           "low24hPrice": 9333,
@@ -1784,9 +1685,7 @@
           "height": 1,
           "weight": 0.064,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Colt_USGI_A2_5.56x45_flash_hider",
           "link": "https://tarkov.dev/item/ar-15-colt-usgi-a2-556x45-flash-hider",
           "iconLink": "https://assets.tarkov.dev/544a38634bdc2d58388b4568-icon.webp",
@@ -1831,9 +1730,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "638612b607dfed1ccb7206ba"
-                  ],
+                  "allowedItems": ["638612b607dfed1ccb7206ba"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -1933,10 +1830,7 @@
           "height": 1,
           "weight": 0.05,
           "lastOfferCount": 4,
-          "types": [
-            "mods",
-            "pistolGrip"
-          ],
+          "types": ["mods", "pistolGrip"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_MOE_pistol_grip",
           "link": "https://tarkov.dev/item/ar-15-magpul-moe-pistol-grip-black",
           "iconLink": "https://assets.tarkov.dev/55802f5d4bdc2dac148b458f-icon.webp",
@@ -2059,10 +1953,7 @@
           "height": 1,
           "weight": 0.31,
           "lastOfferCount": 27,
-          "types": [
-            "ammo",
-            "grenade"
-          ],
+          "types": ["ammo", "grenade"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/RGD-5_hand_grenade",
           "link": "https://tarkov.dev/item/rgd-5-hand-grenade",
           "iconLink": "https://assets.tarkov.dev/5448be9a4bdc2dfd2f8b456a-icon.webp",
@@ -2074,14 +1965,8 @@
           "containsItems": [],
           "discardLimit": 20,
           "basePrice": 7230,
-          "categories": [
-            "543be6564bdc2df4348b4568",
-            "54009119af1c881c07000029"
-          ],
-          "handbookCategories": [
-            "5b5f7a2386f774093f2ed3c4",
-            "5b5f78dc86f77409407a7f8e"
-          ],
+          "categories": ["543be6564bdc2df4348b4568", "54009119af1c881c07000029"],
+          "handbookCategories": ["5b5f7a2386f774093f2ed3c4", "5b5f78dc86f77409407a7f8e"],
           "lastLowPrice": 18699,
           "avg24hPrice": 20603,
           "low24hPrice": 14444,
@@ -2153,10 +2038,7 @@
           "height": 2,
           "weight": 1.2,
           "lastOfferCount": 14,
-          "types": [
-            "helmet",
-            "wearable"
-          ],
+          "types": ["helmet", "wearable"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/FORT_Kiver-M_bulletproof_helmet",
           "link": "https://tarkov.dev/item/fort-kiver-m-bulletproof-helmet",
           "iconLink": "https://assets.tarkov.dev/5645bc214bdc2d363b8b4571-icon.webp",
@@ -2175,10 +2057,7 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b47574386f77428ca22b330",
-            "5b47574386f77428ca22b33f"
-          ],
+          "handbookCategories": ["5b47574386f77428ca22b330", "5b47574386f77428ca22b33f"],
           "lastLowPrice": 39000,
           "avg24hPrice": 54377,
           "low24hPrice": 39000,
@@ -2203,9 +2082,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "5b46238386f7741a693bcf9c"
-                  ],
+                  "allowedItems": ["5b46238386f7741a693bcf9c"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -2222,9 +2099,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type ParietalHead"
-                ],
+                "zones": ["Collider Type ParietalHead"],
                 "armorType": "Light",
                 "ricochetX": 0.2,
                 "ricochetY": 0.7,
@@ -2242,9 +2117,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type BackHead"
-                ],
+                "zones": ["Collider Type BackHead"],
                 "armorType": "Light",
                 "ricochetX": 0.2,
                 "ricochetY": 0.7,
@@ -2262,9 +2135,7 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": [
-                  "Collider Type Ears"
-                ],
+                "zones": ["Collider Type Ears"],
                 "armorType": "Light",
                 "ricochetX": 0.2,
                 "ricochetY": 0.7,
@@ -2282,11 +2153,7 @@
             "blocksHeadset": false,
             "blocksEyewear": false,
             "blocksHeadwear": false,
-            "zones": [
-              "Collider Type ParietalHead",
-              "Collider Type BackHead",
-              "Collider Type Ears"
-            ],
+            "zones": ["Collider Type ParietalHead", "Collider Type BackHead", "Collider Type Ears"],
             "material": "UHMWPE"
           },
           "minLevelForFlea": 20,
@@ -2369,9 +2236,7 @@
           "height": 1,
           "weight": 0.045,
           "lastOfferCount": 2,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PM_9x18PM_90-93_8-round_magazine",
           "link": "https://tarkov.dev/item/pm-9x18pm-90-93-8-round-magazine",
           "iconLink": "https://assets.tarkov.dev/5448c12b4bdc2d02308b456f-icon.webp",
@@ -2390,10 +2255,7 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b5f754a86f774094242f19b",
-            "5b5f750686f774093e6cb503"
-          ],
+          "handbookCategories": ["5b5f754a86f774094242f19b", "5b5f750686f774093e6cb503"],
           "lastLowPrice": 1111,
           "avg24hPrice": 1181,
           "changeLast48h": 0,
@@ -2507,9 +2369,7 @@
           "height": 1,
           "weight": 0.411,
           "lastOfferCount": 35,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Leupold_Mark_4_HAMR_4x24_DeltaPoint_hybrid_assault_scope",
           "link": "https://tarkov.dev/item/leupold-mark-4-hamr-4x24-deltapoint-hybrid-assault-scope",
           "iconLink": "https://assets.tarkov.dev/544a3a774bdc2d3a388b4567-icon.webp",
@@ -2554,32 +2414,17 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "58d268fc86f774111273f8c2"
-                  ],
+                  "allowedItems": ["58d268fc86f774111273f8c2"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
                 "name": "MOD_SCOPE"
               }
             ],
-            "zoomLevels": [
-              [
-                4
-              ]
-            ],
+            "zoomLevels": [[4]],
             "sightingRange": 800,
-            "sightModes": [
-              1
-            ],
-            "zeroingDistances": [
-              [
-                50,
-                100,
-                150,
-                200
-              ]
-            ]
+            "sightModes": [1],
+            "zeroingDistances": [[50, 100, 150, 200]]
           },
           "minLevelForFlea": 25,
           "accuracyModifier": 0,
@@ -2669,10 +2514,7 @@
           "height": 1,
           "weight": 0.695,
           "lastOfferCount": 1,
-          "types": [
-            "mods",
-            "pistolGrip"
-          ],
+          "types": ["mods", "pistolGrip"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_ADAR_2-15_wooden_stock",
           "link": "https://tarkov.dev/item/ar-15-adar-2-15-wooden-stock",
           "iconLink": "https://assets.tarkov.dev/5c0e2ff6d174af02a1659d4a-icon.webp",
@@ -2860,10 +2702,7 @@
           "height": 1,
           "weight": 0.499,
           "lastOfferCount": 3,
-          "types": [
-            "mods",
-            "pistolGrip"
-          ],
+          "types": ["mods", "pistolGrip"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Hera_Arms_CQR_pistol_grip/buttstock",
           "link": "https://tarkov.dev/item/ar-15-hera-arms-cqr-pistol-gripbuttstock",
           "iconLink": "https://assets.tarkov.dev/5a33e75ac4a2826c6e06d759-icon.webp",
@@ -3051,10 +2890,7 @@
           "height": 1,
           "weight": 0.08,
           "lastOfferCount": 8,
-          "types": [
-            "mods",
-            "pistolGrip"
-          ],
+          "types": ["mods", "pistolGrip"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Colt_A2_pistol_grip",
           "link": "https://tarkov.dev/item/ar-15-colt-a2-pistol-grip",
           "iconLink": "https://assets.tarkov.dev/55d4b9964bdc2d1d4e8b456e-icon.webp",
@@ -3177,9 +3013,7 @@
           "height": 2,
           "weight": 0.117,
           "lastOfferCount": 15,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_5.56x45_Colt_STANAG_30-round_magazine",
           "link": "https://tarkov.dev/item/ar-15-556x45-colt-stanag-30-round-magazine",
           "iconLink": "https://assets.tarkov.dev/55d4887d4bdc2d962f8b4570-icon.webp",
@@ -3325,9 +3159,7 @@
           "height": 2,
           "weight": 0.117,
           "lastOfferCount": 3,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/FN_SCAR-L_5.56x45_30-round_magazine",
           "link": "https://tarkov.dev/item/fn-scar-l-556x45-30-round-magazine",
           "iconLink": "https://assets.tarkov.dev/61840bedd92c473c77021635-icon.webp",
@@ -3473,9 +3305,7 @@
           "height": 2,
           "weight": 0.117,
           "lastOfferCount": 2,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/FN_SCAR-L_5.56x45_30-round_magazine",
           "link": "https://tarkov.dev/item/fn-scar-l-556x45-30-round-magazine-fde",
           "iconLink": "https://assets.tarkov.dev/61840d85568c120fdd2962a5-icon.webp",
@@ -3621,9 +3451,7 @@
           "height": 1,
           "weight": 0.27,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_ADAR_2-15_5.56x45_upper_receiver",
           "link": "https://tarkov.dev/item/ar-15-adar-2-15-556x45-upper-receiver",
           "iconLink": "https://assets.tarkov.dev/5c0e2f26d174af02a9625114-icon.webp",
@@ -3952,9 +3780,7 @@
           "height": 1,
           "weight": 0.64,
           "lastOfferCount": 20,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/ELCAN_SpecterDR_1x/4x_scope",
           "link": "https://tarkov.dev/item/elcan-specterdr-1x4x-scope",
           "iconLink": "https://assets.tarkov.dev/57ac965c24597706be5f975c-icon.webp",
@@ -3999,40 +3825,17 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "688b54a11cef2a61d005273b"
-                  ],
+                  "allowedItems": ["688b54a11cef2a61d005273b"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
                 "name": "MOD_MOUNT"
               }
             ],
-            "zoomLevels": [
-              [
-                4,
-                1
-              ],
-              [
-                1
-              ]
-            ],
+            "zoomLevels": [[4, 1], [1]],
             "sightingRange": 800,
-            "sightModes": [
-              2,
-              1
-            ],
-            "zeroingDistances": [
-              [
-                50,
-                100,
-                150,
-                200
-              ],
-              [
-                25
-              ]
-            ]
+            "sightModes": [2, 1],
+            "zeroingDistances": [[50, 100, 150, 200], [25]]
           },
           "minLevelForFlea": 35,
           "accuracyModifier": 0,
@@ -4122,9 +3925,7 @@
           "height": 1,
           "weight": 0.64,
           "lastOfferCount": 19,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/ELCAN_SpecterDR_1x/4x_scope",
           "link": "https://tarkov.dev/item/elcan-specterdr-1x4x-scope-fde",
           "iconLink": "https://assets.tarkov.dev/57aca93d2459771f2c7e26db-icon.webp",
@@ -4169,40 +3970,17 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "688b54a11cef2a61d005273b"
-                  ],
+                  "allowedItems": ["688b54a11cef2a61d005273b"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
                 "name": "MOD_MOUNT"
               }
             ],
-            "zoomLevels": [
-              [
-                4,
-                1
-              ],
-              [
-                1
-              ]
-            ],
+            "zoomLevels": [[4, 1], [1]],
             "sightingRange": 800,
-            "sightModes": [
-              2,
-              1
-            ],
-            "zeroingDistances": [
-              [
-                50,
-                100,
-                150,
-                200
-              ],
-              [
-                25
-              ]
-            ]
+            "sightModes": [2, 1],
+            "zeroingDistances": [[50, 100, 150, 200], [25]]
           },
           "minLevelForFlea": 35,
           "accuracyModifier": 0,
@@ -4280,9 +4058,7 @@
           "height": 1,
           "weight": 0.409,
           "lastOfferCount": 11,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_5.56x45_10.3_inch_barrel",
           "link": "https://tarkov.dev/item/ar-15-556x45-103-inch-barrel",
           "iconLink": "https://assets.tarkov.dev/55d35ee94bdc2d61338b4568-icon.webp",
@@ -4493,9 +4269,7 @@
           "height": 1,
           "weight": 0.509,
           "lastOfferCount": 9,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_5.56x45_14.5_inch_barrel",
           "link": "https://tarkov.dev/item/ar-15-556x45-145-inch-barrel",
           "iconLink": "https://assets.tarkov.dev/55d3632e4bdc2d972f8b4569-icon.webp",
@@ -4608,9 +4382,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "6357c98711fb55120211f7e1"
-                  ],
+                  "allowedItems": ["6357c98711fb55120211f7e1"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -4720,9 +4492,7 @@
           "height": 1,
           "weight": 0.78,
           "lastOfferCount": 5,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_5.56x45_18_inch_barrel",
           "link": "https://tarkov.dev/item/ar-15-556x45-18-inch-barrel",
           "iconLink": "https://assets.tarkov.dev/5d440b93a4b9364276578d4b-icon.webp",
@@ -4940,9 +4710,7 @@
           "height": 1,
           "weight": 0.385,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_ADAR_2-15_wooden_handguard",
           "link": "https://tarkov.dev/item/ar-15-adar-2-15-wooden-handguard",
           "iconLink": "https://assets.tarkov.dev/5c0e2f5cd174af02a012cfc9-icon.webp",
@@ -5069,9 +4837,7 @@
           "height": 1,
           "weight": 0.343,
           "lastOfferCount": 2,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Aeroknox_AX-15_10.5_inch_M-LOK_handguard",
           "link": "https://tarkov.dev/item/ar-15-aeroknox-ax-15-105-inch-m-lok-handguard",
           "iconLink": "https://assets.tarkov.dev/619b5db699fb192e7430664f-icon.webp",
@@ -5150,9 +4916,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "5649a2464bdc2d91118b45a8"
-                  ],
+                  "allowedItems": ["5649a2464bdc2d91118b45a8"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -5298,9 +5062,7 @@
           "height": 1,
           "weight": 0.38,
           "lastOfferCount": 7,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Alexander_Arms_MK10_rifle_length_handguard",
           "link": "https://tarkov.dev/item/ar-15-alexander-arms-mk10-rifle-length-handguard",
           "iconLink": "https://assets.tarkov.dev/5b2cfa535acfc432ff4db7a0-icon.webp",
@@ -5343,9 +5105,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "5b30bc285acfc47a8608615d"
-                  ],
+                  "allowedItems": ["5b30bc285acfc47a8608615d"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -5357,9 +5117,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "5b30bc165acfc40016387293"
-                  ],
+                  "allowedItems": ["5b30bc165acfc40016387293"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -5371,9 +5129,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "5b30bc165acfc40016387293"
-                  ],
+                  "allowedItems": ["5b30bc165acfc40016387293"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -5396,10 +5152,7 @@
           "loudness": 0,
           "hasGrid": false,
           "backgroundColor": "blue",
-          "conflictingItems": [
-            "5ae30e795acfc408fb139a0b",
-            "56ea8d2fd2720b7c698b4570"
-          ],
+          "conflictingItems": ["5ae30e795acfc408fb139a0b", "56ea8d2fd2720b7c698b4570"],
           "conflictingSlotIds": [],
           "conflictingCategories": [],
           "buyFromTrader": [
@@ -5471,9 +5224,7 @@
           "height": 1,
           "weight": 0.14,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/HK_416A5_flip-up_rear_sight",
           "link": "https://tarkov.dev/item/hk-416a5-flip-up-rear-sight",
           "iconLink": "https://assets.tarkov.dev/5bb20e49d4351e3bac1212de-icon.webp",
@@ -5510,20 +5261,10 @@
             "recoilModifier": 0,
             "accuracyModifier": 0,
             "slots": [],
-            "zoomLevels": [
-              [
-                1
-              ]
-            ],
+            "zoomLevels": [[1]],
             "sightingRange": 300,
-            "sightModes": [
-              1
-            ],
-            "zeroingDistances": [
-              [
-                100
-              ]
-            ]
+            "sightModes": [1],
+            "zeroingDistances": [[100]]
           },
           "minLevelForFlea": 0,
           "accuracyModifier": 0,
@@ -5606,9 +5347,7 @@
           "height": 1,
           "weight": 0.14,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/HK_MP7_flip-up_rear_sight",
           "link": "https://tarkov.dev/item/hk-mp7-flip-up-rear-sight",
           "iconLink": "https://assets.tarkov.dev/5ba26b17d4351e00367f9bdd-icon.webp",
@@ -5645,20 +5384,10 @@
             "recoilModifier": 0,
             "accuracyModifier": 0,
             "slots": [],
-            "zoomLevels": [
-              [
-                1
-              ]
-            ],
+            "zoomLevels": [[1]],
             "sightingRange": 300,
-            "sightModes": [
-              1
-            ],
-            "zeroingDistances": [
-              [
-                100
-              ]
-            ]
+            "sightModes": [1],
+            "zeroingDistances": [[100]]
           },
           "minLevelForFlea": 0,
           "accuracyModifier": 0,
@@ -5741,9 +5470,7 @@
           "height": 1,
           "weight": 0.08,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/KAC_Folding_Micro_rear_sight",
           "link": "https://tarkov.dev/item/kac-folding-micro-rear-sight",
           "iconLink": "https://assets.tarkov.dev/5dfa3d7ac41b2312ea33362a-icon.webp",
@@ -5782,20 +5509,10 @@
             "recoilModifier": 0,
             "accuracyModifier": 0,
             "slots": [],
-            "zoomLevels": [
-              [
-                1
-              ]
-            ],
+            "zoomLevels": [[1]],
             "sightingRange": 300,
-            "sightModes": [
-              1
-            ],
-            "zeroingDistances": [
-              [
-                100
-              ]
-            ]
+            "sightModes": [1],
+            "zeroingDistances": [[100]]
           },
           "minLevelForFlea": 0,
           "accuracyModifier": 0,
@@ -5878,9 +5595,7 @@
           "height": 1,
           "weight": 0.27,
           "lastOfferCount": 3,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/M4A1_5.56x45_upper_receiver",
           "link": "https://tarkov.dev/item/m4a1-556x45-upper-receiver",
           "iconLink": "https://assets.tarkov.dev/55d355e64bdc2d962f8b4569-icon.webp",
@@ -6208,9 +5923,7 @@
           "height": 1,
           "weight": 0.19,
           "lastOfferCount": 20,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/TX-15_5.56x45_Lightweight_upper_receiver",
           "link": "https://tarkov.dev/item/tx-15-556x45-lightweight-upper-receiver",
           "iconLink": "https://assets.tarkov.dev/5d4405aaa4b9361e6a4e6bd3-icon.webp",
@@ -6522,9 +6235,7 @@
           "height": 1,
           "weight": 0.162,
           "lastOfferCount": 8,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_Enhanced_Receiver_Extension",
           "link": "https://tarkov.dev/item/ar-15-magpul-enhanced-receiver-extension",
           "iconLink": "https://assets.tarkov.dev/5a33ca0fc4a282000d72292f-icon.webp",
@@ -6672,9 +6383,7 @@
           "height": 1,
           "weight": 0.79,
           "lastOfferCount": 27,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_PRS_GEN2_stock_(FDE)",
           "link": "https://tarkov.dev/item/ar-15-magpul-prs-gen2-stock-fde",
           "iconLink": "https://assets.tarkov.dev/5a33cae9c4a28232980eb086-icon.webp",
@@ -6800,9 +6509,7 @@
           "height": 1,
           "weight": 0.78,
           "lastOfferCount": 26,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_PRS_GEN3_stock",
           "link": "https://tarkov.dev/item/ar-15-magpul-prs-gen3-stock-black",
           "iconLink": "https://assets.tarkov.dev/5d44069ca4b9361ebd26fc37-icon.webp",
@@ -6928,9 +6635,7 @@
           "height": 1,
           "weight": 0.78,
           "lastOfferCount": 10,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_PRS_GEN3_stock",
           "link": "https://tarkov.dev/item/ar-15-magpul-prs-gen3-stock-grey",
           "iconLink": "https://assets.tarkov.dev/5d4406a8a4b9361e4f6eb8b7-icon.webp",
@@ -7056,9 +6761,7 @@
           "height": 1,
           "weight": 0.19,
           "lastOfferCount": 2,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_ADAR_2-15_buffer_tube",
           "link": "https://tarkov.dev/item/ar-15-adar-2-15-buffer-tube",
           "iconLink": "https://assets.tarkov.dev/5c0faeddd174af02a962601f-icon.webp",
@@ -7238,9 +6941,7 @@
           "height": 1,
           "weight": 0.658,
           "lastOfferCount": 11,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_B5_Systems_Collapsible_Precision_Stock",
           "link": "https://tarkov.dev/item/ar-15-b5-systems-collapsible-precision-stock",
           "iconLink": "https://assets.tarkov.dev/5fc2369685fd526b824a5713-icon.webp",
@@ -7366,9 +7067,7 @@
           "height": 1,
           "weight": 0.28,
           "lastOfferCount": 3,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_CMMG_RipStock_buttstock",
           "link": "https://tarkov.dev/item/ar-15-cmmg-ripstock-buttstock",
           "iconLink": "https://assets.tarkov.dev/606587d11246154cad35d635-icon.webp",
@@ -7494,9 +7193,7 @@
           "height": 1,
           "weight": 0.308,
           "lastOfferCount": 6,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_FAB_Defense_GL-SHOCK_buttstock",
           "link": "https://tarkov.dev/item/ar-15-fab-defense-gl-shock-buttstock",
           "iconLink": "https://assets.tarkov.dev/5a9eb32da2750c00171b3f9c-icon.webp",
@@ -7622,9 +7319,7 @@
           "height": 1,
           "weight": 0.162,
           "lastOfferCount": 9,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Colt_Carbine_buffer_tube",
           "link": "https://tarkov.dev/item/ar-15-colt-carbine-buffer-tube",
           "iconLink": "https://assets.tarkov.dev/5649be884bdc2d79388b4577-icon.webp",
@@ -7835,10 +7530,7 @@
           "height": 1,
           "weight": 0.17,
           "lastOfferCount": null,
-          "types": [
-            "mods",
-            "noFlea"
-          ],
+          "types": ["mods", "noFlea"],
           "wikiLink": "",
           "link": "https://tarkov.dev/item/ar-15-lead-star-arms-ravage-stock",
           "iconLink": "https://assets.tarkov.dev/6984b82c5aab442620032fe8-icon.webp",
@@ -8007,10 +7699,7 @@
           "height": 1,
           "weight": 0.17,
           "lastOfferCount": null,
-          "types": [
-            "mods",
-            "noFlea"
-          ],
+          "types": ["mods", "noFlea"],
           "wikiLink": "",
           "link": "https://tarkov.dev/item/ar-15-lead-star-arms-ravage-stock-yellow",
           "iconLink": "https://assets.tarkov.dev/6985eca7de77dd8dd50025ba-icon.webp",
@@ -8179,10 +7868,7 @@
           "height": 1,
           "weight": 0.17,
           "lastOfferCount": null,
-          "types": [
-            "mods",
-            "noFlea"
-          ],
+          "types": ["mods", "noFlea"],
           "wikiLink": "",
           "link": "https://tarkov.dev/item/ar-15-lead-star-arms-ravage-stock-red",
           "iconLink": "https://assets.tarkov.dev/6985ec9fc848f05f4600f6b9-icon.webp",
@@ -8350,9 +8036,7 @@
           "height": 1,
           "weight": 0.039,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_ADAR_2-15_charging_handle",
           "link": "https://tarkov.dev/item/ar-15-adar-2-15-charging-handle",
           "iconLink": "https://assets.tarkov.dev/5c0faf68d174af02a96260b8-icon.webp",
@@ -8469,9 +8153,7 @@
           "height": 1,
           "weight": 0.064,
           "lastOfferCount": 3,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Badger_Ordnance_Tactical_Charging_Handle_Latch",
           "link": "https://tarkov.dev/item/ar-15-badger-ordnance-tactical-charging-handle-latch",
           "iconLink": "https://assets.tarkov.dev/56ea7165d2720b6e518b4583-icon.webp",
@@ -8590,9 +8272,7 @@
           "height": 1,
           "weight": 0.035,
           "lastOfferCount": 2,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Colt_charging_handle",
           "link": "https://tarkov.dev/item/ar-15-colt-charging-handle",
           "iconLink": "https://assets.tarkov.dev/55d44fd14bdc2d962f8b456e-icon.webp",
@@ -8711,9 +8391,7 @@
           "height": 1,
           "weight": 0.03,
           "lastOfferCount": 8,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_B.A.D._Lever_bolt_release",
           "link": "https://tarkov.dev/item/ar-15-magpul-bad-lever-bolt-release",
           "iconLink": "https://assets.tarkov.dev/675307301f7c19a9780f2668-icon.webp",
@@ -8836,9 +8514,7 @@
           "height": 2,
           "weight": 0.364,
           "lastOfferCount": 4,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PM_9x18PM_84-round_makeshift_drum_magazine",
           "link": "https://tarkov.dev/item/pm-9x18pm-84-round-makeshift-drum-magazine",
           "iconLink": "https://assets.tarkov.dev/55d485be4bdc2d962f8b456f-icon.webp",
@@ -8981,9 +8657,7 @@
           "height": 1,
           "weight": 0.28,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PM_pistol_slide",
           "link": "https://tarkov.dev/item/pm-pistol-slide",
           "iconLink": "https://assets.tarkov.dev/6374a822e629013b9c0645c8-icon.webp",
@@ -9024,9 +8698,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "63c6adcfb4ba094317063742"
-                  ],
+                  "allowedItems": ["63c6adcfb4ba094317063742"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -9104,9 +8776,7 @@
           "height": 1,
           "weight": 0.002,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PM_rear_sight",
           "link": "https://tarkov.dev/item/pm-rear-sight",
           "iconLink": "https://assets.tarkov.dev/63c6adcfb4ba094317063742-icon.webp",
@@ -9143,20 +8813,10 @@
             "recoilModifier": 0,
             "accuracyModifier": 0,
             "slots": [],
-            "zoomLevels": [
-              [
-                1
-              ]
-            ],
+            "zoomLevels": [[1]],
             "sightingRange": 200,
-            "sightModes": [
-              1
-            ],
-            "zeroingDistances": [
-              [
-                25
-              ]
-            ]
+            "sightModes": [1],
+            "zeroingDistances": [[25]]
           },
           "minLevelForFlea": 0,
           "accuracyModifier": 0,
@@ -9167,9 +8827,7 @@
           "loudness": 0,
           "hasGrid": false,
           "backgroundColor": "blue",
-          "conflictingItems": [
-            "60228a850ddce744014caf69"
-          ],
+          "conflictingItems": ["60228a850ddce744014caf69"],
           "conflictingSlotIds": [],
           "conflictingCategories": [],
           "buyFromTrader": [
@@ -9241,10 +8899,7 @@
           "height": 1,
           "weight": 0.07,
           "lastOfferCount": 1,
-          "types": [
-            "mods",
-            "pistolGrip"
-          ],
+          "types": ["mods", "pistolGrip"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PM_bakelite_grip",
           "link": "https://tarkov.dev/item/pm-bakelite-grip",
           "iconLink": "https://assets.tarkov.dev/6374a7e7417239a7bf00f042-icon.webp",
@@ -9361,10 +9016,7 @@
           "height": 1,
           "weight": 0.072,
           "lastOfferCount": 1,
-          "types": [
-            "mods",
-            "pistolGrip"
-          ],
+          "types": ["mods", "pistolGrip"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PM_FAB_Defense_PM-G_pistol_grip",
           "link": "https://tarkov.dev/item/pm-fab-defense-pm-g-pistol-grip",
           "iconLink": "https://assets.tarkov.dev/637784c5f7b3f4ac1a0d1a9a-icon.webp",
@@ -9481,10 +9133,7 @@
           "height": 1,
           "weight": 0.114,
           "lastOfferCount": 1,
-          "types": [
-            "mods",
-            "pistolGrip"
-          ],
+          "types": ["mods", "pistolGrip"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PM_Tactic_Kit_pistol_grip",
           "link": "https://tarkov.dev/item/pm-tactic-kit-pistol-grip",
           "iconLink": "https://assets.tarkov.dev/637b6d610aef6cfc5e02dd14-icon.webp",
@@ -9525,10 +9174,7 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": [
-                    "5a7b483fe899ef0016170d15",
-                    "5a7b4900e899ef197b331a2a"
-                  ],
+                  "allowedItems": ["5a7b483fe899ef0016170d15", "5a7b4900e899ef197b331a2a"],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -9617,9 +9263,7 @@
           "height": 1,
           "weight": 0.05,
           "lastOfferCount": 1,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/SureFire_XC1_tactical_flashlight",
           "link": "https://tarkov.dev/item/surefire-xc1-tactical-flashlight",
           "iconLink": "https://assets.tarkov.dev/5a7b483fe899ef0016170d15-icon.webp",
@@ -9739,9 +9383,7 @@
           "height": 1,
           "weight": 0.12,
           "lastOfferCount": 2,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/UM_Tactical_UM3_pistol_sight_mount",
           "link": "https://tarkov.dev/item/um-tactical-um3-pistol-sight-mount",
           "iconLink": "https://assets.tarkov.dev/5a7b4900e899ef197b331a2a-icon.webp",
@@ -9832,9 +9474,7 @@
           "loudness": 0,
           "hasGrid": false,
           "backgroundColor": "blue",
-          "conflictingItems": [
-            "59bffbb386f77435b379b9c2"
-          ],
+          "conflictingItems": ["59bffbb386f77435b379b9c2"],
           "conflictingSlotIds": [],
           "conflictingCategories": [],
           "buyFromTrader": [
@@ -9913,10 +9553,7 @@
           "height": 1,
           "weight": 0.397,
           "lastOfferCount": 33,
-          "types": [
-            "mods",
-            "suppressor"
-          ],
+          "types": ["mods", "suppressor"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Griffin_Armament_M4SD-K_5.56x45_sound_suppressor",
           "link": "https://tarkov.dev/item/ar-15-griffin-armament-m4sd-k-556x45-sound-suppressor",
           "iconLink": "https://assets.tarkov.dev/638612b607dfed1ccb7206ba-icon.webp",
@@ -9972,9 +9609,7 @@
           "loudness": -35,
           "hasGrid": false,
           "backgroundColor": "blue",
-          "conflictingItems": [
-            "5c6d85e02e22165df16b81f4"
-          ],
+          "conflictingItems": ["5c6d85e02e22165df16b81f4"],
           "conflictingSlotIds": [],
           "conflictingCategories": [],
           "buyFromTrader": [
@@ -10046,10 +9681,7 @@
           "height": 1,
           "weight": 1.2,
           "lastOfferCount": 11,
-          "types": [
-            "glasses",
-            "wearable"
-          ],
+          "types": ["glasses", "wearable"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Kiver-M_face_shield",
           "link": "https://tarkov.dev/item/kiver-m-face-shield",
           "iconLink": "https://assets.tarkov.dev/5b46238386f7741a693bcf9c-icon.webp",
@@ -10067,10 +9699,7 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": [
-            "5b5f704686f77447ec5d76d7",
-            "5b47574386f77428ca22b33f"
-          ],
+          "handbookCategories": ["5b5f704686f77447ec5d76d7", "5b47574386f77428ca22b33f"],
           "lastLowPrice": 32420,
           "avg24hPrice": 46232,
           "low24hPrice": 29888,
@@ -10096,11 +9725,7 @@
             "propertiesType": "ItemPropertiesArmorAttachment",
             "blocksEyewear": true,
             "blocksHeadwear": false,
-            "zones": [
-              "Collider Type HeadCommon",
-              "Collider Type Eyes",
-              "Collider Type Jaw"
-            ],
+            "zones": ["Collider Type HeadCommon", "Collider Type Eyes", "Collider Type Jaw"],
             "material": "Glass"
           },
           "minLevelForFlea": 30,
@@ -10168,9 +9793,7 @@
           "height": 1,
           "weight": 0.053,
           "lastOfferCount": 10,
-          "types": [
-            "mods"
-          ],
+          "types": ["mods"],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Leupold_DeltaPoint_Reflex_Sight",
           "link": "https://tarkov.dev/item/leupold-deltapoint-reflex-sight",
           "iconLink": "https://assets.tarkov.dev/58d268fc86f774111273f8c2-icon.webp",
@@ -10209,22 +9832,10 @@
             "recoilModifier": 0,
             "accuracyModifier": 0,
             "slots": [],
-            "zoomLevels": [
-              [
-                1
-              ]
-            ],
+            "zoomLevels": [[1]],
             "sightingRange": 150,
-            "sightModes": [
-              1
-            ],
-            "zeroingDistances": [
-              [
-                25,
-                50,
-                100
-              ]
-            ]
+            "sightModes": [1],
+            "zeroingDistances": [[25, 50, 100]]
           },
           "minLevelForFlea": 25,
           "accuracyModifier": 0,
@@ -10472,10 +10083,7 @@
           "name": "543be5e94bdc2df1348b4568 Name",
           "normalizedName": "key",
           "parent": "54009119af1c881c07000029",
-          "children": [
-            "5c99f98d86f7745c314214b3",
-            "5c164d2286f774194c5e69fa"
-          ]
+          "children": ["5c99f98d86f7745c314214b3", "5c164d2286f774194c5e69fa"]
         },
         "5447b5cf4bdc2d65278b4567": {
           "id": "5447b5cf4bdc2d65278b4567",
@@ -10489,18 +10097,14 @@
           "name": "543be6564bdc2df4348b4568 Name",
           "normalizedName": "throwable-weapon",
           "parent": "54009119af1c881c07000029",
-          "children": [
-            "69f071ae35c3b5e6dd00df07"
-          ]
+          "children": ["69f071ae35c3b5e6dd00df07"]
         },
         "5448bc234bdc2d3c308b4569": {
           "id": "5448bc234bdc2d3c308b4569",
           "name": "5448bc234bdc2d3c308b4569 Name",
           "normalizedName": "magazine",
           "parent": "55802f3e4bdc2de7118b4584",
-          "children": [
-            "610720f290b75a49ff2e5e25"
-          ]
+          "children": ["610720f290b75a49ff2e5e25"]
         },
         "55802f3e4bdc2de7118b4584": {
           "id": "55802f3e4bdc2de7118b4584",
@@ -10538,10 +10142,7 @@
           "name": "543be6674bdc2df1348b4569 Name",
           "normalizedName": "food-and-drink",
           "parent": "54009119af1c881c07000029",
-          "children": [
-            "5448e8d64bdc2dce718b4568",
-            "5448e8d04bdc2ddf718b4569"
-          ]
+          "children": ["5448e8d64bdc2dce718b4568", "5448e8d04bdc2ddf718b4569"]
         },
         "5448e8d04bdc2ddf718b4569": {
           "id": "5448e8d04bdc2ddf718b4569",
@@ -10728,9 +10329,7 @@
           "name": "5485a8684bdc2da71d8b4567 Name",
           "normalizedName": "ammo",
           "parent": "5661632d4bdc2d903d8b456b",
-          "children": [
-            "677ae5df4be46b83620bf055"
-          ]
+          "children": ["677ae5df4be46b83620bf055"]
         },
         "5448e54d4bdc2dcc718b4568": {
           "id": "5448e54d4bdc2dcc718b4568",
@@ -10937,9 +10536,7 @@
           "name": "57864e4c24597754843f8723 Name",
           "normalizedName": "lubricant",
           "parent": "5448eb774bdc2d0a728b4567",
-          "children": [
-            "5d650c3e815116009f6201d2"
-          ]
+          "children": ["5d650c3e815116009f6201d2"]
         },
         "55818ae44bdc2dde698b456c": {
           "id": "55818ae44bdc2dde698b456c",
@@ -10974,10 +10571,7 @@
           "name": "55818aeb4bdc2ddc698b456a Name",
           "normalizedName": "special-scope",
           "parent": "5448fe7a4bdc2d6f028b456b",
-          "children": [
-            "5a2c3a9486f774688b05e574",
-            "5d21f59b6dbe99052b54ef83"
-          ]
+          "children": ["5a2c3a9486f774688b05e574", "5d21f59b6dbe99052b54ef83"]
         },
         "5a341c4686f77469e155819e": {
           "id": "5a341c4686f77469e155819e",
@@ -11075,9 +10669,7 @@
           "name": "5448ecbe4bdc2d60728b4568 Name",
           "normalizedName": "info",
           "parent": "54009119af1c881c07000029",
-          "children": [
-            "684070bd2f743ae53b0b80ec"
-          ]
+          "children": ["684070bd2f743ae53b0b80ec"]
         },
         "616eb7aea207f41933308f46": {
           "id": "616eb7aea207f41933308f46",
@@ -11161,9 +10753,7 @@
           "name": "610720f290b75a49ff2e5e25 Name",
           "normalizedName": "cylinder-magazine",
           "parent": "5448bc234bdc2d3c308b4569",
-          "children": [
-            "627a137bf21bc425b06ab944"
-          ]
+          "children": ["627a137bf21bc425b06ab944"]
         },
         "61605ddea09d851a0a0c1bbc": {
           "id": "61605ddea09d851a0a0c1bbc",
@@ -11268,10 +10858,7 @@
           "name": "664b81bfa322b5b99a037a03 Name",
           "normalizedName": "completable",
           "parent": "54009119af1c881c07000029",
-          "children": [
-            "6516b0f21e733a595c1016fb",
-            "67a27459e3515dec4105927b"
-          ]
+          "children": ["6516b0f21e733a595c1016fb", "67a27459e3515dec4105927b"]
         },
         "684070bd2f743ae53b0b80ec": {
           "id": "684070bd2f743ae53b0b80ec",

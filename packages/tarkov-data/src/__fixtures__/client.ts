@@ -20,7 +20,7 @@ const FIXTURES: Record<string, { document: unknown; lang: Record<string, string>
  */
 export function fixtureClient(): TarkovJsonClient {
   return {
-    fetchResource: <T,>(resource: string): Promise<T> => {
+    fetchResource: <T>(resource: string): Promise<T> => {
       const fixture = FIXTURES[resource];
       if (fixture === undefined) {
         return Promise.reject(new Error(`no fixture for resource "${resource}"`));

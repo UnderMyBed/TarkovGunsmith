@@ -101,8 +101,7 @@ export function normalizeSlots(
       const found = ctx.items[id];
       if (found === null || typeof found !== "object") continue;
       const properties = (found as { properties?: unknown }).properties as
-        | { propertiesType?: unknown; slots?: unknown }
-        | undefined;
+        { propertiesType?: unknown; slots?: unknown } | undefined;
       const childSlots =
         properties?.propertiesType === "ItemPropertiesWeaponMod" && Array.isArray(properties.slots)
           ? properties.slots
@@ -156,9 +155,7 @@ export async function fetchWeaponTree(
   }
 
   const item = raw as { id?: unknown; name?: unknown; properties?: unknown };
-  const properties = item.properties as
-    | { propertiesType?: unknown; slots?: unknown }
-    | undefined;
+  const properties = item.properties as { propertiesType?: unknown; slots?: unknown } | undefined;
   if (properties?.propertiesType !== "ItemPropertiesWeapon") {
     throw new Error(`Item "${weaponId}" is not a weapon (properties.propertiesType mismatch)`);
   }

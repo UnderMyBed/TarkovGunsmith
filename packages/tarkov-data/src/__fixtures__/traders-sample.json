@@ -67,10 +67,7 @@
             "5c99f98d86f7745c314214b3",
             "5448fe124bdc2da5018b4567"
           ],
-          "items": [
-            "5d40407c86f774318526545a",
-            "5d1b376e86f774252519444e"
-          ]
+          "items": ["5d40407c86f774318526545a", "5d1b376e86f774252519444e"]
         },
         "buyProhibited": {
           "category": [],
@@ -218,10 +215,7 @@
             "5448eb774bdc2d0a728b4567",
             "5795f317245977243854e041"
           ],
-          "items": [
-            "62a09e73af34e73a266d932a",
-            "62a09e974f842e1bd12da3f0"
-          ]
+          "items": ["62a09e73af34e73a266d932a", "62a09e974f842e1bd12da3f0"]
         },
         "buyProhibited": {
           "category": [],
@@ -1128,10 +1122,7 @@
             "5447e0e74bdc2d3c308b4567",
             "57bef4c42459772e8d35a53b"
           ],
-          "items": [
-            "66d9f7256916142b3b02276e",
-            "6a04fab776cb0efb8f05969f"
-          ]
+          "items": ["66d9f7256916142b3b02276e", "6a04fab776cb0efb8f05969f"]
         },
         "buyProhibited": {
           "category": [],
@@ -1604,9 +1595,7 @@
             "55818b224bdc2dde698b456f",
             "55818a594bdc2db9688b456a"
           ],
-          "items": [
-            "5755383e24597772cb798966"
-          ]
+          "items": ["5755383e24597772cb798966"]
         },
         "buyProhibited": {
           "category": [],
@@ -2213,10 +2202,7 @@
         }
       }
     },
-    "translations": [
-      "$.data.*.name",
-      "$.data.*.description"
-    ]
+    "translations": ["$.data.*.name", "$.data.*.description"]
   },
   "lang": {
     "54cb50c76803fa8b248b4571 Nickname": "Prapor",

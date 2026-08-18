@@ -1,117 +1,98 @@
 import type { HydrateMod, HydrateWeapon } from "@tarkov/og";
 import type { AvailabilityMod } from "./og-availability.js";
+import { createTarkovClient, resolveBuyFor, fetchTraders, fetchTasks } from "@tarkov/data";
 
 /**
  * The mods returned by this fetcher serve two consumers: `hydrateBuildCard`
  * (reads `buyFor[].priceRUB`) and `availabilityPillText` (reads
- * `buyFor[].vendor.normalizedName` + `minTraderLevel`). The GraphQL query
- * selects all three fields, so the runtime row satisfies both contracts;
- * this intersection type lets TypeScript see that.
+ * `buyFor[].vendor.normalizedName` + `minTraderLevel`). This intersection type
+ * lets TypeScript see that one row satisfies both contracts.
  */
 export type OgMod = HydrateMod & AvailabilityMod;
 
-const ENDPOINT = "https://api.tarkov.dev/graphql";
+/**
+ * Base URL for the tarkov.dev JSON API.
+ *
+ * This module used to POST GraphQL to api.tarkov.dev, which has been unavailable since
+ * ~2026-07-21 (the-hideout/tarkov-api#474) — OG cards silently rendered without stats.
+ */
+export const OG_JSON_API_BASE = "https://json.tarkov.dev/regular/";
 
-const QUERY = /* GraphQL */ `
-  query OgCardBuild($weaponId: ID!, $modIds: [ID!]!) {
-    weapon: item(id: $weaponId) {
-      id
-      shortName
-      properties {
-        ... on ItemPropertiesWeapon {
-          ergonomics
-          recoilVertical
-          recoilHorizontal
-        }
-      }
-    }
-    mods: items(ids: $modIds) {
-      id
-      shortName
-      weight
-      buyFor {
-        vendor {
-          normalizedName
-          ... on TraderOffer {
-            minTraderLevel
-          }
-        }
-        priceRUB
-      }
-      properties {
-        ... on ItemPropertiesWeaponMod {
-          ergonomics
-          recoilModifier
-          accuracyModifier
-        }
-      }
-    }
-  }
-`;
+/**
+ * Module-scope client so the items document is fetched once per isolate rather than once
+ * per card render. The client's own TTL cache does the work; OG rendering is per-request and
+ * the document is 1.36 MB gzipped, so an uncached fetch per card would be untenable.
+ */
+const client = createTarkovClient(OG_JSON_API_BASE);
 
 interface Args {
   weaponId: string;
   modIds: readonly string[];
 }
 
-/**
- * Raw shape coming back from tarkov.dev: `minTraderLevel` is a field on the
- * `TraderOffer` implementation of `Vendor`, surfaced via an inline fragment.
- * It is NOT on `ItemPrice` itself — selecting it there causes the upstream
- * GraphQL API to return a validation error and the fetcher to throw.
- */
-interface RawOffer {
-  vendor: { normalizedName: string; minTraderLevel?: number };
-  priceRUB: number;
+interface ItemsDoc {
+  items: Record<string, unknown>;
 }
 
-interface RawMod extends Omit<OgMod, "buyFor"> {
-  buyFor: RawOffer[];
-}
-
-interface ApiResp {
-  data?: {
-    weapon: HydrateWeapon | null;
-    mods: RawMod[];
-  };
-  errors?: { message: string }[];
-}
-
-/**
- * Hoist `minTraderLevel` from the `TraderOffer` inline fragment up to the
- * offer level so `availabilityPillText` (which reads
- * `AvailabilityOffer.minTraderLevel`) sees it where it expects.
- */
-function flattenMod(raw: RawMod): OgMod {
-  return {
-    ...raw,
-    buyFor: raw.buyFor.map((o) => ({
-      vendor: { normalizedName: o.vendor.normalizedName },
-      priceRUB: o.priceRUB,
-      minTraderLevel: o.vendor.minTraderLevel,
-    })),
-  };
+function readNumber(source: unknown, key: string): number {
+  if (source === null || typeof source !== "object") return 0;
+  const value = (source as Record<string, unknown>)[key];
+  return typeof value === "number" ? value : 0;
 }
 
 export async function fetchOgRowsForBuild(
   args: Args,
 ): Promise<{ weapon: HydrateWeapon; mods: OgMod[] }> {
-  const res = await fetch(ENDPOINT, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      query: QUERY,
-      variables: { weaponId: args.weaponId, modIds: args.modIds },
-    }),
-  });
-  if (!res.ok) throw new Error(`og-graphql: upstream ${res.status}`);
-  // res.json() returns Promise<any> under Node's lib.dom typings; the cast is
-  // load-bearing for downstream narrowing even though the rule thinks it's a no-op.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-  const json = (await res.json()) as ApiResp;
-  if (json.errors && json.errors.length > 0) {
-    throw new Error(`og-graphql: ${json.errors.map((e) => e.message).join(", ")}`);
+  const [doc, traders, tasks] = await Promise.all([
+    client.fetchResource<ItemsDoc>("items"),
+    fetchTraders(client),
+    fetchTasks(client),
+  ]);
+
+  const rawWeapon = doc.items[args.weaponId];
+  if (rawWeapon === null || rawWeapon === undefined || typeof rawWeapon !== "object") {
+    throw new Error(`og-graphql: weapon ${args.weaponId} not found`);
   }
-  if (!json.data?.weapon) throw new Error(`og-graphql: weapon ${args.weaponId} not found`);
-  return { weapon: json.data.weapon, mods: json.data.mods.map(flattenMod) };
+  const weaponRecord = rawWeapon as Record<string, unknown>;
+  const weaponProps = weaponRecord.properties;
+
+  const weapon: HydrateWeapon = {
+    id: args.weaponId,
+    shortName: typeof weaponRecord.shortName === "string" ? weaponRecord.shortName : args.weaponId,
+    properties: {
+      ergonomics: readNumber(weaponProps, "ergonomics"),
+      recoilVertical: readNumber(weaponProps, "recoilVertical"),
+      recoilHorizontal: readNumber(weaponProps, "recoilHorizontal"),
+    },
+  };
+
+  const mods: OgMod[] = [];
+  for (const id of args.modIds) {
+    const raw = doc.items[id];
+    if (raw === null || raw === undefined || typeof raw !== "object") continue;
+    const record = raw as Record<string, unknown>;
+    const props = record.properties;
+
+    mods.push({
+      id,
+      shortName: typeof record.shortName === "string" ? record.shortName : id,
+      weight: readNumber(record, "weight"),
+      properties: {
+        ergonomics: readNumber(props, "ergonomics"),
+        recoilModifier: readNumber(props, "recoilModifier"),
+        accuracyModifier: readNumber(props, "accuracyModifier"),
+      },
+      // Flatten minTraderLevel up from the vendor, where availabilityPillText expects it.
+      buyFor: resolveBuyFor(raw, traders, tasks).map((entry) => ({
+        vendor: { normalizedName: entry.vendor.normalizedName },
+        priceRUB: entry.priceRUB ?? 0,
+        minTraderLevel:
+          entry.vendor.__typename === "TraderOffer"
+            ? (entry.vendor.minTraderLevel ?? undefined)
+            : undefined,
+      })),
+    });
+  }
+
+  return { weapon, mods };
 }

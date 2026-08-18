@@ -40,7 +40,11 @@ export function createTarkovClient(
   fetchImpl?: typeof fetch,
   ttlMs = 3_600_000,
 ): TarkovJsonClient {
-  const doFetch = fetchImpl ?? fetch;
+  // Resolved per call rather than captured at construction: a module-scope client would
+  // otherwise pin whatever `fetch` existed at import time, which breaks test doubles and any
+  // runtime that installs its own fetch after module evaluation.
+  const doFetch: typeof fetch = (input, init) =>
+    fetchImpl !== undefined ? fetchImpl(input, init) : fetch(input, init);
   const cache = new Map<string, CacheEntry>();
 
   async function getJson(resource: string, required: boolean): Promise<unknown> {

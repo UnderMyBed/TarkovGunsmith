@@ -11,7 +11,10 @@ function firstGunId(): string {
 }
 
 function maxDepth(nodes: readonly SlotNode[], d = 1): number {
-  return nodes.reduce((max, n) => Math.max(max, n.children.length ? maxDepth(n.children, d + 1) : d), d);
+  return nodes.reduce(
+    (max, n) => Math.max(max, n.children.length ? maxDepth(n.children, d + 1) : d),
+    d,
+  );
 }
 
 describe("fetchWeaponTree", () => {
@@ -57,6 +60,8 @@ describe("fetchWeaponTree", () => {
 
   it("stops resolving at depth 0", () => {
     const ctx = { items: fixture.document.data.items as Record<string, unknown>, categories: {} };
-    expect(normalizeSlots([{ nameId: "x", filters: { allowedItems: [] } }], "", ctx, 0)).toEqual([]);
+    expect(normalizeSlots([{ nameId: "x", filters: { allowedItems: [] } }], "", ctx, 0)).toEqual(
+      [],
+    );
   });
 });

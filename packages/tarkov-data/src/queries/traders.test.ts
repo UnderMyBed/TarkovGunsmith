@@ -20,9 +20,15 @@ describe("fetchTraders", () => {
   it("returns only profile-gating traders", async () => {
     const traders = await fetchTraders(fixtureClient());
     for (const t of traders) {
-      expect(["prapor", "therapist", "skier", "peacekeeper", "mechanic", "ragman", "jaeger"]).toContain(
-        t.normalizedName,
-      );
+      expect([
+        "prapor",
+        "therapist",
+        "skier",
+        "peacekeeper",
+        "mechanic",
+        "ragman",
+        "jaeger",
+      ]).toContain(t.normalizedName);
     }
   });
 });

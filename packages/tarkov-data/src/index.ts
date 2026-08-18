@@ -1,5 +1,7 @@
 // Client
 export { createTarkovClient, TarkovApiError } from "./client.js";
+export { resolveBuyFor } from "./queries/shared/buy-for.js";
+export type { BuyForEntry, Vendor, BuyForTrader, BuyForTask } from "./queries/shared/buy-for.js";
 export type { TarkovJsonClient } from "./client.js";
 export { mergeTranslations } from "./translations.js";
 export type { TranslatedDocument } from "./translations.js";
