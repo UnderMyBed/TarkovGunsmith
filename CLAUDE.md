@@ -15,7 +15,7 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 >
 > Plus `/smoke` + `/` (Builder-forward landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Deploys fire on release-please PR merges (tagged version bumps) — feature PR merges stage changes on `main` without deploying.
 >
-> **Roadmap from here — M3 Differentiators, 4 of 5 remaining:** (1) ✅ Frontend design pass. (2) Build comparison (diff two builds). (3) Build optimization (constraint solver). (4) OG share cards (server-rendered PNG). (5) `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13. Visual polish / fix-up items discovered during the design pass are tracked ad-hoc and landed before the next feature PR.
+> **Roadmap from here — M3 Differentiators, all 5 shipped:** (1) ✅ Frontend design pass. (2) ✅ Build comparison (diff two builds). (3) ✅ Build optimization (constraint solver). (4) ✅ OG share cards (server-rendered PNG). (5) ✅ `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13. Visual polish / fix-up items discovered during the design pass are tracked ad-hoc and landed before the next feature PR.
 >
 > **Deferred M1.5 items (still open):** Undo/redo; `allowedCategories` slot filtering; `craftsFor`/`bartersFor` in availability; Dialog primitive; weapon preset content; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
 >
