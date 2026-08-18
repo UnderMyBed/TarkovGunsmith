@@ -9,58 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SmokeRouteImport } from './routes/smoke'
-import { Route as SimRouteImport } from './routes/sim'
-import { Route as MatrixRouteImport } from './routes/matrix'
-import { Route as DataRouteImport } from './routes/data'
-import { Route as ChartsRouteImport } from './routes/charts'
-import { Route as CalcRouteImport } from './routes/calc'
-import { Route as BuilderRouteImport } from './routes/builder'
-import { Route as AecRouteImport } from './routes/aec'
-import { Route as AdcRouteImport } from './routes/adc'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as BuilderCompareRouteImport } from './routes/builder.compare'
+import { Route as AdcRouteImport } from './routes/adc'
+import { Route as AecRouteImport } from './routes/aec'
+import { Route as BuilderRouteImport } from './routes/builder'
+import { Route as CalcRouteImport } from './routes/calc'
+import { Route as ChartsRouteImport } from './routes/charts'
+import { Route as DataRouteImport } from './routes/data'
+import { Route as MatrixRouteImport } from './routes/matrix'
+import { Route as SimRouteImport } from './routes/sim'
+import { Route as SmokeRouteImport } from './routes/smoke'
 import { Route as BuilderIdRouteImport } from './routes/builder.$id'
+import { Route as BuilderCompareRouteImport } from './routes/builder.compare'
 import { Route as BuilderComparePairIdRouteImport } from './routes/builder.compare.$pairId'
 
-const SmokeRoute = SmokeRouteImport.update({
-  id: '/smoke',
-  path: '/smoke',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SimRoute = SimRouteImport.update({
-  id: '/sim',
-  path: '/sim',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MatrixRoute = MatrixRouteImport.update({
-  id: '/matrix',
-  path: '/matrix',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DataRoute = DataRouteImport.update({
-  id: '/data',
-  path: '/data',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChartsRoute = ChartsRouteImport.update({
-  id: '/charts',
-  path: '/charts',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalcRoute = CalcRouteImport.update({
-  id: '/calc',
-  path: '/calc',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BuilderRoute = BuilderRouteImport.update({
-  id: '/builder',
-  path: '/builder',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AecRoute = AecRouteImport.update({
-  id: '/aec',
-  path: '/aec',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdcRoute = AdcRouteImport.update({
@@ -68,19 +33,54 @@ const AdcRoute = AdcRouteImport.update({
   path: '/adc',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AecRoute = AecRouteImport.update({
+  id: '/aec',
+  path: '/aec',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BuilderCompareRoute = BuilderCompareRouteImport.update({
-  id: '/compare',
-  path: '/compare',
-  getParentRoute: () => BuilderRoute,
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalcRoute = CalcRouteImport.update({
+  id: '/calc',
+  path: '/calc',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChartsRoute = ChartsRouteImport.update({
+  id: '/charts',
+  path: '/charts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataRoute = DataRouteImport.update({
+  id: '/data',
+  path: '/data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MatrixRoute = MatrixRouteImport.update({
+  id: '/matrix',
+  path: '/matrix',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimRoute = SimRouteImport.update({
+  id: '/sim',
+  path: '/sim',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SmokeRoute = SmokeRouteImport.update({
+  id: '/smoke',
+  path: '/smoke',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const BuilderIdRoute = BuilderIdRouteImport.update({
   id: '/$id',
   path: '/$id',
+  getParentRoute: () => BuilderRoute,
+} as any)
+const BuilderCompareRoute = BuilderCompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => BuilderRoute,
 } as any)
 const BuilderComparePairIdRoute = BuilderComparePairIdRouteImport.update({
@@ -198,60 +198,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/smoke': {
-      id: '/smoke'
-      path: '/smoke'
-      fullPath: '/smoke'
-      preLoaderRoute: typeof SmokeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sim': {
-      id: '/sim'
-      path: '/sim'
-      fullPath: '/sim'
-      preLoaderRoute: typeof SimRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/matrix': {
-      id: '/matrix'
-      path: '/matrix'
-      fullPath: '/matrix'
-      preLoaderRoute: typeof MatrixRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/data': {
-      id: '/data'
-      path: '/data'
-      fullPath: '/data'
-      preLoaderRoute: typeof DataRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/charts': {
-      id: '/charts'
-      path: '/charts'
-      fullPath: '/charts'
-      preLoaderRoute: typeof ChartsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calc': {
-      id: '/calc'
-      path: '/calc'
-      fullPath: '/calc'
-      preLoaderRoute: typeof CalcRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/builder': {
-      id: '/builder'
-      path: '/builder'
-      fullPath: '/builder'
-      preLoaderRoute: typeof BuilderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/aec': {
-      id: '/aec'
-      path: '/aec'
-      fullPath: '/aec'
-      preLoaderRoute: typeof AecRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/adc': {
@@ -261,25 +212,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdcRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/aec': {
+      id: '/aec'
+      path: '/aec'
+      fullPath: '/aec'
+      preLoaderRoute: typeof AecRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/builder/compare': {
-      id: '/builder/compare'
-      path: '/compare'
-      fullPath: '/builder/compare'
-      preLoaderRoute: typeof BuilderCompareRouteImport
-      parentRoute: typeof BuilderRoute
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calc': {
+      id: '/calc'
+      path: '/calc'
+      fullPath: '/calc'
+      preLoaderRoute: typeof CalcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/charts': {
+      id: '/charts'
+      path: '/charts'
+      fullPath: '/charts'
+      preLoaderRoute: typeof ChartsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data': {
+      id: '/data'
+      path: '/data'
+      fullPath: '/data'
+      preLoaderRoute: typeof DataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/matrix': {
+      id: '/matrix'
+      path: '/matrix'
+      fullPath: '/matrix'
+      preLoaderRoute: typeof MatrixRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sim': {
+      id: '/sim'
+      path: '/sim'
+      fullPath: '/sim'
+      preLoaderRoute: typeof SimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/smoke': {
+      id: '/smoke'
+      path: '/smoke'
+      fullPath: '/smoke'
+      preLoaderRoute: typeof SmokeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/builder/$id': {
       id: '/builder/$id'
       path: '/$id'
       fullPath: '/builder/$id'
       preLoaderRoute: typeof BuilderIdRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/builder/compare': {
+      id: '/builder/compare'
+      path: '/compare'
+      fullPath: '/builder/compare'
+      preLoaderRoute: typeof BuilderCompareRouteImport
       parentRoute: typeof BuilderRoute
     }
     '/builder/compare/$pairId': {

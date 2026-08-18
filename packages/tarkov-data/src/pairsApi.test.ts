@@ -21,7 +21,7 @@ describe("savePair", () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValue(jsonResponse(201, { id: "abc23456", url: "https://x/pairs/abc23456" }));
-    const res = await savePair(fetchImpl as unknown as typeof fetch, validPair);
+    const res = await savePair(fetchImpl, validPair);
     expect(res).toEqual({ id: "abc23456", url: "https://x/pairs/abc23456" });
     expect(fetchImpl).toHaveBeenCalledWith(
       "/api/pairs",
@@ -51,7 +51,7 @@ describe("loadPair", () => {
 
   it("returns parsed pair on 200", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, validPair));
-    const res = await loadPair(fetchImpl as unknown as typeof fetch, "abc23456");
+    const res = await loadPair(fetchImpl, "abc23456");
     expect(res).toEqual(validPair);
   });
 
@@ -82,7 +82,7 @@ describe("forkPair", () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValue(jsonResponse(201, { id: "xyz98765", url: "https://x/pairs/xyz98765" }));
-    const res = await forkPair(fetchImpl as unknown as typeof fetch, "abc23456");
+    const res = await forkPair(fetchImpl, "abc23456");
     expect(res).toEqual({ id: "xyz98765", url: "https://x/pairs/xyz98765" });
     expect(fetchImpl).toHaveBeenCalledWith(
       "/api/pairs/abc23456/fork",

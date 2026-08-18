@@ -16,11 +16,11 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
-    "nanoid": "^5.0.0"
+    "nanoid": "^5.1.16"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.14.0",
-    "@cloudflare/workers-types": "^4.20240000.0",
-    "wrangler": "^4.0.0"
+    "@cloudflare/vitest-pool-workers": "^0.14.9",
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "wrangler": "^4.124.0"
   }
 }

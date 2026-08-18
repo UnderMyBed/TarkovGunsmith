@@ -35,7 +35,7 @@ const modList: readonly ModListItem[] = [
     ],
     craftsFor: null,
     bartersFor: null,
-  } as ModListItem,
+  },
   {
     id: "m-new",
     name: "New Muzzle",
@@ -59,7 +59,7 @@ const modList: readonly ModListItem[] = [
     ],
     craftsFor: null,
     bartersFor: null,
-  } as ModListItem,
+  },
   {
     id: "h-new",
     name: "New Handguard",
@@ -83,7 +83,7 @@ const modList: readonly ModListItem[] = [
     ],
     craftsFor: null,
     bartersFor: null,
-  } as ModListItem,
+  },
 ];
 
 describe("slotDiff", () => {

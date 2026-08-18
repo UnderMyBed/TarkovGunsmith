@@ -172,7 +172,7 @@ describe("normalizeSlots", () => {
   });
 
   it("populates allowedCategories on slots that have them", () => {
-    const result = normalizeSlots(responseFixture.data.item.properties.slots as unknown[], "");
+    const result = normalizeSlots(responseFixture.data.item.properties.slots, "");
     const scope = result.find((s) => s.nameId === "mod_scope");
     expect(scope?.allowedCategories).toEqual([
       { id: "cat-scope", name: "Scope", normalizedName: "scope" },
@@ -181,14 +181,14 @@ describe("normalizeSlots", () => {
   });
 
   it("drops null entries from allowedCategories (upstream tolerance)", () => {
-    const result = normalizeSlots(responseFixture.data.item.properties.slots as unknown[], "");
+    const result = normalizeSlots(responseFixture.data.item.properties.slots, "");
     const rail = result.find((s) => s.nameId === "mod_rail");
     expect(rail?.allowedCategories).toHaveLength(1);
     expect(rail?.allowedCategories[0]?.normalizedName).toBe("rail-accessory");
   });
 
   it("returns empty allowedCategories when filters are null", () => {
-    const result = normalizeSlots(responseFixture.data.item.properties.slots as unknown[], "");
+    const result = normalizeSlots(responseFixture.data.item.properties.slots, "");
     const muzzle = result.find((s) => s.nameId === "mod_muzzle");
     expect(muzzle?.allowedCategories).toEqual([]);
   });
