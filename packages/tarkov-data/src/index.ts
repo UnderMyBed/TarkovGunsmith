@@ -1,6 +1,8 @@
 // Client
-export { createTarkovClient } from "./client.js";
-export type { GraphQLClient } from "./client.js";
+export { createTarkovClient, TarkovApiError } from "./client.js";
+export type { TarkovJsonClient } from "./client.js";
+export { mergeTranslations } from "./translations.js";
+export type { TranslatedDocument } from "./translations.js";
 
 // Provider
 export { TarkovDataProvider, useTarkovClient } from "./provider.js";
