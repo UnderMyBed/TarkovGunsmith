@@ -1,30 +1,9 @@
 import { z } from "zod";
-import type { GraphQLClient } from "../client.js";
-
-export const WEAPON_QUERY = /* GraphQL */ `
-  query Weapon($id: ID!) {
-    item(id: $id) {
-      id
-      name
-      shortName
-      iconLink
-      weight
-      properties {
-        __typename
-        ... on ItemPropertiesWeapon {
-          ergonomics
-          recoilVertical
-          recoilHorizontal
-          caliber
-          fireRate
-        }
-      }
-    }
-  }
-`;
+import type { TarkovJsonClient } from "../client.js";
+import type { ItemsDocument } from "./documents.js";
 
 const weaponPropertiesSchema = z.object({
-  __typename: z.literal("ItemPropertiesWeapon"),
+  propertiesType: z.literal("ItemPropertiesWeapon"),
   ergonomics: z.number(),
   recoilVertical: z.number(),
   recoilHorizontal: z.number(),
@@ -50,7 +29,8 @@ export type Weapon = z.infer<typeof weaponItemSchema>;
 /**
  * Fetch a single weapon by its tarkov-api id, validated against {@link weaponSchema}.
  */
-export async function fetchWeapon(client: GraphQLClient, id: string): Promise<Weapon> {
-  const raw = await client.request<unknown>(WEAPON_QUERY, { id });
-  return weaponSchema.parse(raw).item;
+export async function fetchWeapon(client: TarkovJsonClient, id: string): Promise<Weapon> {
+  const doc = await client.fetchResource<ItemsDocument>("items");
+  // The document is keyed by id, so this indexes rather than scanning 5000+ items.
+  return weaponSchema.parse({ item: doc.items[id] ?? null }).item;
 }
