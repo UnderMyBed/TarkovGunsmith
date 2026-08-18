@@ -9,15 +9,15 @@ export { TarkovDataProvider, useTarkovClient } from "./provider.js";
 export type { TarkovDataProviderProps } from "./provider.js";
 
 // Queries (fetchers + schemas + types)
-export { AMMO_LIST_QUERY, ammoListSchema, fetchAmmoList } from "./queries/ammoList.js";
+export { ammoListSchema, fetchAmmoList } from "./queries/ammoList.js";
 export type { AmmoListItem } from "./queries/ammoList.js";
-export { ARMOR_LIST_QUERY, armorListSchema, fetchArmorList } from "./queries/armorList.js";
+export { armorListSchema, fetchArmorList } from "./queries/armorList.js";
 export type { ArmorListItem } from "./queries/armorList.js";
-export { WEAPON_QUERY, weaponSchema, fetchWeapon } from "./queries/weapon.js";
+export { weaponSchema, fetchWeapon } from "./queries/weapon.js";
 export type { Weapon } from "./queries/weapon.js";
-export { WEAPON_LIST_QUERY, weaponListSchema, fetchWeaponList } from "./queries/weaponList.js";
+export { weaponListSchema, fetchWeaponList } from "./queries/weaponList.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
-export { MOD_LIST_QUERY, modListSchema, fetchModList } from "./queries/modList.js";
+export { modListSchema, fetchModList } from "./queries/modList.js";
 export type { ModListItem, ModListBuyFor, ModListVendor } from "./queries/modList.js";
 
 // Build schema
@@ -67,7 +67,7 @@ export {
 } from "./pairsApi.js";
 
 // Weapon tree (slot-based compatibility)
-export { WEAPON_TREE_QUERY, fetchWeaponTree, normalizeSlots } from "./queries/weaponTree.js";
+export { fetchWeaponTree, normalizeSlots } from "./queries/weaponTree.js";
 export type { WeaponTree, SlotNode, AllowedItem, SlotCategory } from "./queries/weaponTree.js";
 export { useWeaponTree } from "./hooks/useWeaponTree.js";
 
@@ -79,9 +79,9 @@ export type { SlotNodeForMigration } from "./build-migrations.js";
 export { itemAvailability } from "./item-availability.js";
 export type { ItemAvailability } from "./item-availability.js";
 export { MARQUEE_QUEST_NORMALIZED_NAMES } from "./marquee-quests.js";
-export { TRADERS_QUERY, fetchTraders, tradersSchema } from "./queries/traders.js";
+export { fetchTraders, tradersSchema } from "./queries/traders.js";
 export type { TraderListItem } from "./queries/traders.js";
-export { TASKS_QUERY, fetchTasks, tasksSchema } from "./queries/tasks.js";
+export { fetchTasks, tasksSchema } from "./queries/tasks.js";
 export type { TaskListItem } from "./queries/tasks.js";
 export { useTraders } from "./hooks/useTraders.js";
 export { useTasks } from "./hooks/useTasks.js";

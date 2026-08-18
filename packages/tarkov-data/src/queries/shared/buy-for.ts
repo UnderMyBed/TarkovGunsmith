@@ -41,9 +41,9 @@ export interface BuyForTrader {
   normalizedName: string;
 }
 
-/** Minimal task shape this join needs. */
+/** Minimal task shape this join needs. `id` is nullable upstream. */
 export interface BuyForTask {
-  id: string;
+  id: string | null;
   normalizedName: string;
 }
 
@@ -67,7 +67,10 @@ export function resolveBuyFor(
   if (item === null || typeof item !== "object") return [];
 
   const traderById = new Map(traders.map((t) => [t.id, t.normalizedName]));
-  const taskById = new Map(tasks.map((t) => [t.id, t.normalizedName]));
+  const taskById = new Map<string, string>();
+  for (const task of tasks) {
+    if (task.id !== null) taskById.set(task.id, task.normalizedName);
+  }
 
   const { buyFromTrader, types, minLevelForFlea, avg24hPrice, lastLowPrice } = item as {
     buyFromTrader?: unknown;

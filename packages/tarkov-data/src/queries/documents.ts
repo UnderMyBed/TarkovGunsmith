@@ -20,6 +20,11 @@ export interface ItemsDocument {
    * where the GraphQL API embedded the resolved object, so armor selection joins here.
    */
   armorMaterials?: Record<string, ArmorMaterialEntry>;
+  /**
+   * Category id -> category. Slot filters reference categories by id where the GraphQL API
+   * embedded `{ id, name, normalizedName }`.
+   */
+  itemCategories?: Record<string, unknown>;
 }
 
 /** The upstream tasks document. */
