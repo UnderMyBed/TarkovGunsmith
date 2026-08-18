@@ -1,0 +1,816 @@
+{
+  "document": {
+    "data": {
+      "tasks": {
+        "5ac244eb86f7741356335af1": {
+          "id": "5ac244eb86f7741356335af1",
+          "name": "5ac244eb86f7741356335af1 name",
+          "trader": "5a7c2eca46aef81a7ca2145d",
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Gunsmith_-_M4A1",
+          "minPlayerLevel": 26,
+          "taskRequirements": [],
+          "traderRequirements": [
+            {
+              "id": "6a3cfb71dac73a85f11bab2c",
+              "requirementType": "level",
+              "compareMethod": ">=",
+              "value": 3,
+              "trader": "5a7c2eca46aef81a7ca2145d"
+            }
+          ],
+          "objectives": [
+            {
+              "id": "5accdfdb86f77412265cbfc9",
+              "description": "5accdfdb86f77412265cbfc9",
+              "type": "buildWeapon",
+              "count": 1,
+              "optional": false,
+              "item": "5447a9cd4bdc2dbd208b4567",
+              "containsAll": [],
+              "containsCategory": ["550aa4cd4bdc2dd8348b456c"],
+              "zones": [],
+              "maps": [],
+              "buildAttributes": {
+                "accuracy": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "durability": {
+                  "value": 60,
+                  "compareMethod": ">="
+                },
+                "effectiveDistance": {
+                  "value": 800,
+                  "compareMethod": ">="
+                },
+                "ergonomics": {
+                  "value": 37,
+                  "compareMethod": ">="
+                },
+                "height": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "magazineCapacity": {
+                  "value": 60,
+                  "compareMethod": ">="
+                },
+                "muzzleVelocity": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "recoil": {
+                  "value": 300,
+                  "compareMethod": "<="
+                },
+                "weight": {
+                  "value": 3.8,
+                  "compareMethod": "<="
+                },
+                "width": {
+                  "value": 0,
+                  "compareMethod": ">="
+                }
+              }
+            }
+          ],
+          "failConditions": [],
+          "startRewards": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "finishRewards": {
+            "traderStanding": [
+              {
+                "standing": 0.75,
+                "trader": "5a7c2eca46aef81a7ca2145d"
+              }
+            ],
+            "items": [
+              {
+                "item": "5449016a4bdc2d6f028b456f",
+                "count": 275000,
+                "attributes": {}
+              }
+            ],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "failureOutcome": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "restartable": false,
+          "experience": 28000,
+          "factionName": "Any",
+          "neededKeys": [],
+          "availableDelaySecondsMin": 0,
+          "availableDelaySecondsMax": 0,
+          "otherRequirements": [],
+          "normalizedName": "gunsmith-m4a1",
+          "kappaRequired": false,
+          "lightkeeperRequired": false,
+          "taskImageLink": "https://assets.tarkov.dev/5ac244eb86f7741356335af1.webp",
+          "map": null
+        },
+        "639872fe8871e1272b10ccf6": {
+          "id": "639872fe8871e1272b10ccf6",
+          "name": "639872fe8871e1272b10ccf6 name",
+          "trader": "5a7c2eca46aef81a7ca2145d",
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Gunsmith_Master_-_Part_1",
+          "minPlayerLevel": 40,
+          "taskRequirements": [],
+          "traderRequirements": [
+            {
+              "id": "6a58bc15c0fe3ef5eea5de5e",
+              "requirementType": "level",
+              "compareMethod": ">=",
+              "value": 4,
+              "trader": "5a7c2eca46aef81a7ca2145d"
+            }
+          ],
+          "objectives": [
+            {
+              "id": "639879addecada40426d3449",
+              "description": "639879addecada40426d3449",
+              "type": "buildWeapon",
+              "count": 1,
+              "optional": false,
+              "item": "5bb2475ed4351e00853264e3",
+              "containsAll": [
+                "5ea17bbc09aa976f2e7a51cd",
+                "5fce0cf655375d18a253eff0",
+                "558022b54bdc2dac148b458d",
+                "5d15cf3bd7ad1a67e71518b2",
+                "5947eab886f77475961d96c5",
+                "5c06595c0db834001a66af6c"
+              ],
+              "containsCategory": [],
+              "zones": [],
+              "maps": [],
+              "buildAttributes": {
+                "accuracy": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "durability": {
+                  "value": 80,
+                  "compareMethod": ">="
+                },
+                "effectiveDistance": {
+                  "value": 300,
+                  "compareMethod": ">="
+                },
+                "ergonomics": {
+                  "value": 50,
+                  "compareMethod": ">="
+                },
+                "height": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "magazineCapacity": {
+                  "value": 30,
+                  "compareMethod": ">="
+                },
+                "muzzleVelocity": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "recoil": {
+                  "value": 310,
+                  "compareMethod": "<="
+                },
+                "weight": {
+                  "value": 4,
+                  "compareMethod": "<="
+                },
+                "width": {
+                  "value": 0,
+                  "compareMethod": ">="
+                }
+              }
+            }
+          ],
+          "failConditions": [],
+          "startRewards": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "finishRewards": {
+            "traderStanding": [],
+            "items": [
+              {
+                "item": "5d025cc1d7ad1a53845279ef",
+                "count": 1,
+                "attributes": {}
+              },
+              {
+                "item": "5c793fb92e221644f31bfb64",
+                "count": 1,
+                "attributes": {}
+              }
+            ],
+            "offerUnlock": [
+              {
+                "id": "6a7074a0ac11e8cae19406dc",
+                "level": 4,
+                "item": "5d025cc1d7ad1a53845279ef",
+                "count": 1,
+                "contains": [],
+                "attributes": [],
+                "trader": "5a7c2eca46aef81a7ca2145d"
+              },
+              {
+                "id": "6a7074ab8fc3afb0844352f4",
+                "level": 4,
+                "item": "5c793fb92e221644f31bfb64",
+                "count": 1,
+                "contains": [],
+                "attributes": [],
+                "trader": "5a7c2eca46aef81a7ca2145d"
+              }
+            ],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "failureOutcome": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "restartable": false,
+          "experience": 10000,
+          "factionName": "Any",
+          "neededKeys": [],
+          "availableDelaySecondsMin": 0,
+          "availableDelaySecondsMax": 0,
+          "otherRequirements": [],
+          "normalizedName": "gunsmith-master-part-1",
+          "kappaRequired": false,
+          "lightkeeperRequired": false,
+          "taskImageLink": "https://assets.tarkov.dev/639872fe8871e1272b10ccf6.webp",
+          "map": null
+        },
+        "5a27b80086f774429a5d7e20": {
+          "id": "5a27b80086f774429a5d7e20",
+          "name": "5a27b80086f774429a5d7e20 name",
+          "trader": "5935c25fb3acc3127c3d8cd9",
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Eagle_Eye",
+          "minPlayerLevel": 0,
+          "taskRequirements": [],
+          "traderRequirements": [],
+          "objectives": [
+            {
+              "id": "5a3ba34286f7744eb240406a",
+              "description": "5a3ba34286f7744eb240406a",
+              "type": "visit",
+              "optional": false,
+              "zones": [
+                {
+                  "id": "place_peacemaker_004_N1",
+                  "map": "5704e554d2720bac5b8b456e",
+                  "position": {
+                    "x": -553.0862,
+                    "y": -29.35,
+                    "z": -127.678192
+                  },
+                  "size": {
+                    "x": 25.4,
+                    "y": 7,
+                    "z": 25.7
+                  },
+                  "outline": [
+                    {
+                      "x": -565.786133,
+                      "y": -29.35,
+                      "z": -140.5282
+                    },
+                    {
+                      "x": -540.3862,
+                      "y": -29.35,
+                      "z": -140.5282
+                    },
+                    {
+                      "x": -540.3862,
+                      "y": -29.35,
+                      "z": -114.828186
+                    },
+                    {
+                      "x": -565.786133,
+                      "y": -29.35,
+                      "z": -114.828186
+                    }
+                  ],
+                  "top": -25.85,
+                  "bottom": -32.85,
+                  "terrainElevation": 67.25028
+                }
+              ],
+              "maps": ["5704e554d2720bac5b8b456e"]
+            },
+            {
+              "id": "5a294f1686f774340c7b7e4a",
+              "description": "5a294f1686f774340c7b7e4a",
+              "type": "findQuestItem",
+              "count": 1,
+              "optional": false,
+              "possibleLocations": [
+                {
+                  "map": "5704e554d2720bac5b8b456e",
+                  "positions": [
+                    {
+                      "x": 81.4337158,
+                      "y": -31.8154,
+                      "z": -166.845
+                    }
+                  ]
+                }
+              ],
+              "maps": ["5704e554d2720bac5b8b456e"],
+              "questItem": "5a294d8486f774068638cd93"
+            },
+            {
+              "id": "5a27ffb186f774192932b3d5",
+              "description": "5a27ffb186f774192932b3d5",
+              "type": "findQuestItem",
+              "count": 1,
+              "optional": false,
+              "possibleLocations": [
+                {
+                  "map": "5704e554d2720bac5b8b456e",
+                  "positions": [
+                    {
+                      "x": -552.9468,
+                      "y": -31.2057,
+                      "z": -128.2434
+                    }
+                  ]
+                }
+              ],
+              "maps": ["5704e554d2720bac5b8b456e"],
+              "questItem": "5a294d7c86f7740651337cf9"
+            },
+            {
+              "id": "5a27ffc786f77415ca58ae47",
+              "description": "5a27ffc786f77415ca58ae47",
+              "type": "giveQuestItem",
+              "count": 1,
+              "optional": false,
+              "maps": [],
+              "questItem": "5a294d7c86f7740651337cf9"
+            },
+            {
+              "id": "5a3ba3b086f7745ab1081101",
+              "description": "5a3ba3b086f7745ab1081101",
+              "type": "visit",
+              "optional": false,
+              "zones": [
+                {
+                  "id": "place_peacemaker_004_N2",
+                  "map": "5704e554d2720bac5b8b456e",
+                  "position": {
+                    "x": 81.4337158,
+                    "y": -31.8154,
+                    "z": -166.845
+                  },
+                  "size": {
+                    "x": 20,
+                    "y": -9,
+                    "z": 20
+                  },
+                  "outline": [
+                    {
+                      "x": 71.4337158,
+                      "y": -31.8154,
+                      "z": -176.845
+                    },
+                    {
+                      "x": 91.4337158,
+                      "y": -31.8154,
+                      "z": -176.845
+                    },
+                    {
+                      "x": 91.4337158,
+                      "y": -31.8154,
+                      "z": -156.845
+                    },
+                    {
+                      "x": 71.4337158,
+                      "y": -31.8154,
+                      "z": -156.845
+                    }
+                  ],
+                  "top": -27.3154,
+                  "bottom": -36.3154,
+                  "terrainElevation": 65.81111
+                }
+              ],
+              "maps": ["5704e554d2720bac5b8b456e"]
+            },
+            {
+              "id": "5a294f3386f77433e923f9cd",
+              "description": "5a294f3386f77433e923f9cd",
+              "type": "giveQuestItem",
+              "count": 1,
+              "optional": false,
+              "maps": [],
+              "questItem": "5a294d8486f774068638cd93"
+            }
+          ],
+          "failConditions": [],
+          "startRewards": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "finishRewards": {
+            "traderStanding": [
+              {
+                "standing": 0.25,
+                "trader": "5935c25fb3acc3127c3d8cd9"
+              }
+            ],
+            "items": [
+              {
+                "item": "5696686a4bdc2da3298b456a",
+                "count": 1100,
+                "attributes": {}
+              }
+            ],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "failureOutcome": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "restartable": false,
+          "experience": 10000,
+          "factionName": "Any",
+          "neededKeys": [],
+          "availableDelaySecondsMin": 0,
+          "availableDelaySecondsMax": 0,
+          "otherRequirements": [
+            {
+              "id": "6a5cce729e178248c4114d5f",
+              "type": "globalVariable",
+              "variableId": "6a5ba450a7851e16ce0bde44",
+              "compareMethod": ">=",
+              "value": 1
+            }
+          ],
+          "normalizedName": "eagle-eye",
+          "kappaRequired": false,
+          "lightkeeperRequired": false,
+          "taskImageLink": "https://assets.tarkov.dev/5a27b80086f774429a5d7e20.webp",
+          "map": "5704e554d2720bac5b8b456e"
+        },
+        "5c1234c286f77406fa13baeb": {
+          "id": "5c1234c286f77406fa13baeb",
+          "name": "5c1234c286f77406fa13baeb name",
+          "trader": "58330581ace78e27b8b10cee",
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Setup",
+          "minPlayerLevel": 0,
+          "taskRequirements": [],
+          "traderRequirements": [],
+          "objectives": [
+            {
+              "id": "5c1fa9c986f7740de474cb3d",
+              "description": "5c1fa9c986f7740de474cb3d",
+              "type": "shoot",
+              "count": 8,
+              "optional": false,
+              "shotType": "kill",
+              "bodyParts": [],
+              "usingWeapon": [
+                "54491c4f4bdc2db1078b4568",
+                "56dee2bdd2720bc8328b4567",
+                "606dae0ab0e443224b421bb7",
+                "5580223e4bdc2d1c128b457f",
+                "64748cb8de82c85eaf0a273a",
+                "61f7c9e189e6fb1a5e3ea78d",
+                "5bfd297f0db834001a669119",
+                "5ae08f0a5acfc408fb1398a1",
+                "5de652c31b7e3716273428be",
+                "5c501a4d2e221602b412b540",
+                "59e6687d86f77411d949b251",
+                "59e6152586f77473dc057aa1",
+                "5ea03f7400685063ec28bfa8",
+                "574d967124597745970e7c94",
+                "5a38e6bac4a2826c6e06d79b",
+                "5e848cc2988a8701445df1e8",
+                "6981d72ed009ad83920da43a",
+                "576165642459773c7a400233",
+                "674fe9a75e51f1c47c04ec23",
+                "59f9cabd86f7743a10721f46",
+                "5c07c60e0db834002330051f",
+                "587e02ff24597743df3deaeb"
+              ],
+              "usingWeaponMods": [],
+              "distance": {
+                "value": 0,
+                "compareMethod": ">="
+              },
+              "timeFromHour": 0,
+              "timeUntilHour": 0,
+              "wearing": [
+                [
+                  {
+                    "id": "59e7708286f7742cbd762753",
+                    "name": "Ushanka ear flap hat",
+                    "shortName": "Ushanka"
+                  },
+                  {
+                    "id": "572b7adb24597762ae139821",
+                    "name": "Scav Vest",
+                    "shortName": "Scav Vest"
+                  }
+                ],
+                [
+                  {
+                    "id": "59e7708286f7742cbd762753",
+                    "name": "Ushanka ear flap hat",
+                    "shortName": "Ushanka"
+                  },
+                  {
+                    "id": "693fd1200ec97e98040bd3f9",
+                    "name": "Tac-Kek JayPC plate carrier (Black)",
+                    "shortName": "JayPC"
+                  }
+                ],
+                [
+                  {
+                    "id": "59e7708286f7742cbd762753",
+                    "name": "Ushanka ear flap hat",
+                    "shortName": "Ushanka"
+                  },
+                  {
+                    "id": "693fd13aa490096a05028cc8",
+                    "name": "Tac-Kek JayPC plate carrier (OD Green)",
+                    "shortName": "JayPC"
+                  }
+                ],
+                [
+                  {
+                    "id": "6937f02dfd6488bb27024839",
+                    "name": "Domontovich ushanka hat",
+                    "shortName": "Domont"
+                  },
+                  {
+                    "id": "572b7adb24597762ae139821",
+                    "name": "Scav Vest",
+                    "shortName": "Scav Vest"
+                  }
+                ],
+                [
+                  {
+                    "id": "6937f02dfd6488bb27024839",
+                    "name": "Domontovich ushanka hat",
+                    "shortName": "Domont"
+                  },
+                  {
+                    "id": "693fd1200ec97e98040bd3f9",
+                    "name": "Tac-Kek JayPC plate carrier (Black)",
+                    "shortName": "JayPC"
+                  }
+                ],
+                [
+                  {
+                    "id": "6937f02dfd6488bb27024839",
+                    "name": "Domontovich ushanka hat",
+                    "shortName": "Domont"
+                  },
+                  {
+                    "id": "693fd13aa490096a05028cc8",
+                    "name": "Tac-Kek JayPC plate carrier (OD Green)",
+                    "shortName": "JayPC"
+                  }
+                ],
+                [
+                  {
+                    "id": "6937efd50543dcc2560a2c81",
+                    "name": "New Year ushanka hat",
+                    "shortName": "Ushanka"
+                  },
+                  {
+                    "id": "572b7adb24597762ae139821",
+                    "name": "Scav Vest",
+                    "shortName": "Scav Vest"
+                  }
+                ],
+                [
+                  {
+                    "id": "6937efd50543dcc2560a2c81",
+                    "name": "New Year ushanka hat",
+                    "shortName": "Ushanka"
+                  },
+                  {
+                    "id": "693fd1200ec97e98040bd3f9",
+                    "name": "Tac-Kek JayPC plate carrier (Black)",
+                    "shortName": "JayPC"
+                  }
+                ],
+                [
+                  {
+                    "id": "6937efd50543dcc2560a2c81",
+                    "name": "New Year ushanka hat",
+                    "shortName": "Ushanka"
+                  },
+                  {
+                    "id": "693fd13aa490096a05028cc8",
+                    "name": "Tac-Kek JayPC plate carrier (OD Green)",
+                    "shortName": "JayPC"
+                  }
+                ]
+              ],
+              "notWearing": [],
+              "enemyHealthEffect": null,
+              "targetNames": ["AnyPmc"],
+              "playerHealthEffect": null,
+              "zones": [],
+              "maps": ["56f40101d2720b2a4d8b45d6"]
+            }
+          ],
+          "failConditions": [],
+          "startRewards": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "finishRewards": {
+            "traderStanding": [
+              {
+                "standing": 0.25,
+                "trader": "58330581ace78e27b8b10cee"
+              }
+            ],
+            "items": [
+              {
+                "item": "569668774bdc2da2298b4568",
+                "count": 1000,
+                "attributes": {}
+              },
+              {
+                "item": "590c346786f77423e50ed342",
+                "count": 3,
+                "attributes": {}
+              }
+            ],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "failureOutcome": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "restartable": false,
+          "experience": 10000,
+          "factionName": "Any",
+          "neededKeys": [],
+          "availableDelaySecondsMin": 0,
+          "availableDelaySecondsMax": 0,
+          "otherRequirements": [
+            {
+              "id": "6a5ab38aeac0839cd31b7ab8",
+              "type": "globalVariable",
+              "variableId": "6a5a111de1f417ac80a163e5",
+              "compareMethod": ">=",
+              "value": 4
+            }
+          ],
+          "normalizedName": "setup",
+          "kappaRequired": false,
+          "lightkeeperRequired": false,
+          "taskImageLink": "https://assets.tarkov.dev/5c1234c286f77406fa13baeb.webp",
+          "map": "56f40101d2720b2a4d8b45d6"
+        }
+      }
+    },
+    "translations": [
+      "$.data.tasks.*.name",
+      "$.data.tasks.*.objectives[*].description",
+      "$.data.tasks.*.objectives[*].exitName",
+      "$.data.tasks.*.objectives[*].exitStatus[*]",
+      "$.data.tasks.*.objectives[*].zones[*].name",
+      "$.data.tasks.*.objectives[*].targetNames[*]",
+      "$.data.tasks.*.objectives[*]..bodyParts[*]",
+      "$.data.tasks.*.objectives[*]['healthEffect','playerHealthEffect','enemyHealthEffect'].effects[*]",
+      "$.data.tasks.*['startRewards','finishRewards','failureOutcome'][*].customization[*].name",
+      "$.data.tasks.*['startRewards','finishRewards','failureOutcome'][*].customization[*].customizationTypeName",
+      "$.data.questItems.*.name",
+      "$.data.questItems.*.shortName",
+      "$.data.questItems.*.description",
+      "$.data.achievements.*.name",
+      "$.data.achievements.*.description",
+      "$.data.achievements.*.side",
+      "$.data.achievements.*.rarity",
+      "$.data.prestige[*].name",
+      "$.data.prestige[*].conditions[*].description",
+      "$.data.prestige[*].transferSettings[*].name",
+      "$.data.prestige.*.rewards.customization.*.name",
+      "$.data.prestige.*.rewards.customization.*.customizationTypeName",
+      "$.data.story.*.name",
+      "$.data.story.*.tasks.*.name",
+      "$.data.story.*.tasks.*.objectives[*].description",
+      "$.data.story.*.tasks.*.objectives[*].exitName",
+      "$.data.story.*.tasks.*.objectives[*].exitStatus[*]",
+      "$.data.story.*.tasks.*.objectives[*].zones[*].name",
+      "$.data.story.*.tasks.*.objectives[*].targetNames[*]",
+      "$.data.story.*.tasks.*.objectives[*]..bodyParts[*]",
+      "$.data.story.*.tasks.*.objectives[*]['healthEffect','playerHealthEffect','enemyHealthEffect'].effects[*]",
+      "$.data.story.*.tasks.*['startRewards','finishRewards','failureOutcome'][*].customization[*].name",
+      "$.data.story.*.tasks.*['startRewards','finishRewards','failureOutcome'][*].customization[*].customizationTypeName"
+    ]
+  },
+  "lang": {
+    "5ac244eb86f7741356335af1 name": "Gunsmith - M4A1",
+    "639872fe8871e1272b10ccf6 name": "Gunsmith Master - Part 1",
+    "5a27b80086f774429a5d7e20 name": "Eagle Eye",
+    "5c1234c286f77406fa13baeb name": "Setup"
+  }
+}
