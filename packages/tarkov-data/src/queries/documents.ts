@@ -5,9 +5,21 @@
  * from the GraphQL API these selectors replaced.
  */
 
-/** The upstream items document. One map holding every item type. */
+/** One entry in the upstream armor-material lookup, keyed by material id. */
+export interface ArmorMaterialEntry {
+  id: string;
+  name: string;
+  destructibility: number;
+}
+
+/** The upstream items document. One map holding every item type, plus lookup tables. */
 export interface ItemsDocument {
   items: Record<string, unknown>;
+  /**
+   * Material id -> material. Armor items carry `properties.material` as a bare id
+   * where the GraphQL API embedded the resolved object, so armor selection joins here.
+   */
+  armorMaterials?: Record<string, ArmorMaterialEntry>;
 }
 
 /** The upstream tasks document. */

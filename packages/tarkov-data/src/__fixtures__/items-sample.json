@@ -13,7 +13,10 @@
           "height": 1,
           "weight": 0.012,
           "lastOfferCount": 8,
-          "types": ["ammo", "noFlea"],
+          "types": [
+            "ammo",
+            "noFlea"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/5.56x45mm_M855",
           "link": "https://tarkov.dev/item/556x45mm-m855",
           "iconLink": "https://assets.tarkov.dev/54527a984bdc2d4e668b4567-icon.webp",
@@ -30,7 +33,10 @@
             "5661632d4bdc2d903d8b456b",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b47574386f77428ca22b33b", "5b47574386f77428ca22b346"],
+          "handbookCategories": [
+            "5b47574386f77428ca22b33b",
+            "5b47574386f77428ca22b346"
+          ],
           "lastLowPrice": null,
           "avg24hPrice": null,
           "high24hPrice": null,
@@ -152,7 +158,10 @@
           "height": 1,
           "weight": 0.012,
           "lastOfferCount": 1,
-          "types": ["ammo", "noFlea"],
+          "types": [
+            "ammo",
+            "noFlea"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/5.56x45mm_M855A1",
           "link": "https://tarkov.dev/item/556x45mm-m855a1",
           "iconLink": "https://assets.tarkov.dev/54527ac44bdc2d36668b4567-icon.webp",
@@ -169,7 +178,10 @@
             "5661632d4bdc2d903d8b456b",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b47574386f77428ca22b33b", "5b47574386f77428ca22b346"],
+          "handbookCategories": [
+            "5b47574386f77428ca22b33b",
+            "5b47574386f77428ca22b346"
+          ],
           "lastLowPrice": null,
           "avg24hPrice": null,
           "high24hPrice": null,
@@ -279,7 +291,10 @@
           "height": 1,
           "weight": 0.05,
           "lastOfferCount": 3,
-          "types": ["ammo", "noFlea"],
+          "types": [
+            "ammo",
+            "noFlea"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/12/70_7mm_buckshot",
           "link": "https://tarkov.dev/item/1270-7mm-buckshot",
           "iconLink": "https://assets.tarkov.dev/560d5e524bdc2d25448b4571-icon.webp",
@@ -296,7 +311,10 @@
             "5661632d4bdc2d903d8b456b",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b47574386f77428ca22b33b", "5b47574386f77428ca22b346"],
+          "handbookCategories": [
+            "5b47574386f77428ca22b33b",
+            "5b47574386f77428ca22b346"
+          ],
           "lastLowPrice": null,
           "avg24hPrice": null,
           "high24hPrice": null,
@@ -429,7 +447,11 @@
           "height": 4,
           "weight": 10.8,
           "lastOfferCount": null,
-          "types": ["armor", "noFlea", "wearable"],
+          "types": [
+            "armor",
+            "noFlea",
+            "wearable"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/6B43_Zabralo-Sh_body_armor_(EMR)",
           "link": "https://tarkov.dev/item/6b43-zabralo-sh-body-armor-emr",
           "iconLink": "https://assets.tarkov.dev/545cdb794bdc2d3a198b456a-icon.webp",
@@ -448,7 +470,10 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b5f701386f774093f2ecf0f", "5b47574386f77428ca22b33f"],
+          "handbookCategories": [
+            "5b5f701386f774093f2ecf0f",
+            "5b47574386f77428ca22b33f"
+          ],
           "lastLowPrice": null,
           "avg24hPrice": null,
           "high24hPrice": null,
@@ -485,7 +510,9 @@
             "armorSlots": [
               {
                 "nameId": "Front_plate",
-                "zones": ["Armor Zone Plate_Granit_SAPI_chest"],
+                "zones": [
+                  "Armor Zone Plate_Granit_SAPI_chest"
+                ],
                 "allowedPlates": [
                   "656f9d5900d62bcd2e02407c",
                   "656fa8d700d62bcd2e024084",
@@ -513,7 +540,9 @@
               },
               {
                 "nameId": "Back_plate",
-                "zones": ["Armor Zone Plate_Granit_SAPI_back"],
+                "zones": [
+                  "Armor Zone Plate_Granit_SAPI_back"
+                ],
                 "allowedPlates": [
                   "656f9d5900d62bcd2e02407c",
                   "656fa8d700d62bcd2e024084",
@@ -541,7 +570,9 @@
               },
               {
                 "nameId": "Left_side_plate",
-                "zones": ["Armor Zone Plate_Granit_SSAPI_side_left_low"],
+                "zones": [
+                  "Armor Zone Plate_Granit_SSAPI_side_left_low"
+                ],
                 "allowedPlates": [
                   "64afd81707e2cf40e903a316",
                   "6557458f83942d705f0c4962",
@@ -551,7 +582,9 @@
               },
               {
                 "nameId": "Right_side_plate",
-                "zones": ["Armor Zone Plate_Granit_SSAPI_side_right_low"],
+                "zones": [
+                  "Armor Zone Plate_Granit_SSAPI_side_right_low"
+                ],
                 "allowedPlates": [
                   "6557458f83942d705f0c4962",
                   "64afdb577bb3bfe8fe03fd1d",
@@ -568,7 +601,10 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type RibcageLow", "Collider Type RibcageUp"],
+                "zones": [
+                  "Collider Type RibcageLow",
+                  "Collider Type RibcageUp"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -586,7 +622,10 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type SpineTop", "Collider Type SpineDown"],
+                "zones": [
+                  "Collider Type SpineTop",
+                  "Collider Type SpineDown"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -604,7 +643,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type LeftSideChestDown"],
+                "zones": [
+                  "Collider Type LeftSideChestDown"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -622,7 +663,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type RightSideChestDown"],
+                "zones": [
+                  "Collider Type RightSideChestDown"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -640,7 +683,10 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type NeckFront", "Collider Type NeckBack"],
+                "zones": [
+                  "Collider Type NeckFront",
+                  "Collider Type NeckBack"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -658,7 +704,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type LeftUpperArm"],
+                "zones": [
+                  "Collider Type LeftUpperArm"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -676,7 +724,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type RightUpperArm"],
+                "zones": [
+                  "Collider Type RightUpperArm"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -694,7 +744,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type Pelvis"],
+                "zones": [
+                  "Collider Type Pelvis"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -766,7 +818,10 @@
           "height": 3,
           "weight": 3.5,
           "lastOfferCount": 14,
-          "types": ["armor", "wearable"],
+          "types": [
+            "armor",
+            "wearable"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PACA_Soft_Armor",
           "link": "https://tarkov.dev/item/paca-soft-armor",
           "iconLink": "https://assets.tarkov.dev/5648a7494bdc2d9d488b4583-icon.webp",
@@ -785,7 +840,10 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b5f701386f774093f2ecf0f", "5b47574386f77428ca22b33f"],
+          "handbookCategories": [
+            "5b5f701386f774093f2ecf0f",
+            "5b47574386f77428ca22b33f"
+          ],
           "lastLowPrice": 36510,
           "avg24hPrice": 36550,
           "low24hPrice": 29000,
@@ -821,7 +879,10 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type RibcageLow", "Collider Type RibcageUp"],
+                "zones": [
+                  "Collider Type RibcageLow",
+                  "Collider Type RibcageUp"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -839,7 +900,10 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type SpineDown", "Collider Type SpineTop"],
+                "zones": [
+                  "Collider Type SpineDown",
+                  "Collider Type SpineTop"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -857,7 +921,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type LeftSideChestDown"],
+                "zones": [
+                  "Collider Type LeftSideChestDown"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -875,7 +941,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type RightSideChestDown"],
+                "zones": [
+                  "Collider Type RightSideChestDown"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0,
                 "ricochetY": 0,
@@ -959,7 +1027,10 @@
           "height": 1,
           "weight": 0.75,
           "lastOfferCount": 38,
-          "types": ["gun", "wearable"],
+          "types": [
+            "gun",
+            "wearable"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Colt_M4A1_5.56x45_assault_rifle",
           "link": "https://tarkov.dev/item/colt-m4a1-556x45-assault-rifle",
           "iconLink": "https://assets.tarkov.dev/5447a9cd4bdc2dbd208b4567-icon.webp",
@@ -1038,7 +1109,10 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b5f78fc86f77409407a7f90", "5b5f78dc86f77409407a7f8e"],
+          "handbookCategories": [
+            "5b5f78fc86f77409407a7f90",
+            "5b5f78dc86f77409407a7f8e"
+          ],
           "lastLowPrice": 33999,
           "avg24hPrice": 48800,
           "low24hPrice": 24390,
@@ -1252,7 +1326,9 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": ["675307301f7c19a9780f2668"],
+                  "allowedItems": [
+                    "675307301f7c19a9780f2668"
+                  ],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -1260,7 +1336,10 @@
               }
             ],
             "defaultPreset": "5af08cf886f774223c269184",
-            "fireModes": ["single", "fullauto"],
+            "fireModes": [
+              "single",
+              "fullauto"
+            ],
             "presets": [
               "5a32808386f774764a3226d9",
               "5a8ae36686f774377d6ce226",
@@ -1368,7 +1447,10 @@
           "height": 1,
           "weight": 0.333,
           "lastOfferCount": 4,
-          "types": ["gun", "wearable"],
+          "types": [
+            "gun",
+            "wearable"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Makarov_PM_9x18PM_pistol",
           "link": "https://tarkov.dev/item/makarov-pm-9x18pm-pistol",
           "iconLink": "https://assets.tarkov.dev/5448bd6b4bdc2dfc2f8b4569-icon.webp",
@@ -1407,7 +1489,10 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b5f792486f77447ed5636b3", "5b5f78dc86f77409407a7f8e"],
+          "handbookCategories": [
+            "5b5f792486f77447ed5636b3",
+            "5b5f78dc86f77409407a7f8e"
+          ],
           "lastLowPrice": 9999,
           "avg24hPrice": 12290,
           "low24hPrice": 9999,
@@ -1455,7 +1540,10 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": ["55d485be4bdc2d962f8b456f", "5448c12b4bdc2d02308b456f"],
+                  "allowedItems": [
+                    "55d485be4bdc2d962f8b456f",
+                    "5448c12b4bdc2d02308b456f"
+                  ],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -1467,7 +1555,9 @@
                 "required": true,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": ["6374a822e629013b9c0645c8"],
+                  "allowedItems": [
+                    "6374a822e629013b9c0645c8"
+                  ],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -1493,8 +1583,12 @@
               }
             ],
             "defaultPreset": "58414967245977598f1ad391",
-            "fireModes": ["single"],
-            "presets": ["58414967245977598f1ad391"],
+            "fireModes": [
+              "single"
+            ],
+            "presets": [
+              "58414967245977598f1ad391"
+            ],
             "defaultWidth": 2,
             "defaultHeight": 1,
             "defaultErgonomics": null,
@@ -1570,7 +1664,9 @@
           "height": 1,
           "weight": 0.21,
           "lastOfferCount": 14,
-          "types": ["mods"],
+          "types": [
+            "mods"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/L3Harris_AN/PEQ-15_tactical_device",
           "link": "https://tarkov.dev/item/l3harris-anpeq-15-tactical-device",
           "iconLink": "https://assets.tarkov.dev/544909bb4bdc2d6f028b4577-icon.webp",
@@ -1589,7 +1685,10 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b5f737886f774093e6cb4fb", "5b5f736886f774094242f193"],
+          "handbookCategories": [
+            "5b5f737886f774093e6cb4fb",
+            "5b5f736886f774094242f193"
+          ],
           "lastLowPrice": 10780,
           "avg24hPrice": 15419,
           "low24hPrice": 9333,
@@ -1685,7 +1784,9 @@
           "height": 1,
           "weight": 0.064,
           "lastOfferCount": 1,
-          "types": ["mods"],
+          "types": [
+            "mods"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Colt_USGI_A2_5.56x45_flash_hider",
           "link": "https://tarkov.dev/item/ar-15-colt-usgi-a2-556x45-flash-hider",
           "iconLink": "https://assets.tarkov.dev/544a38634bdc2d58388b4568-icon.webp",
@@ -1730,7 +1831,9 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": ["638612b607dfed1ccb7206ba"],
+                  "allowedItems": [
+                    "638612b607dfed1ccb7206ba"
+                  ],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -1830,7 +1933,10 @@
           "height": 1,
           "weight": 0.05,
           "lastOfferCount": 4,
-          "types": ["mods", "pistolGrip"],
+          "types": [
+            "mods",
+            "pistolGrip"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_MOE_pistol_grip",
           "link": "https://tarkov.dev/item/ar-15-magpul-moe-pistol-grip-black",
           "iconLink": "https://assets.tarkov.dev/55802f5d4bdc2dac148b458f-icon.webp",
@@ -1953,7 +2059,10 @@
           "height": 1,
           "weight": 0.31,
           "lastOfferCount": 27,
-          "types": ["ammo", "grenade"],
+          "types": [
+            "ammo",
+            "grenade"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/RGD-5_hand_grenade",
           "link": "https://tarkov.dev/item/rgd-5-hand-grenade",
           "iconLink": "https://assets.tarkov.dev/5448be9a4bdc2dfd2f8b456a-icon.webp",
@@ -1965,8 +2074,14 @@
           "containsItems": [],
           "discardLimit": 20,
           "basePrice": 7230,
-          "categories": ["543be6564bdc2df4348b4568", "54009119af1c881c07000029"],
-          "handbookCategories": ["5b5f7a2386f774093f2ed3c4", "5b5f78dc86f77409407a7f8e"],
+          "categories": [
+            "543be6564bdc2df4348b4568",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f7a2386f774093f2ed3c4",
+            "5b5f78dc86f77409407a7f8e"
+          ],
           "lastLowPrice": 18699,
           "avg24hPrice": 20603,
           "low24hPrice": 14444,
@@ -2038,7 +2153,10 @@
           "height": 2,
           "weight": 1.2,
           "lastOfferCount": 14,
-          "types": ["helmet", "wearable"],
+          "types": [
+            "helmet",
+            "wearable"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/FORT_Kiver-M_bulletproof_helmet",
           "link": "https://tarkov.dev/item/fort-kiver-m-bulletproof-helmet",
           "iconLink": "https://assets.tarkov.dev/5645bc214bdc2d363b8b4571-icon.webp",
@@ -2057,7 +2175,10 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b47574386f77428ca22b330", "5b47574386f77428ca22b33f"],
+          "handbookCategories": [
+            "5b47574386f77428ca22b330",
+            "5b47574386f77428ca22b33f"
+          ],
           "lastLowPrice": 39000,
           "avg24hPrice": 54377,
           "low24hPrice": 39000,
@@ -2082,7 +2203,9 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": ["5b46238386f7741a693bcf9c"],
+                  "allowedItems": [
+                    "5b46238386f7741a693bcf9c"
+                  ],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
@@ -2099,7 +2222,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type ParietalHead"],
+                "zones": [
+                  "Collider Type ParietalHead"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0.2,
                 "ricochetY": 0.7,
@@ -2117,7 +2242,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type BackHead"],
+                "zones": [
+                  "Collider Type BackHead"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0.2,
                 "ricochetY": 0.7,
@@ -2135,7 +2262,9 @@
                 "speedPenalty": 0,
                 "turnPenalty": 0,
                 "ergoPenalty": 0,
-                "zones": ["Collider Type Ears"],
+                "zones": [
+                  "Collider Type Ears"
+                ],
                 "armorType": "Light",
                 "ricochetX": 0.2,
                 "ricochetY": 0.7,
@@ -2153,7 +2282,11 @@
             "blocksHeadset": false,
             "blocksEyewear": false,
             "blocksHeadwear": false,
-            "zones": ["Collider Type ParietalHead", "Collider Type BackHead", "Collider Type Ears"],
+            "zones": [
+              "Collider Type ParietalHead",
+              "Collider Type BackHead",
+              "Collider Type Ears"
+            ],
             "material": "UHMWPE"
           },
           "minLevelForFlea": 20,
@@ -2236,7 +2369,9 @@
           "height": 1,
           "weight": 0.045,
           "lastOfferCount": 2,
-          "types": ["mods"],
+          "types": [
+            "mods"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PM_9x18PM_90-93_8-round_magazine",
           "link": "https://tarkov.dev/item/pm-9x18pm-90-93-8-round-magazine",
           "iconLink": "https://assets.tarkov.dev/5448c12b4bdc2d02308b456f-icon.webp",
@@ -2255,7 +2390,10 @@
             "566162e44bdc2d3f298b4573",
             "54009119af1c881c07000029"
           ],
-          "handbookCategories": ["5b5f754a86f774094242f19b", "5b5f750686f774093e6cb503"],
+          "handbookCategories": [
+            "5b5f754a86f774094242f19b",
+            "5b5f750686f774093e6cb503"
+          ],
           "lastLowPrice": 1111,
           "avg24hPrice": 1181,
           "changeLast48h": 0,
@@ -2369,7 +2507,9 @@
           "height": 1,
           "weight": 0.411,
           "lastOfferCount": 35,
-          "types": ["mods"],
+          "types": [
+            "mods"
+          ],
           "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Leupold_Mark_4_HAMR_4x24_DeltaPoint_hybrid_assault_scope",
           "link": "https://tarkov.dev/item/leupold-mark-4-hamr-4x24-deltapoint-hybrid-assault-scope",
           "iconLink": "https://assets.tarkov.dev/544a3a774bdc2d3a388b4567-icon.webp",
@@ -2414,17 +2554,32 @@
                 "required": false,
                 "filters": {
                   "allowedCategories": [],
-                  "allowedItems": ["58d268fc86f774111273f8c2"],
+                  "allowedItems": [
+                    "58d268fc86f774111273f8c2"
+                  ],
                   "excludedCategories": [],
                   "excludedItems": []
                 },
                 "name": "MOD_SCOPE"
               }
             ],
-            "zoomLevels": [[4]],
+            "zoomLevels": [
+              [
+                4
+              ]
+            ],
             "sightingRange": 800,
-            "sightModes": [1],
-            "zeroingDistances": [[50, 100, 150, 200]]
+            "sightModes": [
+              1
+            ],
+            "zeroingDistances": [
+              [
+                50,
+                100,
+                150,
+                200
+              ]
+            ]
           },
           "minLevelForFlea": 25,
           "accuracyModifier": 0,
@@ -2502,6 +2657,88 @@
               "currencyItem": "5449016a4bdc2d6f028b456f"
             }
           ]
+        }
+      },
+      "armorMaterials": {
+        "Aluminium": {
+          "id": "Aluminium",
+          "name": "MatAluminium",
+          "destructibility": 0.45,
+          "explosionDestructibility": 0.45,
+          "maxRepairDegradation": 0.1,
+          "maxRepairKitDegradation": 0.09,
+          "minRepairDegradation": 0.06,
+          "minRepairKitDegradation": 0.055
+        },
+        "Aramid": {
+          "id": "Aramid",
+          "name": "MatAramid",
+          "destructibility": 0.1875,
+          "explosionDestructibility": 0.15,
+          "maxRepairDegradation": 0.07,
+          "maxRepairKitDegradation": 0.065,
+          "minRepairDegradation": 0.03,
+          "minRepairKitDegradation": 0.025
+        },
+        "ArmoredSteel": {
+          "id": "ArmoredSteel",
+          "name": "MatArmoredSteel",
+          "destructibility": 0.525,
+          "explosionDestructibility": 0.45,
+          "maxRepairDegradation": 0.03,
+          "maxRepairKitDegradation": 0.025,
+          "minRepairDegradation": 0.01,
+          "minRepairKitDegradation": 0.005
+        },
+        "Ceramic": {
+          "id": "Ceramic",
+          "name": "MatCeramic",
+          "destructibility": 0.6,
+          "explosionDestructibility": 0.525,
+          "maxRepairDegradation": 0.22,
+          "maxRepairKitDegradation": 0.2,
+          "minRepairDegradation": 0.17,
+          "minRepairKitDegradation": 0.155
+        },
+        "Combined": {
+          "id": "Combined",
+          "name": "MatCombined",
+          "destructibility": 0.375,
+          "explosionDestructibility": 0.2,
+          "maxRepairDegradation": 0.15,
+          "maxRepairKitDegradation": 0.14,
+          "minRepairDegradation": 0.1,
+          "minRepairKitDegradation": 0.09
+        },
+        "Glass": {
+          "id": "Glass",
+          "name": "MatGlass",
+          "destructibility": 0.6,
+          "explosionDestructibility": 0.6,
+          "maxRepairDegradation": 0.42,
+          "maxRepairKitDegradation": 0.38,
+          "minRepairDegradation": 0.23,
+          "minRepairKitDegradation": 0.21
+        },
+        "Titan": {
+          "id": "Titan",
+          "name": "MatTitan",
+          "destructibility": 0.4125,
+          "explosionDestructibility": 0.375,
+          "maxRepairDegradation": 0.1,
+          "maxRepairKitDegradation": 0.09,
+          "minRepairDegradation": 0.06,
+          "minRepairKitDegradation": 0.055
+        },
+        "UHMWPE": {
+          "id": "UHMWPE",
+          "name": "MatUHMWPE",
+          "destructibility": 0.3375,
+          "explosionDestructibility": 0.3,
+          "maxRepairDegradation": 0.03,
+          "maxRepairKitDegradation": 0.025,
+          "minRepairDegradation": 0.01,
+          "minRepairKitDegradation": 0.005
         }
       }
     },

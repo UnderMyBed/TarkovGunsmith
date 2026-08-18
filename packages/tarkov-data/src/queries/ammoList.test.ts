@@ -1,21 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fetchAmmoList } from "./ammoList.js";
-import type { TarkovJsonClient } from "../client.js";
-import { mergeTranslations } from "../translations.js";
 import fixture from "../__fixtures__/items-sample.json" with { type: "json" };
-
-/** A client that serves the committed items fixture, translations already merged. */
-export function fixtureClient(): TarkovJsonClient {
-  return {
-    fetchResource: <T>(): Promise<T> =>
-      Promise.resolve(
-        mergeTranslations(
-          structuredClone(fixture.document) as never,
-          fixture.lang as Record<string, string>,
-        ),
-      ),
-  };
-}
+import { fixtureClient } from "../__fixtures__/client.js";
 
 describe("fetchAmmoList", () => {
   it("returns only ItemPropertiesAmmo items", async () => {
