@@ -1,0 +1,42 @@
+name: CodeQL
+
+# No `push: main`, deliberately. Branch protection already requires PRs to be up-to-date and
+# green, so a push-to-main run duplicates the check that just passed — the same budget
+# reasoning CLAUDE.md gives for ci.yml.
+#
+# NOT a required status check: paths-ignore means it is skipped on docs-only PRs, and a
+# required check that never reports would block them permanently.
+on:
+  pull_request:
+    paths-ignore: ["docs/**", "**.md", "LICENSE", ".gitignore"]
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # `actions` finds workflow expression injection — the exact bug fixed in this
+        # milestone's Arc 0. It is the regression net; the repo-guards grep test is the
+        # cheap fast-fail underneath it.
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

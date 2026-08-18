@@ -15,7 +15,7 @@ on:
     #
     # Enforced as a RULE, not a snapshot — packages/repo-guards fails if a scheduled workflow
     # is added and not listed here.
-    workflows: ["Deploy", "Release Please"]
+    workflows: ["CodeQL", "Deploy", "Release Please"]
     types: [completed]
   workflow_dispatch:
     inputs:
