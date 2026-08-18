@@ -1,0 +1,125 @@
+name: Scheduled failure alert
+
+# SEPARATE FROM THE WORKFLOWS IT WATCHES, deliberately. A notify step inside Deploy cannot
+# report Deploy being disabled for repository inactivity, being deleted, or failing before the
+# step is reached. An alert that shares a fate with the thing it watches is not an alert. It
+# also keeps `issues: write` off every workflow that holds deploy credentials.
+#
+# `workflow_run` ALWAYS runs the copy on the default branch, whatever branch the watched run
+# used — which is why the end-to-end demonstration can only happen after this merges.
+on:
+  workflow_run:
+    # Every workflow whose failure would otherwise reach nobody. CI is deliberately absent:
+    # its failures are already visible in the PR that caused them, and watching it would file
+    # an issue for every ordinary red PR.
+    #
+    # Enforced as a RULE, not a snapshot — packages/repo-guards fails if a scheduled workflow
+    # is added and not listed here.
+    workflows: ["Deploy", "Release Please"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      simulate:
+        description: >-
+          Workflow name to simulate a failure for, so the delivery path can be proven without
+          waiting for a real failure. Files a real issue.
+        required: false
+        default: "Scheduled failure alert"
+
+permissions:
+  contents: read # checkout
+  issues: write # file the alert, and create its labels
+
+# Serialised per watched workflow, never cancelled: two runs completing close together would
+# otherwise both read "no open alert" and both file one. The dedupe is a read-then-write.
+concurrency:
+  group: scheduled-failure-${{ github.event.workflow_run.name || inputs.simulate }}
+  cancel-in-progress: false
+
+jobs:
+  alert:
+    # A cost control, NOT the decision — scheduled-failure.mjs is the decision, and
+    # packages/repo-guards fails if this list and ALERTING_CONCLUSIONS drift apart.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'failure' ||
+      github.event.workflow_run.conclusion == 'timed_out'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # Every workflow_run field reaches the script as a quoted variable expansion through
+      # `env:`, never spliced through ${{ }} into the run: scalar. Actions substitutes into a
+      # run: scalar BEFORE bash parses it, so a spliced value is source code — in a job holding
+      # issues: write. See the release-please fix in this same milestone.
+      - id: assess
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate || github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event_name == 'workflow_dispatch' && 'failure' || github.event.workflow_run.conclusion }}
+          RUN_EVENT: ${{ github.event_name == 'workflow_dispatch' && 'workflow_dispatch' || github.event.workflow_run.event }}
+          RUN_URL: ${{ github.event_name == 'workflow_dispatch' && github.server_url || github.event.workflow_run.html_url }}
+        run: |
+          set -euo pipefail
+          # RETRIED, because the watcher must not go quiet on someone else's outage. An
+          # unretried failure here is this alert failing in exactly the way it exists to
+          # detect: a red run reaching nobody.
+          open=""
+          for attempt in 1 2 3 4 5; do
+            if open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+                        --label scheduled-red --limit 100 --json title); then
+              break
+            fi
+            echo "::warning::gh issue list failed (attempt $attempt of 5); retrying"
+            open=""
+            sleep $((attempt * 5))
+          done
+          # NEVER let a failed listing through as empty. `[]` is a legitimate answer and must
+          # still reach the script; an empty STRING is an outage, and passing it on would
+          # defeat the dedupe and file a duplicate on every run of a stall.
+          [ -n "$open" ] || {
+            echo "::error::could not list open alerts after 5 attempts — refusing to dedupe against no data"
+            exit 1
+          }
+          node .github/scripts/scheduled-failure.mjs \
+            "$WORKFLOW_NAME" "$CONCLUSION" "$RUN_EVENT" "$RUN_URL" "$open"
+
+      # FILING AN ISSUE IS NOT ALERTING A HUMAN. A bot-authored issue, in a repository the
+      # owner is not watching, with no assignee and no @ anywhere in its body, notifies NOBODY.
+      # The mention and the assignment both notify regardless of watch state, and both live
+      # HERE rather than in account settings, which are silently revocable and invisible to
+      # every gate in this repo.
+      - name: File the alert
+        if: steps.assess.outputs.file_issue == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_TITLE: ${{ steps.assess.outputs.issue_title }}
+          ISSUE_BODY: ${{ steps.assess.outputs.issue_body }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          # `gh issue create` fails outright on an unknown label, and this repo's labels.yml
+          # has no automated sync — it is applied by hand. An alarm that depends on someone
+          # having run a manual command is an alarm with a manual single point of failure.
+          gh label create scheduled-red --color a02c2c --force \
+            --description "An automated workflow failed and filed this alert." || true
+          gh label create critical --color d93f0b --force \
+            --description "Requires immediate attention." || true
+
+          body=$(printf '%s\n\n%s' "@$OWNER" "$ISSUE_BODY")
+          url=$(gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "$ISSUE_TITLE" \
+            --label critical --label scheduled-red \
+            --body "$body")
+          echo "::notice::filed $url"
+
+          # Assignment is delivery polish ON TOP of an issue that already exists and already
+          # mentions the owner, so it is deliberately not --assignee on the create above: a
+          # permissions hiccup there would fail the CREATE and lose the alert entirely.
+          gh issue edit "$url" --add-assignee "$OWNER" \
+            || echo "::warning::could not assign $OWNER — the @mention in the body is the fallback"

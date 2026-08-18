@@ -32,3 +32,9 @@
 - name: needs-repro
   description: Maintainer needs a reproduction to proceed.
   color: "ededed"
+- name: critical
+  description: Requires immediate attention.
+  color: "d93f0b"
+- name: scheduled-red
+  description: An automated workflow failed and filed this alert.
+  color: "a02c2c"
