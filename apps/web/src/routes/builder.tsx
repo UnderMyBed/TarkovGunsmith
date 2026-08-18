@@ -13,7 +13,7 @@ import {
   itemAvailability,
   CURRENT_BUILD_VERSION,
   type BuildV1,
-  type BuildV4,
+  type BuildV5,
   type PlayerProfile,
 } from "@tarkov/data";
 import { useTarkovTrackerSync } from "../features/builder/useTarkovTrackerSync.js";
@@ -280,9 +280,9 @@ export function BuilderPage({
     setOrphaned([]);
   }
 
-  const currentBuild = useMemo<BuildV4>(
+  const currentBuild = useMemo<BuildV5>(
     () => ({
-      version: 4,
+      version: 5,
       weaponId,
       attachments,
       orphaned,

@@ -92,7 +92,7 @@ describe("optimize — small weapon", () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
-    expect(result.build.version).toBe(4);
+    expect(result.build.version).toBe(5);
     expect(result.build.attachments).toEqual({
       muzzle: "muzzle_brake",
       grip: "grip_vertical",

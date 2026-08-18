@@ -1,5 +1,5 @@
 const SAMPLE_BUILD = {
-  version: 4 as const,
+  version: 5 as const,
   weaponId: "5447a9cd4bdc2dbd208b4567", // M4A1
   attachments: {
     mod_pistol_grip: "55d4af3a4bdc2d972f8b456f",
@@ -27,7 +27,7 @@ interface SeedEnv {
 
 /**
  * If `OG_FIXTURE_BUILD_ID` / `OG_FIXTURE_PAIR_ID` env vars are set, seed a
- * known BuildV4 + pair under those KV keys. Idempotent — never overwrites.
+ * known BuildV5 + pair under those KV keys. Idempotent — never overwrites.
  *
  * Called on first request in dev/test; a no-op in prod where the vars are
  * empty strings.

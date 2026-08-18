@@ -1,4 +1,4 @@
-import type { BuildV1, BuildV2, BuildV3, BuildV4 } from "./build-schema.js";
+import type { BuildV1, BuildV2, BuildV3, BuildV4, BuildV5 } from "./build-schema.js";
 
 /**
  * Minimal shape of a slot node the migration needs. The full `SlotNode` type
@@ -73,4 +73,39 @@ export function migrateV2ToV3(v2: BuildV2): BuildV3 {
 /** v3 → v4 is a no-op apart from the version bump. No name/desc on auto-migrated builds. */
 export function migrateV3ToV4(v3: BuildV3): BuildV4 {
   return { ...v3, version: 4 };
+}
+
+/**
+ * Upstream retired `gunsmith-part-N` in favour of `gunsmith-master-part-N`.
+ *
+ * Keyed on the exact name rather than a prefix rewrite, so `gunsmith-part-10` cannot be
+ * mangled into `gunsmith-master-part-1` + "0".
+ */
+const RETIRED_QUEST_NAMES: Readonly<Record<string, string>> = Object.fromEntries(
+  Array.from({ length: 10 }, (_, i) => [`gunsmith-part-${i + 1}`, `gunsmith-master-part-${i + 1}`]),
+);
+
+/**
+ * v4 → v5 remaps completed quest names onto upstream's restructured Gunsmith series.
+ *
+ * Saved builds store completed quests as bare strings and live in KV behind share URLs, so
+ * without this every build shared before 2026-08-18 would silently lose its Gunsmith unlocks:
+ * no error, just fewer mods marked available.
+ *
+ * Unrecognised names are preserved rather than dropped. A future upstream rename must not
+ * become a second silent data loss.
+ */
+export function migrateV4ToV5(v4: BuildV4): BuildV5 {
+  const snapshot = v4.profileSnapshot;
+  if (snapshot?.completedQuests === undefined) {
+    return { ...v4, version: 5 };
+  }
+  return {
+    ...v4,
+    version: 5,
+    profileSnapshot: {
+      ...snapshot,
+      completedQuests: snapshot.completedQuests.map((name) => RETIRED_QUEST_NAMES[name] ?? name),
+    },
+  };
 }

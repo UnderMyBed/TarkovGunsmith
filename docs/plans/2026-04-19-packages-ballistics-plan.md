@@ -393,12 +393,8 @@ Workspace-internal — consumed via pnpm workspace protocol:
 ```ts
 import { simulateShot, type BallisticAmmo, type BallisticArmor } from "@tarkov/ballistics";
 
-const ammo: BallisticAmmo = {
-  /* ... */
-};
-const armor: BallisticArmor = {
-  /* ... */
-};
+const ammo: BallisticAmmo = {/* ... */};
+const armor: BallisticArmor = {/* ... */};
 
 const result = simulateShot(ammo, armor, /* distance */ 15);
 console.log(result.didPenetrate, result.damage);

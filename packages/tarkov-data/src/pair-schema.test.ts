@@ -3,7 +3,7 @@ import { BuildPair, CURRENT_PAIR_VERSION, type BuildPairV1 } from "./pair-schema
 import { DEFAULT_PROFILE } from "./build-schema.js";
 
 const sampleV4Build = {
-  version: 4 as const,
+  version: 5 as const,
   weaponId: "5447a9cd4bdc2dbd208b4567",
   attachments: {},
   orphaned: [],

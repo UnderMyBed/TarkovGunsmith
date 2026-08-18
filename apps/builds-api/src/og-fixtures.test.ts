@@ -27,7 +27,7 @@ describe("maybeSeedOgFixtures", () => {
     const value = await env.BUILDS.get("b:ogfix001");
     expect(value).not.toBeNull();
     const parsed = JSON.parse(value!) as { version: number; weaponId: string };
-    expect(parsed.version).toBe(4);
+    expect(parsed.version).toBe(5);
     expect(parsed.weaponId.length).toBeGreaterThan(0);
   });
 

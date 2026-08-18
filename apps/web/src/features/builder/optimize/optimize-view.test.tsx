@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { OptimizeView } from "./optimize-view.js";
-import type { PlayerProfile, WeaponTree, BuildV4 } from "@tarkov/data";
+import type { PlayerProfile, WeaponTree, BuildV5 } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
 
@@ -14,12 +14,12 @@ vi.mock("@tarkov/optimizer", () => ({
   optimize: () => ({
     ok: true,
     build: {
-      version: 4,
+      version: 5,
       weaponId: "w1",
       attachments: { muzzle: "m-new", handguard: "h-new" },
       orphaned: [],
       createdAt: "2026-04-22T00:00:00Z",
-    } satisfies BuildV4,
+    } satisfies BuildV5,
     stats: {
       ergonomics: 58,
       verticalRecoil: 120,
@@ -73,7 +73,7 @@ describe("OptimizeView", () => {
         sync={sync}
         currentAttachments={{ muzzle: "m-old" }}
         currentBuild={{
-          version: 4,
+          version: 5,
           weaponId: "w1",
           attachments: { muzzle: "m-old" },
           orphaned: [],
@@ -102,7 +102,7 @@ describe("OptimizeView", () => {
         sync={sync}
         currentAttachments={{ muzzle: "m-old" }}
         currentBuild={{
-          version: 4,
+          version: 5,
           weaponId: "w1",
           attachments: { muzzle: "m-old" },
           orphaned: [],
@@ -132,7 +132,7 @@ describe("OptimizeView", () => {
         sync={sync}
         currentAttachments={{ muzzle: "m-old", handguard: "h-old" }}
         currentBuild={{
-          version: 4,
+          version: 5,
           weaponId: "w1",
           attachments: { muzzle: "m-old", handguard: "h-old" },
           orphaned: [],
@@ -153,7 +153,7 @@ describe("OptimizeView", () => {
     fireEvent.click(handguardBox);
     fireEvent.click(screen.getByRole("button", { name: /ACCEPT SELECTED \(1\)/ }));
     expect(onAccept).toHaveBeenCalledTimes(1);
-    const acceptedBuild = onAccept.mock.calls[0][0] as BuildV4;
+    const acceptedBuild = onAccept.mock.calls[0][0] as BuildV5;
     expect(acceptedBuild.attachments).toEqual({ muzzle: "m-new", handguard: "h-old" });
   });
 });

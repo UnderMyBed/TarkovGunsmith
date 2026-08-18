@@ -397,9 +397,7 @@ Open `packages/tarkov-data/src/queries/modList.test.ts`. Find the `sampleMod` co
 const sampleMod = {
   id: "mod-1",
   // ... all existing fields unchanged ...
-  buyFor: [
-    /* ... */
-  ],
+  buyFor: [/* ... */],
   craftsFor: [{ id: "craft-1" }, { id: "craft-2" }],
   bartersFor: [{ id: "barter-1" }],
 };

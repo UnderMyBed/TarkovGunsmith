@@ -75,7 +75,7 @@ function LoadedBuilderPage() {
       />
     );
   }
-  if (build.version === 4) {
+  if (build.version === 5) {
     return (
       <BuilderPage
         {...commonProps}

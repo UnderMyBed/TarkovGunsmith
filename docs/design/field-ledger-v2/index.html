@@ -1,0 +1,1775 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TarkovGunsmith — Field Ledger / v2 (Landing + Builder)</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bungee&family=Chivo:wght@300;400;500;600;700;900&family=Azeret+Mono:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        /* Field Ledger palette */
+        --bg: #0e0f0c;
+        --fg: #e6e4db;
+        --card: #16170f;
+        --popover: #1f211a;
+        --muted: #1f211a;
+        --muted-fg: #9a988d;
+        --accent-bg: #2a2c23;
+        --border: #3a3d33;
+        --input: #1f211a;
+
+        --primary: #f59e0b; /* amber */
+        --primary-fg: #0e0f0c;
+        --amber-deep: #b45309;
+        --olive: #7a8b3f;
+        --rust: #9c3f1e;
+        --destructive: #b91c1c;
+        --paper-dim: #6b6a60;
+        --line-muted: #26291f;
+
+        --font-display: "Bungee", ui-sans-serif, system-ui, sans-serif;
+        --font-sans:
+          "Chivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        --font-mono:
+          "Azeret Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+        --radius: 2px;
+      }
+
+      /* Page chrome — soft gray "canvas" around the artboards */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f0eee9;
+        color: var(--fg);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      body {
+        background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M120 0H0v120' fill='none' stroke='rgba(0,0,0,0.06)' stroke-width='1'/%3E%3C/svg%3E");
+        background-size: 120px 120px;
+      }
+
+      .canvas-wrap {
+        padding: 60px 60px 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 80px;
+      }
+
+      .canvas-section-title {
+        font-size: 28px;
+        font-weight: 600;
+        color: rgba(40, 30, 20, 0.85);
+        letter-spacing: -0.4px;
+        margin: 0 0 6px;
+      }
+      .canvas-section-sub {
+        font-size: 16px;
+        color: rgba(60, 50, 40, 0.6);
+        margin: 0 0 28px;
+      }
+      .canvas-artboard-label {
+        font-size: 15px;
+        font-weight: 500;
+        color: rgba(60, 50, 40, 0.7);
+        margin: 0 0 6px 4px;
+      }
+
+      .artboard {
+        width: 1440px;
+        height: 900px;
+        background: var(--bg);
+        border-radius: 2px;
+        box-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.08),
+          0 4px 16px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+      }
+
+      /* --------------------------------------------------------------
+         Field Ledger primitives (identical to @tarkov/ui conventions)
+         -------------------------------------------------------------- */
+      .fl-body {
+        background-color: var(--bg);
+        color: var(--fg);
+        font-family: var(--font-sans);
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        background-image:
+          radial-gradient(ellipse at 15% 0%, rgba(245, 158, 11, 0.06), transparent 55%),
+          radial-gradient(ellipse at 85% 100%, rgba(122, 139, 63, 0.05), transparent 55%);
+      }
+      .fl-body.scroll {
+        overflow-y: auto;
+      }
+      .fl-grain::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1;
+        mix-blend-mode: overlay;
+        opacity: 0.22;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9  0 0 0 0 0.9  0 0 0 0 0.85  0 0 0 0.06 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+      }
+      .fl-body > * {
+        position: relative;
+        z-index: 2;
+      }
+
+      .mono,
+      .fl-body .mono {
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .bracket {
+        position: relative;
+        border: 1px solid var(--border);
+        background: var(--card);
+      }
+      .bracket::before,
+      .bracket::after {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--primary);
+      }
+      .bracket::before {
+        top: -1px;
+        left: -1px;
+        border-right: 0;
+        border-bottom: 0;
+      }
+      .bracket::after {
+        bottom: -1px;
+        right: -1px;
+        border-left: 0;
+        border-top: 0;
+      }
+      .bracket-olive::before,
+      .bracket-olive::after {
+        border-color: var(--olive);
+      }
+
+      .dashed-b {
+        border-bottom: 1px dashed var(--border);
+      }
+      .dashed-t {
+        border-top: 1px dashed var(--border);
+      }
+
+      .tick-rule {
+        height: 12px;
+        background-image: linear-gradient(to right, var(--border) 1px, transparent 1px);
+        background-size: 12px 12px;
+        background-repeat: repeat-x;
+        background-position: bottom;
+      }
+
+      .pill {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border: 1px solid var(--border);
+        color: var(--fg);
+      }
+      .pill.reliable {
+        color: var(--olive);
+        border-color: var(--olive);
+        background: rgba(122, 139, 63, 0.1);
+      }
+      .pill.marginal {
+        color: var(--primary);
+        border-color: var(--primary);
+        background: rgba(245, 158, 11, 0.08);
+      }
+      .pill.ineffective {
+        color: var(--paper-dim);
+      }
+      .pill.accent {
+        color: var(--primary);
+        border-color: var(--primary);
+      }
+      .pill.muted {
+        color: var(--paper-dim);
+      }
+      .pill.destructive {
+        color: var(--destructive);
+        border-color: var(--destructive);
+        background: rgba(185, 28, 28, 0.08);
+      }
+
+      .stamp {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border: 1.5px solid var(--primary);
+        color: var(--primary);
+        transform: rotate(-2deg);
+      }
+      .stamp.red {
+        color: var(--destructive);
+        border-color: var(--destructive);
+      }
+      .stamp.paper {
+        color: var(--fg);
+        border-color: var(--fg);
+      }
+      .stamp.olive {
+        color: var(--olive);
+        border-color: var(--olive);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding: 0 18px;
+        height: 38px;
+        border: 1px solid var(--primary);
+        background: var(--primary);
+        color: var(--primary-fg);
+        cursor: pointer;
+        border-radius: var(--radius);
+      }
+      .btn.secondary {
+        background: transparent;
+        color: var(--fg);
+        border-color: var(--border);
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--muted-fg);
+        border-color: transparent;
+      }
+      .btn.sm {
+        height: 30px;
+        padding: 0 12px;
+        font-size: 11px;
+      }
+      .btn.lg {
+        height: 44px;
+        padding: 0 22px;
+        font-size: 13px;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 16px 0 12px 0;
+      }
+      .section-title-label {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.2em;
+        color: var(--primary);
+        text-transform: uppercase;
+      }
+      .section-title-rule {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      .section-title-meta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        color: var(--muted-fg);
+        text-transform: uppercase;
+      }
+
+      .caps {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted-fg);
+      }
+      .caps-fg {
+        color: var(--fg);
+      }
+      .caps-dim {
+        color: var(--paper-dim);
+      }
+      .caps-amber {
+        color: var(--primary);
+      }
+
+      .bar-track {
+        height: 4px;
+        background: var(--muted);
+        border: 1px solid var(--line-muted);
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        background: var(--primary);
+        display: block;
+      }
+      .bar-fill.olive {
+        background: var(--olive);
+      }
+      .bar-fill.rust {
+        background: var(--rust);
+      }
+      .bar-fill.destructive {
+        background: var(--destructive);
+      }
+
+      .strike {
+        text-decoration: line-through;
+        text-decoration-color: var(--border);
+        color: var(--paper-dim);
+      }
+
+      .fl-body h1,
+      .fl-body h2,
+      .fl-body h3,
+      .fl-body h4,
+      .fl-body p {
+        margin: 0;
+      }
+
+      /* Nav helpers */
+      .nav-item {
+        padding: 6px 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted-fg);
+        border-bottom: 1.5px solid transparent;
+        cursor: pointer;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+      .nav-item.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+      }
+      .nav-caret {
+        font-size: 9px;
+        opacity: 0.7;
+      }
+      .nav-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        min-width: 160px;
+        background: var(--popover);
+        border: 1px solid var(--border);
+        padding: 6px 0;
+        z-index: 5;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+      }
+      .nav-dropdown-row {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        gap: 8px;
+        padding: 6px 12px;
+        align-items: baseline;
+      }
+      .nav-dropdown-route {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--fg);
+      }
+      .nav-dropdown-desc {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--paper-dim);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* StatRow helper (label · stock · delta · value · bar) */
+      .stat-row {
+        display: grid;
+        grid-template-columns: 110px 46px 56px 54px 1fr;
+        align-items: center;
+        gap: 10px;
+        padding: 3px 0;
+      }
+      .stat-row .sr-stock {
+        font-size: 12px;
+        text-align: right;
+      }
+      .stat-row .sr-delta {
+        font-size: 11px;
+        text-align: right;
+        letter-spacing: 0.05em;
+      }
+      .stat-row .sr-value {
+        font-size: 17px;
+        text-align: right;
+        font-weight: 600;
+        color: var(--fg);
+      }
+
+      .delta-up {
+        color: var(--olive);
+      }
+      .delta-down {
+        color: var(--destructive);
+      }
+      .delta-neutral {
+        color: var(--muted-fg);
+      }
+
+      /* StatBlock */
+      .stat-block-label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted-fg);
+      }
+      .stat-block-value {
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
+        margin-top: 4px;
+        line-height: 1;
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .sb-md {
+        font-size: 22px;
+      }
+      .sb-lg {
+        font-size: 30px;
+      }
+      .sb-sm {
+        font-size: 18px;
+      }
+      .stat-block-suffix {
+        margin-left: 4px;
+        color: var(--paper-dim);
+      }
+      .stat-block-delta {
+        margin-left: 8px;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="canvas-wrap">
+      <!-- ═══════════════════════════════════════════════════════════════
+           Section · Landing · Builder-forward home
+           ═══════════════════════════════════════════════════════════════ -->
+      <section>
+        <h2 class="canvas-section-title">Landing · Builder-forward home</h2>
+        <div class="canvas-section-sub">Builder hero + optimizer promo strip</div>
+        <div class="canvas-artboard-label">landing-b · 1440 × 900</div>
+
+        <div class="artboard">
+          <div class="fl-body fl-grain scroll">
+            <!-- App header -->
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 28px;
+                padding: 14px 32px;
+                border-bottom: 1px solid var(--border);
+                background: rgba(14, 15, 12, 0.6);
+                position: relative;
+                z-index: 4;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 10px">
+                <span aria-hidden style="color: var(--primary); font-size: 16px; line-height: 1"
+                  >▲</span
+                >
+                <span
+                  style="
+                    font-family: var(--font-display);
+                    font-size: 16px;
+                    color: var(--fg);
+                    letter-spacing: 0.02em;
+                  "
+                  >TARKOVGUNSMITH</span
+                >
+                <span class="mono caps">· FIELD LEDGER / v2</span>
+              </div>
+              <nav style="display: flex; gap: 4px; flex: 1; margin-left: 20px; align-items: center">
+                <div style="position: relative"><span class="nav-item">BUILDER</span></div>
+                <div style="position: relative">
+                  <span class="nav-item">CALC <span class="nav-caret">▾</span></span>
+                </div>
+                <div style="position: relative">
+                  <span class="nav-item">DATA <span class="nav-caret">▾</span></span>
+                </div>
+              </nav>
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span class="pill accent">LL4</span>
+                <span class="pill reliable">FLEA UNLOCKED</span>
+                <span class="mono caps">v1.4.0</span>
+              </div>
+            </div>
+
+            <!-- Landing body -->
+            <div style="padding: 40px 64px 56px">
+              <!-- meta row -->
+              <div style="display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 24px">
+                <span class="mono caps">WEAPON · MODS · PROFILE</span>
+                <span class="mono caps">/ LIVE RECOMPUTE</span>
+                <span class="mono caps">/ SHAREABLE URL</span>
+                <span class="mono caps">/ QUEST-GATED</span>
+              </div>
+
+              <!-- HERO -->
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 1.55fr 1fr;
+                  gap: 56px;
+                  align-items: end;
+                  border-bottom: 1px solid var(--border);
+                  padding-bottom: 36px;
+                "
+              >
+                <div>
+                  <h1
+                    style="
+                      font-family: var(--font-display);
+                      font-size: 92px;
+                      line-height: 0.95;
+                      letter-spacing: -0.01em;
+                      color: var(--fg);
+                    "
+                  >
+                    BUILD THE<br />LOADOUT.<br />
+                    <span style="color: var(--primary)">KNOW THE<br />NUMBERS.</span>
+                  </h1>
+                  <p
+                    style="
+                      margin-top: 26px;
+                      max-width: 560px;
+                      font-size: 16px;
+                      line-height: 1.55;
+                      color: var(--muted-fg);
+                    "
+                  >
+                    A modern, AI-first rebuild of the defunct TarkovGunsmith. Pick a weapon, walk
+                    the slot tree, attach mods — ergo, recoil, accuracy and weight recompute live,
+                    gated by your trader levels and quest progress.
+                    <span style="color: var(--fg)">Share any build by URL.</span>
+                  </p>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 12px;
+                      margin-top: 30px;
+                      align-items: center;
+                      flex-wrap: wrap;
+                    "
+                  >
+                    <button class="btn lg">OPEN THE BUILDER ▸</button>
+                    <button class="btn lg secondary">RUN A SIMULATION</button>
+                    <a
+                      class="mono caps"
+                      style="margin-left: 4px; color: var(--muted-fg); text-decoration: none"
+                      >OR COMPARE TWO BUILDS →</a
+                    >
+                  </div>
+                </div>
+
+                <!-- Sample build readout -->
+                <div
+                  style="
+                    border-left: 1px solid var(--border);
+                    padding-left: 40px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 18px;
+                  "
+                >
+                  <div style="display: flex; align-items: center; justify-content: space-between">
+                    <span class="mono caps">SAMPLE BUILD</span>
+                    <span class="stamp">SHAREABLE</span>
+                  </div>
+                  <div>
+                    <div
+                      style="
+                        font-family: var(--font-display);
+                        font-size: 28px;
+                        color: var(--fg);
+                        line-height: 1;
+                      "
+                    >
+                      M4A1 · CUSTOM
+                    </div>
+                    <div class="mono caps" style="margin-top: 6px">14 MODS · BUILD · abc1-2e4f</div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px">
+                    <div>
+                      <div class="stat-block-label">ERGONOMICS</div>
+                      <div class="mono stat-block-value sb-md">
+                        72<span class="stat-block-delta delta-up" style="font-size: 12.1px"
+                          >+25</span
+                        >
+                      </div>
+                    </div>
+                    <div>
+                      <div class="stat-block-label">RECOIL V</div>
+                      <div class="mono stat-block-value sb-md">
+                        37<span class="stat-block-delta delta-up" style="font-size: 12.1px"
+                          >−34%</span
+                        >
+                      </div>
+                    </div>
+                    <div>
+                      <div class="stat-block-label">WEIGHT</div>
+                      <div class="mono stat-block-value sb-md">
+                        3.90<span class="stat-block-suffix" style="font-size: 12.1px">kg</span>
+                        <span class="stat-block-delta delta-down" style="font-size: 12.1px"
+                          >+0.80</span
+                        >
+                      </div>
+                    </div>
+                    <div>
+                      <div class="stat-block-label">ACCURACY</div>
+                      <div class="mono stat-block-value sb-md">
+                        2.1<span class="stat-block-suffix" style="font-size: 12.1px">MoA</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                    <span class="pill accent">LL4</span>
+                    <span class="pill reliable">FLEA UNLOCKED</span>
+                    <span class="pill muted">12 QUESTS</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- OPTIMIZER PROMO STRIP -->
+              <div
+                style="
+                  margin-top: 36px;
+                  padding: 20px 24px;
+                  border: 1px solid var(--primary);
+                  background: rgba(245, 158, 11, 0.06);
+                  display: grid;
+                  grid-template-columns: auto 1fr auto;
+                  gap: 24px;
+                  align-items: center;
+                "
+              >
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span class="mono caps caps-amber">◇ NEW · OPTIMIZER</span>
+                  <span class="mono caps">BRANCH-AND-BOUND · EXACT</span>
+                </div>
+                <div>
+                  <div style="font-family: var(--font-display); font-size: 20px; color: var(--fg)">
+                    Set a budget. Pick an objective. The solver picks the mods.
+                  </div>
+                  <div
+                    class="mono"
+                    style="
+                      font-size: 12px;
+                      color: var(--muted-fg);
+                      margin-top: 4px;
+                      line-height: 1.5;
+                    "
+                  >
+                    Pin any slot to keep fixed. Respects your trader LLs and flea status. Pure-TS,
+                    runs client-side.
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button class="btn sm">TRY OPTIMIZER</button>
+                  <button class="btn sm ghost">LEARN MORE</button>
+                </div>
+              </div>
+
+              <!-- Feature row -->
+              <div style="position: relative; margin: 20px 0">
+                <div class="tick-rule"></div>
+                <span
+                  class="mono caps"
+                  style="
+                    position: absolute;
+                    top: -6px;
+                    left: 12px;
+                    background: var(--bg);
+                    padding: 0 8px;
+                  "
+                  >WHAT IT DOES</span
+                >
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px">
+                <div class="bracket" style="padding: 20px">
+                  <div class="mono caps caps-amber">01</div>
+                  <div style="font-family: var(--font-display); font-size: 20px; margin-top: 8px">
+                    BUILDER
+                  </div>
+                  <div
+                    class="mono"
+                    style="
+                      font-size: 12px;
+                      margin-top: 10px;
+                      color: var(--muted-fg);
+                      line-height: 1.5;
+                    "
+                  >
+                    Slot tree editor with availability gating and live recompute.
+                  </div>
+                </div>
+                <div class="bracket" style="padding: 20px">
+                  <div class="mono caps caps-amber">02</div>
+                  <div style="font-family: var(--font-display); font-size: 20px; margin-top: 8px">
+                    OPTIMIZER
+                  </div>
+                  <div
+                    class="mono"
+                    style="
+                      font-size: 12px;
+                      margin-top: 10px;
+                      color: var(--muted-fg);
+                      line-height: 1.5;
+                    "
+                  >
+                    Solve for min-recoil, max-ergo, min-weight or max-accuracy.
+                  </div>
+                </div>
+                <div class="bracket" style="padding: 20px">
+                  <div class="mono caps caps-amber">03</div>
+                  <div style="font-family: var(--font-display); font-size: 20px; margin-top: 8px">
+                    COMPARE
+                  </div>
+                  <div
+                    class="mono"
+                    style="
+                      font-size: 12px;
+                      margin-top: 10px;
+                      color: var(--muted-fg);
+                      line-height: 1.5;
+                    "
+                  >
+                    Diff two builds, stat-by-stat, mod-by-mod.
+                  </div>
+                </div>
+                <div class="bracket" style="padding: 20px">
+                  <div class="mono caps caps-amber">04</div>
+                  <div style="font-family: var(--font-display); font-size: 20px; margin-top: 8px">
+                    SHARE
+                  </div>
+                  <div
+                    class="mono"
+                    style="
+                      font-size: 12px;
+                      margin-top: 10px;
+                      color: var(--muted-fg);
+                      line-height: 1.5;
+                    "
+                  >
+                    Every build lives at a URL. Import on any device.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           Section · Builder · weapon-build editor
+           ═══════════════════════════════════════════════════════════════ -->
+      <section>
+        <h2 class="canvas-section-title">Builder · weapon-build editor</h2>
+        <div class="canvas-section-sub">Optimizer-first with diff view</div>
+        <div class="canvas-artboard-label">builder-b · 1440 × 900</div>
+
+        <div class="artboard">
+          <div class="fl-body fl-grain" style="display: flex; flex-direction: column">
+            <!-- App header (builder active) -->
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 28px;
+                padding: 14px 32px;
+                border-bottom: 1px solid var(--border);
+                background: rgba(14, 15, 12, 0.6);
+                position: relative;
+                z-index: 4;
+              "
+            >
+              <div style="display: flex; align-items: baseline; gap: 10px">
+                <span aria-hidden style="color: var(--primary); font-size: 16px; line-height: 1"
+                  >▲</span
+                >
+                <span
+                  style="
+                    font-family: var(--font-display);
+                    font-size: 16px;
+                    color: var(--fg);
+                    letter-spacing: 0.02em;
+                  "
+                  >TARKOVGUNSMITH</span
+                >
+                <span class="mono caps">· FIELD LEDGER / v2</span>
+              </div>
+              <nav style="display: flex; gap: 4px; flex: 1; margin-left: 20px; align-items: center">
+                <div style="position: relative"><span class="nav-item active">BUILDER</span></div>
+                <div style="position: relative">
+                  <span class="nav-item">CALC <span class="nav-caret">▾</span></span>
+                </div>
+                <div style="position: relative">
+                  <span class="nav-item">DATA <span class="nav-caret">▾</span></span>
+                </div>
+              </nav>
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span class="pill accent">LL4</span>
+                <span class="pill reliable">FLEA UNLOCKED</span>
+                <span class="mono caps">v1.4.0</span>
+              </div>
+            </div>
+
+            <!-- BuilderHeader -->
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 20px;
+                align-items: center;
+                padding: 20px 32px;
+                border-bottom: 1px solid var(--border);
+              "
+            >
+              <div>
+                <div style="display: flex; align-items: baseline; gap: 12px">
+                  <span class="mono caps caps-amber">BUILD</span>
+                  <span style="font-family: var(--font-display); font-size: 26px; color: var(--fg)"
+                    >M4A1 · CUSTOM LOADOUT</span
+                  >
+                  <span class="pill reliable">AUTOSAVED</span>
+                </div>
+                <div class="mono caps" style="margin-top: 6px">14 MODS · DIFF VS OPTIMIZER</div>
+              </div>
+              <div style="display: flex; gap: 10px">
+                <button class="btn">◇ OPTIMIZE</button>
+                <button class="btn secondary">COMPARE</button>
+                <button class="btn secondary">SHARE URL</button>
+              </div>
+            </div>
+
+            <!-- Body: solver (left) + diff (right) -->
+            <div
+              style="
+                padding: 24px 32px;
+                display: grid;
+                grid-template-columns: 340px 1fr;
+                gap: 24px;
+                flex: 1;
+                min-height: 0;
+              "
+            >
+              <!-- LEFT — Solver -->
+              <div
+                class="bracket"
+                style="padding: 20px; display: flex; flex-direction: column; gap: 20px"
+              >
+                <div style="display: flex; justify-content: space-between; align-items: baseline">
+                  <span style="font-family: var(--font-display); font-size: 18px">SOLVER</span>
+                  <span class="pill reliable">BRANCH-AND-BOUND</span>
+                </div>
+
+                <!-- 01 Objective -->
+                <div>
+                  <div class="section-title">
+                    <span class="section-title-label">01 · OBJECTIVE</span>
+                    <span class="section-title-rule"></span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+                    <div
+                      class="mono"
+                      style="
+                        font-size: 11px;
+                        padding: 8px 10px;
+                        border: 1px solid var(--primary);
+                        color: var(--primary);
+                        letter-spacing: 0.15em;
+                        text-transform: uppercase;
+                        background: rgba(245, 158, 11, 0.08);
+                      "
+                    >
+                      <span style="margin-right: 8px">●</span>MIN-RECOIL
+                    </div>
+                    <div
+                      class="mono"
+                      style="
+                        font-size: 11px;
+                        padding: 8px 10px;
+                        border: 1px solid var(--border);
+                        color: var(--muted-fg);
+                        letter-spacing: 0.15em;
+                        text-transform: uppercase;
+                      "
+                    >
+                      <span style="margin-right: 8px">○</span>MAX-ERGONOMICS
+                    </div>
+                    <div
+                      class="mono"
+                      style="
+                        font-size: 11px;
+                        padding: 8px 10px;
+                        border: 1px solid var(--border);
+                        color: var(--muted-fg);
+                        letter-spacing: 0.15em;
+                        text-transform: uppercase;
+                      "
+                    >
+                      <span style="margin-right: 8px">○</span>MIN-WEIGHT
+                    </div>
+                    <div
+                      class="mono"
+                      style="
+                        font-size: 11px;
+                        padding: 8px 10px;
+                        border: 1px solid var(--border);
+                        color: var(--muted-fg);
+                        letter-spacing: 0.15em;
+                        text-transform: uppercase;
+                      "
+                    >
+                      <span style="margin-right: 8px">○</span>MAX-ACCURACY
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 02 Budget -->
+                <div>
+                  <div class="section-title">
+                    <span class="section-title-label">02 · BUDGET (₽)</span>
+                    <span class="section-title-rule"></span>
+                  </div>
+                  <div
+                    style="
+                      border: 1px solid var(--border);
+                      background: var(--input);
+                      padding: 10px 12px;
+                      display: flex;
+                      align-items: baseline;
+                      gap: 8px;
+                    "
+                  >
+                    <span class="mono" style="color: var(--paper-dim); font-size: 13px">≤</span>
+                    <span class="mono" style="font-size: 22px; color: var(--fg); font-weight: 600"
+                      >200,000</span
+                    >
+                    <span class="mono caps" style="margin-left: auto">RUB</span>
+                  </div>
+                  <div
+                    style="
+                      position: relative;
+                      height: 22px;
+                      margin-top: 12px;
+                      border: 1px solid var(--line-muted);
+                      background: var(--muted);
+                    "
+                  >
+                    <div
+                      style="
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        bottom: 0;
+                        width: 62%;
+                        background: rgba(245, 158, 11, 0.18);
+                      "
+                    ></div>
+                    <div
+                      style="
+                        position: absolute;
+                        left: 62%;
+                        top: -3px;
+                        bottom: -3px;
+                        width: 2px;
+                        background: var(--primary);
+                      "
+                    ></div>
+                    <div class="mono caps" style="position: absolute; top: 2px; left: 6px">0</div>
+                    <div class="mono caps" style="position: absolute; top: 2px; right: 6px">
+                      500k
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 03 Profile -->
+                <div>
+                  <div class="section-title">
+                    <span class="section-title-label">03 · PROFILE</span>
+                    <span class="section-title-rule"></span>
+                    <span class="section-title-meta">TARKOV.DEV · 2H AGO</span>
+                  </div>
+                  <div style="display: flex; border: 1px solid var(--border); margin-bottom: 8px">
+                    <span
+                      class="mono"
+                      style="
+                        flex: 1;
+                        font-size: 10px;
+                        padding: 4px 8px;
+                        letter-spacing: 0.14em;
+                        text-transform: uppercase;
+                        text-align: center;
+                        color: var(--muted-fg);
+                      "
+                      >BASIC</span
+                    >
+                    <span
+                      class="mono"
+                      style="
+                        flex: 1;
+                        font-size: 10px;
+                        padding: 4px 8px;
+                        letter-spacing: 0.14em;
+                        text-transform: uppercase;
+                        text-align: center;
+                        background: var(--primary);
+                        color: var(--primary-fg);
+                      "
+                      >ADV</span
+                    >
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px">
+                    <!-- 9 traders, LL3+ uses amber -->
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)"
+                        >PRAPOR</span
+                      >
+                      <span
+                        class="mono"
+                        style="font-size: 10px; color: var(--primary); font-weight: 600"
+                        >L4</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)">THERA</span>
+                      <span
+                        class="mono"
+                        style="font-size: 10px; color: var(--primary); font-weight: 600"
+                        >L3</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)">SKIER</span>
+                      <span
+                        class="mono"
+                        style="font-size: 10px; color: var(--primary); font-weight: 600"
+                        >L3</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)">MECH</span>
+                      <span
+                        class="mono"
+                        style="font-size: 10px; color: var(--primary); font-weight: 600"
+                        >L3</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)">PEACE</span>
+                      <span class="mono" style="font-size: 10px; color: var(--fg); font-weight: 600"
+                        >L2</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)"
+                        >JAEGER</span
+                      >
+                      <span
+                        class="mono"
+                        style="font-size: 10px; color: var(--primary); font-weight: 600"
+                        >L3</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)"
+                        >RAGMAN</span
+                      >
+                      <span class="mono" style="font-size: 10px; color: var(--fg); font-weight: 600"
+                        >L2</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)">FENCE</span>
+                      <span class="mono" style="font-size: 10px; color: var(--fg); font-weight: 600"
+                        >L1</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        border: 1px solid var(--border);
+                        padding: 3px 5px;
+                        display: flex;
+                        justify-content: space-between;
+                      "
+                    >
+                      <span class="mono" style="font-size: 9px; color: var(--muted-fg)">REF</span>
+                      <span class="mono" style="font-size: 10px; color: var(--fg); font-weight: 600"
+                        >L1</span
+                      >
+                    </div>
+                  </div>
+                  <div style="margin-top: 8px; display: flex; gap: 4px">
+                    <button class="btn sm secondary" style="flex: 1; font-size: 10px">
+                      RE-IMPORT
+                    </button>
+                    <button class="btn sm ghost" style="font-size: 10px">MANUAL</button>
+                  </div>
+                </div>
+
+                <!-- 04 Pinned Slots -->
+                <div>
+                  <div class="section-title">
+                    <span class="section-title-label">04 · PINNED SLOTS</span>
+                    <span class="section-title-rule"></span>
+                    <span class="section-title-meta">SOLVER-PICKED ⟵ 6</span>
+                  </div>
+                  <div
+                    style="
+                      border: 1px dashed var(--border);
+                      padding: 8px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                    "
+                  >
+                    <!-- 8 slots, some pinned -->
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 3px 4px;
+                      "
+                    >
+                      <span class="mono caps"
+                        ><span style="margin-right: 8px; color: var(--paper-dim)">□</span
+                        >MUZZLE</span
+                      >
+                      <span
+                        class="mono"
+                        style="font-size: 11px; color: var(--paper-dim); font-style: italic"
+                        >solver</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 3px 4px;
+                      "
+                    >
+                      <span class="mono caps"
+                        ><span style="margin-right: 8px; color: var(--primary)">■</span>BARREL</span
+                      >
+                      <span class="mono" style="font-size: 11px; color: var(--fg)">14.5" Colt</span>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 3px 4px;
+                      "
+                    >
+                      <span class="mono caps"
+                        ><span style="margin-right: 8px; color: var(--paper-dim)">□</span
+                        >HANDGUARD</span
+                      >
+                      <span
+                        class="mono"
+                        style="font-size: 11px; color: var(--paper-dim); font-style: italic"
+                        >solver</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 3px 4px;
+                      "
+                    >
+                      <span class="mono caps"
+                        ><span style="margin-right: 8px; color: var(--primary)">■</span
+                        >FOREGRIP</span
+                      >
+                      <span class="mono" style="font-size: 11px; color: var(--fg)">Magpul RVG</span>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 3px 4px;
+                      "
+                    >
+                      <span class="mono caps"
+                        ><span style="margin-right: 8px; color: var(--paper-dim)">□</span
+                        >STOCK</span
+                      >
+                      <span
+                        class="mono"
+                        style="font-size: 11px; color: var(--paper-dim); font-style: italic"
+                        >solver</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 3px 4px;
+                      "
+                    >
+                      <span class="mono caps"
+                        ><span style="margin-right: 8px; color: var(--paper-dim)">□</span>PISTOL
+                        GRIP</span
+                      >
+                      <span
+                        class="mono"
+                        style="font-size: 11px; color: var(--paper-dim); font-style: italic"
+                        >solver</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 3px 4px;
+                      "
+                    >
+                      <span class="mono caps"
+                        ><span style="margin-right: 8px; color: var(--paper-dim)">□</span
+                        >OPTIC</span
+                      >
+                      <span
+                        class="mono"
+                        style="font-size: 11px; color: var(--paper-dim); font-style: italic"
+                        >solver</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 3px 4px;
+                      "
+                    >
+                      <span class="mono caps"
+                        ><span style="margin-right: 8px; color: var(--primary)">■</span
+                        >MAGAZINE</span
+                      >
+                      <span class="mono" style="font-size: 11px; color: var(--fg)">PMAG 30</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button class="btn">RE-RUN OPTIMIZATION</button>
+              </div>
+
+              <!-- RIGHT — Stats + Diff -->
+              <div style="display: flex; flex-direction: column; gap: 20px; min-height: 0">
+                <!-- Top stats row -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px">
+                  <div class="bracket" style="padding: 16px">
+                    <div class="mono caps">CURRENT BUILD</div>
+                    <div
+                      style="
+                        margin-top: 8px;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 12px;
+                      "
+                    >
+                      <div>
+                        <div class="stat-block-label">RECOIL V</div>
+                        <div class="mono stat-block-value sb-md">37</div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">ERGO</div>
+                        <div class="mono stat-block-value sb-md">72</div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">WT kg</div>
+                        <div class="mono stat-block-value sb-md">3.90</div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">₽</div>
+                        <div class="mono stat-block-value sb-md">248.6k</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="bracket bracket-olive" style="padding: 16px">
+                    <div class="mono caps" style="color: var(--olive)">◇ OPTIMIZED</div>
+                    <div
+                      style="
+                        margin-top: 8px;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 12px;
+                      "
+                    >
+                      <div>
+                        <div class="stat-block-label">RECOIL V</div>
+                        <div class="mono stat-block-value sb-md">34</div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">ERGO</div>
+                        <div class="mono stat-block-value sb-md">78</div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">WT kg</div>
+                        <div class="mono stat-block-value sb-md">3.48</div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">₽</div>
+                        <div class="mono stat-block-value sb-md">198.2k</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="bracket" style="padding: 16px">
+                    <div class="mono caps caps-amber">DELTA</div>
+                    <div
+                      style="
+                        margin-top: 8px;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 12px;
+                      "
+                    >
+                      <div>
+                        <div class="stat-block-label">RECOIL V</div>
+                        <div class="mono stat-block-value sb-md">
+                          −3<span class="stat-block-delta delta-up" style="font-size: 12.1px"
+                            >−8%</span
+                          >
+                        </div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">ERGO</div>
+                        <div class="mono stat-block-value sb-md">
+                          +6<span class="stat-block-delta delta-up" style="font-size: 12.1px"
+                            >+8%</span
+                          >
+                        </div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">WT kg</div>
+                        <div class="mono stat-block-value sb-md">
+                          −0.42<span class="stat-block-delta delta-up" style="font-size: 12.1px"
+                            >−11%</span
+                          >
+                        </div>
+                      </div>
+                      <div>
+                        <div class="stat-block-label">₽</div>
+                        <div class="mono stat-block-value sb-md">
+                          −50.4k<span class="stat-block-delta delta-up" style="font-size: 12.1px"
+                            >−20%</span
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Diff table -->
+                <div
+                  class="bracket"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    flex: 1;
+                    min-height: 0;
+                    overflow: hidden;
+                  "
+                >
+                  <div
+                    style="
+                      padding: 14px 18px;
+                      border-bottom: 1px dashed var(--border);
+                      display: flex;
+                      align-items: center;
+                      gap: 14px;
+                    "
+                  >
+                    <span style="font-family: var(--font-display); font-size: 17px"
+                      >MOD CHANGES</span
+                    >
+                    <span class="pill accent">6 SLOTS CHANGED</span>
+                    <span class="pill muted">8 SLOTS UNCHANGED</span>
+                    <span class="mono caps" style="margin-left: auto">SCORE Δ · −3.04</span>
+                  </div>
+
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 140px 1.2fr 1.2fr 60px 60px 84px;
+                      gap: 10px;
+                      padding: 10px 18px;
+                      border-bottom: 1px solid var(--border);
+                    "
+                  >
+                    <span class="mono caps">SLOT</span>
+                    <span class="mono caps">CURRENT</span>
+                    <span class="mono caps">SUGGESTED</span>
+                    <span class="mono caps" style="text-align: right">ERGO</span>
+                    <span class="mono caps" style="text-align: right">RCL</span>
+                    <span class="mono caps" style="text-align: right">₽</span>
+                  </div>
+
+                  <div style="flex: 1; overflow-y: auto">
+                    <!-- row 1: muzzle -->
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 140px 1.2fr 1.2fr 60px 60px 84px;
+                        gap: 10px;
+                        padding: 10px 18px;
+                        border-bottom: 1px dashed var(--border);
+                        align-items: center;
+                      "
+                    >
+                      <span class="mono caps caps-amber">MUZZLE</span>
+                      <span
+                        style="
+                          font-size: 13px;
+                          color: var(--paper-dim);
+                          text-decoration: line-through;
+                          text-decoration-color: var(--border);
+                        "
+                        >SilencerCo Hybrid 46</span
+                      >
+                      <span style="font-size: 13px; color: var(--olive)">→ SureFire SOCOM556</span>
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >+1</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-4</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-12.0k</span
+                      >
+                    </div>
+                    <!-- row 2: handguard -->
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 140px 1.2fr 1.2fr 60px 60px 84px;
+                        gap: 10px;
+                        padding: 10px 18px;
+                        border-bottom: 1px dashed var(--border);
+                        align-items: center;
+                      "
+                    >
+                      <span class="mono caps caps-amber">HANDGUARD</span>
+                      <span
+                        style="
+                          font-size: 13px;
+                          color: var(--paper-dim);
+                          text-decoration: line-through;
+                          text-decoration-color: var(--border);
+                        "
+                        >Geissele SMR MK16 13.5"</span
+                      >
+                      <span style="font-size: 13px; color: var(--olive)"
+                        >→ Daniel Def MFR XL 15"</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >+2</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-2</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-6.2k</span
+                      >
+                    </div>
+                    <!-- row 3: stock -->
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 140px 1.2fr 1.2fr 60px 60px 84px;
+                        gap: 10px;
+                        padding: 10px 18px;
+                        border-bottom: 1px dashed var(--border);
+                        align-items: center;
+                      "
+                    >
+                      <span class="mono caps caps-amber">STOCK</span>
+                      <span
+                        style="
+                          font-size: 13px;
+                          color: var(--paper-dim);
+                          text-decoration: line-through;
+                          text-decoration-color: var(--border);
+                        "
+                        >Magpul UBR Gen 2</span
+                      >
+                      <span style="font-size: 13px; color: var(--olive)">→ Magpul CTR</span>
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >+4</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--destructive)"
+                        >+2</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-14.0k</span
+                      >
+                    </div>
+                    <!-- row 4: pistol grip -->
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 140px 1.2fr 1.2fr 60px 60px 84px;
+                        gap: 10px;
+                        padding: 10px 18px;
+                        border-bottom: 1px dashed var(--border);
+                        align-items: center;
+                      "
+                    >
+                      <span class="mono caps caps-amber">PISTOL GRIP</span>
+                      <span
+                        style="
+                          font-size: 13px;
+                          color: var(--paper-dim);
+                          text-decoration: line-through;
+                          text-decoration-color: var(--border);
+                        "
+                        >Hogue Rubber</span
+                      >
+                      <span style="font-size: 13px; color: var(--olive)">→ Magpul MOE</span>
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >+1</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-1</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-0.9k</span
+                      >
+                    </div>
+                    <!-- row 5: optic -->
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 140px 1.2fr 1.2fr 60px 60px 84px;
+                        gap: 10px;
+                        padding: 10px 18px;
+                        border-bottom: 1px dashed var(--border);
+                        align-items: center;
+                      "
+                    >
+                      <span class="mono caps caps-amber">OPTIC</span>
+                      <span
+                        style="
+                          font-size: 13px;
+                          color: var(--paper-dim);
+                          text-decoration: line-through;
+                          text-decoration-color: var(--border);
+                        "
+                        >Trijicon ACOG TA11F</span
+                      >
+                      <span style="font-size: 13px; color: var(--olive)">→ Trijicon TR24G</span>
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >+2</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--paper-dim)"
+                        >0</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-9.8k</span
+                      >
+                    </div>
+                    <!-- row 6: tac device -->
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 140px 1.2fr 1.2fr 60px 60px 84px;
+                        gap: 10px;
+                        padding: 10px 18px;
+                        align-items: center;
+                      "
+                    >
+                      <span class="mono caps caps-amber">TAC DEVICE</span>
+                      <span
+                        style="
+                          font-size: 13px;
+                          color: var(--paper-dim);
+                          text-decoration: line-through;
+                          text-decoration-color: var(--border);
+                        "
+                        >SureFire M600</span
+                      >
+                      <span style="font-size: 13px; color: var(--olive)">→ — (removed)</span>
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >+1</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--paper-dim)"
+                        >0</span
+                      >
+                      <span
+                        class="mono"
+                        style="text-align: right; font-size: 12px; color: var(--olive)"
+                        >-16.9k</span
+                      >
+                    </div>
+                  </div>
+
+                  <div
+                    style="
+                      padding: 12px 18px;
+                      border-top: 1px solid var(--border);
+                      display: flex;
+                      gap: 10px;
+                      align-items: center;
+                    "
+                  >
+                    <button class="btn">ACCEPT ALL</button>
+                    <button class="btn secondary">ACCEPT SELECTED (4)</button>
+                    <button class="btn ghost">DISCARD</button>
+                    <span class="mono caps" style="margin-left: auto"
+                      >DFS · LINEAR LOWER-BOUND PRUNE · 2s BUDGET</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

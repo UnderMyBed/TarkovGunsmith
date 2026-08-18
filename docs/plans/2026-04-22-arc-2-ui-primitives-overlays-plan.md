@@ -476,15 +476,11 @@ return (
 
         {tab === "result" &&
           optimizer.state === "running" &&
-          {
-            /* existing running branch — keep exactly */
-          }}
+          {/* existing running branch — keep exactly */}}
 
         {tab === "result" &&
           (optimizer.state === "done" || optimizer.state === "error") &&
-          {
-            /* existing done/error branch — keep exactly */
-          }}
+          {/* existing done/error branch — keep exactly */}}
 
         <div className="flex justify-between pt-2 border-t border-[var(--color-border)]">
           {/* existing button row — keep exactly */}
@@ -733,9 +729,7 @@ import { TarkovDataProvider } from "@tarkov/data";
 import { router } from "./router.js";
 import { tarkovClient } from "./tarkov-client.js";
 
-const queryClient = new QueryClient({
-  /* ... */
-});
+const queryClient = new QueryClient({/* ... */});
 
 export function App() {
   return (
@@ -905,9 +899,7 @@ Open `apps/web/src/routes/adc.tsx`. Find the `isLoading` branch. It's likely ren
       <Skeleton rows={3} height="1rem" />
     </div>
   ) : (
-    {
-      /* existing result view */
-    }
+    {/* existing result view */}
   );
 }
 ```
