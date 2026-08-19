@@ -20,6 +20,19 @@
     },
     "lint": {
       "outputs": []
+    },
+    "@tarkov/repo-guards#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "../../.github/**",
+        "../../mise.toml",
+        "../../.nvmrc",
+        "../../package.json",
+        "../../pnpm-workspace.yaml",
+        "../../turbo.json"
+      ],
+      "outputs": ["coverage/**"]
     }
   }
 }

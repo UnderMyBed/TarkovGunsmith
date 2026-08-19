@@ -1,0 +1,42 @@
+name: Upstream contract
+
+# Checks our fixtures and unit assumptions against the LIVE json.tarkov.dev document.
+#
+# Deliberately not part of CI. The pre-merge gate must fail on our code, never on a third
+# party's availability — and a network call in `pnpm test` would do exactly that. The cost of
+# separating them is that drift is found on a schedule rather than at the commit that assumed
+# it; the alternative is a red PR gate nobody can fix.
+#
+# This exists because docs/operations/data-api-audit.md found a 100x recoil error and a 35-58x
+# armor durability error that a 100%-green unit suite could not see: every fixture it ran on
+# carried magnitudes upstream cannot produce. Unit tests check our code against our
+# assumptions. This is the only thing checking our assumptions against reality.
+on:
+  schedule:
+    # Weekly, Monday 06:00 UTC. Upstream tracks game patches, which are not daily events.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Failure here is a real signal, so it must not be swallowed. Alerting is handled by
+      # the "Scheduled failure alert" watcher, which packages/repo-guards forces to list this
+      # workflow by name.
+      - run: pnpm verify:upstream
