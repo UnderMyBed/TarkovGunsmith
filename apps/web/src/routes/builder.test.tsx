@@ -4,7 +4,7 @@ import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { useV1Migration } from "./builder.js";
+import { useV1Migration } from "../features/builder/useV1Migration.js";
 import type { SlotNodeForMigration } from "@tarkov/data";
 import { renderRoute } from "../test/render-route.js";
 import { createTestClient } from "../test/test-client.js";
