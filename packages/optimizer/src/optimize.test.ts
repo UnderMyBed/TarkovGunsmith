@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { optimize } from "./optimize.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
 import { M4A1_WEAPON, M4A1_MODS, M4A1_TREE } from "./__fixtures__/m4a1-like.js";
@@ -261,22 +261,37 @@ describe("optimize — tiebreak", () => {
 
 describe("optimize — timeout", () => {
   it("continues when onNodeVisit fires and deadline has not elapsed", () => {
-    // 1100-slot wide fixture forces the visit%1000 check to fire, and a
-    // generous 60s timeout guarantees the onNodeVisit callback returns
-    // true (covering the no-abort branch inside the callback).
-    const wide = makeVeryWideFixture(1100);
-    const result = optimize({
-      weapon: wide.weapon,
-      slotTree: wide.tree,
-      modList: wide.mods,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "min-recoil",
-      timeoutMs: 60_000,
-    });
-    expect(result.ok).toBe(true);
-    if (!result.ok) throw new Error("unreachable");
-    expect(result.partial).toBeUndefined();
-  }, 30_000);
+    // 1100-slot wide fixture forces the visit%1000 check to fire, covering the
+    // no-abort branch inside the onNodeVisit callback.
+    //
+    // Date.now is frozen rather than given "a generous 60s timeout". The old version
+    // asserted `partial` was undefined, which only held if the machine finished the
+    // search inside 60 real seconds — so the test was really measuring the hardware.
+    // It began failing in CI the moment coverage instrumentation landed, which roughly
+    // doubles the runtime of this fixture (3.7s -> 7.6s measured locally). Freezing the
+    // clock tests what the name claims — that an unelapsed deadline does not abort —
+    // instead of how fast the runner is.
+    const frozen = Date.now();
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(frozen);
+    try {
+      const wide = makeVeryWideFixture(1100);
+      const result = optimize({
+        weapon: wide.weapon,
+        slotTree: wide.tree,
+        modList: wide.mods,
+        constraints: { profile: flea, pinnedSlots: new Map() },
+        objective: "min-recoil",
+        timeoutMs: 60_000,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("unreachable");
+      expect(result.partial).toBeUndefined();
+    } finally {
+      nowSpy.mockRestore();
+    }
+    // The wall-clock budget below is headroom for the search itself, not a deadline the
+    // assertions depend on. Coverage instrumentation makes this the slowest test here.
+  }, 120_000);
 
   it("aborts mid-search via onNodeVisit when the deadline elapses mid-flight", () => {
     // 1100-slot wide fixture — each slot has 1 candidate, so the first
