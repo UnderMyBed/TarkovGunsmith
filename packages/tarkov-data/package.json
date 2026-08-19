@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "jsonpath-plus": "^10.3.0",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
