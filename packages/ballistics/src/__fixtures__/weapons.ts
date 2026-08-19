@@ -1,39 +1,48 @@
 import type { BallisticWeapon, BallisticMod } from "../types.js";
 
-// SOURCE: https://escapefromtarkov.fandom.com/wiki/M4A1
+// SOURCE: live json.tarkov.dev items document, sampled 2026-08-19. Every value
+// here is what upstream actually returns for the named item id. The previous
+// fixtures were invented at percent scale (recoilModifier -15, 43x larger than
+// upstream's -0.35 floor), which is why the 100x unit error in
+// docs/operations/data-api-audit.md §B went undetected for years.
+
+// Colt M4A1 5.56x45 assault rifle. `properties.weight` is the bare receiver,
+// which is what the Builder wants. baseAccuracy has no upstream counterpart —
+// 3.5 mirrors DEFAULT_BASE_ACCURACY in apps/web/.../data-adapters/adapters.ts.
 export const M4A1: BallisticWeapon = {
-  id: "fixture-m4a1",
-  name: "Colt M4A1 5.56x45mm",
-  baseErgonomics: 50,
-  baseVerticalRecoil: 56,
-  baseHorizontalRecoil: 220,
-  baseWeight: 2.7,
+  id: "5447a9cd4bdc2dbd208b4567",
+  name: "Colt M4A1 5.56x45",
+  baseErgonomics: 48,
+  baseVerticalRecoil: 119,
+  baseHorizontalRecoil: 342,
+  baseWeight: 0.75,
   baseAccuracy: 3.5,
 };
 
-export const MK16_GRIP: BallisticMod = {
-  id: "fixture-grip-mk16",
-  name: "FN MK16 Pistol Grip",
+export const CQR_GRIP: BallisticMod = {
+  id: "5a33e75ac4a2826c6e06d759",
+  name: "AR-15 Hera Arms CQR pistol grip/buttstock",
+  ergonomicsDelta: 15,
+  recoilModifier: -0.23,
+  weight: 0.499,
+  accuracyModifier: 0,
+};
+
+export const UBR_GEN2_STOCK: BallisticMod = {
+  id: "5947e98b86f774778f1448bc",
+  name: "AR-15 Magpul UBR GEN2 stock (Black)",
   ergonomicsDelta: 8,
-  recoilModifierPercent: -3,
-  weight: 0.05,
-  accuracyDelta: 0,
+  recoilModifier: -0.225,
+  weight: 0.61,
+  accuracyModifier: 0,
 };
 
-export const BUFFER_STOCK: BallisticMod = {
-  id: "fixture-stock-buffer",
-  name: "Mil-Spec Buffer Tube Stock",
+// Carries a real positive accuracyModifier, so it exercises the MOA sign flip.
+export const VP09_MUZZLE_BRAKE: BallisticMod = {
+  id: "5a7c147ce899ef00150bd8b8",
+  name: "AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake",
   ergonomicsDelta: -2,
-  recoilModifierPercent: -8,
-  weight: 0.3,
-  accuracyDelta: 0,
-};
-
-export const COMPENSATOR: BallisticMod = {
-  id: "fixture-muzzle-comp",
-  name: "AR-15 Compensator",
-  ergonomicsDelta: -3,
-  recoilModifierPercent: -15,
-  weight: 0.1,
-  accuracyDelta: -0.5,
+  recoilModifier: -0.085,
+  weight: 0.2,
+  accuracyModifier: 0.04,
 };

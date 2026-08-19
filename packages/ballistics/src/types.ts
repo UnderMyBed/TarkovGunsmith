@@ -68,20 +68,36 @@ export interface BallisticWeapon {
 }
 
 /**
- * Modification (sight, grip, suppressor, etc.). All deltas are added to the
- * weapon's base stats. Multipliers (e.g. recoil reduction) apply after sums.
+ * Modification (sight, grip, suppressor, etc.). Ergonomics and weight are
+ * additive; recoil and accuracy are fractional modifiers applied after sums.
+ *
+ * `recoilModifier` and `accuracyModifier` carry upstream's own unit rather than
+ * a converted one. Converting at the adapter is what produced three divergent
+ * copies of the same 100x error — see docs/operations/data-api-audit.md §B.
+ * Both names deliberately match `ItemPropertiesWeaponMod` so a reader can diff
+ * this shape against the Zod schema at
+ * packages/tarkov-data/src/queries/modList.ts:12-13 field-for-field.
  */
 export interface BallisticMod {
   readonly id: string;
   readonly name: string;
   /** Flat ergonomics delta (+/-). */
   readonly ergonomicsDelta: number;
-  /** Recoil multiplier as a percentage (e.g. -8 means -8% recoil). */
-  readonly recoilModifierPercent: number;
+  /**
+   * Recoil modifier as a fraction, NOT a percent: -0.21 means -21% recoil.
+   * Live upstream range is -0.35..0 (the AK-74 polymer stock reports -0.21 for
+   * its in-game -21%). Multiply by 100 at the point of render, never here.
+   */
+  readonly recoilModifier: number;
   /** Weight in kg. */
   readonly weight: number;
-  /** Accuracy delta (negative is better). */
-  readonly accuracyDelta: number;
+  /**
+   * Accuracy modifier as a fraction, live range -0.05..0.06. POSITIVE MEANS
+   * BETTER: upstream reports +0.06 for the M700 AI AT AICS precision chassis
+   * and -0.05 for the Mosin Bramit suppressor. Since {@link WeaponSpec.accuracy}
+   * is MOA (lower is better), the sign inverts on application — see `weaponSpec`.
+   */
+  readonly accuracyModifier: number;
 }
 
 /**
