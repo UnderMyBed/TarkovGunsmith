@@ -68,7 +68,7 @@ Skip none of these steps. Even "simple" changes warrant a plan — it takes a mi
 ### Testing discipline (hard rule)
 
 - **Every feature PR includes e2e coverage.** If the PR adds a new route, `apps/web/e2e/smoke.spec.ts` gets a new entry in the `ROUTES` array. If it adds a user-facing interaction flow worth protecting, a new test file.
-- **"Visual walkthrough deferred" is no longer acceptable.** If you can't verify a change works in a browser, you can't ship it. Playwright is the verification mechanism; run it locally with `pnpm --filter @tarkov/web test:e2e` before pushing.
+- **"Visual walkthrough deferred" is no longer acceptable.** If you can't verify a change works in a browser, you can't ship it. Playwright is the verification mechanism; run it locally with `pnpm --filter @tarkov/web build && pnpm --filter @tarkov/web test:e2e` before pushing. **The build is not optional** — Playwright serves `dist/` via `wrangler pages dev`, so without it you get a 120-second timeout and a wall of 404s rather than a useful error. CI builds first, which is why this only bites locally.
 - **Console errors fail the build.** If a real false positive appears, allowlist it in `smoke.spec.ts` with a comment explaining why.
 - **Fonts are load-checked.** The Bungee / Chivo / Azeret Mono fonts are part of the contract — changing them means updating the font-load test.
 

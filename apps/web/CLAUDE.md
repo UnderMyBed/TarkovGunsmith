@@ -59,7 +59,8 @@ Production setup + verification + rotation commands live in [`docs/operations/lo
 Smoke-level Chromium tests live at `apps/web/e2e/`. Run:
 
 - `pnpm --filter @tarkov/web test:e2e:install` — first-time browser install.
-- `pnpm --filter @tarkov/web test:e2e` — run the suite (builds first? no — build separately or use `pnpm --filter @tarkov/web build` beforehand).
+- `pnpm --filter @tarkov/web build` — **required before the line below.** Playwright's `webServer` runs `wrangler pages dev dist`, which serves the built output; a stale or absent `dist/` produces a 120s timeout and 404s on every request, not a missing-build error.
+- `pnpm --filter @tarkov/web test:e2e` — run the suite.
 
 Tests use a `preview`-backed webServer on port 4173. CI runs them as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `smoke.spec.ts`. Any new route added to `__root.tsx` nav must also be added there.
 
