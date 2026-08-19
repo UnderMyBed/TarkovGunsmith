@@ -11,13 +11,13 @@ function HomePage() {
       {/* ─── hero ─── */}
       <section className="grid gap-10 lg:grid-cols-[3fr_2fr] items-end border-b border-[var(--color-border)] pb-12">
         <div>
-          <div className="flex gap-4 font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] mb-6 flex-wrap">
+          <div className="flex gap-4 font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] mb-6 flex-wrap">
             <span>WEAPON · MODS · PROFILE</span>
             <span>/ LIVE RECOMPUTE</span>
             <span>/ SHAREABLE URL</span>
             <span>/ QUEST-GATED</span>
           </div>
-          <h1 className="font-display text-[clamp(44px,7vw,88px)] leading-[0.95] tracking-tight">
+          <h1 className="font-display text-88 leading-[0.95] tracking-tight">
             BUILD THE
             <br />
             LOADOUT.
@@ -32,13 +32,13 @@ function HomePage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/builder"
-              className="inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-mono text-[12px] font-semibold tracking-[0.18em] uppercase h-10 px-5 hover:bg-[var(--color-amber-deep)] hover:border-[var(--color-amber-deep)] hover:text-[var(--color-foreground)] transition-colors"
+              className="inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-mono text-12 font-semibold tracking-18 uppercase h-10 px-5 hover:bg-[var(--color-amber-deep)] hover:border-[var(--color-amber-deep)] hover:text-[var(--color-foreground)] transition-colors"
             >
               Open the Builder ▸
             </Link>
             <Link
               to="/sim"
-              className="inline-flex items-center gap-2 border border-[var(--color-border)] text-[var(--color-foreground)] font-mono text-[12px] tracking-[0.18em] uppercase h-10 px-5 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
+              className="inline-flex items-center gap-2 border border-[var(--color-border)] text-[var(--color-foreground)] font-mono text-12 tracking-18 uppercase h-10 px-5 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
             >
               Run a simulation
             </Link>
@@ -56,7 +56,7 @@ function HomePage() {
         {/* Hero right — sample build readout */}
         <div className="border-l border-[var(--color-border)] pl-8 flex flex-col gap-5">
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+            <span className="font-mono text-11 tracking-20 uppercase text-[var(--color-muted-foreground)]">
               Sample build
             </span>
             <Stamp tone="amber">SHAREABLE</Stamp>
@@ -65,7 +65,7 @@ function HomePage() {
             <div className="font-display text-2xl leading-none text-[var(--color-foreground)]">
               M4A1 · CUSTOM
             </div>
-            <div className="mt-1 font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-paper-dim)]">
+            <div className="mt-1 font-mono text-11 tracking-18 uppercase text-[var(--color-paper-dim)]">
               14 MODS · BUILD · abc1-2e4f
             </div>
           </div>
@@ -75,7 +75,7 @@ function HomePage() {
             <HeroStat label="WEIGHT" value="3.90" suffix="kg" delta="+0.80" deltaTone="down" />
             <HeroStat label="ACCURACY" value="2.1" suffix="MoA" />
           </dl>
-          <div className="flex gap-3 items-center text-[11px]">
+          <div className="flex gap-3 items-center text-11">
             <Pill tone="accent">LL4</Pill>
             <Pill tone="reliable">FLEA UNLOCKED</Pill>
             <Pill tone="muted">12 QUESTS</Pill>
@@ -89,18 +89,18 @@ function HomePage() {
         className="border border-[var(--color-primary)] bg-[rgba(245,158,11,0.06)] grid gap-6 px-6 py-5 items-center sm:grid-cols-[auto_1fr_auto]"
       >
         <div className="flex flex-col gap-1">
-          <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-primary)]">
+          <span className="font-mono text-10 tracking-20 uppercase text-[var(--color-primary)]">
             ◇ NEW · OPTIMIZER
           </span>
-          <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+          <span className="font-mono text-10 tracking-20 uppercase text-[var(--color-muted-foreground)]">
             BRANCH-AND-BOUND · EXACT
           </span>
         </div>
         <div>
-          <div className="font-display text-[20px] leading-tight text-[var(--color-foreground)]">
+          <div className="font-display text-20 leading-tight text-[var(--color-foreground)]">
             Set a budget. Pick an objective. The solver picks the mods.
           </div>
-          <div className="mt-1 font-mono text-[12px] leading-[1.5] text-[var(--color-muted-foreground)]">
+          <div className="mt-1 font-mono text-12 leading-[1.5] text-[var(--color-muted-foreground)]">
             Pin any slot to keep fixed. Respects your trader LLs and flea status. Pure-TS, runs
             client-side.
           </div>
@@ -109,13 +109,13 @@ function HomePage() {
           <Link
             to="/builder"
             search={{ view: "optimize" }}
-            className="inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-mono text-[11px] font-semibold tracking-[0.14em] uppercase h-8 px-3 hover:bg-[var(--color-amber-deep)] hover:border-[var(--color-amber-deep)] hover:text-[var(--color-foreground)] transition-colors"
+            className="inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-mono text-11 font-semibold tracking-14 uppercase h-8 px-3 hover:bg-[var(--color-amber-deep)] hover:border-[var(--color-amber-deep)] hover:text-[var(--color-foreground)] transition-colors"
           >
             Try Optimizer
           </Link>
           <Link
             to="/builder"
-            className="inline-flex items-center gap-2 border border-transparent text-[var(--color-muted-foreground)] font-mono text-[11px] tracking-[0.14em] uppercase h-8 px-3 hover:text-[var(--color-primary)] transition-colors"
+            className="inline-flex items-center gap-2 border border-transparent text-[var(--color-muted-foreground)] font-mono text-11 tracking-14 uppercase h-8 px-3 hover:text-[var(--color-primary)] transition-colors"
           >
             Learn More
           </Link>
@@ -126,7 +126,7 @@ function HomePage() {
       <section aria-label="What TarkovGunsmith does">
         <div className="relative mb-5">
           <div className="tick-rule" />
-          <span className="absolute -top-1.5 left-3 bg-[var(--color-background)] px-2 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+          <span className="absolute -top-1.5 left-3 bg-[var(--color-background)] px-2 font-mono text-10 tracking-20 uppercase text-[var(--color-muted-foreground)]">
             WHAT IT DOES
           </span>
         </div>
@@ -154,11 +154,11 @@ function HomePage() {
             },
           ].map((f) => (
             <div key={f.n} className="bracket p-5">
-              <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-primary)]">
+              <div className="font-mono text-10 tracking-20 uppercase text-[var(--color-primary)]">
                 {f.n}
               </div>
-              <div className="font-display text-[20px] mt-2">{f.title}</div>
-              <div className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-muted-foreground)]">
+              <div className="font-display text-20 mt-2">{f.title}</div>
+              <div className="mt-3 font-mono text-12 leading-[1.5] text-[var(--color-muted-foreground)]">
                 {f.body}
               </div>
             </div>
@@ -184,16 +184,16 @@ function HeroStat({
 }) {
   return (
     <div>
-      <dt className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+      <dt className="font-mono text-10 tracking-18 uppercase text-[var(--color-muted-foreground)]">
         {label}
       </dt>
-      <dd className="mt-1 font-mono text-[22px] leading-none tabular-nums">
+      <dd className="mt-1 font-mono text-22 leading-none tabular-nums">
         {value}
-        {suffix && <span className="ml-1 text-[13px] text-[var(--color-paper-dim)]">{suffix}</span>}
+        {suffix && <span className="ml-1 text-13 text-[var(--color-paper-dim)]">{suffix}</span>}
         {delta && (
           <span
             className={
-              "ml-2 text-[13px] " +
+              "ml-2 text-13 " +
               (deltaTone === "up"
                 ? "text-[var(--color-olive)]"
                 : deltaTone === "down"

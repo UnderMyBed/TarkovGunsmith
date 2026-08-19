@@ -70,7 +70,7 @@ export const CardDescription = forwardRef<
     <p
       ref={ref}
       className={cn(
-        "font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]",
+        "font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)]",
         className,
       )}
       {...props}

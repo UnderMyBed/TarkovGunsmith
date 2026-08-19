@@ -35,6 +35,22 @@ JSX → SVG, `@resvg/resvg-wasm` for SVG → PNG.
   `packages/ui/src/styles/index.css`. If the SPA palette or `<link>` font
   stack changes, regenerate `assets/fallback-card.png` via
   `pnpm --filter @tarkov/og run build:fallback`.
+- **Type does not follow the design tokens either — same reason as colors.**
+  `packages/ui/src/styles/index.css` has a `@theme` type scale
+  (`--text-*` / `--tracking-*`) that every `font-size` / `letter-spacing` in
+  `apps/web` and `packages/ui` is built on (added in the Stage 3 pre-refactor
+  hardening pass, see
+  `docs/plans/2026-08-19-pre-refactor-hardening-plan.md`). `build-card.tsx`
+  and `pair-card.tsx` do not use it and cannot: satori only understands
+  inline style objects with literal values, the same limitation that keeps
+  `colors.ts` a hand-copied hex mirror instead of `var(--color-*)`
+  references. Their `fontSize` / `letterSpacing` numbers are hand-picked for
+  a 1200×630 card at a viewing distance nothing else in the app renders at,
+  so they were never on the SPA's scale to begin with — there is no mapping
+  to restore, only fidelity to maintain by eye. **A future redesign that
+  changes the type scale needs a manual pass over both card layouts here**;
+  nothing will catch drift automatically the way `var(--color-*)` does for
+  palette changes.
 - **No DOM.** This package runs in Workers; no `window`, no `document`.
 
 ## Testing notes

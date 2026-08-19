@@ -5,7 +5,7 @@ import type { VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn.js";
 
 const pillVariants = cva(
-  "inline-block font-mono text-[10px] font-semibold tracking-[0.2em] uppercase px-2 py-[2px] border",
+  "inline-block font-mono text-10 font-semibold tracking-20 uppercase px-2 py-[2px] border",
   {
     variants: {
       tone: {

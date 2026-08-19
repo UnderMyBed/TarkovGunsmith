@@ -56,23 +56,21 @@ export function ProfileReadout({
   return (
     <div className="flex flex-col gap-2">
       <SectionTitle index={3} title="Profile" />
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
+      <div className="font-mono text-10 uppercase tracking-20 text-[var(--color-muted-foreground)]">
         {meta}
       </div>
       <div className="grid grid-cols-2 gap-1">
         <div className="flex items-center justify-between border border-[var(--color-border)] px-1.5 py-0.5">
-          <span className="font-mono text-[9px] text-[var(--color-muted-foreground)]">
-            PMC LEVEL
-          </span>
-          <span className="font-mono text-[10px] font-semibold text-[var(--color-foreground)]">
+          <span className="font-mono text-9 text-[var(--color-muted-foreground)]">PMC LEVEL</span>
+          <span className="font-mono text-10 font-semibold text-[var(--color-foreground)]">
             {profile.level}
           </span>
         </div>
         {/* Level only gates anything while flea access is on, so the two read together. */}
         <div className="flex items-center justify-between border border-[var(--color-border)] px-1.5 py-0.5">
-          <span className="font-mono text-[9px] text-[var(--color-muted-foreground)]">FLEA</span>
+          <span className="font-mono text-9 text-[var(--color-muted-foreground)]">FLEA</span>
           <span
-            className={`font-mono text-[10px] font-semibold ${
+            className={`font-mono text-10 font-semibold ${
               profile.flea ? "text-[var(--color-primary)]" : "text-[var(--color-muted-foreground)]"
             }`}
           >
@@ -90,10 +88,10 @@ export function ProfileReadout({
               key={key}
               className="flex items-center justify-between border border-[var(--color-border)] px-1.5 py-0.5"
             >
-              <span className="font-mono text-[9px] text-[var(--color-muted-foreground)]">
+              <span className="font-mono text-9 text-[var(--color-muted-foreground)]">
                 {TRADER_LABEL[key]}
               </span>
-              <span className={`font-mono text-[10px] font-semibold ${colour}`}>L{level}</span>
+              <span className={`font-mono text-10 font-semibold ${colour}`}>L{level}</span>
             </div>
           );
         })}

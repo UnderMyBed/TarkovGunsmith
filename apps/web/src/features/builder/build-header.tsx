@@ -66,7 +66,7 @@ export function BuildHeader({
             <div className="font-display text-xl sm:text-2xl leading-none tracking-wide uppercase text-[var(--color-foreground)]">
               {weaponName ?? "NO WEAPON SELECTED"}
             </div>
-            <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-paper-dim)]">
+            <div className="font-mono text-10 tracking-20 uppercase text-[var(--color-paper-dim)]">
               {typeof modCount === "number"
                 ? `${modCount} MOD${modCount === 1 ? "" : "S"}`
                 : "— MODS"}
@@ -84,7 +84,7 @@ export function BuildHeader({
                 variant="secondary"
                 size="sm"
                 onClick={onOptimize}
-                className="font-mono tracking-[0.15em]"
+                className="font-mono tracking-15"
               >
                 ◇ OPTIMIZE
               </Button>

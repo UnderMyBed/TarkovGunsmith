@@ -16,7 +16,7 @@ export function ScenarioSummary({ result }: ScenarioSummaryProps) {
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between border-b border-dashed border-[var(--color-border)] pb-3">
         <div>
-          <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+          <div className="font-mono text-10 tracking-20 uppercase text-[var(--color-muted-foreground)]">
             OUTCOME
           </div>
           <div className="font-display text-xl leading-none mt-1 uppercase">
@@ -54,7 +54,7 @@ export function ScenarioSummary({ result }: ScenarioSummaryProps) {
 function SummaryStat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="border border-[var(--color-border)] p-3">
-      <dt className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-muted-foreground)]">
+      <dt className="font-mono text-10 tracking-20 uppercase text-[var(--color-muted-foreground)]">
         {label}
       </dt>
       <dd className="mt-1 font-mono text-xl tabular-nums">{value}</dd>

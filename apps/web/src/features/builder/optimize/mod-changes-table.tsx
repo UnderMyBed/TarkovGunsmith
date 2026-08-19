@@ -57,7 +57,7 @@ export function ModChangesTable({
         <Pill tone="accent">{rows.length} SLOTS CHANGED</Pill>
         <Pill tone="muted">{unchangedCount} SLOTS UNCHANGED</Pill>
         {scoreDelta !== null && (
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
+          <span className="ml-auto font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
             SCORE Δ · {scoreDelta >= 0 ? "+" : "−"}
             {Math.abs(scoreDelta).toFixed(2)}
           </span>
@@ -66,39 +66,39 @@ export function ModChangesTable({
 
       <div className={`grid ${cols} gap-2 border-b border-[var(--color-border)] px-4 py-2`}>
         <span />
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
+        <span className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
           SLOT
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
+        <span className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
           CURRENT
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
+        <span className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
           SUGGESTED
         </span>
-        <span className="text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
+        <span className="text-right font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
           ERGO
         </span>
-        <span className="text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
+        <span className="text-right font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
           RCL %
         </span>
-        <span className="text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
+        <span className="text-right font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
           ₽
         </span>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-auto max-h-[420px]">
         {mode === "idle" && (
-          <p className="py-12 text-center font-mono text-xs uppercase tracking-[0.18em] text-[var(--color-paper-dim)]">
+          <p className="py-12 text-center font-mono text-xs uppercase tracking-18 text-[var(--color-paper-dim)]">
             RUN THE SOLVER TO SEE PROPOSED CHANGES
           </p>
         )}
         {mode === "running" && (
-          <p className="py-12 text-center font-mono text-xs uppercase tracking-[0.18em] text-[var(--color-paper-dim)]">
+          <p className="py-12 text-center font-mono text-xs uppercase tracking-18 text-[var(--color-paper-dim)]">
             RUNNING…
           </p>
         )}
         {isResult && !hasRows && (
-          <p className="py-12 text-center font-mono text-xs uppercase tracking-[0.18em] text-[var(--color-paper-dim)]">
+          <p className="py-12 text-center font-mono text-xs uppercase tracking-18 text-[var(--color-paper-dim)]">
             NO IMPROVEMENTS FOUND · TRY A DIFFERENT OBJECTIVE
           </p>
         )}
@@ -115,13 +115,13 @@ export function ModChangesTable({
                 checked={selected.has(row.slotId)}
                 onChange={() => onToggle(row.slotId)}
               />
-              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-primary)]">
+              <span className="font-mono text-11 uppercase tracking-18 text-[var(--color-primary)]">
                 {row.slotLabel}
               </span>
-              <span className="text-[13px] text-[var(--color-paper-dim)] line-through decoration-[var(--color-border)]">
+              <span className="text-13 text-[var(--color-paper-dim)] line-through decoration-[var(--color-border)]">
                 {row.currentName ?? "—"}
               </span>
-              <span className="text-[13px] text-[var(--color-olive)]">
+              <span className="text-13 text-[var(--color-olive)]">
                 → {row.proposedName ?? "— (removed)"}
               </span>
               <span className={`text-right font-mono text-xs ${deltaClass(row.ergoDelta, false)}`}>
@@ -156,7 +156,7 @@ export function ModChangesTable({
         <Button variant="ghost" onClick={onDiscard}>
           {isResult && !hasRows ? "BACK TO EDITOR" : "DISCARD"}
         </Button>
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
+        <span className="ml-auto font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
           DFS · LINEAR LOWER-BOUND PRUNE · 2s BUDGET
         </span>
       </div>

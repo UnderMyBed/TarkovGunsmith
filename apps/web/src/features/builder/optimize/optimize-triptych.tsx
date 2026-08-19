@@ -74,7 +74,7 @@ export function OptimizeTriptych({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card variant="bracket" className="p-4">
-        <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-paper-dim)]">
+        <div className="font-mono text-10 tracking-20 uppercase text-[var(--color-paper-dim)]">
           CURRENT BUILD
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3">
@@ -82,7 +82,7 @@ export function OptimizeTriptych({
             const value = current === null ? null : stat.select(current, priceCurrent);
             return (
               <div key={stat.key}>
-                <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+                <div className="font-mono text-10 tracking-18 uppercase text-[var(--color-muted-foreground)]">
                   {stat.label}
                 </div>
                 <div
@@ -98,7 +98,7 @@ export function OptimizeTriptych({
       </Card>
 
       <Card variant="bracket-olive" className="p-4">
-        <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-olive)]">
+        <div className="font-mono text-10 tracking-20 uppercase text-[var(--color-olive)]">
           ◇ OPTIMIZED
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3">
@@ -106,7 +106,7 @@ export function OptimizeTriptych({
             const value = optimized === null ? null : stat.select(optimized, priceOptimized);
             return (
               <div key={stat.key}>
-                <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+                <div className="font-mono text-10 tracking-18 uppercase text-[var(--color-muted-foreground)]">
                   {stat.label}
                 </div>
                 <div
@@ -128,7 +128,7 @@ export function OptimizeTriptych({
       </Card>
 
       <Card variant="bracket" className="p-4">
-        <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-primary)]">
+        <div className="font-mono text-10 tracking-20 uppercase text-[var(--color-primary)]">
           DELTA
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3">
@@ -136,7 +136,7 @@ export function OptimizeTriptych({
             if (current === null || optimized === null) {
               return (
                 <div key={stat.key}>
-                  <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+                  <div className="font-mono text-10 tracking-18 uppercase text-[var(--color-muted-foreground)]">
                     {stat.label}
                   </div>
                   <div
@@ -153,7 +153,7 @@ export function OptimizeTriptych({
             if (cv === null || ov === null) {
               return (
                 <div key={stat.key}>
-                  <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+                  <div className="font-mono text-10 tracking-18 uppercase text-[var(--color-muted-foreground)]">
                     {stat.label}
                   </div>
                   <div
@@ -168,7 +168,7 @@ export function OptimizeTriptych({
             const delta = ov - cv;
             return (
               <div key={stat.key}>
-                <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+                <div className="font-mono text-10 tracking-18 uppercase text-[var(--color-muted-foreground)]">
                   {stat.label}
                 </div>
                 <div

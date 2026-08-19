@@ -54,13 +54,13 @@ export function StatRow({
       )}
       {...props}
     >
-      <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+      <div className="font-mono text-10 tracking-18 uppercase text-[var(--color-muted-foreground)]">
         {label}
       </div>
       <div className="font-mono text-xs text-right text-[var(--color-paper-dim)] line-through decoration-[var(--color-border)]">
         {stock ?? ""}
       </div>
-      <div className={cn("font-mono text-[11px] text-right tracking-wide", deltaColor)}>
+      <div className={cn("font-mono text-11 text-right tracking-wide", deltaColor)}>
         {delta ?? ""}
       </div>
       <div className="font-mono text-lg text-right font-semibold text-[var(--color-foreground)] tabular-nums">

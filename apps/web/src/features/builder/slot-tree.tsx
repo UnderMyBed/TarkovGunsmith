@@ -86,7 +86,7 @@ export function SlotTree({
 }: SlotTreeProps) {
   if (tree.slots.length === 0) {
     return (
-      <p className="font-mono text-xs tracking-[0.15em] uppercase text-[var(--color-muted-foreground)]">
+      <p className="font-mono text-xs tracking-15 uppercase text-[var(--color-muted-foreground)]">
         This weapon has no mod slots.
       </p>
     );
@@ -169,7 +169,7 @@ function SlotRow({
           >
             ▸
           </span>
-          <span className="font-mono text-[11px] tracking-[0.15em] uppercase text-[var(--color-muted-foreground)] min-w-[140px]">
+          <span className="font-mono text-11 tracking-15 uppercase text-[var(--color-muted-foreground)] min-w-[140px]">
             {slot.name}
           </span>
           <span className="flex-1 text-sm truncate">
@@ -179,7 +179,7 @@ function SlotRow({
               <span className="italic text-[var(--color-paper-dim)]">
                 — empty —
                 {slot.required && (
-                  <span className="not-italic ml-2 font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-destructive)]">
+                  <span className="not-italic ml-2 font-mono text-10 tracking-18 uppercase text-[var(--color-destructive)]">
                     REQUIRED
                   </span>
                 )}
@@ -187,7 +187,7 @@ function SlotRow({
             )}
           </span>
           {selectedItem && <AvailabilityPill availability={selectedAvailability} />}
-          <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-[var(--color-paper-dim)] whitespace-nowrap">
+          <span className="font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)] whitespace-nowrap">
             {slot.allowedItems.length} opt{slot.allowedItems.length === 1 ? "" : "s"}
           </span>
         </summary>
@@ -197,13 +197,13 @@ function SlotRow({
         >
           {slot.allowedItems.length === 0 ? (
             slot.allowedCategories.length > 0 ? (
-              <p className="p-2 font-mono text-[10px] tracking-[0.15em] uppercase text-[var(--color-paper-dim)]">
+              <p className="p-2 font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
                 <span className="text-[var(--color-foreground)]">ACCEPTS</span>
                 {" · "}
                 {slot.allowedCategories.map((c) => c.name).join(" · ")}
               </p>
             ) : (
-              <p className="p-2 font-mono text-[10px] tracking-[0.15em] uppercase text-[var(--color-paper-dim)]">
+              <p className="p-2 font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
                 No explicit allowed items or categories.
               </p>
             )
@@ -219,7 +219,7 @@ function SlotRow({
                       : "border-transparent hover:bg-[var(--color-muted)]"
                   }`}
                 >
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase">— none —</span>
+                  <span className="font-mono text-10 tracking-20 uppercase">— none —</span>
                 </button>
               </li>
               {slot.allowedItems.map((item) => {
@@ -242,7 +242,7 @@ function SlotRow({
                       <span className="truncate">{item.name}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {requirementLabel && (
-                          <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-[var(--color-paper-dim)]">
+                          <span className="font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
                             {requirementLabel}
                           </span>
                         )}
