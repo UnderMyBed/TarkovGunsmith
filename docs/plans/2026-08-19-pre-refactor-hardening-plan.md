@@ -1,6 +1,7 @@
 # Pre-Refactor Hardening Plan
 
-**Status:** approved 2026-08-19 · **Baseline:** `dc7fa11` (v1.15.0)
+**Status:** executed 2026-08-19 — see Outcomes at the foot of this file
+**Original status:** approved 2026-08-19 · **Baseline:** `dc7fa11` (v1.15.0)
 
 Clears measured technical debt ahead of a major refactor and UI/UX redesign. Every figure
 below was measured against `dc7fa11`, not estimated.
@@ -287,3 +288,76 @@ Not oversights. Doing these now would be wasted or premature effort.
 - The seven `react-hooks` fixes in 2.1 are `fix:` — they are real behaviour bugs.
 - Merge on green. Do not wait for review sign-off on units that pass CI.
 - Never lower a coverage threshold to make CI pass. If a change drops coverage, add tests.
+
+---
+
+## Outcomes
+
+Recorded after execution. Where reality differed from the plan, reality is written down.
+
+### Shipped
+
+| PR   | Unit                     | Result                                                               |
+| ---- | ------------------------ | -------------------------------------------------------------------- |
+| #149 | 1.1 coverage enforcement | Thresholds enforced in CI for the first time; ratchet proven to bite |
+| #150 | 2.1 + 2.2 React lint     | 32 violations fixed; `allowDefaultProject` replaced                  |
+| #151 | 1.3 data + og            | `tarkov-data` → 100%, `og` 69.92% → 99.1%                            |
+| #152 | 1.2 ui render tests      | 5 measured statements → 88; 100 tests                                |
+| #153 | 1.4 route coverage       | 22.11% → 71.69%                                                      |
+| #154 | —                        | Optimizer timeout flake                                              |
+| #155 | —                        | Dead `/builder/compare/$pairId` route                                |
+| #156 | 5.1 BuilderPage          | 625 → 262 lines, 12 `useState` → 0                                   |
+| #157 | 4 dependency majors      | 6 taken, 2 skipped                                                   |
+| #158 | parallel track           | Validation, rate limiting, CSP                                       |
+| #159 | 5.2 + 5.3                | Error boundaries; `/calc` −50%, `/builder` −44%                      |
+
+### Deviations from the plan
+
+- **Stage 2.2 was reclassified from tidy-up to blocker.** Three units hit the old ESLint
+  config independently, and one was forced to consolidate 13 test files into one to stay
+  under `maximumDefaultProjectFileMatchCount: 30`. Merge order was reordered to put Stage 2
+  first. Lint config was dictating code structure.
+- **Stage 3 ran last, not third.** Sweeping ~150 call sites before Stages 4 and 5 rewrote
+  the surrounding files would have meant sweeping twice.
+- **`web` was a third failing package**, not merely unmeasured: 35.96% statements against a
+  declared 100% gate.
+
+### Skipped, with reasons
+
+- **`satori` 0.10 → 0.29** — WASM instantiation is refused by workerd. Independently
+  reproduces the failure already recorded in `docs/operations/dependency-residue.md`.
+  Needs its own PR that solves WASM loading under Workers.
+- **`typescript` 6 → 7** — `typescript-eslint@8.67.0` is the latest published and caps at
+  `<6.1.0`; on TS 7 it refuses to run. Upstream: `typescript-eslint/typescript-eslint#10940`.
+- **`apps/builds-api` coverage measurement** — `@cloudflare/vitest-pool-workers@0.22.0`
+  fails under instrumentation and workerd cannot use v8. Its 48 tests still run.
+
+### Defects found that nobody was looking for
+
+1. **`/builder/compare/$pairId` was unreachable** — parent never rendered `<Outlet />`.
+   Saving or opening a shared comparison landed on a blank draft. Fixed in #155.
+2. **A CI test that documented its own flakiness** — _"failed roughly half the time in CI
+   while passing every local run."_ The cause was a missing effect dependency; the symptom
+   had been worked around rather than diagnosed. Fixed in #150.
+3. **A second flake, caused by this work** — coverage instrumentation doubled a fixture's
+   runtime and pushed it past vitest's 30s limit. Fixed in #154 by removing the wall-clock
+   dependency.
+4. **`.test.ts` silently shadowed `.test.tsx`** — TypeScript keeps the higher-priority
+   extension, so three render-test files were excluded from typechecking while passing
+   under vitest.
+5. **Two caches that could replay a stale pass** — the repo-guards task guard was pinned to
+   a task CI no longer ran, and `eslint.config.js` was not hashed at all.
+6. **`builds-api` tests stopped running in CI**, introduced by #149 — turbo skips a package
+   that does not define the task, and CI had switched to `test:coverage`. Fixed in #158.
+7. **Two zod majors in one worker bundle** — `builds-api` pinned zod 3 after the workspace
+   moved to 4, breaking the test pool with an error naming neither. Fixed in #158.
+
+### Still open
+
+- `apps/web/e2e/smoke.spec.ts` has one `test.skip` covering compare save-then-redirect. #155
+  fixed the redirect itself, but the toolbar's "Save changes" label still does not appear
+  afterwards — a separate, narrower defect, not yet diagnosed.
+- Route navigation has no `pendingComponent`, so there is a brief blank frame on first visit
+  to a route. `defaultPreload: "intent"` would close it.
+- The deferred list above stands unchanged: visual regression baselines, a11y beyond lint,
+  the 16 MB data-path rework, and ADR-0003.
