@@ -17,7 +17,14 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 >
 > **Roadmap from here — M3 Differentiators, all 5 shipped:** (1) ✅ Frontend design pass. (2) ✅ Build comparison (diff two builds). (3) ✅ Build optimization (constraint solver). (4) ✅ OG share cards (server-rendered PNG). (5) ✅ `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13. Visual polish / fix-up items discovered during the design pass are tracked ad-hoc and landed before the next feature PR.
 >
-> **Deferred M1.5 items (still open):** Undo/redo; `allowedCategories` slot filtering; `craftsFor`/`bartersFor` in availability; Dialog primitive; weapon preset content; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
+> **Deferred M1.5 items (still open):** Undo/redo; `craftsFor`/`bartersFor` in availability; Dialog primitive; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
+>
+> **Two M1.5 items were retired by the 2026-08-18 data audit, not by being built:**
+>
+> - `allowedCategories` slot filtering is **not implementable** — all 3,564 slots in the live document have an empty `allowedCategories`. The resolution code in `weaponTree.ts` is correct and simply has nothing to resolve. Do not schedule this without first re-checking upstream.
+> - **Weapon preset content no longer needs hand-authoring.** Upstream ships 484 `ItemPropertiesPreset` items plus a per-weapon `presets` array and `defaultPreset` id. `presets.ts` still carries an empty hand-curated map awaiting a content PR; the work is now a mapping job, not a data-entry one.
+>
+> Recursion depth 5 is also now free: the depth-3 limit existed because the GraphQL API returned ~7.5 MB for the M4A1 at depth 4. Resolution is client-side over an already-loaded document, so that constraint is gone.
 >
 > **Deferred M2 items (still open):** Helmet-only query for `/sim`'s helmet picker; thorax-overflow damage / bleed / probabilistic mode in the Simulator; scenario save/share; ammo caliber column on `/data`.
 >
