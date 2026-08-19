@@ -3,10 +3,16 @@ import { join } from "node:path";
 import { parse } from "yaml";
 import { REPO_ROOT, readRepoFile } from "./repo.js";
 
+export interface DependabotIgnore {
+  "dependency-name": string;
+  versions?: string[];
+}
+
 export interface DependabotUpdate {
   "package-ecosystem": string;
   directory?: string;
   directories?: string[];
+  ignore?: DependabotIgnore[];
 }
 
 export function readDependabotUpdates(): DependabotUpdate[] {

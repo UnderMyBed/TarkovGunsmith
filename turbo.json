@@ -29,6 +29,7 @@
       "outputs": ["*.tsbuildinfo"]
     },
     "lint": {
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "@tarkov/repo-guards#test": {
