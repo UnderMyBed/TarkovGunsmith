@@ -21,6 +21,24 @@ export class LoadPairError extends Error {
   }
 }
 
+/**
+ * A write to the pair store that came back non-201, carrying the status so the UI can pick
+ * curated copy (rate-limited vs. too large vs. rejected) instead of scraping a message
+ * string. `status` is null when the request never reached the Worker — the fetch itself
+ * threw, or the body wasn't the `{ id, url }` shape a 201 promises. Mirrors `LoadPairError`
+ * in this module; the `message` text is unchanged from the plain `Error` it replaces.
+ */
+export class SavePairError extends Error {
+  constructor(
+    public readonly status: number | null,
+    message: string,
+    public override readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = "SavePairError";
+  }
+}
+
 export interface SavePairResponse {
   id: string;
   url: string;
@@ -33,7 +51,7 @@ function parseSaveResponse(body: unknown): SavePairResponse {
     typeof (body as { id?: unknown }).id !== "string" ||
     typeof (body as { url?: unknown }).url !== "string"
   ) {
-    throw new Error("pairsApi: malformed response");
+    throw new SavePairError(null, "pairsApi: malformed response");
   }
   return body as SavePairResponse;
 }
@@ -48,13 +66,18 @@ export async function savePair(
   fetchImpl: typeof fetch,
   pair: BuildPairType,
 ): Promise<SavePairResponse> {
-  const res = await fetchImpl(PAIRS_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(pair),
-  });
+  let res: Response;
+  try {
+    res = await fetchImpl(PAIRS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pair),
+    });
+  } catch (cause) {
+    throw new SavePairError(null, "savePair failed: couldn't reach pair storage", cause);
+  }
   if (res.status !== 201) {
-    throw new Error(`savePair failed: HTTP ${res.status}`);
+    throw new SavePairError(res.status, `savePair failed: HTTP ${res.status}`);
   }
   return parseSaveResponse(await res.json());
 }
@@ -119,11 +142,14 @@ export async function forkPair(fetchImpl: typeof fetch, id: string): Promise<Sav
   if (!PAIR_ID_REGEX.test(id)) {
     throw new LoadPairError("invalid-id", `Pair id "${id}" is malformed`);
   }
-  const res = await fetchImpl(`${PAIRS_ENDPOINT}/${id}/fork`, {
-    method: "POST",
-  });
+  let res: Response;
+  try {
+    res = await fetchImpl(`${PAIRS_ENDPOINT}/${id}/fork`, { method: "POST" });
+  } catch (cause) {
+    throw new SavePairError(null, "forkPair failed: couldn't reach pair storage", cause);
+  }
   if (res.status !== 201) {
-    throw new Error(`forkPair failed: HTTP ${res.status}`);
+    throw new SavePairError(res.status, `forkPair failed: HTTP ${res.status}`);
   }
   return parseSaveResponse(await res.json());
 }

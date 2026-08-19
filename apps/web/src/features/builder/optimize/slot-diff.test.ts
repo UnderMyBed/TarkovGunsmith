@@ -33,8 +33,6 @@ const modList: readonly ModListItem[] = [
         vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 15 },
       },
     ],
-    craftsFor: null,
-    bartersFor: null,
   },
   {
     id: "m-new",
@@ -57,8 +55,6 @@ const modList: readonly ModListItem[] = [
         vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 15 },
       },
     ],
-    craftsFor: null,
-    bartersFor: null,
   },
   {
     id: "h-new",
@@ -81,8 +77,6 @@ const modList: readonly ModListItem[] = [
         vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 15 },
       },
     ],
-    craftsFor: null,
-    bartersFor: null,
   },
 ];
 

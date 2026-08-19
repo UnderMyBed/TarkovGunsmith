@@ -1,5 +1,5 @@
 // apps/web/src/features/builder/compare/compare-workspace.tsx
-import { useCallback, useEffect, useMemo, useRef, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   useWeaponList,
@@ -51,6 +51,16 @@ export function CompareWorkspace({
 
   const save = useSavePair();
   const fork = useForkPair();
+
+  // The id the store just minted, held until the router hands this component the same id as
+  // `initialPairId`. `navigate()` starts a transition rather than finishing one: the URL
+  // flips to /builder/compare/<id> immediately, but `builder.compare.tsx` keeps rendering
+  // *this* workspace until the child route's match commits (with `autoCodeSplitting` that
+  // window also covers fetching the child's chunk). Without this the toolbar spends the
+  // whole transition reading "Save comparison" at a URL that already carries a pairId —
+  // a button that would POST a second, duplicate pair. See issue #163.
+  const [savedPairId, setSavedPairId] = useState<string | null>(null);
+  const pairId = initialPairId ?? savedPairId ?? undefined;
 
   // Unsaved-edits guard (beforeunload)
   useEffect(() => {
@@ -164,11 +174,15 @@ export function CompareWorkspace({
     save.mutate(pair, {
       onSuccess: (res) => {
         draft.markClean();
+        setSavedPairId(res.id);
         void navigate({
           to: "/builder/compare/$pairId",
           params: { pairId: res.id },
         });
       },
+      // No onError branch: react-query records the rejection on `save.error`, which the
+      // toolbar renders. Swallowing it here — or leaving it unread, as this did — is what
+      // made a failed save produce no toast, no message and no state change at all.
     });
   }, [draft, save, navigate]);
 
@@ -177,6 +191,7 @@ export function CompareWorkspace({
       fork.mutate(initialPairId, {
         onSuccess: (res) => {
           draft.markClean();
+          setSavedPairId(res.id);
           void navigate({
             to: "/builder/compare/$pairId",
             params: { pairId: res.id },
@@ -195,9 +210,11 @@ export function CompareWorkspace({
     <div className="flex flex-col gap-4">
       <CompareToolbar
         dirty={draft.state.dirty}
-        pairId={initialPairId}
+        pairId={pairId}
         canSwap={canSwap}
         canClone={canClone}
+        isSaving={save.isPending || fork.isPending}
+        saveError={save.error ?? fork.error}
         onSave={handleSave}
         onSaveAsNew={handleSaveAsNew}
         onSwap={draft.swap}

@@ -10,7 +10,6 @@ export interface ModsPanelProps {
   attachments: Readonly<Record<string, string>>;
   onAttach: (path: string, itemId: string | null) => void;
   getAvailability: (itemId: string) => ItemAvailability | null;
-  getModSources: (itemId: string) => { hasCraft: boolean; hasBarter: boolean };
   orphaned: readonly string[];
   modNames: Readonly<Record<string, string>>;
   onDismissOrphaned: () => void;
@@ -26,7 +25,6 @@ export function ModsPanel({
   attachments,
   onAttach,
   getAvailability,
-  getModSources,
   orphaned,
   modNames,
   onDismissOrphaned,
@@ -66,7 +64,6 @@ export function ModsPanel({
             attachments={attachments}
             onAttach={onAttach}
             getAvailability={getAvailability}
-            getModSources={getModSources}
             showAll={showAll}
           />
         )}

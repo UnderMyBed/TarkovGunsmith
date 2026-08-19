@@ -16,6 +16,16 @@ export type SyncErrorKind = "token-invalid" | "rate-limited" | "network" | "shap
 
 export type SyncState =
   | { state: "disconnected" }
+  /**
+   * A token is stored in this browser but nothing has been fetched yet this session —
+   * what a returning user lands in. Distinct from `syncing` (no request is in flight) and
+   * from `synced` (there are no counts or `lastSyncedAt` to show). It exists because
+   * `disconnected` means "no token in localStorage" and claiming that for someone who has
+   * already connected hides the Re-sync and Disconnect controls behind a Connect button.
+   * The design doc's non-goal "Background / periodic auto-sync — only explicit
+   * user-triggered re-syncs" is why mounting does not fire a fetch of its own.
+   */
+  | { state: "connected" }
   | { state: "syncing" }
   | {
       state: "synced";
@@ -62,7 +72,7 @@ function readStoredToken(): string | null {
 
 export function useTarkovTrackerSync(args: UseTarkovTrackerSyncArgs): UseTarkovTrackerSyncResult {
   const [syncState, setSyncState] = useState<SyncState>(() =>
-    readStoredToken() !== null ? { state: "disconnected" } : { state: "disconnected" },
+    readStoredToken() !== null ? { state: "connected" } : { state: "disconnected" },
   );
 
   // Keep the latest profile/onChange/tasks without invalidating connect/reSync's identity.

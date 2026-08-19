@@ -247,18 +247,14 @@ test.describe("smoke — compare interaction", () => {
 });
 
 test.describe("smoke — compare save round-trip", () => {
-  // NOT a proxy issue — the sibling test above proves `POST /api/pairs` and
-  // the redirect both work under the current `wrangler pages dev` webServer
-  // (this test's own run confirms the same: `POST /api/pairs` returns 201 and
-  // the URL redirect to `/builder/compare/<pairId>` completes). What fails is
-  // the *next* step: the "Save changes" label swap never becomes visible
-  // within 10s after that redirect, which points at a real bug or a slow
-  // re-render in `apps/web/src/features/builder/compare/compare-toolbar.tsx`
-  // reading `pairId` back out of the freshly-loaded route — pre-existing and
-  // unrelated to builds-api's validation/rate-limit boundary, and squarely in
-  // `apps/web/src/features/builder/**`, which is out of scope for this PR.
-  // Flagged for the routes/builder-feature work rather than fixed here.
-  test.skip("fills both sides, saves, follows redirect, state matches", async ({ page }) => {
+  // The label swap this asserts used to depend on the router finishing its transition.
+  // `navigate()` only *starts* one: the URL flips to `/builder/compare/<pairId>` straight
+  // away — which is what `waitForURL` below observes — while `builder.compare.tsx` keeps
+  // rendering the pairId-less draft workspace until the child route's match commits, and
+  // with `autoCodeSplitting` that window also covers fetching the child route's chunk.
+  // `compare-workspace.tsx` now holds the id the store minted, so the toolbar flips as soon
+  // as the pair exists rather than whenever the transition lands. See issue #163.
+  test("fills both sides, saves, follows redirect, state matches", async ({ page }) => {
     await page.goto("/builder/compare", { waitUntil: "networkidle" });
 
     const leftPicker = page.locator("#compare-weapon-A");

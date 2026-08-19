@@ -49,8 +49,6 @@ function modListItem(overrides: Partial<ModListItem> = {}): ModListItem {
       accuracyModifier: 0,
     },
     buyFor: [],
-    craftsFor: null,
-    bartersFor: null,
     ...overrides,
   };
 }

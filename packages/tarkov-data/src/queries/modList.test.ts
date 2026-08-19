@@ -39,6 +39,23 @@ describe("fetchModList", () => {
     }
   });
 
+  it("carries no craft or barter sourcing fields", async () => {
+    // Regression guard for a dead code path that shipped in the production bundle: the
+    // query used to declare nullable `craftsFor`/`bartersFor` and hardcode both to `null`,
+    // so the Builder's CRAFT / BARTER pills — gated on `.length > 0` — could never render
+    // for any item, under any data. Crafting and barter sourcing live in the upstream
+    // `/crafts` and `/barters` resources, which nothing in this package fetches. Until one
+    // of them is wired, a mod carries no such field at all, so no consumer can derive a
+    // signal the data cannot support. Zod strips unknown keys, so this also holds if an
+    // upstream item document starts carrying them.
+    const list = await fetchModList(fixtureClient());
+    expect(list.length).toBeGreaterThan(0);
+    for (const mod of list) {
+      expect(mod).not.toHaveProperty("craftsFor");
+      expect(mod).not.toHaveProperty("bartersFor");
+    }
+  });
+
   it("resolves translated names", async () => {
     const list = await fetchModList(fixtureClient());
     for (const mod of list) expect(mod.name).not.toMatch(/ Name$/);

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { savePair, loadPair, forkPair, LoadPairError } from "./pairsApi.js";
+import { savePair, loadPair, forkPair, LoadPairError, SavePairError } from "./pairsApi.js";
 import type { BuildPairV1 } from "./pair-schema.js";
 import type { BuildV5 } from "./build-schema.js";
 
@@ -43,14 +43,44 @@ describe("savePair", () => {
     );
   });
 
-  it("throws on non-201", async () => {
+  it("throws on non-201, carrying the status the UI picks its copy from", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response("nope", { status: 500 }));
-    await expect(savePair(fetchImpl as unknown as typeof fetch, validPair)).rejects.toThrow();
+    await expect(savePair(fetchImpl as unknown as typeof fetch, validPair)).rejects.toMatchObject({
+      name: "SavePairError",
+      status: 500,
+    });
+  });
+
+  it.each([429, 413, 400])("carries HTTP %i through as SavePairError.status", async (status) => {
+    // The three the builds-api actually returns for POST /api/pairs: an empty / non-JSON /
+    // schema-invalid body (400), a payload over MAX_BODY_BYTES (413), and an IP past
+    // PER_IP_DAILY_WRITE_LIMIT for the UTC day (429). The compare toolbar keys its curated
+    // failure copy off exactly these, so the status has to survive the throw.
+    const fetchImpl = vi.fn().mockResolvedValue(new Response("nope", { status }));
+    await expect(savePair(fetchImpl as unknown as typeof fetch, validPair)).rejects.toMatchObject({
+      status,
+    });
+  });
+
+  it("reports a status of null when the request never reaches the Worker", async () => {
+    // Offline / DNS / CORS: fetch itself rejects, so there is no status to report. Without
+    // this branch the caller can't tell "your connection is down" from "storage said no",
+    // and only one of those is worth an immediate retry.
+    const cause = new TypeError("Failed to fetch");
+    const fetchImpl = vi.fn().mockRejectedValue(cause);
+    await expect(savePair(fetchImpl as unknown as typeof fetch, validPair)).rejects.toMatchObject({
+      name: "SavePairError",
+      status: null,
+      cause,
+    });
   });
 
   it("throws on malformed response body", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(201, { id: 123 }));
-    await expect(savePair(fetchImpl as unknown as typeof fetch, validPair)).rejects.toThrow();
+    await expect(savePair(fetchImpl as unknown as typeof fetch, validPair)).rejects.toMatchObject({
+      name: "SavePairError",
+      status: null,
+    });
   });
 });
 
@@ -145,11 +175,36 @@ describe("forkPair", () => {
     });
   });
 
-  it("throws a plain Error on a non-201 response", async () => {
+  it("throws a SavePairError on a non-201 response", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response("nope", { status: 500 }));
     await expect(forkPair(fetchImpl as unknown as typeof fetch, "abc23456")).rejects.toThrow(
       /forkPair failed.*500/,
     );
+    await expect(forkPair(fetchImpl as unknown as typeof fetch, "abc23456")).rejects.toMatchObject({
+      name: "SavePairError",
+      status: 500,
+    });
+  });
+
+  it("reports a status of null when the request never reaches the Worker", async () => {
+    const cause = new TypeError("Failed to fetch");
+    const fetchImpl = vi.fn().mockRejectedValue(cause);
+    await expect(forkPair(fetchImpl as unknown as typeof fetch, "abc23456")).rejects.toMatchObject({
+      name: "SavePairError",
+      status: null,
+      cause,
+    });
+  });
+});
+
+describe("SavePairError", () => {
+  it("keeps its status and cause", () => {
+    const root = new Error("root");
+    const err = new SavePairError(429, "rate limited", root);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.name).toBe("SavePairError");
+    expect(err.status).toBe(429);
+    expect(err.cause).toBe(root);
   });
 });
 

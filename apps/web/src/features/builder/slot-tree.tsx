@@ -58,17 +58,11 @@ function handleSlotTreeKeyDown(e: React.KeyboardEvent<HTMLUListElement>) {
 
 // ---------- Types ----------
 
-export interface ModSources {
-  readonly hasCraft: boolean;
-  readonly hasBarter: boolean;
-}
-
 export interface SlotTreeProps {
   tree: WeaponTree;
   attachments: Readonly<Record<string, string>>;
   onAttach: (path: string, itemId: string | null) => void;
   getAvailability?: (itemId: string) => ItemAvailability | null;
-  getModSources?: (itemId: string) => ModSources;
   showAll?: boolean;
   diff?: SlotDiffMap;
 }
@@ -80,7 +74,6 @@ export function SlotTree({
   attachments,
   onAttach,
   getAvailability,
-  getModSources,
   showAll,
   diff,
 }: SlotTreeProps) {
@@ -109,7 +102,6 @@ export function SlotTree({
           attachments={attachments}
           onAttach={onAttach}
           getAvailability={getAvailability}
-          getModSources={getModSources}
           showAll={showAll}
           depth={0}
           diff={diff}
@@ -126,7 +118,6 @@ function SlotRow({
   attachments,
   onAttach,
   getAvailability,
-  getModSources,
   showAll,
   depth,
   diff,
@@ -135,7 +126,6 @@ function SlotRow({
   attachments: Readonly<Record<string, string>>;
   onAttach: (path: string, itemId: string | null) => void;
   getAvailability?: (itemId: string) => ItemAvailability | null;
-  getModSources?: (itemId: string) => ModSources;
   showAll?: boolean;
   depth: number;
   diff?: SlotDiffMap;
@@ -246,7 +236,6 @@ function SlotRow({
                             {requirementLabel}
                           </span>
                         )}
-                        <SourcePills sources={getModSources?.(item.id)} />
                         <AvailabilityPill availability={availability} />
                       </div>
                     </button>
@@ -264,7 +253,6 @@ function SlotRow({
                   attachments={attachments}
                   onAttach={onAttach}
                   getAvailability={getAvailability}
-                  getModSources={getModSources}
                   showAll={showAll}
                   depth={depth + 1}
                   diff={diff}
@@ -275,18 +263,6 @@ function SlotRow({
         </div>
       </details>
     </li>
-  );
-}
-
-// ---------- SourcePills ----------
-
-function SourcePills({ sources }: { sources: ModSources | undefined }) {
-  if (!sources) return null;
-  return (
-    <>
-      {sources.hasCraft && <Pill tone="muted">CRAFT</Pill>}
-      {sources.hasBarter && <Pill tone="muted">BARTER</Pill>}
-    </>
   );
 }
 
