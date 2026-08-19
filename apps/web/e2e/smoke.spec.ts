@@ -159,16 +159,14 @@ test.describe("smoke — builder interaction", () => {
 
 test.describe("smoke — /builder/compare/<pairId>", () => {
   // Requires the Pages Function at `apps/web/functions/api/pairs/[[path]].ts`
-  // to be serving live — i.e. a `wrangler pages dev` webServer. The Playwright
-  // config uses `vite preview`, which only serves the SPA bundle and falls
-  // back to index.html for unknown paths, so `POST /api/pairs` returns the
-  // SPA's HTML rather than the downstream builds-api Worker. Skip until the
-  // webServer gains `pages:dev`; the flow is already covered by pairsApi unit
-  // tests + the builds-api integration suite.
-  test.skip("seeds a pair via POST /api/pairs and loads it via deep link", async ({
-    page,
-    request,
-  }) => {
+  // to be serving live — i.e. a `wrangler pages dev` webServer, which
+  // `playwright.config.ts`'s webServer has used since #89. This was
+  // previously skipped on a stale claim that the config still used `vite
+  // preview` (which doesn't proxy `/api/*`); that stopped being true when the
+  // webServer switched, and this test now passes end-to-end, including
+  // through the builds-api schema-validation + rate-limit boundary added in
+  // the pre-refactor hardening pass.
+  test("seeds a pair via POST /api/pairs and loads it via deep link", async ({ page, request }) => {
     const seed = {
       v: 1,
       createdAt: new Date().toISOString(),
@@ -229,11 +227,17 @@ test.describe("smoke — compare interaction", () => {
 });
 
 test.describe("smoke — compare save round-trip", () => {
-  // Same proxy caveat as /builder/compare/<pairId> seed-load above: the
-  // "Save comparison" button hits `POST /api/pairs`, which the `vite preview`
-  // webServer doesn't route to the Pages Function. Under `wrangler pages dev`
-  // the flow works end-to-end; un-skip this when the Playwright webServer
-  // gains proxy support.
+  // NOT a proxy issue — the sibling test above proves `POST /api/pairs` and
+  // the redirect both work under the current `wrangler pages dev` webServer
+  // (this test's own run confirms the same: `POST /api/pairs` returns 201 and
+  // the URL redirect to `/builder/compare/<pairId>` completes). What fails is
+  // the *next* step: the "Save changes" label swap never becomes visible
+  // within 10s after that redirect, which points at a real bug or a slow
+  // re-render in `apps/web/src/features/builder/compare/compare-toolbar.tsx`
+  // reading `pairId` back out of the freshly-loaded route — pre-existing and
+  // unrelated to builds-api's validation/rate-limit boundary, and squarely in
+  // `apps/web/src/features/builder/**`, which is out of scope for this PR.
+  // Flagged for the routes/builder-feature work rather than fixed here.
   test.skip("fills both sides, saves, follows redirect, state matches", async ({ page }) => {
     await page.goto("/builder/compare", { waitUntil: "networkidle" });
 

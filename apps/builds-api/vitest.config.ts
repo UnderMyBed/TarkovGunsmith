@@ -23,6 +23,14 @@ import { defineConfig } from "vitest/config";
  * packages/ui (0.13 test:src) and the apps/web route layer are. Its 29 tests still run
  * in CI on every PR via `vitest run`; only the coverage *measurement* is missing.
  *
+ *
+ * NOTE ON `test:coverage`: this package DOES define that script, and it runs plain
+ * `vitest run` with no instrumentation. That looks redundant next to `test`, and it is not.
+ * CI runs `pnpm test:coverage`, and turbo silently SKIPS any package that does not define
+ * the task — so when coverage enforcement landed, this package's tests stopped running in
+ * CI altogether and nothing said so. The alias keeps them in the CI graph while coverage
+ * measurement stays off. Do not delete it as dead weight.
+ *
  * Re-check on the next pool upgrade. If it works, add the provider dep and a
  * `test:coverage` script, and set thresholds to whatever it measures that day.
  */
