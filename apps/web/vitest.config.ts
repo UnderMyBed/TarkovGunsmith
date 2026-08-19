@@ -33,11 +33,16 @@ export default defineConfig({
       // Measured with src/routes/** in scope (Stage 1.4): 71.69 / 68.82 / 72.55 / 72.47
       // (stmts/branch/funcs/lines) against a 22.11/21.04/15.85/22.64 floor before this PR's
       // route tests landed. Floored per-metric, same convention Stage 1.1 used.
+      //
+      // Raised again fixing the `/builder/compare/$pairId` missing-<Outlet/> bug: wiring the
+      // child route up so it actually mounts, plus covering its loading/error/loaded-pair
+      // branches (routes/builder.compare.$pairId.test.tsx), moved measured coverage to
+      // 73.04 / 70.35 / 73.57 / 73.93. Floored per-metric again.
       thresholds: {
-        lines: 72,
-        functions: 72,
-        branches: 68,
-        statements: 71,
+        lines: 73,
+        functions: 73,
+        branches: 70,
+        statements: 73,
       },
     },
   },

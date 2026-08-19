@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import { renderRoute } from "../test/render-route.js";
 
 afterEach(() => {
@@ -10,74 +10,111 @@ afterEach(() => {
 });
 
 /**
- * REAL BUG, found while writing this test (reported upstream, not fixed here — this unit's
- * brief is route characterization, not route repair, and "any route" is off-limits for a
- * fix per the brief's no-refactor constraint):
- *
  * `/builder/compare/$pairId`'s file-based parent is `/builder/compare`
  * (`routes/builder.compare.tsx`, confirmed via `getParentRoute` in the generated
- * `route-tree.gen.ts`). That parent's component is:
+ * `route-tree.gen.ts`). In TanStack Router, every ancestor in a matched route chain must
+ * render `<Outlet />` for a descendant's component to mount — `builder.compare.tsx` now
+ * does that (mirroring `BuilderRouteLayout` in `builder.tsx`), so `LoadedComparePage` —
+ * the component that owns `useLoadPair`, the loading skeleton, and every `LoadErrorCard`
+ * branch — actually mounts for a `/builder/compare/$pairId` URL.
  *
- *   function ComparePage() { return <CompareWorkspace />; }
- *
- * — it does not render `<Outlet />`. In TanStack Router (same model as React Router's
- * nested routes), every ancestor in a matched route chain must render `<Outlet />` for a
- * descendant's component to mount at all. Without it, `LoadedComparePage` — the component
- * that owns `useLoadPair`, the loading skeleton, and every `LoadErrorCard` branch — is
- * DEAD CODE: it is never invoked, under any URL, in production or in tests.
- *
- * Verified with a router-state diagnostic before writing this file: navigating to
- * `/builder/compare/<anything>` produces `router.state.matches` of
- * `["__root__", "/builder", "/builder/compare", "/builder/compare/$pairId"]` — the route
- * DOES match all the way down — but the rendered tree stops at `/builder/compare`'s own
- * component. `useLoadPair`'s `fetch` call is never made (see the test below), for ANY
- * pairId, valid or malformed, existing or not. `apps/web/src/routes/builder.$id.tsx` does
- * NOT have this bug — its parent (`BuilderRouteLayout` in `builder.tsx`) explicitly renders
- * `<Outlet />` for exactly this reason.
- *
- * Practical impact: saving a comparison (`CompareWorkspace`'s handleSave) navigates to
- * `/builder/compare/$pairId` on success — that redirect currently lands on a BLANK new
- * comparison draft, not the just-saved one. Sharing a comparison URL has the same failure.
- *
- * Because the real component never mounts, its loading/error/success branches are not
- * reachable through routing and are not exercised below — testing them would require
- * bypassing the router in a way that no longer reflects real behaviour. What IS tested is
- * the actual (buggy) current behaviour: the route silently falls back to the blank
- * workspace, and no network request happens.
+ * `useLoadPair` hits the builds-api Worker via the GLOBAL `fetch` (same-origin
+ * `/api/pairs/:id`), NOT through the TarkovJsonClient — see `packages/tarkov-data/src/
+ * hooks/useLoadPair.ts` and `pairsApi.ts`. So these tests stub `globalThis.fetch` rather
+ * than the test client, same pattern as `builder.$id.test.tsx`.
  */
+
+const VALID_ID = "abcdefgh"; // 8 chars from the builds-api id alphabet (pairsApi.ts's regex).
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const leftBuild = {
+  version: 6 as const,
+  weaponId: "w-m4a1",
+  attachments: { mod_muzzle: "mod-muzzle" },
+  orphaned: [],
+  createdAt: new Date().toISOString(),
+};
+
 describe("/builder/compare/$pairId", () => {
-  it("renders the blank compare workspace instead of loading the pair (parent route has no <Outlet/>)", async () => {
-    const fetchMock = vi.fn(
-      () =>
-        new Response(
-          JSON.stringify({ v: 1, createdAt: new Date().toISOString(), left: null, right: null }),
-          { status: 200 },
-        ),
+  it("shows a loading skeleton while the pair fetch is pending, and never falls back to the blank draft", async () => {
+    // A never-resolving fetch keeps the query in flight so the skeleton stays visible.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise(() => {})),
     );
+    await renderRoute(`/builder/compare/${VALID_ID}`);
+
+    expect(await screen.findByRole("status", { busy: true })).toBeInTheDocument();
+    // The blank-draft toolbar (`ComparePage`'s "Save comparison") must NOT render — that
+    // was the bug: the parent swallowing the child and showing an empty draft instead.
+    expect(screen.queryByRole("button", { name: "Save comparison" })).not.toBeInTheDocument();
+  });
+
+  it("shows an invalid-id error without ever calling fetch", async () => {
+    // A segment that's URL-safe (unlike e.g. "???", which the URL parser would read as the
+    // start of a query string rather than a path segment) but fails `PAIR_ID_REGEX` — wrong
+    // alphabet and length, same shape as builder.$id.test.tsx's invalid-id case.
+    const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-
-    await renderRoute("/builder/compare/abcdefgh");
-
-    // This is `ComparePage`'s ("/builder/compare") toolbar for a pairId-less draft, not
-    // `LoadedComparePage`'s loading skeleton or the loaded pair's "Save changes"/"Save as
-    // new" buttons — see the bug note above.
-    expect(await screen.findByRole("button", { name: "Save comparison" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
-
-    // The pair-load network call never happens, because `LoadedComparePage` (which owns
-    // `useLoadPair`) never mounts.
+    await renderRoute("/builder/compare/not-a-valid-id");
+    expect(await screen.findByText("Invalid comparison id")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("does the same for a malformed pairId — the route never gets far enough to validate it", async () => {
-    const fetchMock = vi.fn();
+  it("shows a not-found error on HTTP 404, with a link back to a fresh comparison", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 404 })));
+    await renderRoute(`/builder/compare/${VALID_ID}`);
+    expect(await screen.findByText("Comparison not found")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Start a new comparison" })).toHaveAttribute(
+      "href",
+      "/builder/compare",
+    );
+  });
+
+  it("shows an unreachable error when the network request itself fails, and Retry re-fetches", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("network down"));
     vi.stubGlobal("fetch", fetchMock);
+    await renderRoute(`/builder/compare/${VALID_ID}`);
+    expect(await screen.findByText("Couldn't reach comparison storage")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    await renderRoute("/builder/compare/???");
+    await (
+      await import("@testing-library/user-event")
+    ).default
+      .setup()
+      .click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  });
 
-    expect(await screen.findByRole("button", { name: "Save comparison" })).toBeInTheDocument();
-    expect(screen.queryByText("Invalid comparison id")).not.toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
+  it("loads a saved pair and renders CompareWorkspace with it — the actual regression this fixes", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          v: 1,
+          createdAt: new Date().toISOString(),
+          left: leftBuild,
+          right: null,
+        }),
+      ),
+    );
+    await renderRoute(`/builder/compare/${VALID_ID}`);
+
+    // `CompareToolbar` shows "Save changes" (not "Save comparison") once a pairId is
+    // present, plus "Save as new" — this is the loaded-pair toolbar, not the blank draft's.
+    expect(await screen.findByRole("button", { name: "Save changes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save as new" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save comparison" })).not.toBeInTheDocument();
+
+    // Side A hydrated from the loaded pair's `left` build (1 attachment); side B is the
+    // pair's `right: null`.
+    expect(await screen.findByText("1 attached")).toBeInTheDocument();
+    expect(screen.getByText("No build selected.")).toBeInTheDocument();
   });
 });
