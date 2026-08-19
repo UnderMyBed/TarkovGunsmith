@@ -15,8 +15,12 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts", "src/**/*.tsx"],
-      // NOTE: src/routes/** is excluded today — 3,058 lines, 40% of the app, including
-      // the 512-line BuilderPage. Stage 1.4 of the hardening plan brings it in.
+      // src/routes/** entered measurement in Stage 1.4 of the hardening plan (was excluded —
+      // 3,058 lines, 40% of the app, including the 512-line BuilderPage). Test infrastructure
+      // for it lives in src/test/ (fixtures.ts, test-client.ts, render-route.tsx): a real
+      // TarkovJsonClient test double + a REAL TanStack Router (memory history over the actual
+      // generated route tree) so route tests exercise real fetchers, schemas, and navigation
+      // rather than a re-implementation of routing.
       exclude: [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
@@ -24,13 +28,16 @@ export default defineConfig({
         "src/app.tsx",
         "src/router.ts",
         "src/route-tree.gen.ts",
-        "src/routes/**",
+        "src/test/**",
       ],
+      // Measured with src/routes/** in scope (Stage 1.4): 71.69 / 68.82 / 72.55 / 72.47
+      // (stmts/branch/funcs/lines) against a 22.11/21.04/15.85/22.64 floor before this PR's
+      // route tests landed. Floored per-metric, same convention Stage 1.1 used.
       thresholds: {
-        lines: 36,
-        functions: 29,
-        branches: 34,
-        statements: 35,
+        lines: 72,
+        functions: 72,
+        branches: 68,
+        statements: 71,
       },
     },
   },
