@@ -16,7 +16,7 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
-    "nanoid": "^5.1.16"
+    "nanoid": "^6.0.1"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.14.9",
