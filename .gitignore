@@ -43,6 +43,12 @@ Thumbs.db
 
 # worktrees — isolated feature workspaces created by superpowers skills
 .worktrees/
+# ...and by the conductor plugin's subagent isolation, which nests them under .claude/.
+# Without this a `git add -A` commits entire checkouts of the repo into itself.
+.claude/worktrees/
+
+# Playwright MCP session artifacts (traces, screenshots) written into the repo root.
+.playwright-mcp/
 
 # visual-companion scratch from superpowers brainstorming
 .superpowers/

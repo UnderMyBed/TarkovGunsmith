@@ -9,7 +9,7 @@ JSX → SVG, `@resvg/resvg-wasm` for SVG → PNG.
 - `src/build-card.tsx` — JSX for the build card (layout C).
 - `src/pair-card.tsx` — JSX for the pair card (layout A — mirror split).
 - `src/hydrate.ts` — `hydrateBuildCard` / `hydratePairCard` — pure view-model
-  builders. Consumers fetch the GraphQL data and pass it in.
+  builders. Consumers fetch the upstream JSON data and pass it in.
 - `src/render.ts` — `renderPng(jsx, fonts, { width, height })`.
 - `src/fonts.ts` — `loadFonts()` reads the bundled `.ttf` files.
 - `src/colors.ts` — Field Ledger hex constants mirroring the SPA tokens.
@@ -28,7 +28,7 @@ JSX → SVG, `@resvg/resvg-wasm` for SVG → PNG.
   flex with absolute positioning. Every `<div>` with children needs an
   explicit `display` property (satori rejects divs that look like both a
   block and a text container).
-- **Pure functions.** `hydrate.ts` takes rows, not GraphQL clients. The Pages
+- **Pure functions.** `hydrate.ts` takes rows, not API clients. The Pages
   Function does the fetch; this package never touches the network (except
   satori's font loads, which resolve locally via `fs` or `fetch`).
 - **Field Ledger fidelity.** Colors and font names MUST match
