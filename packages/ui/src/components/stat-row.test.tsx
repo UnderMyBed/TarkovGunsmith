@@ -45,7 +45,7 @@ describe("StatRow", () => {
 
   it("renders a bar fill sized to the given percent", () => {
     const { container } = render(<StatRow label="Bar" value={1} percent={73} />);
-    const bar = container.querySelector('[style*="width"]') as HTMLElement | null;
+    const bar = container.querySelector<HTMLElement>('[style*="width"]');
     expect(bar).not.toBeNull();
     expect(bar?.style.width).toBe("73%");
   });

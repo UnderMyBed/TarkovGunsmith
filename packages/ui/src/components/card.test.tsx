@@ -2,7 +2,15 @@ import "@testing-library/jest-dom/vitest";
 import { createRef } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card.js";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  cardVariants,
+} from "./card.js";
 
 afterEach(() => cleanup());
 
@@ -62,5 +70,31 @@ describe("Card", () => {
     const el = screen.getByTestId("header");
     expect(el.className).toContain("mt-2");
     expect(el.className).toContain("border-b");
+  });
+});
+
+/* The pure-function tests below were previously a sibling `card.test.ts`. They live here
+ * now because TypeScript's `include` resolution drops the lower-priority extension when two
+ * files share a basename — `card.test.ts` silently shadowed `card.test.tsx`, excluding
+ * the render tests from the type-checked program entirely. Vitest resolved both, so they ran
+ * and passed while never being typechecked. One file per component avoids the collision. */
+describe("Card bracket-olive variant", () => {
+  it("applies the olive border class when variant='bracket-olive'", () => {
+    const cls = cardVariants({ variant: "bracket-olive" });
+    // The bracket-olive variant uses var(--color-olive) for border color.
+    expect(cls).toContain("before:border-[var(--color-olive)]");
+    expect(cls).toContain("after:border-[var(--color-olive)]");
+  });
+
+  it("applies the primary border class when variant='bracket'", () => {
+    const cls = cardVariants({ variant: "bracket" });
+    expect(cls).toContain("before:border-[var(--color-primary)]");
+    expect(cls).toContain("after:border-[var(--color-primary)]");
+  });
+
+  it("applies no bracket classes for default (plain) variant", () => {
+    const cls = cardVariants({ variant: "plain" });
+    expect(cls).not.toContain("before:");
+    expect(cls).not.toContain("after:");
   });
 });
