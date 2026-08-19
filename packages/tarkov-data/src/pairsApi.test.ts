@@ -1,12 +1,26 @@
 import { describe, it, expect, vi } from "vitest";
 import { savePair, loadPair, forkPair, LoadPairError } from "./pairsApi.js";
 import type { BuildPairV1 } from "./pair-schema.js";
+import type { BuildV5 } from "./build-schema.js";
 
 const validPair: BuildPairV1 = {
   v: 1,
   createdAt: "2026-04-20T00:00:00.000Z",
   left: null,
   right: null,
+};
+
+// A v5 build. Embedding a non-null side is the only way to exercise `upgradeLoadedBuild`
+// inside `loadPair` — `validPair` above has both sides null. v5 (not v1) so the upgrade is
+// visible: `upgradeLoadedBuild` deliberately leaves v1/v2 alone (migrateV1ToV2 needs the
+// weapon's slot tree, which no transport module has), but v5→v6 (`migrateV5ToV6`) is a pure
+// version stamp, so asserting `version === 6` afterward actually proves the branch ran.
+const oldBuildSide: BuildV5 = {
+  version: 5,
+  weaponId: "weapon-abc",
+  attachments: {},
+  orphaned: [],
+  createdAt: "2026-04-19T12:00:00.000Z",
 };
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -62,6 +76,40 @@ describe("loadPair", () => {
     });
   });
 
+  it("throws LoadPairError code=unreachable on a non-200, non-404 status", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response("", { status: 503 }));
+    await expect(loadPair(fetchImpl as unknown as typeof fetch, "abc23456")).rejects.toMatchObject({
+      code: "unreachable",
+    });
+  });
+
+  it("throws LoadPairError code=invalid-schema when the 200 body isn't JSON", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(new Response("not json{", { status: 200, headers: {} }));
+    await expect(loadPair(fetchImpl as unknown as typeof fetch, "abc23456")).rejects.toMatchObject({
+      code: "invalid-schema",
+    });
+  });
+
+  it("upgrades an embedded pre-v6 build on each non-null side", async () => {
+    const pairWithOldBuild: BuildPairV1 = {
+      v: 1,
+      createdAt: "2026-04-20T00:00:00.000Z",
+      left: oldBuildSide,
+      right: oldBuildSide,
+    };
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, pairWithOldBuild));
+    const res = await loadPair(fetchImpl, "abc23456");
+    // upgradeLoadedBuild bumps `version` to CURRENT_BUILD_VERSION (6) — asserting it moved
+    // off `1` is enough to prove the ternary took the `upgradeLoadedBuild(...)` arm rather
+    // than passing the raw v1 build straight through.
+    expect(res.left).not.toBeNull();
+    expect(res.right).not.toBeNull();
+    expect(res.left?.version).toBe(6);
+    expect(res.right?.version).toBe(6);
+  });
+
   it("throws LoadPairError code=unreachable on network failure", async () => {
     const fetchImpl = vi.fn().mockRejectedValue(new Error("offline"));
     await expect(loadPair(fetchImpl as unknown as typeof fetch, "abc23456")).rejects.toMatchObject({
@@ -95,6 +143,13 @@ describe("forkPair", () => {
     await expect(forkPair(fetchImpl as unknown as typeof fetch, "BAD-ID")).rejects.toMatchObject({
       code: "invalid-id",
     });
+  });
+
+  it("throws a plain Error on a non-201 response", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response("nope", { status: 500 }));
+    await expect(forkPair(fetchImpl as unknown as typeof fetch, "abc23456")).rejects.toThrow(
+      /forkPair failed.*500/,
+    );
   });
 });
 

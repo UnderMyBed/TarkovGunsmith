@@ -98,6 +98,22 @@ describe("itemAvailability", () => {
     }
   });
 
+  it("reports the lowest minLevel across several unmet trader offers", () => {
+    // `unmetTrader.sort(...)` only actually runs its comparator with 2+ entries — every
+    // other blocked-by-LL test above has exactly one failing offer.
+    const result = itemAvailability(
+      mod({ buyFor: [traderOffer("prapor", 4), traderOffer("therapist", 2)] }),
+      baseProfile,
+    );
+    expect(result.available).toBe(false);
+    if (!result.available && result.reason === "trader-ll-required") {
+      expect(result.traderNormalizedName).toBe("therapist");
+      expect(result.minLevel).toBe(2);
+    } else {
+      expect.unreachable(`expected trader-ll-required, got ${JSON.stringify(result)}`);
+    }
+  });
+
   it("basic-mode profile rejects quest-gated paths even with LL satisfied", () => {
     const result = itemAvailability(
       mod({ buyFor: [traderOffer("mechanic", 1, 500, "gunsmith-part-1")] }),
@@ -176,6 +192,75 @@ describe("itemAvailability", () => {
     const r2 = itemAvailability(mod({ buyFor: null as unknown as [] }), baseProfile);
     expect(r2.available).toBe(false);
     if (!r2.available) expect(r2.reason).toBe("no-sources");
+  });
+});
+
+describe("itemAvailability — trader-offer edge cases", () => {
+  it("skips a fence/unknown-trader offer and defaults a missing minTraderLevel to 1", () => {
+    // Two branches in one: `minTraderLevel ?? 1` (computed before the trader-key check) and
+    // `!isTraderKey(traderName)` both need a non-gated trader like "fence". With no other
+    // offer on the item, this also drives the function all the way to the final
+    // `no-sources` fallback — every accumulator (satisfied/unmetTrader/unmetQuest/
+    // unmetFleaLevel) stays empty and `sawFleaPath` never flips true.
+    const result = itemAvailability(
+      mod({
+        buyFor: [
+          {
+            priceRUB: 500,
+            currency: "RUB",
+            vendor: {
+              __typename: "TraderOffer",
+              normalizedName: "fence",
+              minTraderLevel: null as unknown as number,
+              taskUnlock: null,
+              trader: { normalizedName: "fence" },
+            },
+          },
+        ],
+      }),
+      baseProfile,
+    );
+    expect(result.available).toBe(false);
+    if (!result.available) expect(result.reason).toBe("no-sources");
+  });
+
+  it("treats a missing completedQuests list as no completions, even in advanced mode", () => {
+    // `(profile.completedQuests ?? []).includes(...)` — every other advanced-mode test in
+    // this file sets `completedQuests` explicitly. A profile that predates the field (see
+    // `hooks/useProfile.ts`'s legacy-rehydration path) can reach here without one.
+    const advancedNoQuestsField: PlayerProfile = { ...baseProfile, mode: "advanced" };
+    const result = itemAvailability(
+      mod({ buyFor: [traderOffer("mechanic", 1, 500, "gunsmith-part-1")] }),
+      advancedNoQuestsField,
+    );
+    expect(result.available).toBe(false);
+    if (!result.available && result.reason === "quest-required") {
+      expect(result.questNormalizedName).toBe("gunsmith-part-1");
+    } else {
+      expect.unreachable(`expected quest-required, got ${JSON.stringify(result)}`);
+    }
+  });
+
+  it("treats a null priceRUB as worse-than-any-price when picking the cheapest path", () => {
+    // `a.priceRUB ?? Infinity` / `b.priceRUB ?? Infinity` are two separate `??` sites (one
+    // per sort-comparator operand) — each needs its own null to exercise the fallback.
+    const nullFirst = itemAvailability(
+      mod({ buyFor: [traderOffer("prapor", 1, null), traderOffer("therapist", 1, 2500)] }),
+      baseProfile,
+    );
+    expect(nullFirst.available).toBe(true);
+    if (nullFirst.available && nullFirst.kind === "trader") {
+      expect(nullFirst.traderNormalizedName).toBe("therapist");
+    }
+
+    const nullSecond = itemAvailability(
+      mod({ buyFor: [traderOffer("therapist", 1, 2500), traderOffer("prapor", 1, null)] }),
+      baseProfile,
+    );
+    expect(nullSecond.available).toBe(true);
+    if (nullSecond.available && nullSecond.kind === "trader") {
+      expect(nullSecond.traderNormalizedName).toBe("therapist");
+    }
   });
 });
 

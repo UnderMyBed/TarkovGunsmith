@@ -8,25 +8,25 @@ import { defineConfig } from "vitest/config";
  * coverage, the change needs tests, not a smaller number. */
 export default defineConfig({
   test: {
+    // Hook tests (hooks/use*.test.ts) cover the previously-unmeasured hooks layer. They stay
+    // plain `.ts` — `renderHook`'s QueryClientProvider/TarkovDataProvider wrapper is built via
+    // `createElement` in `__test-utils__/query-wrapper.ts` rather than JSX, so no file in this
+    // package needs a `.tsx`-aware ESLint project entry (see that file's comment for why, and
+    // the root CLAUDE.md's per-package-tsconfig gotcha for the failure mode this avoids). Each
+    // hook test carries a `// @vitest-environment jsdom` pragma per-file instead of switching
+    // the whole package's default `environment` — mirrors the pattern apps/web already uses
+    // (see e.g. features/builder/build-header.test.tsx).
     include: ["src/**/*.test.ts"],
     environment: "node",
     coverage: {
       provider: "v8",
-      include: ["src/**/*.ts"],
-      // NOTE: src/hooks/** is excluded today, so the React hooks layer is unmeasured.
-      // Stage 1.3 of the hardening plan removes this exclusion and covers it.
-      exclude: [
-        "src/**/*.test.ts",
-        "src/__fixtures__/**",
-        "src/index.ts",
-        "src/provider.tsx",
-        "src/hooks/**",
-      ],
+      include: ["src/**/*.ts", "src/**/*.tsx"],
+      exclude: ["src/**/*.test.ts", "src/__fixtures__/**", "src/index.ts", "src/provider.tsx"],
       thresholds: {
-        lines: 96,
-        functions: 92,
-        branches: 81,
-        statements: 93,
+        lines: 100,
+        functions: 100,
+        branches: 100,
+        statements: 100,
       },
     },
   },

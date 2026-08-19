@@ -68,6 +68,43 @@ describe("createTarkovClient", () => {
     expect(spy.mock.calls).toHaveLength(2);
   });
 
+  it("falls back to the global fetch when no fetchImpl is supplied", async () => {
+    // Covers the `fetchImpl !== undefined ? fetchImpl(...) : fetch(...)` branch: every other
+    // test in this file passes an explicit stub, so the global-fetch arm is otherwise dead.
+    const spy = stubFetch({ "/items": { data: { a: 1 } }, "/items_en": { data: {} } });
+    vi.stubGlobal("fetch", spy);
+    try {
+      const client = createTarkovClient(BASE);
+      const result = await client.fetchResource<{ a: number }>("items");
+      expect(result).toEqual({ a: 1 });
+      expect(spy).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("treats a translation fetch that throws (not just a non-ok response) as absent", async () => {
+    // `getJson(..., false).catch(() => undefined)` only has something to catch when the
+    // fetchImpl itself rejects — a 404 response is already handled inside `getJson` via the
+    // `!required` branch and never reaches `.catch`. A network-level failure (DNS, abort,
+    // offline) is the case that actually exercises the `.catch`.
+    const flakyTranslations = vi.fn((input: RequestInfo | URL) => {
+      const url = input instanceof URL ? input.href : typeof input === "string" ? input : input.url;
+      if (url.endsWith("_en")) return Promise.reject(new Error("network down"));
+      if (url.endsWith("/items")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: { a: 1 } }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(new Response("not found", { status: 404 }));
+    });
+    const client = createTarkovClient(BASE, flakyTranslations);
+    await expect(client.fetchResource("items")).resolves.toEqual({ a: 1 });
+  });
+
   it("does not cache a failure", async () => {
     let attempt = 0;
     const flaky = vi.fn(() => {

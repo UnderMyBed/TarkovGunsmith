@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { parseStoredProfile } from "./useProfile.js";
+// @vitest-environment jsdom
+//
+// The whole file runs under jsdom now, not just the `useProfile` hook tests below —
+// `parseStoredProfile` doesn't care about the environment, and splitting it into a second
+// file just to get jsdom for the hook would separate two things that are about the same
+// piece of behaviour.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, renderHook } from "@testing-library/react";
+import { parseStoredProfile, resolveInitialProfile, useProfile } from "./useProfile.js";
 import { DEFAULT_PROFILE } from "../build-schema.js";
 
 /**
@@ -95,5 +102,97 @@ describe("parseStoredProfile", () => {
   it("falls back to DEFAULT_PROFILE on an out-of-range level", () => {
     const stored = JSON.stringify({ ...DEFAULT_PROFILE, level: 500 });
     expect(parseStoredProfile(stored)).toEqual(DEFAULT_PROFILE);
+  });
+});
+
+const STORAGE_KEY = "tg:player-profile";
+
+describe("resolveInitialProfile", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it("returns DEFAULT_PROFILE when window is undefined", () => {
+    // Called directly (not through renderHook) specifically so this doesn't need a mounted
+    // component — see the comment on resolveInitialProfile for why react-dom rules that out.
+    const realWindow = globalThis.window;
+    // @ts-expect-error -- simulating an environment with no `window`, e.g. SSR.
+    delete globalThis.window;
+    try {
+      expect(resolveInitialProfile()).toEqual(DEFAULT_PROFILE);
+    } finally {
+      globalThis.window = realWindow;
+    }
+  });
+
+  it("reads through parseStoredProfile when window exists", () => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULT_PROFILE, level: 33 }));
+    expect(resolveInitialProfile()).toEqual({ ...DEFAULT_PROFILE, level: 33 });
+  });
+
+  it("falls back to DEFAULT_PROFILE when localStorage.getItem itself throws", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    expect(resolveInitialProfile()).toEqual(DEFAULT_PROFILE);
+  });
+});
+
+describe("useProfile", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it("initializes to DEFAULT_PROFILE when nothing is stored", () => {
+    const { result } = renderHook(() => useProfile());
+    expect(result.current[0]).toEqual(DEFAULT_PROFILE);
+  });
+
+  it("rehydrates from an existing localStorage value on mount", () => {
+    const stored = { ...DEFAULT_PROFILE, level: 42, flea: true };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+
+    const { result } = renderHook(() => useProfile());
+    expect(result.current[0]).toEqual(stored);
+  });
+
+  it("setProfile updates the returned state and persists to localStorage", () => {
+    const { result } = renderHook(() => useProfile());
+    const next = { ...DEFAULT_PROFILE, level: 10, flea: true };
+
+    act(() => result.current[1](next));
+
+    expect(result.current[0]).toEqual(next);
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual(next);
+  });
+
+  it("still updates state when localStorage.setItem throws (quota exceeded / disabled)", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+
+    const { result } = renderHook(() => useProfile());
+    const next = { ...DEFAULT_PROFILE, level: 7 };
+
+    // Must not throw out of the state update despite the write failing underneath.
+    expect(() => act(() => result.current[1](next))).not.toThrow();
+    expect(result.current[0]).toEqual(next);
+  });
+
+  it("falls back to DEFAULT_PROFILE when localStorage.getItem itself throws on mount", () => {
+    // Distinct from parseStoredProfile's own internal catch (malformed JSON, schema
+    // mismatch): this is `window.localStorage.getItem` throwing synchronously, e.g. a
+    // browser that blocks storage access entirely. useProfile wraps that call in its own
+    // try/catch specifically because parseStoredProfile can't see it — it never runs.
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+
+    const { result } = renderHook(() => useProfile());
+    expect(result.current[0]).toEqual(DEFAULT_PROFILE);
   });
 });

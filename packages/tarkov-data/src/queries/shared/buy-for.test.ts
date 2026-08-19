@@ -127,3 +127,88 @@ describe("resolveBuyFor", () => {
     expect(entry?.vendor).toMatchObject({ taskUnlock: null });
   });
 });
+
+describe("resolveBuyFor — defensive edge cases", () => {
+  const traders = [{ id: "tr1", name: "Prapor", normalizedName: "prapor" }];
+  const tasks = [
+    { id: "tk1", name: "Gunsmith - Part 1", normalizedName: "gunsmith-master-part-1" },
+  ];
+
+  it("returns [] for a null or non-object item instead of throwing", () => {
+    expect(resolveBuyFor(null, traders, tasks)).toEqual([]);
+    expect(resolveBuyFor("not an item", traders, tasks)).toEqual([]);
+  });
+
+  it("ignores a task with a null id when building the taskUnlock lookup", () => {
+    // A task with `id: null` must not poison the `Map<string, string>` (it can't be a key
+    // anyway) or shadow a real task — `tasks` still resolves `tk1` normally afterward.
+    const tasksWithNullId = [{ id: null, normalizedName: "orphan-task" }, ...tasks];
+    const [entry] = resolveBuyFor(
+      {
+        types: ["mods"],
+        buyFromTrader: [
+          { trader: "tr1", priceRUB: 1, currency: "RUB", minTraderLevel: 1, taskUnlock: "tk1" },
+        ],
+      },
+      traders,
+      tasksWithNullId,
+    );
+    expect(entry?.vendor).toMatchObject({
+      taskUnlock: { id: "tk1", normalizedName: "gunsmith-master-part-1" },
+    });
+  });
+
+  it("treats a missing buyFromTrader field as no trader offers", () => {
+    const entries = resolveBuyFor({ types: ["mods"] }, traders, tasks);
+    expect(entries.filter((e) => e.vendor.__typename === "TraderOffer")).toEqual([]);
+  });
+
+  it("skips a null or non-object entry inside buyFromTrader", () => {
+    const entries = resolveBuyFor(
+      { types: ["mods"], buyFromTrader: [null, "not an offer"] },
+      traders,
+      tasks,
+    );
+    expect(entries.filter((e) => e.vendor.__typename === "TraderOffer")).toEqual([]);
+  });
+
+  it("drops a buyFromTrader entry whose trader field isn't a string", () => {
+    const entries = resolveBuyFor(
+      { types: ["mods"], buyFromTrader: [{ trader: 12345 }] },
+      traders,
+      tasks,
+    );
+    expect(entries.filter((e) => e.vendor.__typename === "TraderOffer")).toEqual([]);
+  });
+
+  it("defaults priceRUB, currency and minTraderLevel to null when absent or mistyped", () => {
+    const [entry] = resolveBuyFor(
+      {
+        types: ["mods"],
+        buyFromTrader: [{ trader: "tr1", priceRUB: "free", currency: 5, minTraderLevel: "one" }],
+      },
+      traders,
+      tasks,
+    );
+    expect(entry).toMatchObject({
+      priceRUB: null,
+      currency: null,
+      vendor: { minTraderLevel: null },
+    });
+  });
+
+  it("treats a missing `types` list as not noFlea, still emitting a flea entry", () => {
+    const entries = resolveBuyFor({ buyFromTrader: [] }, traders, tasks);
+    expect(entries.some((e) => e.vendor.__typename === "FleaMarket")).toBe(true);
+  });
+
+  it("falls back to lastLowPrice for the flea entry when avg24hPrice is absent", () => {
+    const entries = resolveBuyFor(
+      { types: ["mods"], buyFromTrader: [], lastLowPrice: 777 },
+      traders,
+      tasks,
+    );
+    const flea = entries.find((e) => e.vendor.__typename === "FleaMarket");
+    expect(flea?.priceRUB).toBe(777);
+  });
+});
