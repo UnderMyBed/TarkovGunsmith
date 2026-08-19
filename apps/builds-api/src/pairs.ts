@@ -1,4 +1,4 @@
-import { BuildPair } from "@tarkov/data";
+import { BuildPair } from "@tarkov/data/schemas";
 import { newBuildId, BUILD_ID_REGEX } from "./id.js";
 import {
   checkRateLimit,

@@ -1,4 +1,4 @@
-import { Build } from "@tarkov/data";
+import { Build } from "@tarkov/data/schemas";
 import { newBuildId, BUILD_ID_REGEX } from "./id.js";
 import { maybeSeedOgFixtures } from "./og-fixtures.js";
 import { handlePostPair, handleGetPair, handleForkPair } from "./pairs.js";
