@@ -53,12 +53,12 @@ export function NavDropdown({ label, items }: NavDropdownProps): ReactElement {
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors inline-flex items-center gap-1.5"
+        className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors inline-flex items-center gap-1.5"
       >
         <span>{label}</span>
         <span
           aria-hidden
-          className={`text-[8px] leading-none transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-8 leading-none transition-transform ${open ? "rotate-180" : ""}`}
         >
           ▾
         </span>
@@ -76,9 +76,9 @@ export function NavDropdown({ label, items }: NavDropdownProps): ReactElement {
               onClick={() => setOpen(false)}
               activeProps={{
                 className:
-                  "block px-4 py-1.5 font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-primary)] hover:bg-[var(--color-muted)]",
+                  "block px-4 py-1.5 font-mono text-11 tracking-18 uppercase text-[var(--color-primary)] hover:bg-[var(--color-muted)]",
               }}
-              className="block px-4 py-1.5 font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors"
+              className="block px-4 py-1.5 font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors"
             >
               {item.label}
             </Link>

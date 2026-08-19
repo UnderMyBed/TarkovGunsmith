@@ -133,7 +133,7 @@ export function CompareSide({
           <div className="flex flex-col gap-2">
             <label
               htmlFor={`compare-weapon-${label}`}
-              className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]"
+              className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)]"
             >
               Weapon
             </label>
@@ -173,7 +173,7 @@ export function CompareSide({
                 onDismiss={handleDismissOrphans}
               />
               {tree.isLoading && (
-                <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+                <p className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)]">
                   Loading slot tree…
                 </p>
               )}

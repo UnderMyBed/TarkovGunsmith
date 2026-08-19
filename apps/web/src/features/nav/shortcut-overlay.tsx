@@ -28,7 +28,7 @@ export function ShortcutOverlay({ open, onClose }: ShortcutOverlayProps) {
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 font-mono text-sm">
             {SHORTCUTS.map((s) => (
               <div key={s.key} className="contents">
-                <dt className="text-[var(--color-primary)] tracking-[0.15em] uppercase text-xs">
+                <dt className="text-[var(--color-primary)] tracking-15 uppercase text-xs">
                   {s.key}
                 </dt>
                 <dd className="text-[var(--color-foreground)]">{s.action}</dd>

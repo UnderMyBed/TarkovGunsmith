@@ -9,7 +9,7 @@ export interface ShotTimelineProps {
 export function ShotTimeline({ shots }: ShotTimelineProps) {
   if (shots.length === 0) {
     return (
-      <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+      <p className="font-mono text-10 tracking-18 uppercase text-[var(--color-muted-foreground)]">
         No shots executed.
       </p>
     );
@@ -36,13 +36,13 @@ export function ShotTimeline({ shots }: ShotTimelineProps) {
               >
                 #{String(i + 1).padStart(2, "0")}
               </span>
-              <span className="font-mono text-[11px] tracking-[0.15em] uppercase">
+              <span className="font-mono text-11 tracking-15 uppercase">
                 {zoneLabel(shot.zone)}
               </span>
               <Pill tone={shot.didPenetrate ? "accent" : "muted"}>
                 {shot.didPenetrate ? "PEN" : "blocked"}
               </Pill>
-              <span className="flex-1 text-right font-mono text-[11px] text-[var(--color-muted-foreground)]">
+              <span className="flex-1 text-right font-mono text-11 text-[var(--color-muted-foreground)]">
                 {shot.damage.toFixed(1)} dmg
                 {shot.armorDamage > 0 ? ` · ${shot.armorDamage.toFixed(1)} armor` : ""}
                 {shot.armorUsed
@@ -65,7 +65,7 @@ export function ShotTimeline({ shots }: ShotTimelineProps) {
               >
                 <div className={`h-full ${barColor}`} style={{ width: `${pct}%` }} />
               </div>
-              <div className="font-mono text-[10px] tabular-nums text-[var(--color-paper-dim)] min-w-[56px] text-right">
+              <div className="font-mono text-10 tabular-nums text-[var(--color-paper-dim)] min-w-[56px] text-right">
                 {part.hp.toFixed(0)}/{part.max}
               </div>
             </div>

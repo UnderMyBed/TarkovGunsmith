@@ -71,12 +71,12 @@ function ChartsPage() {
     <div className="flex flex-col gap-6">
       <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
-        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
+        <div className="font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
           <span>DATA · CHARTS</span>
           <span>/ SHOTS-TO-BREAK VISUALISED</span>
           <span>/ RELIABLE · MARGINAL · INEFFECTIVE</span>
         </div>
-        <h1 className="font-display text-[clamp(32px,5vw,56px)] leading-[0.95] tracking-tight uppercase">
+        <h1 className="font-display text-56 leading-[0.95] tracking-tight uppercase">
           Effectiveness <span className="text-[var(--color-primary)]">Charts</span>
         </h1>
         <p className="text-[var(--color-muted-foreground)] max-w-[640px]">

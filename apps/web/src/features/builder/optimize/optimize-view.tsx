@@ -173,7 +173,7 @@ export function OptimizeView({
           type="button"
           onClick={onExit}
           aria-label="Back to builder editor"
-          className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)]"
+          className="font-mono text-11 uppercase tracking-20 text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)]"
         >
           ← EDITOR
         </button>

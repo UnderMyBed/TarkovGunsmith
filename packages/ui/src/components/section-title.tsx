@@ -14,12 +14,12 @@ export interface SectionTitleProps extends HTMLAttributes<HTMLDivElement> {
 export function SectionTitle({ index, title, meta, className, ...props }: SectionTitleProps) {
   return (
     <div className={cn("flex items-center gap-4 my-8", className)} {...props}>
-      <span className="font-mono text-[13px] tracking-[0.2em] text-[var(--color-primary)] uppercase">
+      <span className="font-mono text-13 tracking-20 text-[var(--color-primary)] uppercase">
         {String(index).padStart(2, "0")} · {title}
       </span>
       <span className="flex-1 h-px bg-[var(--color-border)]" />
       {meta && (
-        <span className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)]">
+        <span className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)]">
           {meta}
         </span>
       )}

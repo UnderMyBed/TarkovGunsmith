@@ -29,7 +29,7 @@ function RootLayout() {
               ▲
             </span>
             <span className="font-display text-lg leading-none tracking-wide">TARKOVGUNSMITH</span>
-            <span className="hidden sm:inline font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-paper-dim)]">
+            <span className="hidden sm:inline font-mono text-10 tracking-20 uppercase text-[var(--color-paper-dim)]">
               · FIELD LEDGER / v2
             </span>
           </Link>
@@ -40,7 +40,7 @@ function RootLayout() {
                 className:
                   "text-[var(--color-primary)] border-b-[1.5px] border-[var(--color-primary)]",
               }}
-              className="font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors"
+              className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors"
             >
               Builder
             </Link>
@@ -53,7 +53,7 @@ function RootLayout() {
         <Outlet />
       </main>
       <footer className="mt-24 border-t border-[var(--color-border)]">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--color-paper-dim)]">
+        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-wrap items-center justify-between gap-3 font-mono text-10 tracking-20 uppercase text-[var(--color-paper-dim)]">
           <span>TARKOVGUNSMITH · REBUILD OF XERXES-17&rsquo;S ORIGINAL</span>
           <span>
             EDITION 2026 ·{" "}

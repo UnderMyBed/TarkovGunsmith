@@ -5,7 +5,7 @@ import type { VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn.js";
 
 const stampVariants = cva(
-  "inline-block font-mono text-[10px] font-bold tracking-[0.25em] uppercase px-2.5 py-1 border-[1.5px] -rotate-2",
+  "inline-block font-mono text-10 font-bold tracking-25 uppercase px-2.5 py-1 border-[1.5px] -rotate-2",
   {
     variants: {
       tone: {

@@ -19,7 +19,7 @@ import type { ReactElement } from "react";
 export function SingleLayerCaveat(): ReactElement {
   return (
     <div className="mb-6 flex items-baseline gap-3 border border-[var(--color-border)] border-l-[3px] border-l-[var(--color-rust)] bg-[var(--color-card)] px-4 py-2.5">
-      <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-[var(--color-rust)]">
+      <span className="font-mono text-11 uppercase tracking-15 text-[var(--color-rust)]">
         ▲ Single-layer model
       </span>
       <span className="text-sm text-[var(--color-muted-foreground)]">
