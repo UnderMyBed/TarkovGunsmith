@@ -104,7 +104,7 @@ pnpm lint             # eslint across all packages
 pnpm format:check     # prettier check
 pnpm test             # vitest across all packages
 pnpm format           # auto-format
-echo "feat: foo" | pnpm exec commitlint --stdin-only  # test a commit message
+echo "feat: foo" | pnpm exec commitlint  # test a commit message (commitlint 21 dropped --stdin-only; reading stdin is now the default when --edit/--env/--from/--to are omitted)
 ```
 
 Pre-commit (via Husky 9) runs `lint-staged` on changed files (`eslint --fix --max-warnings 0` and `prettier --write`). Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint).
