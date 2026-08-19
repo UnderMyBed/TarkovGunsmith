@@ -7,6 +7,9 @@ const flea: PlayerProfile = {
   mode: "basic",
   traders: { prapor: 1, therapist: 1, skier: 1, peacekeeper: 1, mechanic: 1, ragman: 1, jaeger: 1 },
   flea: true,
+  // The shared fixtures' flea offers carry minPlayerLevel: 15, inert until
+  // itemAvailability started enforcing it. 15 keeps these tests on their original subject.
+  level: 15,
 };
 
 function makeState(overrides: Partial<BnbState> = {}): BnbState {

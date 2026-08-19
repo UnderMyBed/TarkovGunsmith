@@ -4,9 +4,17 @@ import {
   migrateV2ToV3,
   migrateV3ToV4,
   migrateV4ToV5,
+  migrateV5ToV6,
+  upgradeLoadedBuild,
   type SlotNodeForMigration,
 } from "./build-migrations.js";
-import type { BuildV1, BuildV2, BuildV3 } from "./build-schema.js";
+import {
+  Build,
+  CURRENT_BUILD_VERSION,
+  type BuildV1,
+  type BuildV2,
+  type BuildV3,
+} from "./build-schema.js";
 
 const v1: BuildV1 = {
   version: 1,
@@ -200,5 +208,144 @@ describe("migrateV4ToV5", () => {
 
   it("sets version 5", () => {
     expect(migrateV4ToV5(baseV4).version).toBe(5);
+  });
+});
+
+describe("migrateV5ToV6", () => {
+  const profile = {
+    mode: "advanced" as const,
+    traders: {
+      prapor: 4,
+      therapist: 3,
+      skier: 2,
+      peacekeeper: 4,
+      mechanic: 3,
+      ragman: 2,
+      jaeger: 1,
+    },
+    flea: true,
+    level: 1,
+    completedQuests: ["gunsmith-master-part-1", "setup"],
+  };
+
+  const baseV5 = {
+    version: 5 as const,
+    weaponId: "w1",
+    attachments: { mod_muzzle: "m1" },
+    orphaned: ["o1"],
+    createdAt: "2026-04-20T00:00:00.000Z",
+    name: "RECOIL KING",
+    description: "budget",
+    profileSnapshot: profile,
+  };
+
+  it("sets version 6", () => {
+    expect(migrateV5ToV6(baseV5).version).toBe(6);
+  });
+
+  it("preserves every field, profileSnapshot included", () => {
+    const v6 = migrateV5ToV6(baseV5);
+    expect(v6).toEqual({ ...baseV5, version: 6 });
+    expect(v6.profileSnapshot).toEqual(profile);
+    expect(v6.profileSnapshot?.completedQuests).toEqual(["gunsmith-master-part-1", "setup"]);
+  });
+
+  it("handles a build with no profile snapshot", () => {
+    const { profileSnapshot: _drop, ...noSnapshot } = baseV5;
+    const v6 = migrateV5ToV6(noSnapshot);
+    expect(v6.version).toBe(6);
+    expect(v6.profileSnapshot).toBeUndefined();
+  });
+
+  // It cannot distinguish "author never had a level" from "author chose 1", because
+  // Build.safeParse already injected the default before this ran. It must not try.
+  it("leaves an explicit level untouched", () => {
+    const v6 = migrateV5ToV6({
+      ...baseV5,
+      profileSnapshot: { ...profile, level: 37 },
+    });
+    expect(v6.profileSnapshot?.level).toBe(37);
+  });
+});
+
+describe("upgradeLoadedBuild", () => {
+  const shared = {
+    weaponId: "w1",
+    attachments: { mod_muzzle: "m1" },
+    orphaned: [],
+    createdAt: "2026-04-20T00:00:00.000Z",
+  };
+
+  it("carries a v3 build all the way to the current version", () => {
+    const v3 = Build.parse({ ...shared, version: 3 });
+    const out = upgradeLoadedBuild(v3);
+    expect(out.version).toBe(CURRENT_BUILD_VERSION);
+    expect(out.version).toBe(6);
+    if (out.version === 6) {
+      expect(out.weaponId).toBe("w1");
+      expect(out.attachments).toEqual({ mod_muzzle: "m1" });
+    }
+  });
+
+  // v3 → v6 must still run the v4→v5 quest rename, or those unlocks vanish silently.
+  it("applies the gunsmith quest rename on the way from v3 to v6", () => {
+    const v3 = Build.parse({
+      ...shared,
+      version: 3,
+      profileSnapshot: {
+        mode: "advanced",
+        traders: {
+          prapor: 1,
+          therapist: 1,
+          skier: 1,
+          peacekeeper: 1,
+          mechanic: 1,
+          ragman: 1,
+          jaeger: 1,
+        },
+        flea: false,
+        completedQuests: ["gunsmith-part-4"],
+      },
+    });
+    const out = upgradeLoadedBuild(v3);
+    expect(out.version).toBe(6);
+    if (out.version === 6) {
+      expect(out.profileSnapshot?.completedQuests).toEqual(["gunsmith-master-part-4"]);
+      expect(out.profileSnapshot?.level).toBe(1);
+    }
+  });
+
+  it("carries a v4 build to the current version", () => {
+    const v4 = Build.parse({ ...shared, version: 4, name: "Meta M4" });
+    const out = upgradeLoadedBuild(v4);
+    expect(out.version).toBe(6);
+    if (out.version === 6) expect(out.name).toBe("Meta M4");
+  });
+
+  it("carries a v5 build to the current version", () => {
+    const v5 = Build.parse({ ...shared, version: 5, description: "budget" });
+    const out = upgradeLoadedBuild(v5);
+    expect(out.version).toBe(6);
+    if (out.version === 6) expect(out.description).toBe("budget");
+  });
+
+  it("passes a v6 build through untouched", () => {
+    const v6 = Build.parse({ ...shared, version: 6 });
+    expect(upgradeLoadedBuild(v6)).toEqual(v6);
+  });
+
+  // v1/v2 need the weapon's slot tree to place attachments, which no transport has.
+  // /builder finishes the job once the tree loads.
+  it("leaves v1 and v2 alone — they need the slot tree", () => {
+    const v1 = Build.parse({
+      version: 1,
+      weaponId: "w1",
+      modIds: ["m1"],
+      createdAt: shared.createdAt,
+    });
+    expect(upgradeLoadedBuild(v1).version).toBe(1);
+
+    const v2 = Build.parse({ ...shared, version: 2 });
+    expect(upgradeLoadedBuild(v2).version).toBe(2);
   });
 });

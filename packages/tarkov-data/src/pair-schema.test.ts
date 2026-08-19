@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { BuildPair, CURRENT_PAIR_VERSION, type BuildPairV1 } from "./pair-schema.js";
 import { DEFAULT_PROFILE } from "./build-schema.js";
 
-const sampleV4Build = {
-  version: 5 as const,
+const sampleBuild = {
+  version: 6 as const,
   weaponId: "5447a9cd4bdc2dbd208b4567",
   attachments: {},
   orphaned: [],
@@ -15,8 +15,8 @@ describe("BuildPair schema", () => {
     const pair: BuildPairV1 = {
       v: 1,
       createdAt: "2026-04-20T00:00:00.000Z",
-      left: sampleV4Build,
-      right: sampleV4Build,
+      left: sampleBuild,
+      right: sampleBuild,
       leftProfile: DEFAULT_PROFILE,
       rightProfile: DEFAULT_PROFILE,
       name: "early-wipe vs. endgame",
@@ -29,7 +29,7 @@ describe("BuildPair schema", () => {
     const pair = {
       v: 1 as const,
       createdAt: "2026-04-20T00:00:00.000Z",
-      left: sampleV4Build,
+      left: sampleBuild,
       right: null,
     };
     expect(BuildPair.parse(pair)).toEqual(pair);

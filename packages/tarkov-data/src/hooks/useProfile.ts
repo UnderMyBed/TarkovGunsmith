@@ -4,6 +4,25 @@ import { PlayerProfile, DEFAULT_PROFILE } from "../build-schema.js";
 const STORAGE_KEY = "tg:player-profile";
 
 /**
+ * Parse one raw localStorage string into a profile, falling back to `DEFAULT_PROFILE`
+ * on anything unreadable.
+ *
+ * Split out of the hook so the fallback is directly testable in a node environment.
+ * That fallback is the project's sharpest silent-data-loss edge: it swallows the parse
+ * error and returns defaults, so any newly-required field on `PlayerProfile` would wipe
+ * every stored profile — trader LLs and the whole completed-quest list — with no error
+ * surfaced anywhere. New fields must carry a `.default()`; see `PlayerProfile.level`.
+ */
+export function parseStoredProfile(raw: string | null): PlayerProfile {
+  if (raw === null || raw === "") return DEFAULT_PROFILE;
+  try {
+    return PlayerProfile.parse(JSON.parse(raw));
+  } catch {
+    return DEFAULT_PROFILE;
+  }
+}
+
+/**
  * Reactive player profile backed by `localStorage["tg:player-profile"]`.
  *
  * Returns a `[profile, setProfile]` tuple. Writes are synchronous to state
@@ -19,10 +38,9 @@ export function useProfile(): [PlayerProfile, (next: PlayerProfile) => void] {
   const [profile, setProfileState] = useState<PlayerProfile>(() => {
     if (typeof window === "undefined") return DEFAULT_PROFILE;
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return DEFAULT_PROFILE;
-      return PlayerProfile.parse(JSON.parse(raw));
+      return parseStoredProfile(window.localStorage.getItem(STORAGE_KEY));
     } catch {
+      // localStorage itself threw (disabled / blocked by policy).
       return DEFAULT_PROFILE;
     }
   });

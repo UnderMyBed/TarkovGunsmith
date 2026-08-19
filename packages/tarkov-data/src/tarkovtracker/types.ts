@@ -34,6 +34,8 @@ export interface MapResult {
   profile: {
     completedQuests: string[];
     flea: boolean;
+    /** Clamped into `PlayerProfile.level`'s 1–99 range — see `mapRawToProfile`. */
+    level: number;
   };
   meta: {
     questCount: number;

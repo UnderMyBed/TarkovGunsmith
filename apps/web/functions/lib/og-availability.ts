@@ -22,6 +22,12 @@ export type AvailabilityPill = "FLEA" | "LL2" | "LL3" | "LL4";
  */
 export function availabilityPillText(
   mods: readonly AvailabilityMod[],
+  // Deliberately unused, and deliberately left that way. This is a parallel, hand-rolled
+  // summariser that never calls `itemAvailability`, so OG cards do NOT do profile gating:
+  // the pill reports what the build needs, not what any given player can reach. A build
+  // whose mods are flea-only above the author's PMC level still prints "FLEA" here, where
+  // `itemAvailability` would return `flea-level-required`. The divergence is known and
+  // out of scope for the flea-level gate; unifying the two is its own piece of work.
   _profile: PlayerProfile,
 ): AvailabilityPill {
   let needsFlea = false;

@@ -15,6 +15,9 @@ const baseProfile: PlayerProfile = {
     jaeger: 1,
   },
   flea: false,
+  // Matches DEFAULT_PROFILE. Every profile that reaches itemAvailability in production
+  // has been through PlayerProfile.parse, so it always carries a level.
+  level: 1,
 };
 
 function traderOffer(
@@ -36,14 +39,17 @@ function traderOffer(
   };
 }
 
-function fleaOffer(priceRUB: number | null = 2000): ModListItem["buyFor"][number] {
+function fleaOffer(
+  priceRUB: number | null = 2000,
+  minPlayerLevel: number | null = 15,
+): ModListItem["buyFor"][number] {
   return {
     priceRUB,
     currency: "RUB",
     vendor: {
       __typename: "FleaMarket",
       normalizedName: "flea-market",
-      minPlayerLevel: 15,
+      minPlayerLevel,
     },
   };
 }
@@ -123,10 +129,14 @@ describe("itemAvailability", () => {
     expect(result.available ? null : result.reason).toBe("flea-locked");
   });
 
-  it("uses flea path when profile has flea access", () => {
+  it("uses flea path when profile has flea access and clears the level gate", () => {
+    // fleaOffer() has always carried minPlayerLevel: 15. Before the gate existed that
+    // number was inert, so this test passed at level 1. It now needs a real level —
+    // the change in this assertion is the gate proving itself.
     const result = itemAvailability(mod({ buyFor: [fleaOffer(3000)] }), {
       ...baseProfile,
       flea: true,
+      level: 15,
     });
     expect(result.available).toBe(true);
     if (result.available) expect(result.kind).toBe("flea");
@@ -147,7 +157,7 @@ describe("itemAvailability", () => {
           fleaOffer(10_000),
         ],
       }),
-      { ...baseProfile, flea: true },
+      { ...baseProfile, flea: true, level: 20 },
     );
     expect(result.available).toBe(true);
     if (result.available && result.kind === "trader") {
@@ -164,6 +174,119 @@ describe("itemAvailability", () => {
     const r2 = itemAvailability(mod({ buyFor: null as unknown as [] }), baseProfile);
     expect(r2.available).toBe(false);
     if (!r2.available) expect(r2.reason).toBe("no-sources");
+  });
+});
+
+describe("itemAvailability — flea player-level gate", () => {
+  const fleaProfile: PlayerProfile = { ...baseProfile, flea: true };
+
+  it("blocks a flea offer when the profile level is below minPlayerLevel", () => {
+    const result = itemAvailability(mod({ buyFor: [fleaOffer(3000, 20)] }), {
+      ...fleaProfile,
+      level: 19,
+    });
+    expect(result.available).toBe(false);
+    if (!result.available) {
+      expect(result.reason).toBe("flea-level-required");
+      if (result.reason === "flea-level-required") {
+        expect(result.minPlayerLevel).toBe(20);
+      }
+    }
+  });
+
+  it("allows the flea offer at exactly minPlayerLevel", () => {
+    const result = itemAvailability(mod({ buyFor: [fleaOffer(3000, 20)] }), {
+      ...fleaProfile,
+      level: 20,
+    });
+    expect(result.available).toBe(true);
+    if (result.available) expect(result.kind).toBe("flea");
+  });
+
+  it("treats minPlayerLevel 0 and null as no requirement", () => {
+    for (const min of [0, null] as const) {
+      const result = itemAvailability(mod({ buyFor: [fleaOffer(3000, min)] }), {
+        ...fleaProfile,
+        level: 1,
+      });
+      expect(result.available).toBe(true);
+    }
+  });
+
+  it("reports the lowest gate when several flea paths fail", () => {
+    const result = itemAvailability(mod({ buyFor: [fleaOffer(3000, 25), fleaOffer(9000, 20)] }), {
+      ...fleaProfile,
+      level: 5,
+    });
+    expect(result.available).toBe(false);
+    if (!result.available && result.reason === "flea-level-required") {
+      expect(result.minPlayerLevel).toBe(20);
+    }
+  });
+
+  it("falls through to a satisfiable trader path rather than reporting the level gate", () => {
+    const result = itemAvailability(
+      mod({ buyFor: [fleaOffer(500, 25), traderOffer("prapor", 1, 9000)] }),
+      { ...fleaProfile, level: 5 },
+    );
+    expect(result.available).toBe(true);
+    if (result.available && result.kind === "trader") {
+      expect(result.traderNormalizedName).toBe("prapor");
+    }
+  });
+});
+
+describe("itemAvailability — unmet-requirement precedence", () => {
+  // With profile.flea === true, reporting "you have no flea access" would be a lie.
+  it("reports the level gate, not flea-locked, when the player HAS flea access", () => {
+    const result = itemAvailability(mod({ buyFor: [fleaOffer(3000, 20)] }), {
+      ...baseProfile,
+      flea: true,
+      level: 5,
+    });
+    expect(result.available ? null : result.reason).toBe("flea-level-required");
+  });
+
+  // No flea access at all is the blunter, earlier blocker — level never enters into it.
+  it("reports flea-locked, not the level gate, when the player has no flea access", () => {
+    const result = itemAvailability(mod({ buyFor: [fleaOffer(3000, 20)] }), {
+      ...baseProfile,
+      flea: false,
+      level: 5,
+    });
+    expect(result.available ? null : result.reason).toBe("flea-locked");
+  });
+
+  // A single targeted quest is more accessible than a multi-level grind.
+  it("reports the quest ahead of the flea level gate", () => {
+    const result = itemAvailability(
+      mod({
+        buyFor: [fleaOffer(3000, 20), traderOffer("mechanic", 1, 500, "gunsmith-master-part-1")],
+      }),
+      { ...baseProfile, flea: true, level: 5 },
+    );
+    expect(result.available ? null : result.reason).toBe("quest-required");
+  });
+
+  it("reports the trader LL ahead of the flea level gate", () => {
+    const result = itemAvailability(
+      mod({ buyFor: [fleaOffer(3000, 20), traderOffer("prapor", 3, 500)] }),
+      { ...baseProfile, flea: true, level: 5 },
+    );
+    expect(result.available ? null : result.reason).toBe("trader-ll-required");
+  });
+
+  it("reports the trader LL ahead of the quest, unchanged by the new variant", () => {
+    const result = itemAvailability(
+      mod({
+        buyFor: [
+          traderOffer("prapor", 3, 500),
+          traderOffer("mechanic", 1, 500, "gunsmith-master-part-1"),
+        ],
+      }),
+      { ...baseProfile, flea: true, level: 5 },
+    );
+    expect(result.available ? null : result.reason).toBe("trader-ll-required");
   });
 });
 

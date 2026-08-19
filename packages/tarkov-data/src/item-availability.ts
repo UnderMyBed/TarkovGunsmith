@@ -31,6 +31,11 @@ export type ItemAvailability =
       questNormalizedName: string;
       traderNormalizedName: string;
     }
+  | {
+      available: false;
+      reason: "flea-level-required";
+      minPlayerLevel: number;
+    }
   | { available: false; reason: "flea-locked" }
   | { available: false; reason: "no-sources" };
 
@@ -59,12 +64,20 @@ function isFleaBlacklisted(item: AvailabilityInput): boolean {
  * Walks every buyFor entry. A TraderOffer is satisfied iff the profile's
  * trader LL meets `minTraderLevel` AND (no taskUnlock OR advanced-mode
  * profile has the quest marked complete). A FleaMarket offer is satisfied
- * iff `profile.flea === true` AND the item isn't on the `noFlea` list.
+ * iff `profile.flea === true` AND the item isn't on the `noFlea` list AND
+ * `profile.level` meets the offer's `minPlayerLevel`.
  *
  * Returns the cheapest satisfying path (by priceRUB, nulls sort last).
- * If nothing satisfies, returns the most-accessible unmet requirement —
- * the lowest trader-LL gate across failing trader paths, else a quest,
- * else flea-locked, else no-sources.
+ * If nothing satisfies, returns the most-accessible unmet requirement, in this
+ * precedence order: the lowest trader-LL gate across failing trader paths, else
+ * a quest, else the lowest flea player-level gate, else flea-locked, else
+ * no-sources.
+ *
+ * The flea player-level gate sits above `flea-locked` because it can only be
+ * reached with `profile.flea === true` — telling that player they have no flea
+ * access would be a lie. It sits below `quest-required` because a single
+ * targeted quest is more accessible than a multi-level grind, and because that
+ * keeps the pre-existing ordering intact.
  *
  * Accepts any `{ buyFor, types }` shape — both `ModListItem` and
  * `WeaponListItem` satisfy `AvailabilityInput` structurally.
@@ -88,6 +101,7 @@ export function itemAvailability(
   const satisfied: Array<SatTrader | SatFlea> = [];
   const unmetTrader: Array<{ traderNormalizedName: string; minLevel: number }> = [];
   const unmetQuest: Array<{ questNormalizedName: string; traderNormalizedName: string }> = [];
+  const unmetFleaLevel: Array<{ minPlayerLevel: number }> = [];
   let sawFleaPath = false;
 
   for (const offer of offers) {
@@ -129,6 +143,19 @@ export function itemAvailability(
       sawFleaPath = true;
       if (isFleaBlacklisted(item)) continue;
       if (!profile.flea) continue;
+      // Upstream's `minLevelForFlea`, mapped onto the vendor by `resolveBuyFor`. Absent
+      // and 0 both mean "no level requirement", and `?? 1` collapses them onto the
+      // profile's own floor of 1 so neither can accidentally gate anything.
+      const minPlayerLevel = vendor.minPlayerLevel ?? 1;
+      // Phrased as "does it meet the gate?" rather than "does it fail the gate?" so the
+      // polarity is safe. `PlayerProfile.level` is typed non-optional, but if a hand-built
+      // profile ever reaches here without one, `undefined >= n` is false and the item
+      // reports as gated — visibly wrong. The `<` form would have made `undefined < n`
+      // false too, silently handing out all 778 level-locked mods with no symptom.
+      if (!(profile.level >= minPlayerLevel)) {
+        unmetFleaLevel.push({ minPlayerLevel });
+        continue;
+      }
       satisfied.push({ kind: "flea", priceRUB: offer.priceRUB });
     }
   }
@@ -171,6 +198,16 @@ export function itemAvailability(
       reason: "quest-required",
       questNormalizedName: q.questNormalizedName,
       traderNormalizedName: q.traderNormalizedName,
+    };
+  }
+  if (unmetFleaLevel.length > 0) {
+    // Lowest gate first, mirroring the `unmetTrader` sort — report the nearest
+    // requirement, not an arbitrary one.
+    unmetFleaLevel.sort((a, b) => a.minPlayerLevel - b.minPlayerLevel);
+    return {
+      available: false,
+      reason: "flea-level-required",
+      minPlayerLevel: unmetFleaLevel[0]!.minPlayerLevel,
     };
   }
   if (sawFleaPath) {

@@ -85,6 +85,7 @@ export function useTarkovTrackerSync(args: UseTarkovTrackerSyncArgs): UseTarkovT
         ...propsRef.current.profile,
         completedQuests: result.profile.completedQuests,
         flea: result.profile.flea,
+        level: result.profile.level,
       });
       setSyncState({
         state: "synced",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useState, type ReactElement } from "react";
-import type { BuildV5, ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
+import type { BuildV6, ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { Button, Card, Pill } from "@tarkov/ui";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
@@ -23,10 +23,10 @@ export interface OptimizeViewProps {
   profile: PlayerProfile;
   sync: UseTarkovTrackerSyncResult;
   currentAttachments: Readonly<Record<string, string>>;
-  currentBuild: BuildV5;
+  currentBuild: BuildV6;
   currentStats: WeaponSpec | null;
   currentPrice: number | null;
-  onAccept: (build: BuildV5) => void;
+  onAccept: (build: BuildV6) => void;
   onExit: () => void;
   onEditProfile: () => void;
 }
