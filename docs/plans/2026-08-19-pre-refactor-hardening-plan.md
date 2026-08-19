@@ -12,7 +12,7 @@ history — read this file in full, plus the unit brief you were given.
 
 ## Why this exists
 
-A refactor is a behaviour-preserving change. You can only do one safely if you can *detect*
+A refactor is a behaviour-preserving change. You can only do one safely if you can _detect_
 that behaviour changed. On the two surfaces this redesign touches hardest — the design
 system and the route layer — we currently cannot.
 
@@ -28,16 +28,16 @@ Everything in Stage 1 exists to fix that. Nothing else starts until it is done.
 
 ## Decisions (locked — do not relitigate)
 
-| # | Decision | Chosen | Consequence |
-| - | -------- | ------ | ----------- |
-| D1 | Coverage scope | **Routes in, ratchet thresholds** | `apps/web/src/routes/**` enters measurement. Per-package thresholds start at today's honest number and only ever rise. |
-| D2 | `BuilderPage` | **Decompose now, as prep** | Behaviour-preserving split lands before any visual work, in its own PR. |
-| D3 | Ship cadence | **Release after each stage** | Cut a release where a stage produced a user-facing change. Stages that are purely internal produce no version bump — that is correct, not a miss. |
-| D4 | Scope escalation | **Timebox, skip, keep going** | An item that materially exceeds its estimate is abandoned with a clean tree, flagged, and the run continues. |
+| #   | Decision         | Chosen                            | Consequence                                                                                                                                       |
+| --- | ---------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Coverage scope   | **Routes in, ratchet thresholds** | `apps/web/src/routes/**` enters measurement. Per-package thresholds start at today's honest number and only ever rise.                            |
+| D2  | `BuilderPage`    | **Decompose now, as prep**        | Behaviour-preserving split lands before any visual work, in its own PR.                                                                           |
+| D3  | Ship cadence     | **Release after each stage**      | Cut a release where a stage produced a user-facing change. Stages that are purely internal produce no version bump — that is correct, not a miss. |
+| D4  | Scope escalation | **Timebox, skip, keep going**     | An item that materially exceeds its estimate is abandoned with a clean tree, flagged, and the run continues.                                      |
 
 Two calls made by the conductor rather than escalated:
 
-- **Type scale (Stage 3) is a mechanical extraction.** Tokenize the *existing* values so
+- **Type scale (Stage 3) is a mechanical extraction.** Tokenize the _existing_ values so
   rendered output is byte-identical. Consolidate exact duplicates only. Inventing a new
   scale is the redesign's job, not prep work.
 - **`og`'s two 0%-covered files** (`embedded-fonts.ts`, `embedded.ts`) are generated build
@@ -50,17 +50,17 @@ Two calls made by the conductor rather than escalated:
 
 Coverage as of `dc7fa11`. These are the numbers the ratchet starts from.
 
-| Package | Stmts | Branch | Funcs | Lines | Current state |
-| ------- | ----: | -----: | ----: | ----: | ------------- |
-| `ballistics` | 100 | 100 | 100 | 100 | passes its 100/95 gate |
-| `optimizer` | 100 | 96.51 | 100 | 100 | passes its 100/95 gate |
-| `tarkov-data` | 93.57 | 81.06 | 92.30 | 96.00 | **fails** 100/95; excludes `hooks/**` |
-| `repo-guards` | 91.48 | 75.75 | 87.50 | 93.02 | no coverage config at all |
-| `og` | 69.92 | 69.87 | 76.31 | 73.50 | **fails** 95/85 |
-| `web` (routes excluded) | 35.96 | 34.92 | 29.76 | 36.61 | **fails** its declared 100/95 |
-| `web` (incl. routes) | 22.11 | 21.04 | 15.85 | 22.64 | what 1.4 opts into |
-| `ui` (widened) | 15.85 | 5.26 | 10.00 | — | reports 100% over 5 statements today |
-| `builds-api` | — | — | — | — | **provider `istanbul` never installed** |
+| Package                 | Stmts | Branch | Funcs | Lines | Current state                           |
+| ----------------------- | ----: | -----: | ----: | ----: | --------------------------------------- |
+| `ballistics`            |   100 |    100 |   100 |   100 | passes its 100/95 gate                  |
+| `optimizer`             |   100 |  96.51 |   100 |   100 | passes its 100/95 gate                  |
+| `tarkov-data`           | 93.57 |  81.06 | 92.30 | 96.00 | **fails** 100/95; excludes `hooks/**`   |
+| `repo-guards`           | 91.48 |  75.75 | 87.50 | 93.02 | no coverage config at all               |
+| `og`                    | 69.92 |  69.87 | 76.31 | 73.50 | **fails** 95/85                         |
+| `web` (routes excluded) | 35.96 |  34.92 | 29.76 | 36.61 | **fails** its declared 100/95           |
+| `web` (incl. routes)    | 22.11 |  21.04 | 15.85 | 22.64 | what 1.4 opts into                      |
+| `ui` (widened)          | 15.85 |   5.26 | 10.00 |     — | reports 100% over 5 statements today    |
+| `builds-api`            |     — |      — |     — |     — | **provider `istanbul` never installed** |
 
 Other measured facts referenced by the stages below:
 
@@ -85,7 +85,7 @@ Stages are gated. Do not start a stage until the prior gate is met.
 **Gate to clear:** CI fails on a coverage drop, and a `packages/ui` component can be
 render-tested.
 
-#### 1.1 — Enforce coverage in CI *(conductor-owned; base for everything else)*
+#### 1.1 — Enforce coverage in CI _(conductor-owned; base for everything else)_
 
 - Add a `test:coverage` task to `turbo.json`.
 - Give every package a `test:coverage` script. `web`, `builds-api` and `repo-guards`
@@ -93,7 +93,7 @@ render-tested.
 - ~~Install `@vitest/coverage-istanbul` for `builds-api`.~~ **Attempted and abandoned.**
   Installing the provider does not help: `@cloudflare/vitest-pool-workers@0.22.0` dies at
   test-file import under coverage instrumentation with `TypeError: Cannot read properties
-  of undefined (reading 'config')` across all four test files, and workerd cannot use the
+of undefined (reading 'config')` across all four test files, and workerd cannot use the
   v8 provider. Upstream limitation, not a gap in our tests. Deferred per D4 with the full
   reasoning recorded in `apps/builds-api/vitest.config.ts`. Its 29 tests still run in CI.
 - Add a `repo-guards` coverage config; it has none.
@@ -147,15 +147,15 @@ the safety net.
 
 Measured fallout — 31 violations, 15 of 55 files linted:
 
-| Count | Rule |
-| ----: | ---- |
-| 13 | `jsx-a11y/label-has-associated-control` |
-| 5 | `react-hooks/exhaustive-deps` |
-| 4 | `jsx-a11y/click-events-have-key-events` |
-| 3 | `jsx-a11y/no-static-element-interactions` |
-| 2 | `react-hooks/set-state-in-effect` |
-| 2 | `jsx-a11y/no-noninteractive-element-interactions` |
-| 2 | `jsx-a11y/heading-has-content` |
+| Count | Rule                                              |
+| ----: | ------------------------------------------------- |
+|    13 | `jsx-a11y/label-has-associated-control`           |
+|     5 | `react-hooks/exhaustive-deps`                     |
+|     4 | `jsx-a11y/click-events-have-key-events`           |
+|     3 | `jsx-a11y/no-static-element-interactions`         |
+|     2 | `react-hooks/set-state-in-effect`                 |
+|     2 | `jsx-a11y/no-noninteractive-element-interactions` |
+|     2 | `jsx-a11y/heading-has-content`                    |
 
 The seven `react-hooks` findings are real defects and must be fixed as behaviour changes,
 with tests, not silenced:
@@ -212,16 +212,16 @@ manual pass.
 `pnpm audit` is clean at every severity. This is about timing, not security — these must not
 be in flight during the refactor, or "did my change break this?" becomes unanswerable.
 
-| Package | Current | Latest | Note |
-| ------- | ------- | ------ | ---- |
-| `tailwind-merge` | 2.6.1 | 3.6.0 | core to every `ui` component |
-| `zod` | 3.25.76 | 4.4.3 | every schema in `data` and `web` |
-| `typescript` | 6.0.3 | 7.0.2 | whole repo |
-| `satori` | 0.10.14 | 0.29.1 | **gated on 1.3** — 19 minors stale in the worst-covered package |
-| `@types/node` | 22.20.1 | 26.2.0 | pinned by a root `pnpm.overrides` entry |
-| `jsdom` | 29.1.1 | 30.0.1 | pairs with 1.2 |
-| `lint-staged` | 16.4.0 | 17.3.0 | tooling only |
-| `@commitlint/*` | 20.5.3 | 21.2.2 | tooling only |
+| Package          | Current | Latest | Note                                                            |
+| ---------------- | ------- | ------ | --------------------------------------------------------------- |
+| `tailwind-merge` | 2.6.1   | 3.6.0  | core to every `ui` component                                    |
+| `zod`            | 3.25.76 | 4.4.3  | every schema in `data` and `web`                                |
+| `typescript`     | 6.0.3   | 7.0.2  | whole repo                                                      |
+| `satori`         | 0.10.14 | 0.29.1 | **gated on 1.3** — 19 minors stale in the worst-covered package |
+| `@types/node`    | 22.20.1 | 26.2.0 | pinned by a root `pnpm.overrides` entry                         |
+| `jsdom`          | 29.1.1  | 30.0.1 | pairs with 1.2                                                  |
+| `lint-staged`    | 16.4.0  | 17.3.0 | tooling only                                                    |
+| `@commitlint/*`  | 20.5.3  | 21.2.2 | tooling only                                                    |
 
 D4 applies here in particular: if one upgrade turns into a large migration, abandon it
 cleanly, flag it, and continue.
@@ -230,7 +230,7 @@ cleanly, flag it, and continue.
 
 ### Stage 5 — Prepare the surfaces the refactor lands on
 
-#### 5.1 — Decompose `BuilderPage` *(gated on 1.4)*
+#### 5.1 — Decompose `BuilderPage` _(gated on 1.4)_
 
 512 lines in one function body, 12 `useState`, 45 hook calls, holding weapon selection,
 attachments, orphan tracking, profile, TarkovTracker sync, compare state, save metadata and
@@ -271,12 +271,12 @@ escaped** — `escapeHtml` handles `&` first, then the other four entities. No a
 
 Not oversights. Doing these now would be wasted or premature effort.
 
-| Item | Why not now | When |
-| ---- | ----------- | ---- |
-| Visual regression baselines | Zero exist today. Baselining a design about to be replaced means re-baselining later. | After the redesign |
-| a11y work beyond the lint rules | Don't hand-audit components about to be rewritten. Fix the 24 lint hits; do the real pass per component as it is built. | During the redesign |
-| The 16 MB data-path rework | `items` is 15.9 MB raw / 1.86 MB gzip over 5,312 items, fetched client-side. Highest-leverage perf work available, but it is a data-layer project with its own spec and does not interrupt UI work. Stage 5.3 covers the part that would. | Own milestone |
-| ADR-0003 armour plates | Largest known correctness gap (4–17× on shots-to-break). Tractable — 33 refs, 13 files, only 4 in `apps/web`, behind a fully-covered package. But it is a maths change, orthogonal to a UI refactor. | Own milestone |
+| Item                            | Why not now                                                                                                                                                                                                                               | When                |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Visual regression baselines     | Zero exist today. Baselining a design about to be replaced means re-baselining later.                                                                                                                                                     | After the redesign  |
+| a11y work beyond the lint rules | Don't hand-audit components about to be rewritten. Fix the 24 lint hits; do the real pass per component as it is built.                                                                                                                   | During the redesign |
+| The 16 MB data-path rework      | `items` is 15.9 MB raw / 1.86 MB gzip over 5,312 items, fetched client-side. Highest-leverage perf work available, but it is a data-layer project with its own spec and does not interrupt UI work. Stage 5.3 covers the part that would. | Own milestone       |
+| ADR-0003 armour plates          | Largest known correctness gap (4–17× on shots-to-break). Tractable — 33 refs, 13 files, only 4 in `apps/web`, behind a fully-covered package. But it is a maths change, orthogonal to a UI refactor.                                      | Own milestone       |
 
 ---
 
