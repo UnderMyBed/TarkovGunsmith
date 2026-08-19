@@ -11,9 +11,8 @@
 // caps how many test files can fall back to the default TS project across the whole monorepo
 // at 30. Splitting these 13 hooks into 13 files pushed the total over that cap; raising the
 // cap or giving this package its own routed `tsconfig.test.json` project (one already exists,
-// just not wired into `eslint.config.js` yet) is Stage 2.2 of
-// docs/plans/2026-08-19-pre-refactor-hardening-plan.md, not this unit, and `eslint.config.js`
-// is explicitly another unit's concurrent work — see that file's own top-of-array comment.
+// just not wired into `eslint.config.js` yet) is separate work — see `eslint.config.js`'s own
+// top-of-array comment.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { withTarkovProvider, withQueryClient } from "../__test-utils__/query-wrapper.js";

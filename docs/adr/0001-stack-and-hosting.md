@@ -45,6 +45,5 @@ We are rebuilding the defunct TarkovGunsmith site. Constraints: must be hostable
 
 ## References
 
-- [Design spec](../superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md)
 - [the-hideout ecosystem](https://github.com/the-hideout)
 - [tarkov-api GraphQL](https://api.tarkov.dev)

@@ -12,5 +12,6 @@ that happens.
 they must accept — a grenade, a helmet, a magazine and a scope alongside ammo, armor, weapons and
 weapon mods — so a selector that is too permissive fails rather than passing quietly.
 
-**Refresh** with the capture script in Task 5 of
-`docs/plans/2026-08-18-json-api-migration-plan.md` when upstream shapes change.
+**Refresh** by re-capturing from `json.tarkov.dev` when upstream shapes change, keeping the
+accept/reject mix above intact. `scripts/verify-upstream-contract.ts` checks these fixtures
+against live upstream and is the fastest way to find out that a shape has moved.

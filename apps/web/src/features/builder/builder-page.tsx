@@ -42,8 +42,8 @@ export interface BuilderPageProps {
  * The `/builder` page. Composition only — the actual "what is this build" state lives in
  * `useBuilderState`, save metadata in `useSaveMetadata`, the share flow in `useShareBuild`,
  * and the compare handoff in `useCompareHandoff` (all in `features/builder/`). This function
- * used to hold all of that directly (12 `useState`, ~45 hook calls in one body) — see
- * docs/plans/2026-08-19-pre-refactor-hardening-plan.md, Stage 5.1, for why it was split.
+ * used to hold all of that directly (12 `useState`, ~45 hook calls in one body); it was split
+ * so each concern could be tested directly rather than only through the route.
  *
  * Lives here rather than in `routes/builder.tsx` (its only caller used to be that route's
  * own `component`) because `routes/builder.$id.tsx` also renders it directly, as a plain

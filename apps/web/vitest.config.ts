@@ -2,8 +2,7 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 /* Thresholds are a RATCHET, not an aspiration. They are set to the coverage this
- * package actually had when enforcement was switched on (see
- * docs/plans/2026-08-19-pre-refactor-hardening-plan.md for the measured baseline table).
+ * package actually had when enforcement was switched on.
  *
  * Raise them as tests land. NEVER lower one to make CI pass — if a change drops
  * coverage, the change needs tests, not a smaller number. */

@@ -15,8 +15,7 @@ import { defineConfig } from "vitest/config";
  * across all four test files. v8 is not an alternative — workerd does not support it,
  * which is why the pool documents istanbul in the first place.
  *
- * So this is an upstream limitation, not a gap in our tests. Timeboxed and deferred per
- * decision D4 of docs/plans/2026-08-19-pre-refactor-hardening-plan.md.
+ * So this is an upstream limitation, not a gap in our tests. Timeboxed and deferred.
  *
  * Worth keeping in perspective: at 234 source lines against 353 test lines and 29 test
  * cases, this is the best-tested app in the repo by ratio. It is not the risk surface —
