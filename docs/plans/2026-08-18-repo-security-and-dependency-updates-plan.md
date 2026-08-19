@@ -1797,7 +1797,9 @@ gh issue close <number> --comment "Alert path verified end to end."
 - [x] Those logs show `apps/*` and `packages/*` were scanned, not just the root. Confirmed — the
       run produced PRs against `/apps/web`, `/apps/builds-api`, and `/packages/og`. It also
       surfaced a real bug: scanning members _directly_ meant the root `pnpm-lock.yaml` was never
-      regenerated, so all 7 npm PRs failed CI on `ERR_PNPM_OUTDATED_LOCKFILE`. Fixed by scoping
+      regenerated, so all 6 npm _version_ update PRs failed CI on `ERR_PNPM_OUTDATED_LOCKFILE`.
+      The one npm PR that passed (#128) was a _security_ update, which runs from the repo root
+      regardless of config and did regenerate the lockfile — the control case. Fixed by scoping
       npm to the workspace root in
       [`2026-08-18-dependabot-pnpm-workspace-fix-plan.md`](./2026-08-18-dependabot-pnpm-workspace-fix-plan.md).
 - [x] Secret-scanning history results reviewed and any findings recorded as follow-up issues.

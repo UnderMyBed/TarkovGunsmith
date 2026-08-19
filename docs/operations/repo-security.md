@@ -64,8 +64,9 @@ bot-authored issue in an unwatched repository notifies no one.
 
 ## Dependabot and the pnpm workspace
 
-Dependabot's first run (2026-08-18) opened 12 PRs and all 7 npm ones failed CI. The cause and the
-resulting rules are recorded here because the configuration looks wrong until you know why.
+Dependabot's first run (2026-08-18) opened 12 PRs, and all 6 npm _version_ updates failed CI. The
+cause and the resulting rules are recorded here because the configuration looks wrong until you
+know why.
 
 ### npm is scoped to the root; `github-actions` is not
 
@@ -81,6 +82,11 @@ directory, where no lockfile is in scope. Dependabot rewrites `package.json`, le
 `pnpm-lock.yaml` untouched, and CI dies on `ERR_PNPM_OUTDATED_LOCKFILE`. This is the
 misconfiguration described by dependabot-core's maintainers in
 [PR #11487](https://github.com/dependabot/dependabot-core/pull/11487).
+
+**Security updates are the exception, and they are the proof.** They are driven by the repo-wide
+advisory scanner rather than a `directories:` entry, so they run from the root regardless of
+config — which is why #128 was the one npm PR of the first run that updated `pnpm-lock.yaml` and
+passed. Same tool, same day, same repo: root-scoped job works, member-scoped job does not.
 
 `packages/repo-guards/src/dependabot.test.ts` enforces both rules, deriving the member globs from
 `pnpm-workspace.yaml` so a new workspace is covered the day it is added.

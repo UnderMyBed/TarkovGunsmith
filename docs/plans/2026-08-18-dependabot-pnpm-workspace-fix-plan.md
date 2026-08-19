@@ -99,17 +99,26 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
 
 ## Post-merge sequence (strict order)
 
-- [ ] **Step 1: Merge the 5 green `github-actions` PRs** (#117–#121)
+- [ ] **Step 1: Merge the `github-actions` PRs** (#117–#121)
 
-Each merge makes the others out-of-date; rebase via `@dependabot rebase` as needed.
+4 of the 5 are green. #118 (`actions/cache` 4→6) failed on a **flaky** `apps/web` unit test
+(`optimize-view.test.tsx`, "ACCEPT SELECTED (1)"), not on the bump — re-run it before merging.
+
+Branch protection is `strict: true`, so each merge makes the others out-of-date; rebase via
+`@dependabot rebase` as needed.
 
 - [ ] **Step 2: Confirm `actions/checkout` gets a PR once the limit frees up**
 
 It is queued behind `open-pull-requests-limit: 5` and is the last Node 20 deprecation warning.
 
-- [ ] **Step 3: Close the 7 stale npm PRs** (#122–#128)
+- [ ] **Step 3: Close the 6 stale npm version-update PRs** (#122–#127)
 
 `@dependabot close` on each, so Dependabot records them as handled rather than re-opening.
+
+**Leave #128 open.** It is a security update, it already carries a correct `pnpm-lock.yaml`, and it
+passes CI — but its manifest change is `vite` ^6.4.3 → ^7.3.5 in `apps/web`, a major bump of the
+SPA's build tool that `dependency-residue.md` says is pinned to 6.x deliberately. It belongs with
+the major-bump review pass, not here.
 
 - [ ] **Step 4: Verify the re-run produces correctly-formed npm PRs**
 
