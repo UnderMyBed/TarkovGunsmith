@@ -6,7 +6,11 @@
 
 ## Verdict in one line
 
-The **migration itself is clean** — 100% parse rate on every fetcher, no silent drops, no missing fields. But the audit surfaced a **pre-existing 100× unit error in the recoil calculation** that predates the migration and is now precisely quantified.
+The **migration itself is clean** — 100% parse rate on every fetcher, no silent drops, no missing fields.
+
+What it surfaced instead are **three pre-existing calculation defects, none caused by the migration and all of them severe**: recoil is 100× too weak (§B), the accuracy stat is unit-wrong _and_ sign-inverted so the optimizer's `max-accuracy` objective selects for the worst accuracy (§C), and armor durability is wrong by 35–58×, rendering 97.9% of `/matrix` meaningless (§G).
+
+They share one cause. Every fixture in the affected packages carries **invented magnitudes that cannot occur upstream** — recoil values 43× larger than the real maximum, armor destructibility values belonging to no material in either table — so the suite passes at 100% while the math is wrong by two orders of magnitude. A test suite built on impossible inputs cannot detect a unit error.
 
 ---
 
@@ -103,7 +107,17 @@ Live range `-0.05 … 0.06` (i.e. ±3–6%), but `adaptMod` adds it directly to 
 accuracyDelta: item.properties.accuracyModifier,   // 0.05  -> "+0.05 MOA"
 ```
 
-Dimensionally wrong — a 5% accuracy change is applied as 0.05 MOA. Lower practical impact than recoil, because `baseAccuracy` is already the fabricated constant `DEFAULT_BASE_ACCURACY = 3.5` rather than real data, so the accuracy column is decorative either way. Worth fixing alongside recoil, and worth deciding whether an accuracy stat sourced from a hardcoded constant should be shown at all.
+Dimensionally wrong — a 5% accuracy change is applied as 0.05 MOA.
+
+### The sign is also inverted, and it has a live consequence
+
+Checked against the live document, the positive end of the range is precision hardware — SV-98 SRVV muzzle brake `+0.06`, M700 AI AT AICS chassis `+0.06`, Magpul PRS GEN2/GEN3 stocks `+0.05` — and the negative end is suppressors: Mosin Bramit `-0.05`, Norinco VQX-191 `-0.05`, PBS-1 `-0.03`.
+
+So **positive `accuracyModifier` means better accuracy, i.e. smaller MOA.** `weaponSpec` adds it to a lower-is-better MOA figure, which reverses it.
+
+That is not cosmetic. The optimizer's `max-accuracy` objective minimises `stats.accuracy` and picks the **smallest** `accuracyModifier` per slot — so **"maximise accuracy" selects suppressors and rejects precision stocks.** The objective does the opposite of its name.
+
+The correct model is `baseAccuracy × (1 − Σaccuracy)`, with the optimizer's bound and per-item score flipped to match. Note that `baseAccuracy` remains the fabricated constant `DEFAULT_BASE_ACCURACY = 3.5` rather than real data, so fixing the unit and sign makes the stat _coherent_, not _sourced_ — whether it should ship at all is still open.
 
 ---
 
@@ -134,22 +148,71 @@ The JSON API exposes considerably more than the GraphQL selections did. None of 
 
 ---
 
-## G. Adjacent observation — armor durability model (pre-existing, not a mapping issue)
+## G. Armor durability is wrong by 35–58× — verified against the original C#
 
-Not caused by the migration, and not a data defect: both inputs arrive correctly. Recording it because a data audit is where the arithmetic becomes visible.
+**Severity: high. 97.9% of `/matrix` is meaningless. Pre-existing, not a mapping issue — both inputs arrive correctly.**
 
-`armorDamage()` computes `(armorDamagePercent × materialDestructibility) / 100`. With real live values — M995 (`armorDamage: 52`) against a 6B13 class 4 Aramid vest (`durability: 203`, destructibility `0.1875`):
+> **Correction (2026-08-19).** The first version of this section computed `0.130` pts/shot → 1,562 shots. That used a placeholder destructibility of `0.25` from before the real value was fetched, while citing the correct `0.1875` in the same sentence. The real figures are below; the original understated the defect. A follow-up investigation then found the ground truth, which this section now records instead of the earlier hypothesis.
+
+### The measured defect
+
+`armorDamage()` computes `(armorDamagePercent × materialDestructibility) / 100`. Running the **shipped compiled code** against the live document:
+
+| Case                               | Shipped         | WishGranter (ground truth) | Error |
+| ---------------------------------- | --------------- | -------------------------- | ----- |
+| M995 → 6B13 (cls 4, dur 203)       | **2,083 shots** | 44                         | 47×   |
+| M995 → Zabralo-Sh (cls 6, dur 510) | **5,231 shots** | 104                        | 50×   |
+| M995 → PACA (cls 2, dur 100)       | **1,026 shots** | 22                         | 47×   |
+| 5.45 BT → Zabralo-Sh               | **9,376 shots** | 161                        | 58×   |
+
+Across the full live matrix (200 ammo × 47 armor = 9,400 cells) at the default 500-shot cap: **9,204 cells (97.9%) return `Infinity`.** `shotsToBreakBucket` buckets ≤3 great / ≤8 good / ≤15 fair — **no live cell reaches any bucket except "poor".** `/aec` and `/charts` cap at 30 shots, so every ammo classifies "ineffective". Under the correct formula there are **zero** infinite cells (min 3, median 102, max 510).
+
+### The ground truth exists, and the repo's own note about it was wrong
+
+`docs/plans/2026-04-19-packages-ballistics-plan.md` says the C# original is "archived as defunct; we'd need to spin it up to compare. Defer until needed." **That premise is false.** [`Xerxes-17/TarkovGunsmith`](https://github.com/Xerxes-17/TarkovGunsmith) is live, default branch `main`, last pushed 2025-12-17, with commits to the ballistics file through 2025-12-10 — including one titled _"Fixed durability bugs"_. The math is in `BackEnd/WishGranter/Statics/Ballistics.cs`, self-documented as "gleaned from reverse regression analysis of a big data set of test results from in-game":
 
 ```
-(52 × 0.1875) / 100 = 0.130 durability points per shot
-203 / 0.130       = 1,562 shots to break
+blocked    = Max( pen × (armorDamage%/100) × Clamp(pen/armor_class*10, 0.6, 1.1) × destructibility, 1 )
+penetrated = Max( pen × (armorDamage%/100) × Clamp(pen/armor_class*10, 0.5, 0.9) × destructibility, 1 )
+expected   = P(pen) × penetrated + (1 − P(pen)) × blocked
 ```
 
-In game this is on the order of tens of shots. The same arithmetic gives 3,924 shots for Zabralo-Sh and 834 for a PACA. This makes `shotsToBreak` — surfaced on `/matrix`, `/charts` and `/aec`, and armor damage on `/calc` and `/adc` — effectively unbounded across the board.
+Its material table is byte-identical to the live API's.
 
-The formula appears to be missing the penetration-power term; including it (`53 × 0.52 × 0.1875 ≈ 5.2` pts/shot → ~39 shots) lands in a plausible range. **This needs verification against the original WishGranter C# before anyone changes it**, which is exactly what the `ballistics-verifier` agent exists for. Flagged, not fixed.
+**No numeric reference values exist on either side.** The C# test file's 28 assertions are all `IsNotNull` / `Count > 0`; no in-repo fixture carries a WishGranter annotation at any commit in history. The implementation _is_ the ground truth.
 
----
+### The obvious hypothesis is directionally right and materially incomplete
+
+Penetration power is indeed the missing factor — but adding it alone still misses the **clamp term**, the **min-1 durability floor**, and the **expected-value blend** of blocked/penetrated (the shipped code branches binary instead). Measured across all 8,930 live cells with `pen > 0, ad > 0`: within 10% of ground truth on 66.3% of cells, within 25% on 74.4%, **worst-case relative error 26,568%** — the tail is low-penetration rounds, where the min-1 floor dominates. Shipping the hypothesis would fix the headline and leave a long tail badly wrong.
+
+**Separate sign defect:** `armorDamage()` halves damage on deflection ("If it deflected, half damage"). The original has the **opposite sign** — blocked shots damage armor **1.22× more** than penetrating ones (clamp ceiling 1.1 vs 0.9).
+
+### One genuinely unresolved ambiguity — do not let anyone settle this silently
+
+`pen / armor_class * 10` under C# precedence is `(pen/class)*10`, which saturates the clamp to a near-constant 0.9 on 8,930 of 9,400 live cells. Read as `pen/(class*10)` it becomes a real modulating term spanning 0.50–0.90. **The two readings agree on only 30.0% of live cells**, and nothing in the source settles it. A faithful port takes C# precedence, because that is what the ground-truth implementation actually computes — but whether the original author intended it is unknown.
+
+### What a fix breaks
+
+Current suite: 66/66 green. The defect is baked into the fixtures, so this is not a regression — it never worked.
+
+- `armor/armorDamage.test.ts` — **all 5 cases.** The signature must gain `penetrationPower` and `armorClass`. Two contradict the min-1 floor outright (`armorDamage(0, 1.0, true)` and `armorDamage(80, 0, true)` both expect `0`; the floor yields `1`). The deflection case inverts sign.
+- `armor/armorEffectiveness.test.ts` — **enshrines the bug in its own comment**, spelling out the defective arithmetic verbatim and asserting `Infinity` for a cell that is 21 shots under ground truth. The min-1 floor makes `Infinity` unreachable for any armor with `durability ≤ cap` (live max is 510), so that branch and `/matrix`'s "Cannot break within 500 shots" copy become near-dead code.
+- `shot/simulateShot.test.ts` — three numeric assertions.
+- Survives unchanged, verified rather than assumed: `simulateBurst`, `simulateScenario`, `penetrationChance`, `effectiveDamage`, `weaponSpec`, `defaults`, `index`, and every `apps/web` consumer including `rankAmmos` and `colors`.
+- **Non-test blockers:** `vitest.config.ts` enforces 100% line/function/statement coverage and 95% branches, and the clamps and floor add branches. `shotsToBreakBucket` thresholds need rebaselining. And the armor fixtures are **invented, exactly as §B found for recoil** — `PACA_C3` is class 3 / durability 40 / destructibility 0.55, where live PACA is class 2 / durability 100 / Aramid 0.1875, and the destructibility values 0.55/0.5/0.45/0.4 exist for no material in either table.
+
+### Confidence
+
+- **Shipped formula is wrong by 35–58×:** very high — shipped code executed against live data, plus an independent ground-truth implementation.
+- **`Ballistics.cs` is the intended target:** high — it is the actual source this project was rebuilt from, actively maintained through Dec 2025.
+- **That it is correct for the _current_ game:** **moderate, and this is where to stop short.** It is a regression fit with no recorded game version, and it splits plate vs. soft layers (`PlateMaxDurability` / `SoftMaxDurability`) while `BallisticArmor` models one monolithic layer. Live upstream now ships `armorSlots` and `bluntThroughput`, which we do not read at all.
+- **The precedence ambiguity: unresolved.** Not guessed.
+
+**What would raise confidence:** 5–10 in-game measured pairs (known armor, known ammo, count the hits) would discriminate the two precedence readings decisively and validate the fit against the current patch. Failing that, stored `BallisticTest` records from the original's DB layer would be real expected values.
+
+### Adjacent, quantified so it is not conflated
+
+`penetrationChance` also diverges from the original (ours is a linear ramp; the original uses `factor_a = (121 − 5000/(45 + durPerc×2)) × class × 0.1`). Mean absolute difference 0.052, but the binary `didPenetrate` verdict flips on only **5.6%** of live cells. That model is roughly right; the durability defect dominates and should be fixed independently.
 
 ## How to re-run this audit
 
@@ -184,9 +247,10 @@ A parse-rate check needs the real fetchers driven by a client reading those file
 
 ## Recommended follow-ups, in priority order
 
-1. **Fix the recoil unit error** (§B) — high severity, user-visible everywhere, needs a clamp decision. Re-baseline the fixtures on real upstream values in the same change.
-2. **Re-baseline all test fixtures against sampled live data**, so invented magnitudes can't hide a unit bug again.
-3. **Fix or remove `accuracyModifier`** (§C), and decide whether a hardcoded-baseline accuracy stat should ship.
+1. **Fix the recoil unit error and the accuracy unit + sign errors** (§B, §C) — user-visible everywhere, and `max-accuracy` currently optimises backwards. Needs a clamp decision. Re-baseline the fixtures on real upstream values in the same change.
+2. **Port the armor durability formula from `Ballistics.cs`** (§G) — 97.9% of `/matrix` is currently meaningless. The formula is known; the `pen / armor_class * 10` precedence ambiguity must be recorded in the code, not silently resolved.
+3. **Re-baseline every fixture in `ballistics`, `optimizer` and `og` against sampled live data.** This is the root cause of all three defects above, not a tidiness item — a suite built on impossible inputs cannot detect a unit error.
 4. **Enforce or drop flea level gating** (§F) — either add a level to `PlayerProfile` or stop parsing `minLevelForFlea`.
-5. **Verify the armor durability model** against WishGranter (§G) via `ballistics-verifier`.
-6. **Reframe or drop the `allowedCategories` deferred item** (§F) — there is no upstream data for it.
+5. **Reframe or drop the `allowedCategories` deferred item** (§F) — there is no upstream data for it.
+6. **Get 5–10 in-game measured armor pairs.** Settles the §G precedence ambiguity and validates a 2025-era regression fit against the current patch. Nothing in either repo can substitute for it.
+7. **Decide whether to model armor plates at all** (§G) — upstream ships `armorSlots` and `bluntThroughput`; porting single-layer math onto plate-era data may be the larger correctness question hiding behind the durability defect.
