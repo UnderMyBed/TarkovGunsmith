@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.16.0...v1.16.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* **ci:** build the worker's workspace deps before bundling it ([#165](https://github.com/UnderMyBed/TarkovGunsmith/issues/165)) ([c9b9623](https://github.com/UnderMyBed/TarkovGunsmith/commit/c9b962327e8453f69155b204ccca8c033c6f3d1d))
+
 ## [1.16.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.15.0...v1.16.0) (2026-08-19)
 
 
