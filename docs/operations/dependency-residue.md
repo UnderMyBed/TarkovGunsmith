@@ -1,55 +1,62 @@
 # Dependency advisory residue
 
-Every `pnpm audit` advisory that survives the Arc 1 catch-up, with the reason it survives and
-the command that proves it resolvable. Reviewed whenever Dependabot's weekly PR lands.
+Every `pnpm audit` advisory that survives, with the reason it survives and the command that
+proves it resolvable. Reviewed whenever Dependabot's weekly PR lands.
 
-**Last reviewed:** 2026-08-18 — **20 advisories** outstanding (0 critical, 8 high, 9 moderate,
-3 low), down from a **48-advisory** baseline (2 critical).
+**Last reviewed:** 2026-08-19 — **0 advisories.** `pnpm audit` reports
+`No known vulnerabilities found`, down from a **48-advisory** baseline (2 critical) and from the
+20 that survived the Arc 1 catch-up.
 
-Both criticals are cleared. The one that reached browsers — `seroval`, via
-`@tanstack/react-router` → `@tanstack/router-core`, a `fromJSON()` type confusion in a codebase
-that deserializes builds from share URLs — resolved from 1.5.2 to **1.6.2**.
+## There is no residue left
 
-## The shape of what is left
+The 20 remaining advisories were all the same shape: a **duplicate old copy** of a package whose
+patched version was already installed elsewhere in the tree, held there by a transitive dependency
+pinning the older one. The plan was to collapse each with a `pnpm.overrides` entry, one at a time,
+gated on a green e2e run.
 
-Every remaining advisory is a **duplicate old copy** of a package whose patched version is
-_already installed elsewhere in the tree_. Nothing here is "no fix exists"; it is "a transitive
-dependency pins an old copy alongside the new one".
+None of that was needed. Taking the major bumps Dependabot had been offering moved the transitive
+pins forward on their own, and every duplicate collapsed:
 
-| Package   | Vulnerable copy | Patched copy present | Advisory wants      |
-| --------- | --------------- | -------------------- | ------------------- |
-| `undici`  | 7.24.8          | 7.29.0               | >=7.28.0 / >=7.29.0 |
-| `ws`      | 8.18.0          | 8.21.0, 8.21.3       | >=8.20.1 / >=8.21.0 |
-| `lodash`  | 4.17.23         | 4.18.1               | >=4.18.0            |
-| `sharp`   | 0.34.5          | 0.35.2               | >=0.35.0            |
-| `esbuild` | 0.25.12         | 0.28.1, 0.28.2       | >=0.28.1            |
-| `vite`    | 8.0.8           | —                    | >=8.0.16            |
+| Package   | Was                    | Now               | Advisory wanted     |
+| --------- | ---------------------- | ----------------- | ------------------- |
+| `undici`  | 7.24.8 + 7.29.0        | 7.29.0            | >=7.28.0 / >=7.29.0 |
+| `ws`      | 8.18.0 + 8.21.0/8.21.3 | 8.21.0            | >=8.20.1 / >=8.21.0 |
+| `lodash`  | 4.17.23 + 4.18.1       | _not in the tree_ | >=4.18.0            |
+| `sharp`   | 0.34.5 + 0.35.2        | 0.35.2            | >=0.35.0            |
+| `esbuild` | 0.25.12 + 0.28.x       | 0.28.1, 0.28.2    | >=0.28.1            |
+| `vite`    | 6.4.3 + 8.0.8          | 8.2.1             | >=8.0.16            |
 
-`vite` is the one genuine exception: `apps/web` deliberately runs the 6.x line (`"vite": "^6.4.3"`,
-which already satisfies that advisory's `>=6.4.3`), while the 8.0.8 copy arrives under Vitest. No
-8.0.16 exists to upgrade into at time of writing.
+The bumps that did it: `vite` 6→8 (via 7), `@vitejs/plugin-react` 4→6,
+`@cloudflare/vitest-pool-workers` 0.14→0.22, `@cloudflare/workers-types` 4→5, `nanoid` 5→6, and
+`@testing-library/jest-dom` 6→7.
 
-**Unblock test for every row above:** `pnpm why <package>` — if only one version is listed, the
+`satori` was tried at 0.29.0 and **reverted to 0.10.14**. It breaks the OG card routes at runtime:
+0.29 instantiates WebAssembly asynchronously, and the Workers runtime refuses with
+`CompileError: WebAssembly.instantiate(): Wasm code generation disallowed by embedder`, so
+`/og/build/:id` and `/og/pair/:id` both return 500. Typecheck passes — the API surface is
+compatible — so only the e2e suite catches it. Reverting costs nothing on the advisory front:
+`pnpm audit` is clean either way. Upgrading satori means solving WASM loading under Workers and
+belongs in its own PR.
+
+**The lesson worth keeping:** the residue was never "no fix exists". It was a deferred major-bump
+backlog wearing an advisory costume. Overrides would have papered over it; upgrading dissolved it.
+Reach for `pnpm.overrides` only when a genuine upstream fix is missing — not when the real answer
+is a major you have been putting off.
+
+**Unblock test for any future row:** `pnpm why <package>` — if only one version is listed, the
 advisory is gone.
 
-## Why they are not fixed in Arc 1
+## A note on `vite` and the 6.x line
 
-The remedy is a `pnpm.overrides` entry per package, collapsing each to its single patched version.
-That is the same technique Arc 1 used for `@types/node`, and it works — but each override changes
-resolution for the whole tree, and an override is exactly how this arc broke `wrangler dev`:
-pinning `miniflare` to `^4` fixed nothing and produced
-`miniflare.convertV4MiniflareOptions is not a function`, because wrangler 4.124 requires
-miniflare 5. It was reverted.
+Earlier revisions of this file recorded that `apps/web` ran the 6.x line deliberately. That is no
+longer true, and it was never a hard constraint — it was where the pin happened to sit. `apps/web`
+now runs `vite` ^8.2.1.
 
-So overrides are only added with a **green e2e run** proving them safe. On 2026-08-18 the e2e
-suite could not be run at all, because `https://api.tarkov.dev/graphql` returned
-`{"errors":["GraphQL server unavailable. Try again later."]}` to every POST.
-
-**That blocker is now cleared.** The JSON API migration retired GraphQL entirely and the suite
-runs green (28 passed, 2 skipped). The gate these overrides were waiting on exists again.
-
-**Next step:** add overrides one package at a time, re-running `pnpm --filter @tarkov/web test:e2e`
-between each. Record here whichever ones stick.
+Vite 8 routes CSS minification through lightningcss by default, whose target parser rejects the
+ES-year value in `build.target` with `Unsupported target "ES2022"` and fails the build. The fix in
+`apps/web/vite.config.ts` is `cssMinify: "esbuild"`, which keeps the emitted CSS identical to
+vite 7. Moving to lightningcss is a deliberate decision about browser support, and should be made
+on its own, not inherited from a bump.
 
 ## Overrides currently in force
 
