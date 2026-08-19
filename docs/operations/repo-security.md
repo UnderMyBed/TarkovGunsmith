@@ -61,3 +61,39 @@ An alert that reaches nobody is not an alert. Confirm, in the GitHub UI:
 This matters because the failure watcher in `.github/workflows/scheduled-failure.yml` files
 issues authored by `github-actions[bot]`. It `@`-mentions and assigns you precisely because a
 bot-authored issue in an unwatched repository notifies no one.
+
+## Dependabot and the pnpm workspace
+
+Dependabot's first run (2026-08-18) opened 12 PRs and all 7 npm ones failed CI. The cause and the
+resulting rules are recorded here because the configuration looks wrong until you know why.
+
+### npm is scoped to the root; `github-actions` is not
+
+These two entries in `.github/dependabot.yml` follow opposite rules on purpose.
+
+| Ecosystem        | Scope                                   | Why                                                                                                                     |
+| ---------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `npm`            | `directory: "/"` — root only            | A pnpm workspace has one `pnpm-lock.yaml`, at the root. Dependabot discovers members via `pnpm-workspace.yaml`.         |
+| `github-actions` | `directory: "/"` + one entry per action | No lockfile, no workspace file. `directory: /` sees `.github/workflows/` and nothing else; composite actions need more. |
+
+Adding `/apps/*` or `/packages/*` back to the npm entry launches the update job _inside_ a member
+directory, where no lockfile is in scope. Dependabot rewrites `package.json`, leaves
+`pnpm-lock.yaml` untouched, and CI dies on `ERR_PNPM_OUTDATED_LOCKFILE`. This is the
+misconfiguration described by dependabot-core's maintainers in
+[PR #11487](https://github.com/dependabot/dependabot-core/pull/11487).
+
+`packages/repo-guards/src/dependabot.test.ts` enforces both rules, deriving the member globs from
+`pnpm-workspace.yaml` so a new workspace is covered the day it is added.
+
+### Major bumps arrive ungrouped — by design
+
+Both groups declare `update-types: [minor, patch]`. Majors are deliberately excluded, so each
+arrives as its own PR. That is the desired behaviour: a breaking change should be reviewed and
+merged on its own, not swept into a batch. A first run that opens ten PRs is not a grouping
+failure — check the update types before treating it as one.
+
+### `github-actions` runs on the default PR limit of 5
+
+That entry sets no `open-pull-requests-limit`, so it takes GitHub's default of 5. When five Actions
+PRs are open, further ones are queued rather than dropped — `actions/checkout` sat behind the queue
+on the first run. If an action looks unwatched, count the open PRs before assuming missing coverage.

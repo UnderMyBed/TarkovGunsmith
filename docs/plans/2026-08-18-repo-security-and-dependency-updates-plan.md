@@ -1788,9 +1788,18 @@ gh issue close <number> --comment "Alert path verified end to end."
 
 ## Post-merge checklist
 
-- [ ] Dependabot's first run opened **one** grouped PR, not ten. Check
-      `https://github.com/UnderMyBed/TarkovGunsmith/network/updates` for the job logs.
-- [ ] Those logs show `apps/*` and `packages/*` were scanned, not just the root.
+- [x] ~~Dependabot's first run opened **one** grouped PR, not ten.~~ **This expectation was
+      wrong.** The first run (2026-08-18) opened 12 PRs and the config behaved correctly: two
+      grouped PRs landed (#122 `minor-and-patch` across 2 directories, #128 `security`) and the
+      other 10 were **major** bumps, which both groups exclude via `update-types: [minor, patch]`.
+      One PR per breaking change is the desired behaviour. Recorded in
+      `docs/operations/repo-security.md`.
+- [x] Those logs show `apps/*` and `packages/*` were scanned, not just the root. Confirmed — the
+      run produced PRs against `/apps/web`, `/apps/builds-api`, and `/packages/og`. It also
+      surfaced a real bug: scanning members _directly_ meant the root `pnpm-lock.yaml` was never
+      regenerated, so all 7 npm PRs failed CI on `ERR_PNPM_OUTDATED_LOCKFILE`. Fixed by scoping
+      npm to the workspace root in
+      [`2026-08-18-dependabot-pnpm-workspace-fix-plan.md`](./2026-08-18-dependabot-pnpm-workspace-fix-plan.md).
 - [x] Secret-scanning history results reviewed and any findings recorded as follow-up issues.
 - [x] `docs/operations/dependency-residue.md` reflects the post-merge advisory state.
 - [x] `CLAUDE.md`'s roadmap block updated — it still claims "4 of 5 M3 differentiators

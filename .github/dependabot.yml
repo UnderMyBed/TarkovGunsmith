@@ -1,13 +1,25 @@
 version: 2
 updates:
-  # `directories` (plural) supports globbing; `directory` (singular) does not. The workspace
-  # root is NOT assumed to cover its members — GitHub's docs never promise that, and the
-  # composite-action entry below exists because implicit coverage failed once already.
+  # Root ONLY. Do not add "/apps/*" or "/packages/*" here — packages/repo-guards fails the
+  # build if you do, and this repo already learned why the hard way.
+  #
+  # A pnpm workspace keeps ONE pnpm-lock.yaml, at the root. An update job launched inside
+  # /apps/web has no lockfile in scope, so it rewrites the manifest, leaves the lockfile
+  # alone, and every resulting PR dies in CI on ERR_PNPM_OUTDATED_LOCKFILE. That is exactly
+  # what happened on Dependabot's first run here (2026-08-18): all 7 npm PRs failed, while
+  # the github-actions PRs — no lockfile involved — were green.
+  #
+  # Root-only does NOT mean members go unwatched. Dependabot reads pnpm-workspace.yaml and
+  # discovers apps/* and packages/* itself, updating the member manifest and the root
+  # lockfile in one PR. Per dependabot-core's maintainers, listing both root and
+  # subdirectories is the documented misconfiguration:
+  # https://github.com/dependabot/dependabot-core/pull/11487
+  #
+  # The github-actions entry below is the genuine exception, not an inconsistency: it has
+  # no lockfile and no workspace file, so `directory: /` really does see only
+  # .github/workflows/ and composite actions really do need their own entries.
   - package-ecosystem: npm
-    directories:
-      - "/"
-      - "/apps/*"
-      - "/packages/*"
+    directory: "/"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
