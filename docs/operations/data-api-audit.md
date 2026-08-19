@@ -283,13 +283,31 @@ const a=items.filter(i=>i?.properties?.propertiesType==='ItemPropertiesAmmo').ma
 console.log('armorDamage range  ', Math.min(...a), Math.max(...a), '(expect percent: 0..95)');"
 ```
 
-A parse-rate check needs the real fetchers driven by a client reading those files — the same harness this audit used. **Automating it as a scheduled contract test is the recommended follow-up**, and is what would have caught the unit error years earlier: the current suite passes precisely because its fixtures are invented rather than sampled from upstream.
+A parse-rate check needs the real fetchers driven by a client reading those files — the same harness this audit used.
+
+**The scheduled contract test now exists.** `scripts/verify-upstream-contract.ts`
+(`pnpm verify:upstream`, and the `Upstream contract` workflow weekly on Mondays) fetches the
+live document and asserts:
+
+- the document shape (`data.items` / `data.armorMaterials` / `data.itemCategories`);
+- the unit scales this audit recorded — `recoilModifier` a fraction, `accuracyModifier` a
+  fraction with at least one positive value, `armorDamage` a percentage;
+- the bounds the durability port's clamp analysis depends on (armor class ≤ 6,
+  destructibility ≤ 1);
+- every fixture field in `ballistics`, against the live item of the same id.
+
+It is deliberately **not** in `pnpm test`: a network call in the pre-merge gate would fail PRs
+on upstream's availability rather than on our code. Failures alert through the existing
+`Scheduled failure alert` watcher.
+
+Its first run confirmed every scale in this document unchanged: `recoilModifier` [-0.35, 0],
+`accuracyModifier` [-0.05, 0.06], `armorDamage` [0, 95], Aramid 0.1875.
 
 ## Recommended follow-ups, in priority order
 
 1. ~~**Fix the recoil unit error and the accuracy unit + sign errors** (§B, §C)~~ — **done.** Both now carry upstream's native fraction, and the accuracy sign is inverted at the point of application.
 2. ~~**Port the armor durability formula from `Ballistics.cs`** (§G)~~ — **done.** Ported with the C# precedence reading, the ambiguity recorded in `armorDamage.ts` rather than silently resolved, and pinned against the four ground-truth reference pairs. See "RESOLVED IN THE PORT" above.
-3. **Re-baseline every fixture in `ballistics`, `optimizer` and `og` against sampled live data.** This is the root cause of all three defects above, not a tidiness item — a suite built on impossible inputs cannot detect a unit error. **`ballistics` is done** (ammo, armor and scenario-target fixtures now carry live values and real upstream ids); `optimizer` and `og` remain.
+3. ~~**Re-baseline every fixture in `ballistics`, `optimizer` and `og` against sampled live data.**~~ — **done, and now enforced.** `ballistics` and `og` fixtures carry live values with real upstream ids; `optimizer`'s are synthetic by construction (generated slot mods sized for a hand-verifiable search space) but were moved onto upstream's unit scale. Verified by machine rather than by reading: `pnpm verify:upstream` fetches the live document and diffs every fixture field against it. **This closes the root cause** — the suite can no longer be green while its inputs are impossible.
 4. ~~**Enforce or drop flea level gating** (§F)~~ — **done.** `PlayerProfile` gained a `level`, and availability now reports a `flea-level-required` state.
 5. **Reframe or drop the `allowedCategories` deferred item** (§F) — there is no upstream data for it.
 6. **Get 5–10 in-game measured armor pairs.** Settles the §G precedence ambiguity and validates a 2025-era regression fit against the current patch. Nothing in either repo can substitute for it.
