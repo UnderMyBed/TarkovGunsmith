@@ -18,15 +18,25 @@ Design tokens and shared React primitives for TarkovGunsmith. shadcn-style (copy
 - **Variants via `cva`.** New variant? Add to the `cva` call, not new component files.
 - **`cn()` for class merging.** Always use it inside `className={cn(...)}` to dedupe Tailwind utilities.
 - **Accessible by default.** Forward refs, support `aria-*`/standard HTML props via spread, use semantic HTML.
-- **Tested when there's logic.** `cn` and `iconUrl` get tests; pure JSX components don't (apps/web Playwright covers them).
-- **No coverage on JSX components** — `vitest.config.ts` excludes them from thresholds.
+- **Render-tested with `@testing-library/react`.** Every component gets a `<kebab-case>.test.tsx`
+  that renders it and asserts real DOM output — rendered text/roles, variant classes actually
+  applied, prop passthrough, ref forwarding. `environment: "jsdom"` is set package-wide in
+  `vitest.config.ts` (this package is entirely components, unlike `apps/web` which sets jsdom
+  per-file via a docblock). Pure-function helpers that live alongside a component (`iconUrl`,
+  `weaponSilhouetteSrc`, `cardVariants`/`cn`-style `cva` string assertions) keep their own
+  `<kebab-case>.test.ts` — both can coexist for the same component.
+- **Coverage is enforced.** `vitest.config.ts` measures all of `src/**` (excluding test files and
+  the `src/index.ts` re-export barrel) with ratcheting thresholds — see that file's header comment
+  for the current numbers and how to raise them.
 
 ## How to add a new component
 
 Use the future `add-ui-primitive` skill (TBD). Until then:
 
 1. Create `src/components/<kebab-case>.tsx` with the component + any variant config.
-2. If it has runtime logic worth testing, add `<kebab-case>.test.ts` testing pure functions extracted from the component (no React rendering in this package).
+2. Add `src/components/<kebab-case>.test.tsx` that renders it with `@testing-library/react` and
+   asserts real behaviour (not just "renders without throwing"). If it also exports a pure helper
+   worth testing in isolation, add a sibling `<kebab-case>.test.ts` for that.
 3. Export from `src/index.ts`.
 4. If it depends on a new Radix primitive or other dep, add it to `package.json`.
 
