@@ -306,6 +306,8 @@ function formatRequirement(a: ItemAvailability): string {
       return `${a.traderNormalizedName} LL${a.minLevel}`;
     case "quest-required":
       return `Quest: ${a.questNormalizedName}`;
+    case "flea-level-required":
+      return `Flea level ${a.minPlayerLevel}`;
     case "flea-locked":
       return "Flea only";
     case "no-sources":

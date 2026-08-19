@@ -1,4 +1,5 @@
 import { BuildPair, type BuildPair as BuildPairType } from "./pair-schema.js";
+import { upgradeLoadedBuild } from "./build-migrations.js";
 
 const PAIRS_ENDPOINT = "/api/pairs";
 
@@ -95,7 +96,18 @@ export async function loadPair(fetchImpl: typeof fetch, id: string): Promise<Bui
   if (!parsed.success) {
     throw new LoadPairError("invalid-schema", "Pair failed schema validation", parsed.error);
   }
-  return parsed.data;
+
+  // Pairs embed whole builds, so they need the same version upgrade `loadBuild` does.
+  // Without it an older embedded build reaches `useCompareDraft`, which drops any side
+  // that isn't the current version — the build disappears from the comparison with no
+  // error shown. That has been live since the v5 bump: every v4 side in a saved pair is
+  // already vanishing today.
+  const pair = parsed.data;
+  return {
+    ...pair,
+    left: pair.left === null ? null : upgradeLoadedBuild(pair.left),
+    right: pair.right === null ? null : upgradeLoadedBuild(pair.right),
+  };
 }
 
 /**

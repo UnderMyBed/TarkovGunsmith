@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { compareDraftReducer, initialDraft } from "./useCompareDraft.js";
-import type { BuildV5, PlayerProfile } from "@tarkov/data";
+import type { BuildV6, PlayerProfile } from "@tarkov/data";
 
-const build: BuildV5 = {
-  version: 5,
+const build: BuildV6 = {
+  version: 6,
   weaponId: "w1",
   attachments: {},
   orphaned: [],

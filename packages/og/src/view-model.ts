@@ -4,9 +4,9 @@
  * imports inside the JSX files.
  */
 export interface BuildCardViewModel {
-  /** Headline text. `BuildV5.name` if set, else weapon short-name. */
+  /** Headline text. `BuildV6.name` if set, else weapon short-name. */
   title: string;
-  /** Weapon short-name. Shown under `title` if `BuildV5.name` was used there. */
+  /** Weapon short-name. Shown under `title` if `BuildV6.name` was used there. */
   subtitle: string | null;
   /** Number of attached mods (sum of `attachments` values). */
   modCount: number;

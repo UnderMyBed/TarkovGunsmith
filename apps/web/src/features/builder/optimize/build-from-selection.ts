@@ -1,10 +1,10 @@
-import type { BuildV5 } from "@tarkov/data";
+import type { BuildV6 } from "@tarkov/data";
 
 export function buildFromSelection(
-  current: BuildV5,
-  proposed: BuildV5,
+  current: BuildV6,
+  proposed: BuildV6,
   selected: ReadonlySet<string>,
-): BuildV5 {
+): BuildV6 {
   const merged: Record<string, string> = { ...current.attachments };
   for (const slotId of selected) {
     const proposedValue = proposed.attachments[slotId];
@@ -15,7 +15,7 @@ export function buildFromSelection(
     }
   }
   return {
-    version: 5,
+    version: 6,
     weaponId: current.weaponId,
     attachments: merged,
     orphaned: current.orphaned,

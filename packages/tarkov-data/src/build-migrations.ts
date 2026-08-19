@@ -1,4 +1,12 @@
-import type { BuildV1, BuildV2, BuildV3, BuildV4, BuildV5 } from "./build-schema.js";
+import type {
+  Build,
+  BuildV1,
+  BuildV2,
+  BuildV3,
+  BuildV4,
+  BuildV5,
+  BuildV6,
+} from "./build-schema.js";
 
 /**
  * Minimal shape of a slot node the migration needs. The full `SlotNode` type
@@ -108,4 +116,45 @@ export function migrateV4ToV5(v4: BuildV4): BuildV5 {
       completedQuests: snapshot.completedQuests.map((name) => RETIRED_QUEST_NAMES[name] ?? name),
     },
   };
+}
+
+/**
+ * v5 → v6 is a pure version bump. There is deliberately no data transform.
+ *
+ * By the time this runs, the payload has already been through `Build.safeParse`, which
+ * injects `profileSnapshot.level = 1` from the schema default. So this function literally
+ * cannot distinguish "the author never had a level" from "the author set level 1" — and
+ * must not pretend it can. Reaching for a heuristic here (say, deriving a level from
+ * `flea`) would be inventing data about a stranger's saved build.
+ *
+ * What v6 marks is that the reader understood `profileSnapshot.level` — not that the value
+ * is trustworthy. Be precise about this, because the obvious stronger claim is false: this
+ * function stamps 6 onto v5 builds whose level came from the parser default, and
+ * `upgradeLoadedBuild` runs on every load, so re-sharing a migrated build persists a v6
+ * record carrying a defaulted level. A v6 stamp therefore does NOT prove the author set a
+ * level. Nothing branches on that today; do not add anything that does.
+ */
+export function migrateV5ToV6(v5: BuildV5): BuildV6 {
+  return { ...v5, version: 6 };
+}
+
+/**
+ * Bring a parsed build forward to the current version, where that can be done without
+ * extra inputs.
+ *
+ * v3, v4 and v5 upgrade cleanly. v1 and v2 are left alone: `migrateV1ToV2` needs the
+ * weapon's slot tree to place attachments, which no transport module has access to, so
+ * `/builder` performs that step once the tree has loaded.
+ *
+ * **Every transport that hands a `Build` to the UI must run this.** `/builder/$id` renders
+ * the full editor only for the current version, and `useCompareDraft` drops any pair side
+ * whose version isn't current — an un-upgraded build doesn't error, it silently vanishes.
+ * The quest rename in v5 is invisible the same way: an un-upgraded v4 keeps its retired
+ * `gunsmith-part-N` names and just loses those unlocks.
+ */
+export function upgradeLoadedBuild(build: Build): Build {
+  if (build.version === 3) return migrateV5ToV6(migrateV4ToV5(migrateV3ToV4(build)));
+  if (build.version === 4) return migrateV5ToV6(migrateV4ToV5(build));
+  if (build.version === 5) return migrateV5ToV6(build);
+  return build;
 }
