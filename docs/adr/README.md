@@ -3,3 +3,9 @@
 Each ADR captures a significant, hard-to-reverse decision about how the project is built — the choice made, the alternatives considered, and the reasoning. Numbered sequentially (`NNNN-short-name.md`), immutable once merged (follow-up decisions get a new ADR that supersedes or refines the old one, rather than rewriting history).
 
 Start at [`0001-stack-and-hosting.md`](./0001-stack-and-hosting.md) for why this project runs on Cloudflare with a pnpm + Turborepo monorepo.
+
+| ADR                                  | Decision                                                         |
+| ------------------------------------ | ---------------------------------------------------------------- |
+| [0001](./0001-stack-and-hosting.md)  | Cloudflare stack, pnpm + Turborepo monorepo                      |
+| [0002](./0002-json-api-migration.md) | Move off the tarkov.dev GraphQL API onto the JSON API            |
+| [0003](./0003-model-armor-plates.md) | Model armor as plates plus soft panels, not one monolithic layer |

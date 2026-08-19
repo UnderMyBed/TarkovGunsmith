@@ -410,6 +410,23 @@ test.describe("smoke — Builder-focus nav + WIP banners", () => {
   });
 });
 
+test.describe("smoke — matrix accuracy disclosure", () => {
+  // The single-layer model overstates shots-to-break by 4-17x on plate-equipped
+  // vests (ADR-0003). Shipping that silently is not acceptable, so the caveat is
+  // a tested contract rather than decoration. Delete this test only when
+  // ADR-0003 is implemented and the caveat is no longer true.
+  test("/matrix discloses that armor is modelled as a single layer", async ({ page }) => {
+    const { errors } = captureConsoleErrors(page);
+    await page.goto("/matrix", { waitUntil: "networkidle" });
+
+    await expect(page.getByText(/Single-layer model/i)).toBeVisible();
+    await expect(page.getByText(/far more durable than they are/i)).toBeVisible();
+    await expect(page.getByText(/ADR-0003/)).toBeVisible();
+
+    expect(errors).toEqual([]);
+  });
+});
+
 test.describe("smoke — keyboard shortcut overlay", () => {
   test("? opens the overlay, Esc closes it", async ({ page }) => {
     const { errors } = captureConsoleErrors(page);
