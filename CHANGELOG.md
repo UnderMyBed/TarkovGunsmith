@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.15.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.14.1...v1.15.0) (2026-08-19)
+
+
+### Features
+
+* **data:** enforce flea market player-level gating ([#141](https://github.com/UnderMyBed/TarkovGunsmith/issues/141)) ([2740b44](https://github.com/UnderMyBed/TarkovGunsmith/commit/2740b446aa2f21e7d8153acde4777270cf347487))
+
+
+### Bug Fixes
+
+* adopt upstream's native recoil/accuracy unit and fix the accuracy sign ([#142](https://github.com/UnderMyBed/TarkovGunsmith/issues/142)) ([8f86d84](https://github.com/UnderMyBed/TarkovGunsmith/commit/8f86d84a2463cd5956f9c531fcfddcde4e3d84ce))
+* **ballistics:** port the armor durability formula from the original ([#143](https://github.com/UnderMyBed/TarkovGunsmith/issues/143)) ([08242d6](https://github.com/UnderMyBed/TarkovGunsmith/commit/08242d690abc2237f6f34ecf17b64b0257e35f47))
+
+
+### Documentation
+
+* **data:** audit json.tarkov.dev against every calculation ([#137](https://github.com/UnderMyBed/TarkovGunsmith/issues/137)) ([b77ef18](https://github.com/UnderMyBed/TarkovGunsmith/commit/b77ef1897b33731c74f4fcefa582b3a5c4593569))
+* **data:** correct §G arithmetic and record the armor ground truth ([#140](https://github.com/UnderMyBed/TarkovGunsmith/issues/140)) ([d876c93](https://github.com/UnderMyBed/TarkovGunsmith/commit/d876c9326cadf5cf528b27cf38a4dced8bac6d44))
+* decide the plate-era question and close the audit follow-up list ([#146](https://github.com/UnderMyBed/TarkovGunsmith/issues/146)) ([dc7fa11](https://github.com/UnderMyBed/TarkovGunsmith/commit/dc7fa11c03a73fa9fbaf8206c51419b04ef8e4de))
+* retire audit-closed roadmap items and correct stale package handbooks ([#139](https://github.com/UnderMyBed/TarkovGunsmith/issues/139)) ([8926702](https://github.com/UnderMyBed/TarkovGunsmith/commit/8926702c0efccf1e2d543b5793004e88f2aa594e))
+
 ## [1.14.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.14.0...v1.14.1) (2026-08-19)
 
 
