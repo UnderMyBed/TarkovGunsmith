@@ -2,6 +2,8 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 import globals from "globals";
+import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default tseslint.config(
   {
@@ -28,6 +30,8 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
+  reactHooks.configs.flat["recommended-latest"],
+  jsxA11y.flatConfigs.recommended,
   {
     languageOptions: {
       globals: { ...globals.node },
@@ -60,6 +64,12 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+      // @tarkov/ui's <Input> is a thin forwardRef wrapper that spreads all props (including
+      // `id`) straight onto a native <input> (packages/ui/src/components/input.tsx) — a real
+      // control, just not a name label-has-associated-control recognizes by default. Native
+      // <select>/<textarea> usage elsewhere in the app is unaffected; this only extends the
+      // rule's recognition to the one custom component that stands in for a native control.
+      "jsx-a11y/label-has-associated-control": ["error", { controlComponents: ["Input"] }],
     },
   },
   // Test files get their type info from each package's own tsconfig.test.json instead of
