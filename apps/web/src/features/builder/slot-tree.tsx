@@ -91,7 +91,16 @@ export function SlotTree({
       </p>
     );
   }
+  // Every target this handler delegates to (details>summary, and the mod-picker buttons
+  // below) is a native element that's already fully keyboard-operable on its own
+  // (Enter/Space toggles a <details>, activates a <button>). handleSlotTreeKeyDown only adds
+  // an arrow-key roving-focus shortcut across those already-accessible descendants; it is
+  // not the sole path to interacting with the tree, so this <ul> isn't standing in as an
+  // ARIA widget that would need role="tree" (which, done properly, means every row also
+  // needs role="treeitem" + aria-expanded/aria-level — a real feature, not a fix for this
+  // lint finding; noting it as a follow-up rather than building it here).
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- see above
     <ul className="flex flex-col" onKeyDown={handleSlotTreeKeyDown}>
       {tree.slots.map((slot) => (
         <SlotRow
