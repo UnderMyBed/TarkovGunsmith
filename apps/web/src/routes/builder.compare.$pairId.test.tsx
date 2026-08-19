@@ -48,7 +48,7 @@ afterEach(() => {
 describe("/builder/compare/$pairId", () => {
   it("renders the blank compare workspace instead of loading the pair (parent route has no <Outlet/>)", async () => {
     const fetchMock = vi.fn(
-      async () =>
+      () =>
         new Response(
           JSON.stringify({ v: 1, createdAt: new Date().toISOString(), left: null, right: null }),
           { status: 200 },

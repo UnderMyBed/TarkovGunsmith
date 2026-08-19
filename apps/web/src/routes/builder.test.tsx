@@ -127,7 +127,7 @@ function withNormalizedText(expected: string) {
  * than by role alone.
  */
 function findWeaponSelect(): HTMLSelectElement {
-  const combos = screen.getAllByRole("combobox") as HTMLSelectElement[];
+  const combos = screen.getAllByRole<HTMLSelectElement>("combobox");
   const found = combos.find((el) => el.querySelector('option[value=""]'));
   if (!found) throw new Error("weapon <select> not found among comboboxes");
   return found;
@@ -189,8 +189,9 @@ describe("/builder", () => {
 
   it("shares the current build: POSTs it, shows the copied-URL toast, and writes to the clipboard", async () => {
     const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(window.navigator, "clipboard", {
-      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      value: { writeText },
       configurable: true,
     });
     const fetchMock = vi.fn().mockResolvedValue(
@@ -212,9 +213,9 @@ describe("/builder", () => {
       "/api/builds",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(window.navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining("/builder/abcdefgh"),
-    );
+    // Assert on the mock we created, not on navigator.clipboard.writeText — reading the
+    // method back off the object detaches it, which `no-unbound-method` correctly flags.
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("/builder/abcdefgh"));
   });
 
   it("opens the optimizer from the header once a weapon is picked, and round-trips back to the editor", async () => {
