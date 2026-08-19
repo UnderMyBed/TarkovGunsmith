@@ -10,6 +10,10 @@ import type { ItemsDocument } from "./documents.js";
  * applies now that resolution happens client-side over an already-loaded document. Raising it
  * is a deliberate behaviour change and stays deferred rather than riding along with a
  * transport migration.
+ *
+ * For scale when someone does raise it: depth 3 resolves the M4A1 to 2,293 nodes across 6 top
+ * slots (measured 2026-08-18). Slot graphs contain cycles, so the bound below is a correctness
+ * requirement, not just a performance guard — see `normalizeSlots`.
  */
 const RECURSION_DEPTH = 3;
 
@@ -114,6 +118,11 @@ export function normalizeSlots(
       });
     }
 
+    // Kept as working, inert future-proofing. Upstream populates `itemCategories` (112 entries)
+    // but every one of the 3,564 slots in the live document carries an EMPTY allowedCategories,
+    // so this resolves nothing today — verified 2026-08-18, see docs/operations/data-api-audit.md.
+    // That is why "allowedCategories slot filtering" was retired from the roadmap rather than
+    // built: there is no upstream data to filter on. Re-check before reviving it.
     const rawCategories: readonly unknown[] = Array.isArray(slot.filters?.allowedCategories)
       ? (slot.filters.allowedCategories as unknown[])
       : [];

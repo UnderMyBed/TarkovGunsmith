@@ -17,7 +17,14 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 >
 > **Roadmap from here — M3 Differentiators, all 5 shipped:** (1) ✅ Frontend design pass. (2) ✅ Build comparison (diff two builds). (3) ✅ Build optimization (constraint solver). (4) ✅ OG share cards (server-rendered PNG). (5) ✅ `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13. Visual polish / fix-up items discovered during the design pass are tracked ad-hoc and landed before the next feature PR.
 >
-> **Deferred M1.5 items (still open):** Undo/redo; `allowedCategories` slot filtering; `craftsFor`/`bartersFor` in availability; Dialog primitive; weapon preset content; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
+> **Deferred M1.5 items (still open):** Undo/redo; `craftsFor`/`bartersFor` in availability; Dialog primitive; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
+>
+> **Two M1.5 items were retired by the 2026-08-18 data audit, not by being built:**
+>
+> - `allowedCategories` slot filtering is **not implementable** — all 3,564 slots in the live document have an empty `allowedCategories`. The resolution code in `weaponTree.ts` is correct and simply has nothing to resolve. Do not schedule this without first re-checking upstream.
+> - **Weapon preset content no longer needs hand-authoring.** Upstream ships 484 `ItemPropertiesPreset` items plus a per-weapon `presets` array and `defaultPreset` id. `presets.ts` still carries an empty hand-curated map awaiting a content PR; the work is now a mapping job, not a data-entry one.
+>
+> Recursion depth 5 is also now free: the depth-3 limit existed because the GraphQL API returned ~7.5 MB for the M4A1 at depth 4. Resolution is client-side over an already-loaded document, so that constraint is gone.
 >
 > **Deferred M2 items (still open):** Helmet-only query for `/sim`'s helmet picker; thorax-overflow damage / bleed / probabilistic mode in the Simulator; scenario save/share; ammo caliber column on `/data`.
 >
@@ -61,7 +68,7 @@ Skip none of these steps. Even "simple" changes warrant a plan — it takes a mi
 ### Testing discipline (hard rule)
 
 - **Every feature PR includes e2e coverage.** If the PR adds a new route, `apps/web/e2e/smoke.spec.ts` gets a new entry in the `ROUTES` array. If it adds a user-facing interaction flow worth protecting, a new test file.
-- **"Visual walkthrough deferred" is no longer acceptable.** If you can't verify a change works in a browser, you can't ship it. Playwright is the verification mechanism; run it locally with `pnpm --filter @tarkov/web test:e2e` before pushing.
+- **"Visual walkthrough deferred" is no longer acceptable.** If you can't verify a change works in a browser, you can't ship it. Playwright is the verification mechanism; run it locally with `pnpm --filter @tarkov/web build && pnpm --filter @tarkov/web test:e2e` before pushing. **The build is not optional** — Playwright serves `dist/` via `wrangler pages dev`, so without it you get a 120-second timeout and a wall of 404s rather than a useful error. CI builds first, which is why this only bites locally.
 - **Console errors fail the build.** If a real false positive appears, allowlist it in `smoke.spec.ts` with a comment explaining why.
 - **Fonts are load-checked.** The Bungee / Chivo / Azeret Mono fonts are part of the contract — changing them means updating the font-load test.
 

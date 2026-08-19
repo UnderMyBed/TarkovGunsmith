@@ -59,6 +59,27 @@ export function ProfileReadout({
       <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
         {meta}
       </div>
+      <div className="grid grid-cols-2 gap-1">
+        <div className="flex items-center justify-between border border-[var(--color-border)] px-1.5 py-0.5">
+          <span className="font-mono text-[9px] text-[var(--color-muted-foreground)]">
+            PMC LEVEL
+          </span>
+          <span className="font-mono text-[10px] font-semibold text-[var(--color-foreground)]">
+            {profile.level}
+          </span>
+        </div>
+        {/* Level only gates anything while flea access is on, so the two read together. */}
+        <div className="flex items-center justify-between border border-[var(--color-border)] px-1.5 py-0.5">
+          <span className="font-mono text-[9px] text-[var(--color-muted-foreground)]">FLEA</span>
+          <span
+            className={`font-mono text-[10px] font-semibold ${
+              profile.flea ? "text-[var(--color-primary)]" : "text-[var(--color-muted-foreground)]"
+            }`}
+          >
+            {profile.flea ? "ON" : "OFF"}
+          </span>
+        </div>
+      </div>
       <div className="grid grid-cols-3 gap-1">
         {TRADER_KEYS.map((key) => {
           const level = (profile.traders as Record<string, number>)?.[key] ?? 1;

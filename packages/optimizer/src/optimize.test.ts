@@ -77,6 +77,9 @@ const flea: PlayerProfile = {
   mode: "basic",
   traders: { prapor: 1, therapist: 1, skier: 1, peacekeeper: 1, mechanic: 1, ragman: 1, jaeger: 1 },
   flea: true,
+  // The shared fixtures' flea offers carry minPlayerLevel: 15, inert until
+  // itemAvailability started enforcing it. 15 keeps these tests on their original subject.
+  level: 15,
 };
 
 const fleaOff: PlayerProfile = { ...flea, flea: false };
@@ -92,7 +95,7 @@ describe("optimize — small weapon", () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
-    expect(result.build.version).toBe(5);
+    expect(result.build.version).toBe(6);
     expect(result.build.attachments).toEqual({
       muzzle: "muzzle_brake",
       grip: "grip_vertical",

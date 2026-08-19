@@ -1,11 +1,11 @@
 import { useReducer } from "react";
-import type { BuildV5, BuildPair, PlayerProfile } from "@tarkov/data";
+import type { BuildV6, BuildPair, PlayerProfile } from "@tarkov/data";
 
 export type CompareSide = "left" | "right";
 
 export interface CompareDraft {
-  left: BuildV5 | null;
-  right: BuildV5 | null;
+  left: BuildV6 | null;
+  right: BuildV6 | null;
   leftProfile?: PlayerProfile;
   rightProfile?: PlayerProfile;
   name?: string;
@@ -20,7 +20,7 @@ export const initialDraft: CompareDraft = {
 };
 
 export type CompareDraftAction =
-  | { type: "SET_SIDE"; side: CompareSide; build: BuildV5 | null }
+  | { type: "SET_SIDE"; side: CompareSide; build: BuildV6 | null }
   | { type: "SET_PROFILE"; side: CompareSide; profile: PlayerProfile | undefined }
   | { type: "SWAP" }
   | { type: "CLONE"; from: CompareSide }
@@ -61,8 +61,8 @@ export function compareDraftReducer(state: CompareDraft, action: CompareDraftAct
     case "LOAD_FROM_PAIR":
       if (action.pair.v !== 1) return state;
       return {
-        left: action.pair.left?.version === 5 ? action.pair.left : null,
-        right: action.pair.right?.version === 5 ? action.pair.right : null,
+        left: action.pair.left?.version === 6 ? action.pair.left : null,
+        right: action.pair.right?.version === 6 ? action.pair.right : null,
         leftProfile: action.pair.leftProfile,
         rightProfile: action.pair.rightProfile,
         name: action.pair.name,
@@ -84,7 +84,7 @@ export function useCompareDraft(initial: CompareDraft = initialDraft) {
   const [state, dispatch] = useReducer(compareDraftReducer, initial);
   return {
     state,
-    setSide: (side: CompareSide, build: BuildV5 | null) =>
+    setSide: (side: CompareSide, build: BuildV6 | null) =>
       dispatch({ type: "SET_SIDE", side, build }),
     setProfile: (side: CompareSide, profile: PlayerProfile | undefined) =>
       dispatch({ type: "SET_PROFILE", side, profile }),

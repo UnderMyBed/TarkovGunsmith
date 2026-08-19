@@ -21,7 +21,7 @@ import {
   type HydrateWeapon,
 } from "@tarkov/og";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
-import { type BuildV5, DEFAULT_PROFILE } from "@tarkov/data";
+import { type BuildV6, DEFAULT_PROFILE } from "@tarkov/data";
 import { fetchOgRowsForBuild, type OgMod } from "../../lib/og-graphql.js";
 import { availabilityPillText } from "../../lib/og-availability.js";
 
@@ -31,8 +31,8 @@ export interface Env {
 
 interface PairRecord {
   v: 1;
-  left: BuildV5 | null;
-  right: BuildV5 | null;
+  left: BuildV6 | null;
+  right: BuildV6 | null;
   createdAt: string;
 }
 
@@ -53,12 +53,12 @@ const HEADERS_FALLBACK = {
  * to `HydrateMod[]` internally, which is fine.
  */
 interface SideArgs {
-  build: BuildV5;
+  build: BuildV6;
   weapon: HydrateWeapon;
   mods: OgMod[];
 }
 
-async function hydrateSide(build: BuildV5 | null): Promise<SideArgs | null> {
+async function hydrateSide(build: BuildV6 | null): Promise<SideArgs | null> {
   if (!build) return null;
   const rows = await fetchOgRowsForBuild({
     weaponId: build.weaponId,

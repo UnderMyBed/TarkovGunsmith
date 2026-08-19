@@ -7,9 +7,16 @@ const fleaOnProfile: PlayerProfile = {
   mode: "basic",
   traders: { prapor: 1, therapist: 1, skier: 1, peacekeeper: 1, mechanic: 1, ragman: 1, jaeger: 1 },
   flea: true,
+  // SMALL_MODS' flea offers all carry minPlayerLevel: 15. That number was inert until
+  // itemAvailability started enforcing it; 15 keeps these tests testing what they were
+  // written to test rather than accidentally testing the level gate.
+  level: 15,
 };
 
 const fleaOffProfile: PlayerProfile = { ...fleaOnProfile, flea: false };
+
+/** Same flea access, but below every fixture offer's minPlayerLevel. */
+const underLevelledProfile: PlayerProfile = { ...fleaOnProfile, level: 14 };
 
 describe("cheapestPrice", () => {
   it("returns the flea price when profile has flea on", () => {
@@ -20,6 +27,11 @@ describe("cheapestPrice", () => {
   it("returns null when profile has flea off and no trader source", () => {
     const brake = SMALL_MODS.find((m) => m.id === "muzzle_brake")!;
     expect(cheapestPrice(brake, fleaOffProfile)).toBeNull();
+  });
+
+  it("returns null when the only source is a flea offer above the profile's level", () => {
+    const brake = SMALL_MODS.find((m) => m.id === "muzzle_brake")!;
+    expect(cheapestPrice(brake, underLevelledProfile)).toBeNull();
   });
 });
 
@@ -52,6 +64,14 @@ describe("slotCandidates", () => {
   it("filters out unavailable items when unpinned", () => {
     const muzzleSlot = SMALL_TREE.slots[0]!;
     const candidates = slotCandidates(muzzleSlot, SMALL_MODS, fleaOffProfile, new Map());
+    expect(candidates).toEqual([null]);
+  });
+
+  // The solver must not propose a build the player can't actually buy. A flea-only mod
+  // above their level has to leave the search space entirely, not merely score badly.
+  it("drops flea-only mods the profile is too low-level to buy", () => {
+    const muzzleSlot = SMALL_TREE.slots[0]!;
+    const candidates = slotCandidates(muzzleSlot, SMALL_MODS, underLevelledProfile, new Map());
     expect(candidates).toEqual([null]);
   });
 

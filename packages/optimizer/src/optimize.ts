@@ -1,4 +1,4 @@
-import type { BuildV5 } from "@tarkov/data";
+import type { BuildV6 } from "@tarkov/data";
 import { branchAndBound } from "./branch-and-bound.js";
 import type { OptimizationInput, OptimizationResult } from "./types.js";
 
@@ -48,8 +48,8 @@ export function optimize(input: OptimizationInput): OptimizationResult {
 
   // Pure function: no clock-derived field in the returned build. Callers
   // that want a real timestamp stamp it themselves.
-  const build: BuildV5 = {
-    version: 5,
+  const build: BuildV6 = {
+    version: 6,
     weaponId: input.weapon.id,
     attachments: { ...best.attachments },
     orphaned: [],

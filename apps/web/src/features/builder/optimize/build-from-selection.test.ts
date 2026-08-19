@@ -1,17 +1,17 @@
 import { describe, it, expect } from "vitest";
-import type { BuildV5 } from "@tarkov/data";
+import type { BuildV6 } from "@tarkov/data";
 import { buildFromSelection } from "./build-from-selection.js";
 
-const current: BuildV5 = {
-  version: 5,
+const current: BuildV6 = {
+  version: 6,
   weaponId: "w1",
   attachments: { muzzle: "m-old", handguard: "h-old", stock: "s-keep" },
   orphaned: [],
   createdAt: "2026-04-22T00:00:00Z",
 };
 
-const proposed: BuildV5 = {
-  version: 5,
+const proposed: BuildV6 = {
+  version: 6,
   weaponId: "w1",
   attachments: { muzzle: "m-new", handguard: "h-new", optic: "o-new" },
   orphaned: [],
@@ -41,8 +41,8 @@ describe("buildFromSelection", () => {
   });
 
   it("removes a slot when selected and proposal drops it", () => {
-    const current2: BuildV5 = { ...current, attachments: { muzzle: "m-old", handguard: "h-old" } };
-    const proposed2: BuildV5 = { ...proposed, attachments: { muzzle: "m-new" } };
+    const current2: BuildV6 = { ...current, attachments: { muzzle: "m-old", handguard: "h-old" } };
+    const proposed2: BuildV6 = { ...proposed, attachments: { muzzle: "m-new" } };
     const out = buildFromSelection(current2, proposed2, new Set(["handguard"]));
     expect(out.attachments).toEqual({ muzzle: "m-old" });
   });
@@ -52,6 +52,6 @@ describe("buildFromSelection", () => {
     expect(out.weaponId).toBe(current.weaponId);
     expect(out.orphaned).toEqual(current.orphaned);
     expect(out.createdAt).toBe(current.createdAt);
-    expect(out.version).toBe(5);
+    expect(out.version).toBe(6);
   });
 });

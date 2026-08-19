@@ -75,7 +75,7 @@ function LoadedBuilderPage() {
       />
     );
   }
-  if (build.version === 5) {
+  if (build.version === 6) {
     return (
       <BuilderPage
         {...commonProps}
@@ -87,7 +87,10 @@ function LoadedBuilderPage() {
       />
     );
   }
-  // v3
+  // Fallback. After `upgradeLoadedBuild` the only versions that reach here are v1 and v2
+  // (both need the weapon's slot tree to place attachments, so `/builder` finishes that
+  // migration once the tree loads). It is NOT a general "older versions land here" branch —
+  // anything v3+ has already been upgraded to the current version above.
   return (
     <BuilderPage
       {...commonProps}

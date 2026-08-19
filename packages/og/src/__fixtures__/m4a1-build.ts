@@ -1,7 +1,7 @@
-import type { BuildV5 } from "@tarkov/data";
+import type { BuildV6 } from "@tarkov/data";
 
 /**
- * Hand-constructed BuildV5 + weapon/mod lookups. Every id, slot path and
+ * Hand-constructed BuildV6 + weapon/mod lookups. Every id, slot path and
  * numeric value below is taken from the live json.tarkov.dev items document
  * (sampled 2026-08-19).
  *
@@ -13,8 +13,8 @@ import type { BuildV5 } from "@tarkov/data";
  * which is the class of fixture that hid the unit error in
  * docs/operations/data-api-audit.md §B.
  */
-export const m4a1Build: BuildV5 = {
-  version: 5,
+export const m4a1Build: BuildV6 = {
+  version: 6,
   weaponId: "5447a9cd4bdc2dbd208b4567", // Colt M4A1 5.56x45 assault rifle
   attachments: {
     mod_pistol_grip: "5a33e75ac4a2826c6e06d759",

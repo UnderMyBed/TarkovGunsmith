@@ -1,7 +1,15 @@
 import { useMemo, useState, type ReactElement } from "react";
 import type { PlayerProfile } from "@tarkov/data";
 import { useTasks, MARQUEE_QUEST_NORMALIZED_NAMES } from "@tarkov/data";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+} from "@tarkov/ui";
 import { TarkovTrackerConnectPopover } from "./tarkovtracker-connect-popover.js";
 import { TarkovTrackerSyncBanner } from "./tarkovtracker-sync-banner.js";
 import type { UseTarkovTrackerSyncResult } from "./useTarkovTrackerSync.js";
@@ -72,6 +80,15 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
 
   function setFlea(flea: boolean): void {
     onChange({ ...profile, flea });
+  }
+
+  function setLevel(raw: string): void {
+    const parsed = Number.parseInt(raw, 10);
+    // Mid-edit blank or garbage: hold the last committed level rather than inventing one.
+    // The field's onBlur puts the box back in sync, so it can never come to rest showing a
+    // level the profile doesn't hold.
+    if (Number.isNaN(parsed)) return;
+    onChange({ ...profile, level: Math.min(99, Math.max(1, parsed)) });
   }
 
   function toggleQuest(slug: string): void {
@@ -149,14 +166,41 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
               ))}
             </div>
 
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={profile.flea}
-                onChange={(e) => setFlea(e.target.checked)}
-              />
-              <span>Flea market access</span>
-            </label>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={profile.flea}
+                  onChange={(e) => setFlea(e.target.checked)}
+                />
+                <span>Flea market access</span>
+              </label>
+
+              <label className="flex items-center gap-2 text-sm">
+                <span className="font-medium">PMC level</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={99}
+                  step={1}
+                  inputMode="numeric"
+                  className="h-8 w-20"
+                  value={profile.level}
+                  onChange={(e) => setLevel(e.target.value)}
+                  onBlur={(e) => {
+                    // The field is controlled by `profile.level`, but a rejected keystroke
+                    // leaves no state change to re-render it. Snap the DOM value back so
+                    // the field always agrees with the profile it edits.
+                    e.currentTarget.value = String(profile.level);
+                  }}
+                />
+              </label>
+            </div>
+            {profile.flea && (
+              <p className="-mt-2 text-xs text-[var(--color-muted-foreground)]">
+                Flea offers with a level requirement above {profile.level} stay locked.
+              </p>
+            )}
 
             {profile.mode === "advanced" && (
               <div className="flex flex-col gap-2">

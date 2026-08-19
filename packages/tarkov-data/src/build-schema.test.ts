@@ -5,7 +5,10 @@ import {
   BuildV2,
   BuildV3,
   BuildV4,
+  BuildV5,
+  BuildV6,
   PlayerProfile,
+  DEFAULT_PROFILE,
   CURRENT_BUILD_VERSION,
 } from "./build-schema.js";
 
@@ -118,7 +121,7 @@ describe("PlayerProfile", () => {
     flea: false,
   };
   it("parses a valid basic profile", () => {
-    expect(PlayerProfile.parse(validProfile)).toEqual(validProfile);
+    expect(PlayerProfile.parse(validProfile)).toEqual({ ...validProfile, level: 1 });
   });
   it("parses advanced mode with quests", () => {
     const parsed = PlayerProfile.parse({
@@ -167,7 +170,10 @@ describe("BuildV3", () => {
       },
       flea: true,
     };
-    expect(BuildV3.parse({ ...v3base, profileSnapshot: profile }).profileSnapshot).toEqual(profile);
+    expect(BuildV3.parse({ ...v3base, profileSnapshot: profile }).profileSnapshot).toEqual({
+      ...profile,
+      level: 1,
+    });
   });
 });
 
@@ -223,8 +229,130 @@ describe("Build (discriminated union) — v4", () => {
   });
 });
 
+describe("PlayerProfile.level", () => {
+  const levellessProfile = {
+    mode: "advanced" as const,
+    traders: {
+      prapor: 4,
+      therapist: 3,
+      skier: 2,
+      peacekeeper: 4,
+      mechanic: 3,
+      ragman: 2,
+      jaeger: 1,
+    },
+    flea: true,
+    completedQuests: ["gunsmith-master-part-1", "setup"],
+  };
+
+  // The guard that matters: every profile written to localStorage or embedded in a shared
+  // build before this field existed has no `level`. If this ever fails, `useProfile`'s
+  // catch-and-fall-back swallows it and silently wipes the user's trader LLs and quests.
+  it("defaults to 1 on a stored profile that predates the field", () => {
+    const parsed = PlayerProfile.parse(levellessProfile);
+    expect(parsed.level).toBe(1);
+    expect(parsed.traders.prapor).toBe(4);
+    expect(parsed.completedQuests).toEqual(["gunsmith-master-part-1", "setup"]);
+  });
+
+  it("keeps an explicit level rather than overwriting it with the default", () => {
+    expect(PlayerProfile.parse({ ...levellessProfile, level: 42 }).level).toBe(42);
+  });
+
+  it("rejects level below 1", () => {
+    expect(PlayerProfile.safeParse({ ...levellessProfile, level: 0 }).success).toBe(false);
+  });
+
+  it("rejects level above 99", () => {
+    expect(PlayerProfile.safeParse({ ...levellessProfile, level: 100 }).success).toBe(false);
+  });
+
+  it("rejects a non-integer level", () => {
+    expect(PlayerProfile.safeParse({ ...levellessProfile, level: 20.5 }).success).toBe(false);
+  });
+
+  it("ships a level on DEFAULT_PROFILE", () => {
+    expect(DEFAULT_PROFILE.level).toBe(1);
+  });
+});
+
+describe("BuildV6", () => {
+  const v6base = {
+    version: 6 as const,
+    weaponId: "w",
+    attachments: {},
+    orphaned: [],
+    createdAt: "2026-04-20T00:00:00.000Z",
+  };
+
+  it("parses a valid v6 payload", () => {
+    expect(BuildV6.parse(v6base).version).toBe(6);
+  });
+
+  it("carries v4's name/description and v3's profileSnapshot forward", () => {
+    const parsed = BuildV6.parse({
+      ...v6base,
+      name: "Meta M4",
+      description: "budget-friendly",
+      profileSnapshot: { ...DEFAULT_PROFILE, level: 30 },
+    });
+    expect(parsed.name).toBe("Meta M4");
+    expect(parsed.description).toBe("budget-friendly");
+    expect(parsed.profileSnapshot?.level).toBe(30);
+  });
+
+  it("rejects a wrong version literal", () => {
+    expect(BuildV6.safeParse({ ...v6base, version: 5 }).success).toBe(false);
+  });
+});
+
+describe("Build (discriminated union) — v5 and v6", () => {
+  const shared = {
+    weaponId: "w",
+    attachments: {},
+    orphaned: [],
+    createdAt: "2026-04-20T00:00:00.000Z",
+  };
+
+  it("dispatches to BuildV5 when version is 5", () => {
+    expect(Build.parse({ ...shared, version: 5 }).version).toBe(5);
+    expect(BuildV5.parse({ ...shared, version: 5 }).version).toBe(5);
+  });
+
+  it("dispatches to BuildV6 when version is 6", () => {
+    expect(Build.parse({ ...shared, version: 6 }).version).toBe(6);
+  });
+
+  // A v5 build shared before this change carries a profileSnapshot with no level. It has
+  // to keep parsing — a build that fails to load is worse than one that gates imperfectly.
+  it("parses a v5 payload whose profileSnapshot predates level, defaulting it to 1", () => {
+    const parsed = Build.parse({
+      ...shared,
+      version: 5,
+      profileSnapshot: {
+        mode: "basic",
+        traders: {
+          prapor: 3,
+          therapist: 1,
+          skier: 1,
+          peacekeeper: 1,
+          mechanic: 2,
+          ragman: 1,
+          jaeger: 1,
+        },
+        flea: true,
+      },
+    });
+    expect(parsed.version).toBe(5);
+    if (parsed.version === 5) {
+      expect(parsed.profileSnapshot?.level).toBe(1);
+      expect(parsed.profileSnapshot?.traders.prapor).toBe(3);
+    }
+  });
+});
+
 describe("CURRENT_BUILD_VERSION", () => {
   it("matches the latest BuildV* variant in the discriminated union", () => {
-    expect(CURRENT_BUILD_VERSION).toBe(5);
+    expect(CURRENT_BUILD_VERSION).toBe(6);
   });
 });
