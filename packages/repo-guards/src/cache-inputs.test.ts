@@ -13,16 +13,40 @@ import { readRepoFile } from "./repo.js";
  * hand before this test was written: editing a workflow produced "cache hit, replaying
  * logs" until the `inputs` override existed, and "cache miss, executing" afterwards.
  */
-const TASK = "@tarkov/repo-guards#test";
+const TASK_PREFIX = "@tarkov/repo-guards#";
 const SRC_DIR = "packages/repo-guards/src";
+const PKG_JSON = "packages/repo-guards/package.json";
 
+/**
+ * Task names are DERIVED from turbo.json, never hardcoded. The original version of this
+ * guard pinned a single "@tarkov/repo-guards#test". When CI switched to running
+ * `test:coverage` instead, that pin would have left the guard protecting a task CI no
+ * longer executes — the exact stale-cache hole this file exists to close, reopened by a
+ * rename. Deriving the list means a new task variant is covered the moment it is added.
+ */
 interface TurboConfig {
   tasks: Record<string, { inputs?: string[] } | undefined>;
 }
 
-function declaredInputs(): string[] {
-  const turbo = JSON.parse(readRepoFile("turbo.json")) as TurboConfig;
-  return turbo.tasks[TASK]?.inputs ?? [];
+function turboConfig(): TurboConfig {
+  return JSON.parse(readRepoFile("turbo.json")) as TurboConfig;
+}
+
+/** Every turbo task override scoped to this package. */
+function guardTasks(): string[] {
+  return Object.keys(turboConfig().tasks).filter((name) => name.startsWith(TASK_PREFIX));
+}
+
+function declaredInputs(task: string): string[] {
+  return turboConfig().tasks[task]?.inputs ?? [];
+}
+
+/** Test-running scripts this package defines — each needs its own turbo override. */
+function testScripts(): string[] {
+  const pkg = JSON.parse(readRepoFile(PKG_JSON)) as { scripts?: Record<string, string> };
+  return Object.keys(pkg.scripts ?? {}).filter(
+    (name) => name === "test" || name.startsWith("test:"),
+  );
 }
 
 /**
@@ -76,17 +100,34 @@ function covers(glob: string, repoPath: string): boolean {
 }
 
 describe("turbo cache inputs cover what these guards read", () => {
-  it("declares an explicit inputs list for the test task", () => {
-    const inputs = declaredInputs();
-    expect(inputs.length).toBeGreaterThan(0);
-    // Without this sentinel the package's own sources stop being hashed.
-    expect(inputs).toContain("$TURBO_DEFAULT$");
+  it("declares an explicit inputs list for every guard task", () => {
+    const tasks = guardTasks();
+    expect(tasks.length).toBeGreaterThan(0);
+    for (const task of tasks) {
+      const inputs = declaredInputs(task);
+      expect(inputs.length, `${task} has no inputs`).toBeGreaterThan(0);
+      // Without this sentinel the package's own sources stop being hashed.
+      expect(inputs, `${task} drops $TURBO_DEFAULT$`).toContain("$TURBO_DEFAULT$");
+    }
   });
 
-  it("covers every repo-root path the guards read", () => {
-    const inputs = declaredInputs();
-    const uncovered = readPaths().filter((path) => !inputs.some((glob) => covers(glob, path)));
-    expect(uncovered).toEqual([]);
+  it("covers every repo-root path the guards read, for every guard task", () => {
+    for (const task of guardTasks()) {
+      const inputs = declaredInputs(task);
+      const uncovered = readPaths().filter((path) => !inputs.some((glob) => covers(glob, path)));
+      expect(uncovered, `${task} does not hash: ${uncovered.join(", ")}`).toEqual([]);
+    }
+  });
+
+  it("gives every test script its own turbo override, so none runs unguarded", () => {
+    // `test:watch` is interactive and never cached; only cacheable runners need an
+    // override. Anything else that runs these guards in CI must be hashed correctly.
+    const needsOverride = testScripts().filter((name) => name !== "test:watch");
+    const covered = guardTasks().map((task) => task.slice(TASK_PREFIX.length));
+    const unguarded = needsOverride.filter((name) => !covered.includes(name));
+    expect(unguarded, `script(s) with no turbo inputs override: ${unguarded.join(", ")}`).toEqual(
+      [],
+    );
   });
 
   it("finds the paths it claims to check, so the guard cannot pass vacuously", () => {

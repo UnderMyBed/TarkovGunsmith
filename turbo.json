@@ -14,6 +14,10 @@
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
     },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    },
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": ["*.tsbuildinfo"]
@@ -22,6 +26,19 @@
       "outputs": []
     },
     "@tarkov/repo-guards#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "../../.github/**",
+        "../../mise.toml",
+        "../../.nvmrc",
+        "../../package.json",
+        "../../pnpm-workspace.yaml",
+        "../../turbo.json"
+      ],
+      "outputs": ["coverage/**"]
+    },
+    "@tarkov/repo-guards#test:coverage": {
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
