@@ -11,7 +11,13 @@ const FONT_FILES: readonly { path: string; name: string; weight: 400 | 500 | 700
 
 let cached: SatoriFont[] | null = null;
 
-async function loadBytes(url: URL): Promise<ArrayBuffer> {
+// Exported (rather than kept module-private) purely for testability: `loadFonts()` always
+// builds its URL from this module's own `import.meta.url`, which is a `file:` URL under every
+// runtime that can execute this test suite (Node/Vitest). The `fetch` branch below exists for
+// Cloudflare Pages Functions, where the co-located static asset resolves to an `http(s):` URL
+// instead — there's no way to drive that branch through `loadFonts()` itself in a Node test, so
+// tests call `loadBytes` directly with a non-`file:` URL and a stubbed global `fetch`.
+export async function loadBytes(url: URL): Promise<ArrayBuffer> {
   if (url.protocol === "file:") {
     const { readFile } = await import("node:fs/promises");
     const buf = await readFile(url);

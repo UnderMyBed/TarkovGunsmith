@@ -26,6 +26,11 @@ export async function initResvg(
  * (its wbg imports aren't npm-resolvable). Memoized.
  */
 async function ensureResvgReadyNode(): Promise<void> {
+  // This guard's true branch is unreached by its only caller (renderPng, below),
+  // which already checks `if (!resvgReady)` before ever calling this function — by
+  // the time control reaches here, `resvgReady` is always still falsy. It stays as
+  // defensive redundancy (an internal call from anywhere else would need it) rather
+  // than being deleted; left as a documented, deliberate coverage gap.
   if (resvgReady) return resvgReady;
   resvgReady = (async () => {
     const { createRequire } = await import("node:module");
