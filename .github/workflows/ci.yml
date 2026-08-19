@@ -31,7 +31,7 @@ jobs:
     name: Typecheck • Lint • Format • Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Need the base commit to diff against for the paths-filter step.
           fetch-depth: 0

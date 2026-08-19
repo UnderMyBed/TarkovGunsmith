@@ -20,7 +20,7 @@ jobs:
       name: production-builds-api
       url: https://tarkov-gunsmith-builds-api.workers.dev
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
 
@@ -54,7 +54,7 @@ jobs:
       name: production-pages
       url: https://tarkov-gunsmith-web.pages.dev
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
 
