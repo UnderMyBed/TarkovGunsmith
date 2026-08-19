@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.14.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.14.0...v1.14.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* **ci:** scope Dependabot npm updates to the pnpm workspace root ([#129](https://github.com/UnderMyBed/TarkovGunsmith/issues/129)) ([b3c45b6](https://github.com/UnderMyBed/TarkovGunsmith/commit/b3c45b62e071a74aca96271bfe2e59525f37fb55))
+* **ci:** unflake the optimize-view test and stop the 10-minute apt install ([#134](https://github.com/UnderMyBed/TarkovGunsmith/issues/134)) ([30dcae8](https://github.com/UnderMyBed/TarkovGunsmith/commit/30dcae886c17e82eea3bc98615b4793572f4daf8))
+* **deps:** bump esbuild in the security group across 0 directory ([#128](https://github.com/UnderMyBed/TarkovGunsmith/issues/128)) ([7e8dce0](https://github.com/UnderMyBed/TarkovGunsmith/commit/7e8dce02a7d608567df87e96e83819ba33219b0c))
+
+
+### Documentation
+
+* **ci:** close out the Dependabot pnpm workspace arc ([#135](https://github.com/UnderMyBed/TarkovGunsmith/issues/135)) ([f40817f](https://github.com/UnderMyBed/TarkovGunsmith/commit/f40817f0f55c25f536596471391145357743c568))
+
 ## [1.14.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.13.0...v1.14.0) (2026-08-18)
 
 
