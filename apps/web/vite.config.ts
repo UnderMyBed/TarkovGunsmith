@@ -27,5 +27,13 @@ export default defineConfig({
   build: {
     target: "ES2022",
     sourcemap: true,
+    // Vite 8 switched the default CSS minifier to lightningcss, whose target parser only
+    // understands browser targets (chrome110, safari16, …) and rejects the ES-year target
+    // above with `Unsupported target "ES2022"`, failing the build outright. Pinning CSS
+    // minification back to esbuild keeps `target` meaning what it has always meant here for
+    // JS, and keeps the emitted CSS byte-for-byte what it was on vite 7. Switching to
+    // lightningcss is a deliberate choice about browser support, not a side effect of a
+    // dependency bump.
+    cssMinify: "esbuild",
   },
 });
