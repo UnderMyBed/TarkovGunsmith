@@ -1,19 +1,25 @@
-import type { AmmoListItem, ArmorListItem, ModListItem, WeaponListItem } from "@tarkov/data";
-import type {
-  BallisticAmmo,
-  BallisticArmor,
-  BallisticMod,
-  BallisticWeapon,
-} from "@tarkov/ballistics";
+import type { AmmoListItem, ArmorListItem } from "@tarkov/data";
+import type { BallisticAmmo, BallisticArmor } from "@tarkov/ballistics";
 
-const DEFAULT_BASE_ACCURACY = 3.5;
+/**
+ * `adaptMod` / `adaptWeapon` live in `@tarkov/data` rather than here, beside
+ * the Zod schemas that declare their units. They are re-exported so existing
+ * route imports keep working — import from either, they are the same function.
+ *
+ * The move was not cosmetic: a converting copy of `adaptMod` existed here, in
+ * `@tarkov/optimizer`, and in `@tarkov/og`, and all three carried the same
+ * 100x recoil unit error (docs/operations/data-api-audit.md §B). One home next
+ * to the schema is what stops that recurring.
+ */
+export { adaptMod, adaptWeapon, DEFAULT_BASE_ACCURACY } from "@tarkov/data";
 
 /**
  * Convert an `@tarkov/data` ammo item to the `@tarkov/ballistics` input shape.
  *
  * Field renames: `properties.armorDamage` → `armorDamagePercent`. The upstream
- * GraphQL field is named `armorDamage` (a percent 0–100), but the ballistics
- * package is explicit about the unit in the type name.
+ * field is named `armorDamage` and really is a percent (live range 0–95, and
+ * M995 reports 52 against its in-game value), so the rename only makes the
+ * unit explicit — unlike recoil, there is no conversion here either.
  */
 export function adaptAmmo(item: AmmoListItem): BallisticAmmo {
   return {
@@ -41,42 +47,5 @@ export function adaptArmor(item: ArmorListItem): BallisticArmor {
     currentDurability: item.properties.durability,
     materialDestructibility: item.properties.material.destructibility,
     zones: item.properties.zones,
-  };
-}
-
-/**
- * Convert an `@tarkov/data` weapon item to the `@tarkov/ballistics` input shape.
- *
- * Note: the upstream schema doesn't expose a base "accuracy" stat (it's
- * computed from barrel + caliber + ammo). Default to {@link DEFAULT_BASE_ACCURACY}
- * (typical AR baseline). Mod accuracyDelta values are still applied via
- * `weaponSpec`, so relative comparisons between builds remain accurate.
- */
-export function adaptWeapon(item: WeaponListItem): BallisticWeapon {
-  return {
-    id: item.id,
-    name: item.name,
-    baseErgonomics: item.properties.ergonomics,
-    baseVerticalRecoil: item.properties.recoilVertical,
-    baseHorizontalRecoil: item.properties.recoilHorizontal,
-    baseWeight: item.weight,
-    baseAccuracy: DEFAULT_BASE_ACCURACY,
-  };
-}
-
-/**
- * Convert an `@tarkov/data` mod item to the `@tarkov/ballistics` input shape.
- *
- * EFT's `recoilModifier` is already a percent (e.g. -8 for an 8% recoil
- * reduction), so it maps directly to `recoilModifierPercent`.
- */
-export function adaptMod(item: ModListItem): BallisticMod {
-  return {
-    id: item.id,
-    name: item.name,
-    ergonomicsDelta: item.properties.ergonomics,
-    recoilModifierPercent: item.properties.recoilModifier,
-    weight: item.weight,
-    accuracyDelta: item.properties.accuracyModifier,
   };
 }

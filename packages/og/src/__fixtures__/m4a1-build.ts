@@ -1,17 +1,25 @@
 import type { BuildV5 } from "@tarkov/data";
 
 /**
- * Hand-constructed BuildV5 + weapon/mod lookups. IDs are real Tarkov item IDs;
- * numeric values are representative but not guaranteed to match live data.
+ * Hand-constructed BuildV5 + weapon/mod lookups. Every id, slot path and
+ * numeric value below is taken from the live json.tarkov.dev items document
+ * (sampled 2026-08-19).
+ *
+ * The previous version claimed "real Tarkov item IDs" but the four it used
+ * were a front sight, a receiver extension, an M-LOK rail, and one id absent
+ * from upstream entirely — attached to `mod_barrel` / `mod_handguard` slots the
+ * M4A1 does not have at top level. Its stat values were percent-scale too
+ * (`recoilModifier: -22`, `accuracyModifier: 0.5` against a real max of 0.06),
+ * which is the class of fixture that hid the unit error in
+ * docs/operations/data-api-audit.md §B.
  */
 export const m4a1Build: BuildV5 = {
   version: 5,
-  weaponId: "5447a9cd4bdc2dbd208b4567", // M4A1
+  weaponId: "5447a9cd4bdc2dbd208b4567", // Colt M4A1 5.56x45 assault rifle
   attachments: {
-    mod_pistol_grip: "55d4af3a4bdc2d972f8b456f",
-    mod_stock: "5c793fc42e221600114ca25d",
-    mod_barrel: "5b7be4895acfc400170e2dd5",
-    mod_handguard: "5c9a1c3a2e221602b21d3533",
+    mod_pistol_grip: "5a33e75ac4a2826c6e06d759",
+    mod_stock: "5947e98b86f774778f1448bc",
+    mod_reciever: "59bfe68886f7746004266202",
   },
   orphaned: [],
   createdAt: "2026-04-21T00:00:00.000Z",
@@ -44,36 +52,31 @@ export interface FixtureMod {
 export const m4a1Weapon: FixtureWeapon = {
   id: "5447a9cd4bdc2dbd208b4567",
   shortName: "M4A1",
-  properties: { ergonomics: 48, recoilVertical: 120, recoilHorizontal: 344 },
+  properties: { ergonomics: 48, recoilVertical: 119, recoilHorizontal: 342 },
 };
 
+// recoilModifier / accuracyModifier are fractions, exactly as upstream returns
+// them. Attached sum is -0.495, i.e. a real -49.5% recoil build.
 export const m4a1Mods: FixtureMod[] = [
   {
-    id: "55d4af3a4bdc2d972f8b456f",
-    shortName: "ERGO",
-    weight: 0.07,
+    id: "5a33e75ac4a2826c6e06d759",
+    shortName: "CQR AR15",
+    weight: 0.499,
     buyFor: [{ priceRUB: 12_000 }],
-    properties: { ergonomics: 6, recoilModifier: -3 },
+    properties: { ergonomics: 15, recoilModifier: -0.23, accuracyModifier: 0 },
   },
   {
-    id: "5c793fc42e221600114ca25d",
-    shortName: "STOCK",
-    weight: 0.32,
-    buyFor: [{ priceRUB: 42_000 }],
-    properties: { ergonomics: -4, recoilModifier: -22 },
-  },
-  {
-    id: "5b7be4895acfc400170e2dd5",
-    shortName: "BARREL",
+    id: "5947e98b86f774778f1448bc",
+    shortName: "UBR GEN2",
     weight: 0.61,
-    buyFor: [{ priceRUB: 36_000 }],
-    properties: { recoilModifier: -9, accuracyModifier: 0.5 },
+    buyFor: [{ priceRUB: 42_000 }],
+    properties: { ergonomics: 8, recoilModifier: -0.225, accuracyModifier: 0 },
   },
   {
-    id: "5c9a1c3a2e221602b21d3533",
-    shortName: "HG",
-    weight: 0.4,
-    buyFor: [{ priceRUB: 28_000 }],
-    properties: { ergonomics: 10, recoilModifier: -7 },
+    id: "59bfe68886f7746004266202",
+    shortName: "MUR-1S",
+    weight: 0.246,
+    buyFor: [{ priceRUB: 36_000 }],
+    properties: { ergonomics: 7, recoilModifier: -0.04, accuracyModifier: 0 },
   },
 ];

@@ -8,7 +8,7 @@ import type { BallisticWeapon, BallisticMod } from "../types.js";
 
 // Colt M4A1 5.56x45 assault rifle. `properties.weight` is the bare receiver,
 // which is what the Builder wants. baseAccuracy has no upstream counterpart —
-// 3.5 mirrors DEFAULT_BASE_ACCURACY in apps/web/.../data-adapters/adapters.ts.
+// 3.5 mirrors DEFAULT_BASE_ACCURACY in packages/tarkov-data/src/ballistic-adapters.ts.
 export const M4A1: BallisticWeapon = {
   id: "5447a9cd4bdc2dbd208b4567",
   name: "Colt M4A1 5.56x45",

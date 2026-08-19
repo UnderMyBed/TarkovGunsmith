@@ -79,7 +79,7 @@ export function ModChangesTable({
           ERGO
         </span>
         <span className="text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
-          RCL
+          RCL %
         </span>
         <span className="text-right font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted-foreground)]">
           ₽
@@ -127,8 +127,13 @@ export function ModChangesTable({
               <span className={`text-right font-mono text-xs ${deltaClass(row.ergoDelta, false)}`}>
                 {fmtSigned(row.ergoDelta)}
               </span>
-              <span className={`text-right font-mono text-xs ${deltaClass(row.recoilDelta, true)}`}>
-                {fmtSigned(row.recoilDelta)}
+              {/* `recoilDelta` is a fraction (slot-diff.ts keeps upstream's
+                  unit), so it must be scaled here. Unscaled it hit fmtSigned's
+                  0-decimal rounding and every changed row rendered "−0". */}
+              <span
+                className={`text-right font-mono text-xs ${deltaClass(row.recoilDelta * 100, true)}`}
+              >
+                {fmtSigned(row.recoilDelta * 100, 1)}
               </span>
               <span className={`text-right font-mono text-xs ${deltaClass(row.priceDelta, true)}`}>
                 {fmtPrice(row.priceDelta)}

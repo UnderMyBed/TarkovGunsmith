@@ -9,7 +9,7 @@ import type { BallisticWeapon, BallisticMod } from "../types.js";
 
 // Colt M4A1 5.56x45 assault rifle — 5447a9cd4bdc2dbd208b4567.
 // baseAccuracy has no upstream counterpart; 3.5 mirrors DEFAULT_BASE_ACCURACY
-// in apps/web/src/features/data-adapters/adapters.ts.
+// in packages/tarkov-data/src/ballistic-adapters.ts.
 const m4: BallisticWeapon = {
   id: "5447a9cd4bdc2dbd208b4567",
   name: "M4A1",
