@@ -5,6 +5,7 @@ import { TarkovDataProvider } from "@tarkov/data";
 import { render } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
 import { routeTree } from "../route-tree.gen.js";
+import { routerOptions } from "../router-options.js";
 import { createTestClient } from "./test-client.js";
 
 /** The concrete router type `createRouter({ routeTree, history })` below always produces. */
@@ -33,7 +34,7 @@ export async function renderRoute(
   });
   const client = options?.client ?? createTestClient();
   const history = createMemoryHistory({ initialEntries: [initialPath] });
-  const router = createRouter({ routeTree, history });
+  const router = createRouter({ routeTree, history, ...routerOptions });
   await router.load();
 
   const utils = render(
