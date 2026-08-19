@@ -33,35 +33,22 @@ export default tseslint.config(
       globals: { ...globals.node },
       parserOptions: {
         projectService: {
+          // Only genuinely one-off files live here now — each is a single file, not a
+          // directory pattern, so there is no "depth" for a refactor to break. Test files
+          // used to be enumerated here too, one directory depth at a time; see the
+          // `**/*.test.ts` project block below for why they moved out.
           allowDefaultProject: [
             "packages/*/vitest.config.ts",
-            "packages/ballistics/src/*.test.ts",
-            "packages/ballistics/src/*/*.test.ts",
-            "packages/optimizer/src/*.test.ts",
-            "packages/optimizer/src/*/*.test.ts",
-            "packages/og/src/*.test.ts",
-            "packages/og/src/*.test.tsx",
-            "packages/og/scripts/*.tsx",
-            "packages/tarkov-data/src/*.test.ts",
-            "packages/tarkov-data/src/queries/*.test.ts",
-            "packages/tarkov-data/src/queries/shared/*.test.ts",
-            "packages/tarkov-data/src/tarkovtracker/*.test.ts",
-            "packages/tarkov-data/src/hooks/*.test.ts",
-            "packages/ui/src/lib/*.test.ts",
-            "packages/ui/src/components/*.test.ts",
             "apps/*/vitest.config.ts",
-            "apps/builds-api/src/*.test.ts",
             "apps/builds-api/worker-configuration.d.ts",
-            "apps/web/src/*.test.ts",
-            "apps/web/src/*.test.tsx",
-            "apps/web/src/features/*/*.test.ts",
-            "apps/web/src/features/*/*.test.tsx",
-            "apps/web/src/features/*/*/*.test.ts",
-            "apps/web/src/features/*/*/*.test.tsx",
-            "apps/web/functions/lib/*.test.ts",
+            // Standalone image-generation scripts, run via tsx, not part of the package's
+            // own tsconfig.json build graph.
+            "packages/og/scripts/*.tsx",
           ],
           defaultProject: "packages/ui/tsconfig.test.json",
-          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 30,
+          // Measured: 8 vitest.config.ts (one per package/app) + worker-configuration.d.ts
+          // + 2 og scripts = 11. A little headroom for the next package's vitest.config.ts.
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 12,
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -75,16 +62,47 @@ export default tseslint.config(
       ],
     },
   },
+  // Test files get their type info from each package's own tsconfig.test.json instead of
+  // the shared default project above. This used to be ~25 `allowDefaultProject` globs
+  // enumerating exact directory depths per package (`features/*/*.test.ts`,
+  // `features/*/*/*.test.ts`, ...) — a refactor that moved a test one level deeper fell
+  // through every one of them and failed with an opaque "was not found by the project
+  // service" error. Every tsconfig.test.json below `include`s its package with `src/**/*`,
+  // a globstar, so nesting depth can no longer break this (same reasoning as the
+  // per-package tsconfig.json requirement in the root CLAUDE.md, applied to tests).
+  //
+  // This can't be done as another `projectService.allowDefaultProject` entry pointing at a
+  // per-package `defaultProject`, because `defaultProject` is a single global value:
+  // typescript-eslint creates one project-service singleton for the whole `eslint` process,
+  // seeded from whichever config block's `projectService` options are seen first, and every
+  // later block's `projectService` options are silently ignored (see `populateProjectService`
+  // in `@typescript-eslint/typescript-estree`'s `createParseSettings.js`). The classic
+  // `parserOptions.project` array does not have that limitation — it resolves each file
+  // against a real list of projects — so it's used here, scoped to test files only.
+  // `packages/repo-guards/tsconfig.json` reuses its package's main tsconfig, since that one
+  // never excluded `**/*.test.ts` in the first place.
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: [
+          "apps/builds-api/tsconfig.test.json",
+          "apps/web/tsconfig.test.json",
+          "packages/ballistics/tsconfig.test.json",
+          "packages/og/tsconfig.test.json",
+          "packages/optimizer/tsconfig.test.json",
+          "packages/repo-guards/tsconfig.json",
+          "packages/tarkov-data/tsconfig.test.json",
+          "packages/ui/tsconfig.test.json",
+        ],
+      },
+    },
+  },
   // Disable type-checked rules for non-TypeScript files (e.g. eslint.config.js itself)
   // so that files outside any tsconfig project are not erroneously linted with type info.
   {
     files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
-    ...tseslint.configs.disableTypeChecked,
-  },
-  // Workers test files import from cloudflare:test which is not resolvable from
-  // the root default project tsconfig — disable type-checked rules for them.
-  {
-    files: ["apps/*/src/*.test.ts"],
     ...tseslint.configs.disableTypeChecked,
   },
   prettier,

@@ -8,6 +8,6 @@
     "types": ["node", "react", "vite/client"],
     "moduleResolution": "Bundler"
   },
-  "include": ["src/**/*", "vite.config.ts", "vitest.config.ts"],
+  "include": ["src/**/*", "functions/**/*.ts", "vite.config.ts", "vitest.config.ts"],
   "exclude": ["dist", "node_modules"]
 }

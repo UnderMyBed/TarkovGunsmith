@@ -23,7 +23,7 @@ describe("POST /pairs", () => {
     );
     await waitOnExecutionContext(ctx);
     expect(res.status).toBe(201);
-    const body = (await res.json()) as { id: string; url: string };
+    const body = await res.json<{ id: string; url: string }>();
     expect(body.id).toMatch(/^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/);
     expect(body.url).toContain(`/pairs/${body.id}`);
     const stored = await env.BUILDS.get(`p:${body.id}`);
@@ -101,7 +101,7 @@ describe("POST /pairs/:id/fork", () => {
     );
     await waitOnExecutionContext(ctx);
     expect(res.status).toBe(201);
-    const body = (await res.json()) as { id: string; url: string };
+    const body = await res.json<{ id: string; url: string }>();
     expect(body.id).not.toBe("srcmnpqr");
     expect(body.id).toMatch(/^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/);
     const stored = await env.BUILDS.get(`p:${body.id}`);
