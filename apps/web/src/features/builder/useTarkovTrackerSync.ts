@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchProgression,
   mapRawToProfile,
@@ -66,8 +66,15 @@ export function useTarkovTrackerSync(args: UseTarkovTrackerSyncArgs): UseTarkovT
   );
 
   // Keep the latest profile/onChange/tasks without invalidating connect/reSync's identity.
+  // Refs aren't render output — React docs call out mutating `.current` directly in the
+  // render body as unsafe under concurrent rendering (a render that gets discarded before
+  // committing still performs the mutation, corrupting the ref for whichever render actually
+  // lands). The effect runs after every commit, so `doSync`'s later async reads always see
+  // the most recently committed args. See https://react.dev/reference/react/useRef.
   const propsRef = useRef(args);
-  propsRef.current = args;
+  useEffect(() => {
+    propsRef.current = args;
+  });
 
   const doSync = useCallback(async (token: string) => {
     setSyncState({ state: "syncing" });

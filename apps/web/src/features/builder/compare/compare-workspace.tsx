@@ -1,5 +1,5 @@
 // apps/web/src/features/builder/compare/compare-workspace.tsx
-import { useCallback, useEffect, useMemo, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactElement } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   useWeaponList,
@@ -65,7 +65,18 @@ export function CompareWorkspace({
   // One-shot sessionStorage prefill consumer. Runs on mount for the blank
   // /builder/compare route (no loader-supplied initialPair). Lets the
   // Builder "Compare ↔" button hand off a draft build without a share URL.
+  //
+  // This deliberately wants the *mount-time* snapshot of `initialPair` and `draft`, not
+  // whatever they are on some later render — it must run exactly once, and re-running it
+  // (or re-deciding whether to run it) if either changed later would replay a stale
+  // sessionStorage handoff over whatever the user has since done. `useRef` freezes that
+  // snapshot honestly instead of closing over the render-1 values directly with an `[]`
+  // deps array a reader has to trust is intentional — exhaustive-deps can't tell "closes
+  // over stale values on purpose" from "forgot to list a dependency" and is right to flag
+  // the latter shape either way.
+  const mountSnapshot = useRef({ initialPair, draft });
   useEffect(() => {
+    const { initialPair, draft } = mountSnapshot.current;
     if (initialPair) return;
     const raw = sessionStorage.getItem("compare:leftPrefill");
     const mode = sessionStorage.getItem("compare:mode");
@@ -99,7 +110,7 @@ export function CompareWorkspace({
       sessionStorage.removeItem("compare:rightBuildId");
       draft.markClean(); // fresh-clone from Builder shouldn't start "dirty"
     }
-    // Run once on mount.
+    // Run once on mount, against the mount-time snapshot above.
   }, []);
 
   const diff = useMemo(() => {

@@ -26,21 +26,30 @@ export function TarkovTrackerConnectPopover({
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-      onClick={onClose}
+      onClick={(e) => {
+        // Only close on a click that lands directly on the backdrop, not one that bubbles
+        // up from inside the panel — matches the pattern in packages/ui/src/components
+        // /dialog.tsx, so the panel itself needs no click handler of its own (nothing left
+        // for jsx-a11y's click-events-have-key-events / no-static-element-interactions to
+        // flag on either div).
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div
-        className="w-full max-w-sm border bg-[var(--color-card)] p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="w-full max-w-sm border bg-[var(--color-card)] p-6">
         <h3 className="font-display mb-2 text-base uppercase tracking-wider">
           Connect TarkovTracker
         </h3>
-        <label className="mb-1 block text-xs text-[var(--color-muted-foreground)]">
+        <label
+          htmlFor="tarkovtracker-token"
+          className="mb-1 block text-xs text-[var(--color-muted-foreground)]"
+        >
           TarkovTracker token
         </label>
         <div className="mb-3 flex gap-2">
           <Input
+            id="tarkovtracker-token"
             type={show ? "text" : "password"}
             value={token}
             placeholder="Paste token"

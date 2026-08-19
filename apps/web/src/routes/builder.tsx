@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useModList,
   useWeaponList,
@@ -15,6 +15,7 @@ import {
   type BuildV1,
   type BuildV6,
   type PlayerProfile,
+  type SlotNodeForMigration,
 } from "@tarkov/data";
 import { useTarkovTrackerSync } from "../features/builder/useTarkovTrackerSync.js";
 import { weaponSpec } from "@tarkov/ballistics";
@@ -55,6 +56,45 @@ function BuilderRouteLayout() {
   const isExactBuilder = matchRoute({ to: "/builder" });
   const search = Route.useSearch();
   return isExactBuilder ? <BuilderPage view={search.view} /> : <Outlet />;
+}
+
+/**
+ * One-shot v1 -> v2 migration for a legacy shared build URL, run as soon as the weapon tree
+ * it depends on has loaded. Extracted from BuilderPage (a 600+ line router-coupled page
+ * component with no existing test harness) so this logic — 100% of what the original
+ * react-hooks/set-state-in-effect finding was about — can be exercised directly with
+ * `renderHook`, independent of TanStack Router/Query context.
+ *
+ * This used to be a useEffect that called setAttachments + setOrphaned after commit: render
+ * once with empty attachments, paint that, then the effect fires and forces a second render
+ * + paint with the migrated ones — a visible flash on every legacy-link load, on the app's
+ * busiest route. Setting state directly during render (guarded so it only fires once) is
+ * React's documented alternative for this exact shape —
+ * https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes.
+ * React discards the in-progress render and immediately re-renders with the migrated state
+ * before anything paints, so there is only ever one visible render.
+ */
+export function useV1Migration(
+  initialWeaponId: string,
+  initialModIds: string[] | undefined,
+  treeSlots: readonly SlotNodeForMigration[] | undefined,
+  setAttachments: (attachments: Record<string, string>) => void,
+  setOrphaned: (orphaned: string[]) => void,
+): void {
+  const [migrated, setMigrated] = useState(false);
+  if (!migrated && initialModIds && treeSlots) {
+    setMigrated(true);
+    const v1: BuildV1 = {
+      version: 1,
+      weaponId: initialWeaponId,
+      modIds: initialModIds,
+      createdAt: new Date(0).toISOString(),
+    };
+    // The tree's SlotNode structurally extends SlotNodeForMigration.
+    const v2 = migrateV1ToV2(v1, treeSlots);
+    setAttachments(v2.attachments);
+    setOrphaned(v2.orphaned);
+  }
 }
 
 export interface BuilderPageProps {
@@ -110,23 +150,7 @@ export function BuilderPage({
 
   const tree = useWeaponTree(weaponId);
 
-  const migratedRef = useRef(false);
-  useEffect(() => {
-    if (migratedRef.current) return;
-    if (!initialModIds) return;
-    if (!tree.data) return;
-    const v1: BuildV1 = {
-      version: 1,
-      weaponId: initialWeaponId,
-      modIds: initialModIds,
-      createdAt: new Date(0).toISOString(),
-    };
-    // The tree's SlotNode structurally extends SlotNodeForMigration.
-    const v2 = migrateV1ToV2(v1, tree.data.slots);
-    setAttachments(v2.attachments);
-    setOrphaned(v2.orphaned);
-    migratedRef.current = true;
-  }, [initialModIds, initialWeaponId, tree.data]);
+  useV1Migration(initialWeaponId, initialModIds, tree.data?.slots, setAttachments, setOrphaned);
 
   const weaponAvailabilityById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof itemAvailability>>();

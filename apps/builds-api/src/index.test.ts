@@ -45,7 +45,7 @@ describe("POST /builds", () => {
   it("stores a build and returns the id + url", async () => {
     const res = await postBuild(samplePayload);
     expect(res.status).toBe(201);
-    const body = (await res.json()) as { id: string; url: string };
+    const body = await res.json<{ id: string; url: string }>();
     expect(body.id).toMatch(/^[a-z2-9]{8}$/);
     expect(body.url).toContain(`/builds/${body.id}`);
   });
@@ -97,11 +97,11 @@ describe("POST /builds", () => {
 describe("GET /builds/:id", () => {
   it("returns the stored build", async () => {
     const post = await postBuild(samplePayload);
-    const { id } = (await post.json()) as { id: string };
+    const { id } = await post.json<{ id: string }>();
 
     const get = await getBuild(id);
     expect(get.status).toBe(200);
-    const body = (await get.json()) as typeof samplePayload;
+    const body = await get.json<typeof samplePayload>();
     expect(body.weapon.id).toBe(samplePayload.weapon.id);
     expect(body.mods).toHaveLength(1);
   });

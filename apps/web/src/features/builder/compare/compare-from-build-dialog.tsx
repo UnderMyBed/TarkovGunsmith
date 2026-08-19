@@ -55,10 +55,18 @@ export function CompareFromBuildDialog({
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-      onClick={onClose}
+      onClick={(e) => {
+        // Only close on a click that lands directly on the backdrop, not one that bubbles
+        // up from inside the panel — see packages/ui/src/components/dialog.tsx for the same
+        // pattern. Leaves the panel below with no click handler of its own, so there's
+        // nothing for jsx-a11y's click-events-have-key-events / no-static-element-interactions
+        // to flag on either element.
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <Card className="w-full max-w-md" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+      <Card className="w-full max-w-md">
         <CardContent className="flex flex-col gap-4 p-6">
           <h2 className="text-lg font-bold uppercase tracking-wider">Compare this build</h2>
 

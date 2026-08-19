@@ -97,7 +97,20 @@ export function Dialog({
     <div
       role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 transition-opacity duration-150"
-      onClick={closeOnBackdropClick ? onClose : undefined}
+      onClick={
+        closeOnBackdropClick
+          ? // Only close when the click lands directly on the backdrop, not when it
+            // bubbles up from a click inside the panel. Checking `target ===
+            // currentTarget` here (rather than stopping propagation on the panel div
+            // below) keeps the panel — which carries `role="dialog"`, a real
+            // interactive widget role — free of its own click handler, so there's
+            // nothing on it for jsx-a11y's click-events-have-key-events /
+            // no-noninteractive-element-interactions checks to (rightly) flag.
+            (e) => {
+              if (e.target === e.currentTarget) onClose();
+            }
+          : undefined
+      }
     >
       <div
         ref={panelRef}
@@ -105,7 +118,6 @@ export function Dialog({
         aria-modal="true"
         aria-labelledby={labelledBy}
         tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
         className="outline-none"
       >
         {children}
@@ -131,7 +143,7 @@ export function DialogPanel({ className, children, ...props }: DialogPanelProps)
 
 export type DialogTitleProps = HTMLAttributes<HTMLHeadingElement>;
 
-export function DialogTitle({ className, ...props }: DialogTitleProps) {
+export function DialogTitle({ className, children, ...props }: DialogTitleProps) {
   return (
     <h2
       className={cn(
@@ -139,7 +151,9 @@ export function DialogTitle({ className, ...props }: DialogTitleProps) {
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+    </h2>
   );
 }
 

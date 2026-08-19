@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactElement } from "react";
-import type { PlayerProfile } from "@tarkov/data";
+import type { PlayerProfile, TaskListItem } from "@tarkov/data";
 import { useTasks, MARQUEE_QUEST_NORMALIZED_NAMES } from "@tarkov/data";
 import {
   Button,
@@ -42,6 +42,23 @@ const TRADER_LABELS: Record<(typeof TRADER_KEYS)[number], string> = {
 
 type QuestFilter = "all" | "marquee" | "incomplete";
 
+/**
+ * `new Set(completedQuests ?? [])` built a fresh Set on every render regardless of
+ * whether `completedQuests` had actually changed. Every consumer that put that Set in
+ * a `useMemo` dependency array (visibleTasks, marqueeDoneCount below) therefore
+ * recomputed on every render too — the memoisation was a no-op. Memoising the Set
+ * itself, keyed on the array reference, is what makes those downstream memos real.
+ */
+export function useCompletedQuestSet(completedQuests: readonly string[] | undefined): Set<string> {
+  return useMemo(() => new Set(completedQuests ?? []), [completedQuests]);
+}
+
+/** Same shape of bug as `useCompletedQuestSet`: `data ?? []` allocated a new array
+ * every render whenever `data` was undefined, defeating any memo keyed on it. */
+export function useTaskList(data: readonly TaskListItem[] | undefined): readonly TaskListItem[] {
+  return useMemo(() => data ?? [], [data]);
+}
+
 export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): ReactElement {
   const tasks = useTasks();
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -49,9 +66,9 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
   const [search, setSearch] = useState("");
 
   const marqueeSet = useMemo(() => new Set<string>(MARQUEE_QUEST_NORMALIZED_NAMES), []);
-  const completedSet = new Set(profile.completedQuests ?? []);
+  const completedSet = useCompletedQuestSet(profile.completedQuests);
 
-  const allTasks = tasks.data ?? [];
+  const allTasks = useTaskList(tasks.data);
   const visibleTasks = useMemo(() => {
     const q = search.trim().toLowerCase();
     return allTasks
