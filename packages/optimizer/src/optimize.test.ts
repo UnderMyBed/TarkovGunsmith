@@ -37,7 +37,7 @@ function makeTieMod(
         },
       },
     ],
-  } as ModListItem;
+  };
 }
 
 /**
