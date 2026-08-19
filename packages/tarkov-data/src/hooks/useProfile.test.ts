@@ -31,7 +31,11 @@ describe("parseStoredProfile", () => {
   it("rehydrates a profile stored before `level` existed without losing anything", () => {
     const profile = parseStoredProfile(STORED_BEFORE_LEVEL);
 
-    expect(profile.level).toBe(1);
+    // Seeded from the stored `flea: true`, NOT the schema default of 1. That stored flag is
+    // the user's own prior assertion that they had flea access, and `{ flea: true, level: 1 }`
+    // is a state the game cannot produce — read as a real gate it removes 89 of 147 reachable
+    // weapons and 682 of 1,602 mods from the pickers with no explanation. See `seedLegacyLevel`.
+    expect(profile.level).toBe(20);
     expect(profile.mode).toBe("advanced");
     expect(profile.flea).toBe(true);
     expect(profile.traders).toEqual({
@@ -54,6 +58,20 @@ describe("parseStoredProfile", () => {
     // The precise failure this file exists to catch: falling back here means the user's
     // LL4 Prapor and 3 completed quests are gone, with nothing shown to them.
     expect(parseStoredProfile(STORED_BEFORE_LEVEL)).not.toEqual(DEFAULT_PROFILE);
+  });
+
+  it("does not seed a level for a stored profile without flea access", () => {
+    // The seed exists to preserve a `flea: true` assertion. Without one there is nothing to
+    // preserve, so the schema default stands and the profile stays maximally restrictive.
+    const stored = JSON.stringify({ ...DEFAULT_PROFILE, flea: false });
+    expect(parseStoredProfile(stored).level).toBe(1);
+  });
+
+  it("never overrides a level the user actually stored", () => {
+    // Seeding is strictly for profiles predating the field. An explicit level wins even when
+    // it contradicts `flea` — the user's own edit is not ours to second-guess.
+    const stored = JSON.stringify({ ...DEFAULT_PROFILE, flea: true, level: 3 });
+    expect(parseStoredProfile(stored).level).toBe(3);
   });
 
   it("round-trips a profile that already carries a level", () => {

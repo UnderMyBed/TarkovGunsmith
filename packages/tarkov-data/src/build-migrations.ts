@@ -127,10 +127,12 @@ export function migrateV4ToV5(v4: BuildV4): BuildV5 {
  * must not pretend it can. Reaching for a heuristic here (say, deriving a level from
  * `flea`) would be inventing data about a stranger's saved build.
  *
- * What v6 marks is the provenance, not the value: a build stamped v6 was authored by a
- * client that knew about `profileSnapshot.level`, so its level is the author's assertion.
- * A v5-or-earlier build's level is a default the parser supplied. That is the same way v5
- * earns its keep — the shape didn't change, the meaning of the contents did.
+ * What v6 marks is that the reader understood `profileSnapshot.level` — not that the value
+ * is trustworthy. Be precise about this, because the obvious stronger claim is false: this
+ * function stamps 6 onto v5 builds whose level came from the parser default, and
+ * `upgradeLoadedBuild` runs on every load, so re-sharing a migrated build persists a v6
+ * record carrying a defaulted level. A v6 stamp therefore does NOT prove the author set a
+ * level. Nothing branches on that today; do not add anything that does.
  */
 export function migrateV5ToV6(v5: BuildV5): BuildV6 {
   return { ...v5, version: 6 };

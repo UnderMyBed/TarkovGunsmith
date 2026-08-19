@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { itemAvailability } from "./item-availability.js";
 import type { ModListItem } from "./queries/modList.js";
 import type { PlayerProfile } from "./build-schema.js";
+import { fetchModList } from "./queries/modList.js";
+import { fixtureClient } from "./__fixtures__/client.js";
 
 const baseProfile: PlayerProfile = {
   mode: "basic",
@@ -315,5 +317,61 @@ describe("itemAvailability — weapon shape", () => {
     if (result.available) {
       expect(result.kind).toBe("trader");
     }
+  });
+});
+
+/**
+ * The unit tests above build their offers by hand. This one drives the composed path —
+ * `fetchModList` → `resolveBuyFor` → `itemAvailability` — over the committed sample of the
+ * real upstream document, so a break in the chain that carries upstream's `minLevelForFlea`
+ * onto the gate shows up here rather than passing on hand-shaped input. That chain is the
+ * thing that was silently broken: the value was parsed and then never read.
+ */
+describe("flea level gate, composed over the real document shape", () => {
+  it("carries upstream minLevelForFlea through to the vendor", async () => {
+    const mods = await fetchModList(fixtureClient());
+    const gatedFleaLevels = mods
+      .flatMap((m) => m.buyFor ?? [])
+      .filter((b) => b.vendor.__typename === "FleaMarket")
+      .map((b) => (b.vendor.__typename === "FleaMarket" ? b.vendor.minPlayerLevel : null))
+      .filter((lvl): lvl is number => lvl !== null && lvl > 0);
+
+    // Fails loudly rather than passing vacuously if the sample ever loses its gated items.
+    expect(gatedFleaLevels.length, "sample has no flea-gated mods left").toBeGreaterThan(0);
+    // Live upstream uses 0 | 20 | 25 | 30 | 40; anything else means the mapping mangled it.
+    for (const lvl of gatedFleaLevels) expect([20, 25, 30, 35, 40]).toContain(lvl);
+  });
+
+  it("gates a real gated mod below its level and releases it at the level", async () => {
+    const mods = await fetchModList(fixtureClient());
+    const gated = mods.find((m) =>
+      (m.buyFor ?? []).some(
+        (b) => b.vendor.__typename === "FleaMarket" && (b.vendor.minPlayerLevel ?? 0) >= 20,
+      ),
+    );
+    expect(gated, "sample has no flea-gated mod").toBeDefined();
+
+    const fleaOffer = (gated!.buyFor ?? []).find((b) => b.vendor.__typename === "FleaMarket")!;
+    const gate =
+      fleaOffer.vendor.__typename === "FleaMarket" ? (fleaOffer.vendor.minPlayerLevel ?? 0) : 0;
+
+    // Isolating the flea path deliberately, and this is the one hand-shaped step: no mod in
+    // the sample is flea-only, and every trader offer on a gated mod is itself unmet for a
+    // level-1 profile. `trader-ll-required` outranks the flea gate by design, so leaving the
+    // trader offers in would assert the precedence rule rather than the gate. The vendor
+    // object itself is still the real one `resolveBuyFor` produced from the document.
+    const fleaOnly = { ...gated!, buyFor: [fleaOffer] };
+
+    const below = itemAvailability(fleaOnly, { ...baseProfile, flea: true, level: gate - 1 });
+    expect(below.available).toBe(false);
+    if (!below.available && below.reason === "flea-level-required") {
+      expect(below.minPlayerLevel).toBe(gate);
+    } else {
+      expect.unreachable(`expected flea-level-required, got ${JSON.stringify(below)}`);
+    }
+
+    const atGate = itemAvailability(fleaOnly, { ...baseProfile, flea: true, level: gate });
+    expect(atGate.available).toBe(true);
+    if (atGate.available) expect(atGate.kind).toBe("flea");
   });
 });

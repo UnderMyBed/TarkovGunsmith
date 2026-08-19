@@ -16,10 +16,49 @@ const STORAGE_KEY = "tg:player-profile";
 export function parseStoredProfile(raw: string | null): PlayerProfile {
   if (raw === null || raw === "") return DEFAULT_PROFILE;
   try {
-    return PlayerProfile.parse(JSON.parse(raw));
+    const parsed: unknown = JSON.parse(raw);
+    const profile = PlayerProfile.parse(parsed);
+    return seedLegacyLevel(parsed, profile);
   } catch {
     return DEFAULT_PROFILE;
   }
+}
+
+/**
+ * Minimum PMC level that makes `flea: true` coherent.
+ *
+ * Mirrors the threshold `tarkovtracker/mapping.ts` uses to derive `flea` from a real level.
+ * Both are unverified against the live game and should move together if either moves.
+ */
+const FLEA_UNLOCK_LEVEL = 20;
+
+/**
+ * Carry a pre-`level` profile's own assertion forward instead of contradicting it.
+ *
+ * `PlayerProfile.level` defaults to 1 so a stored profile written before the field existed
+ * still parses — that default is what stops a silent wipe. But a stored `flea: true` IS the
+ * user's prior assertion that they had flea access, and `{ flea: true, level: 1 }` is a state
+ * the game cannot produce. Left alone it is read as a real gate: measured against the live
+ * document it removes 89 of 147 reachable weapons and 682 of 1,602 mods from the pickers,
+ * with no error and no explanation — `/builder` filters locked weapons out of the `<select>`
+ * entirely and the optimizer drops locked mods from its search space.
+ *
+ * So when the stored JSON predates the field (`level` absent) and claims flea access, seed
+ * the minimum level consistent with that claim. That is a translation of what the user
+ * already told us, not an invention: seeding the *minimum* deliberately leaves items gated
+ * above it locked, which is the gate doing its job, and the profile editor's level control
+ * corrects it in one edit.
+ *
+ * Deliberately scoped to `parseStoredProfile`, which only ever sees the user's OWN profile.
+ * A `profileSnapshot` embedded in someone else's shared build gets no such treatment — there
+ * the level really is unknown, and inventing one would be asserting something about a
+ * stranger's account.
+ */
+function seedLegacyLevel(raw: unknown, profile: PlayerProfile): PlayerProfile {
+  const hasStoredLevel =
+    typeof raw === "object" && raw !== null && "level" in (raw as Record<string, unknown>);
+  if (hasStoredLevel || !profile.flea) return profile;
+  return { ...profile, level: FLEA_UNLOCK_LEVEL };
 }
 
 /**
