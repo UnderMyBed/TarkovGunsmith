@@ -146,17 +146,25 @@ describe("OptimizeView", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }));
-    await new Promise((r) => queueMicrotask(() => r(undefined)));
+    // `findByTestId` retry-waits specifically for the optimizer's own queueMicrotask to
+    // resolve (a separate, unavoidable race against `useOptimizer`'s internal scheduling —
+    // nothing to do with the bug this test guards). Once that settles, everything derived
+    // from `proposed` — including the default selection — is asserted with a *non-retrying*
+    // `getByRole` below, on purpose.
+    await screen.findByTestId("triptych-optimized-ergo");
     // Proposal changes both muzzle and handguard (m-new / h-new vs m-old / h-old).
     // Uncheck handguard row — expect merged build to keep h-old.
-    // Synchronise on the settled selection before interacting. OptimizeView defaults every
-    // changed row to selected from an effect that lands a tick AFTER the rows first render —
-    // at the moment the checkbox becomes queryable the button still reads "ACCEPT SELECTED (0)".
-    // Clicking inside that window toggles against an empty set and the effect then clobbers the
-    // click back to all-selected, so the assertion below looks for "(1)" and finds "(2)". That
-    // is why this test failed roughly half the time in CI while passing every local run.
-    // Waiting for "(2)" makes the uncheck mean what the test name says it means.
-    await screen.findByRole("button", { name: /ACCEPT SELECTED \(2\)/ });
+    // This used to need its own `findByRole` retry-wait here, separate from the one above:
+    // OptimizeView defaulted every changed row to selected from a useEffect that landed a
+    // tick AFTER the result (and thus the triptych) first rendered, so there was a window
+    // where the result was visible and the checkbox was queryable but the button still read
+    // "ACCEPT SELECTED (0)". Clicking inside that window toggled against an empty set, and
+    // the effect then clobbered the click back to all-selected — this test failed roughly
+    // half the time in CI while passing every local run. Now that the default selection is
+    // set synchronously in the same render as the result (see optimize-view.tsx), a plain
+    // (non-retrying) `getByRole` immediately after the line above is enough — proving that
+    // specific race is gone, not just papering over it with a longer wait.
+    expect(screen.getByRole("button", { name: /ACCEPT SELECTED \(2\)/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: /Accept HANDGUARD/i }));
     fireEvent.click(await screen.findByRole("button", { name: /ACCEPT SELECTED \(1\)/ }));
     expect(onAccept).toHaveBeenCalledTimes(1);

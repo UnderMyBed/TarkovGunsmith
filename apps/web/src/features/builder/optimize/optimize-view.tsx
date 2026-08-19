@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState, type ReactElement } from "react";
+import { useMemo, useReducer, useState, type ReactElement } from "react";
 import type { BuildV6, ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { Button, Card, Pill } from "@tarkov/ui";
@@ -78,11 +78,23 @@ export function OptimizeView({
   const optimizer = useOptimizer();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
-  // Pre-fill constraints pins from the user's current build on first mount.
-  // Empty deps array is intentional — we only want this to run once on mount.
-  useEffect(() => {
+  // Pre-fill constraints pins from the user's current build. This used to be a mount-only
+  // effect (`[]` deps, "we only want this to run once") which silently went stale for any
+  // future caller that keeps OptimizeView mounted across a currentAttachments change — the
+  // exhaustive-deps rule was right to flag it even though today's one caller always remounts
+  // this component on entry, making the staleness latent rather than currently observable.
+  // Comparing against the previous prop during render (React's documented alternative to an
+  // effect for "adjust state when a prop changes" — see
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  // reacts correctly to that prop for as long as this component lives, and still fires
+  // exactly once on mount since `pinnedFrom` starts as `undefined`.
+  const [pinnedFrom, setPinnedFrom] = useState<Readonly<Record<string, string>> | undefined>(
+    undefined,
+  );
+  if (currentAttachments !== pinnedFrom) {
+    setPinnedFrom(currentAttachments);
     dispatch({ type: "INIT_FROM_BUILD", attachments: currentAttachments });
-  }, []);
+  }
 
   const proposed = optimizer.result && optimizer.result.ok ? optimizer.result : null;
 
@@ -91,10 +103,15 @@ export function OptimizeView({
     return slotDiff(currentAttachments, proposed.build.attachments, slotTree, modList);
   }, [proposed, currentAttachments, slotTree, modList]);
 
-  // Default selection = all changed slots, refreshed whenever a new result arrives.
-  useEffect(() => {
+  // Default selection = all changed slots, refreshed whenever a new result arrives. Same
+  // "adjust state during render" pattern as above: `setSelected` used to run in a
+  // useEffect after commit, which meant every new optimizer result painted once with the
+  // *previous* selection still showing before this effect corrected it a moment later.
+  const [selectedFor, setSelectedFor] = useState(proposed);
+  if (proposed !== selectedFor) {
+    setSelectedFor(proposed);
     if (proposed) setSelected(new Set(rows.map((r) => r.slotId)));
-  }, [proposed, rows]);
+  }
 
   const optimizedPrice = useMemo(
     () => (proposed ? sumPrice(proposed.build.attachments, modList) : null),
