@@ -8,6 +8,18 @@ import { adaptAmmo, adaptArmor } from "../features/data-adapters/adapters.js";
 import { BUCKET_CLASSES, shotsToBreakBucket } from "../features/matrix/colors.js";
 import { WipBanner } from "../features/nav/wip-banner.js";
 
+/**
+ * Upper bound on shots simulated per cell.
+ *
+ * The ported durability formula applies a minimum of 1 durability point per
+ * hit, so shots-to-break can never exceed the armor's durability. The highest
+ * live vest durability is 510 (6B43 Zabralo-Sh), so a cap just above that makes
+ * an unbreakable cell impossible for real armor. At the previous cap of 500,
+ * 139 of the 9,400 live cells (1.5%) rendered as "—" purely because the cap sat
+ * below the maximum durability rather than because the armor held.
+ */
+const SHOT_CAP = 520;
+
 export const Route = createFileRoute("/matrix")({
   component: MatrixPage,
 });
@@ -45,12 +57,12 @@ function MatrixPage() {
   }, [ammo.data, search, topN]);
 
   // Compute the matrix once whenever the visible ammo or armor sets change.
-  // Each cell runs simulateBurst up to 500 shots — for top-30 × 60 armors
+  // Each cell runs simulateBurst up to SHOT_CAP shots — for top-30 × 60 armors
   // = 1800 cells, this is a noticeable but tolerable initial compute on
   // first render. Memoized so changes to `search` only recompute affected.
   const matrix = useMemo(() => {
     if (sortedAmmos.length === 0 || sortedArmors.length === 0) return [];
-    return armorEffectiveness(sortedAmmos.map(adaptAmmo), sortedArmors.map(adaptArmor));
+    return armorEffectiveness(sortedAmmos.map(adaptAmmo), sortedArmors.map(adaptArmor), SHOT_CAP);
   }, [sortedAmmos, sortedArmors]);
 
   const isLoading = ammo.isLoading || armor.isLoading;
@@ -182,7 +194,7 @@ function MatrixTable({
                   title={
                     Number.isFinite(shots)
                       ? `${shots} shots to break`
-                      : "Cannot break within 500 shots"
+                      : `Cannot break within ${SHOT_CAP} shots`
                   }
                 >
                   {Number.isFinite(shots) ? shots : "—"}

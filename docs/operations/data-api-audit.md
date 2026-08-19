@@ -187,6 +187,46 @@ Penetration power is indeed the missing factor — but adding it alone still mis
 
 **Separate sign defect:** `armorDamage()` halves damage on deflection ("If it deflected, half damage"). The original has the **opposite sign** — blocked shots damage armor **1.22× more** than penetrating ones (clamp ceiling 1.1 vs 0.9).
 
+### RESOLVED IN THE PORT (2026-08-19) — read this before touching the formula
+
+The port landed. Three things were established that this section could not settle when it
+was written, all by running a direct port against the live document and comparing to the
+four reference pairs above:
+
+1. **The precedence question is settled _for the port_, not for intent.** Only the C# reading
+   `(pen/class)*10` reproduces all four reference pairs (44 / 104 / 22 / 161) and the
+   whole-matrix statistics (zero infinite, min 3, median 102, max 510). The `pen/(class*10)`
+   reading misses on two of four. The port therefore takes the C# reading, and says so in
+   `armorDamage.ts`. **What the original author intended is still unknown** and the code
+   comment keeps that distinction.
+
+2. **A second unit bug exists in the ground truth itself, and is NOT replicated.**
+   `PenetrationChance` takes durability on a 0–100 scale — `CalculateFactor_A` only yields the
+   expected ≈`class × 10` resistance there. `SimulateHitSeries_Engine` builds exactly that at
+   line 195 for its own call, but at line 260 passes `currentDurability / MaxDurability` — a
+   0–1 fraction — into `GetExpectedArmorDamage`, which feeds it to `PenetrationChance` again.
+   On the 0–1 path `factor_a` collapses to ≈`1.46 × class`, so `P(pen)` ≈ 1 for nearly every
+   round and the expected-value blend degenerates into the penetrated branch. The 0–100 scale
+   is what reproduces the reference figures, so that is what shipped.
+
+3. **Under the C# reading the lower clamp rails are mathematically unreachable.** They engage
+   only when `pen < 0.06 × class` (≤ 0.36 at class 6), where the product cannot exceed
+   `0.36 × 1.0 × 0.6 × 0.525 = 0.113` and the min-1 floor always wins. The clamp ceiling
+   saturates on 95.0% of live cells, so in practice the clamp is a constant multiplier rather
+   than the modulating term it reads as. The rails are kept, commented, and covered by a test —
+   they go live the moment the precedence reading changes.
+
+Residual known gap: `penetrationChance` is still ours (a linear ramp), not the original's
+`factor_a` curve, per this section's own instruction to fix it independently. Measured cost
+against ground truth across the live matrix: **1.75% mean relative error, 25% worst case**;
+on the four reference pairs, at most 4.8%. `groundTruth.test.ts` pins both the exact matches
+and that bound.
+
+One further defect found while porting, not previously recorded: `/matrix` capped simulation
+at 500 shots while the highest live vest durability is **510**. Since the min-1 floor bounds
+shots-to-break by durability, 139 of the 9,400 live cells (1.5%) would have rendered as
+unbreakable purely because the cap sat below the maximum durability. The cap is now 520.
+
 ### One genuinely unresolved ambiguity — do not let anyone settle this silently
 
 `pen / armor_class * 10` under C# precedence is `(pen/class)*10`, which saturates the clamp to a near-constant 0.9 on 8,930 of 9,400 live cells. Read as `pen/(class*10)` it becomes a real modulating term spanning 0.50–0.90. **The two readings agree on only 30.0% of live cells**, and nothing in the source settles it. A faithful port takes C# precedence, because that is what the ground-truth implementation actually computes — but whether the original author intended it is unknown.
@@ -247,10 +287,10 @@ A parse-rate check needs the real fetchers driven by a client reading those file
 
 ## Recommended follow-ups, in priority order
 
-1. **Fix the recoil unit error and the accuracy unit + sign errors** (§B, §C) — user-visible everywhere, and `max-accuracy` currently optimises backwards. Needs a clamp decision. Re-baseline the fixtures on real upstream values in the same change.
-2. **Port the armor durability formula from `Ballistics.cs`** (§G) — 97.9% of `/matrix` is currently meaningless. The formula is known; the `pen / armor_class * 10` precedence ambiguity must be recorded in the code, not silently resolved.
-3. **Re-baseline every fixture in `ballistics`, `optimizer` and `og` against sampled live data.** This is the root cause of all three defects above, not a tidiness item — a suite built on impossible inputs cannot detect a unit error.
-4. **Enforce or drop flea level gating** (§F) — either add a level to `PlayerProfile` or stop parsing `minLevelForFlea`.
+1. ~~**Fix the recoil unit error and the accuracy unit + sign errors** (§B, §C)~~ — **done.** Both now carry upstream's native fraction, and the accuracy sign is inverted at the point of application.
+2. ~~**Port the armor durability formula from `Ballistics.cs`** (§G)~~ — **done.** Ported with the C# precedence reading, the ambiguity recorded in `armorDamage.ts` rather than silently resolved, and pinned against the four ground-truth reference pairs. See "RESOLVED IN THE PORT" above.
+3. **Re-baseline every fixture in `ballistics`, `optimizer` and `og` against sampled live data.** This is the root cause of all three defects above, not a tidiness item — a suite built on impossible inputs cannot detect a unit error. **`ballistics` is done** (ammo, armor and scenario-target fixtures now carry live values and real upstream ids); `optimizer` and `og` remain.
+4. ~~**Enforce or drop flea level gating** (§F)~~ — **done.** `PlayerProfile` gained a `level`, and availability now reports a `flea-level-required` state.
 5. **Reframe or drop the `allowedCategories` deferred item** (§F) — there is no upstream data for it.
 6. **Get 5–10 in-game measured armor pairs.** Settles the §G precedence ambiguity and validates a 2025-era regression fit against the current patch. Nothing in either repo can substitute for it.
 7. **Decide whether to model armor plates at all** (§G) — upstream ships `armorSlots` and `bluntThroughput`; porting single-layer math onto plate-era data may be the larger correctness question hiding behind the durability defect.

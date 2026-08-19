@@ -8,7 +8,7 @@ Pure-TypeScript math for ballistic and armor calculations. Used by `apps/web` (a
 - `simulateBurst(ammo, armor, shots, distance)` → `ShotResult[]`
 - `armorEffectiveness(ammos, armors)` → `number[][]` (shots-to-penetrate matrix)
 - `weaponSpec(weapon, mods)` → `WeaponSpec`
-- Helpers: `penetrationChance`, `armorDamage`, `effectiveDamage`
+- Helpers: `penetrationChance`, `armorDamage` (+ `armorDamageBlocked` / `armorDamagePenetrated`), `effectiveDamage`
 
 ## Conventions
 
@@ -25,7 +25,19 @@ Use the `add-calc-function` project skill. It scaffolds the test file with requi
 
 ## Cross-checking against the original
 
-Where possible, compare outputs against [Ratstash / WishGranter](https://github.com/RatScanner/RatStash) and the [EFT wiki](https://escapefromtarkov.fandom.com/wiki/Ballistics). Annotate fixtures with `// SOURCE: <link or commit>` so the `ballistics-verifier` subagent can use them.
+The original is **live and is the ground truth**: `BackEnd/WishGranter/Statics/Ballistics.cs`
+in [Xerxes-17/TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith). An earlier note in
+`docs/plans/` claiming it was "archived as defunct" was wrong. Read it before changing any
+armor math.
+
+`src/armor/groundTruth.test.ts` pins our output against four reference pairs derived from it.
+Treat that file as a contract: if a change moves those numbers, the change is wrong until
+proven otherwise.
+
+**Fixtures must carry live values, not plausible ones.** Every fixture in `__fixtures__/`
+is sampled from `json.tarkov.dev` and carries the real upstream item `id` so it can be
+re-checked. Inventing "representative" numbers is what allowed a 100× recoil error and a 35–58×
+durability error to pass a fully green suite — see `docs/operations/data-api-audit.md` §B and §G.
 
 ## Out of scope
 
