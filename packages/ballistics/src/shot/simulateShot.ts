@@ -36,10 +36,15 @@ export function simulateShot(
     armor.maxDurability,
     didPenetrate,
   );
+  // The ground truth blends the blocked and penetrated branches by probability
+  // rather than branching on the threshold verdict, so `chance` is passed here
+  // and not `didPenetrate`. See armorDamage.ts and audit §G.
   const armorDmg = armorDamage(
     ammo.armorDamagePercent,
     armor.materialDestructibility,
-    didPenetrate,
+    ammo.penetrationPower,
+    armor.armorClass,
+    chance,
   );
   const remainingDurability = Math.max(0, armor.currentDurability - armorDmg);
   return {

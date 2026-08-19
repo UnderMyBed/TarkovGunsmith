@@ -13,9 +13,9 @@ describe("simulateScenario — bare flesh", () => {
     expect(shot.zone).toBe("leftLeg");
     expect(shot.armorUsed).toBeNull();
     expect(shot.didPenetrate).toBe(true);
-    expect(shot.damage).toBe(M855.damage); // 49
+    expect(shot.damage).toBe(M855.damage); // live: 54
     expect(shot.armorDamage).toBe(0);
-    expect(shot.bodyAfter.leftLeg.hp).toBe(65 - 49);
+    expect(shot.bodyAfter.leftLeg.hp).toBe(65 - M855.damage);
     expect(shot.bodyAfter.leftLeg.blacked).toBe(false);
     expect(shot.killed).toBe(false);
   });
