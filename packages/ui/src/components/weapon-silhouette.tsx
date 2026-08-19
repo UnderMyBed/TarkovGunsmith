@@ -32,7 +32,6 @@ export interface WeaponSilhouetteProps extends Omit<ImgHTMLAttributes<HTMLImageE
  *       />
  *     </div>
  */
-/* v8 ignore next 24 -- presentational; covered by apps/web Playwright tests */
 export const WeaponSilhouette = forwardRef<HTMLImageElement, WeaponSilhouetteProps>(
   function WeaponSilhouette({ itemId, className, alt = "", loading = "lazy", ...props }, ref) {
     return (
