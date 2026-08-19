@@ -9,50 +9,30 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**",
-        "build/**",
-        ".wrangler/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**", ".wrangler/**"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
     },
     "test:coverage": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
     },
     "typecheck": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "*.tsbuildinfo"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["*.tsbuildinfo"]
     },
     "lint": {
       "outputs": []
     },
     "@tarkov/repo-guards#test": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "../../.github/**",
@@ -62,14 +42,10 @@
         "../../pnpm-workspace.yaml",
         "../../turbo.json"
       ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "outputs": ["coverage/**"]
     },
     "@tarkov/repo-guards#test:coverage": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "../../.github/**",
@@ -79,9 +55,7 @@
         "../../pnpm-workspace.yaml",
         "../../turbo.json"
       ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "outputs": ["coverage/**"]
     }
   }
 }
