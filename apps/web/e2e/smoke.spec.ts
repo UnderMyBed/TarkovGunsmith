@@ -55,14 +55,40 @@ test.describe("smoke — per-route load", () => {
   }
 });
 
+/**
+ * `document.fonts.check()` reports whether a face is LOADED, and browsers only fetch a
+ * webfont once an element actually uses it. `document.fonts.ready` resolves as soon as
+ * nothing is pending — so if it is awaited before React has painted anything, no load is
+ * pending, it resolves immediately, and check() answers false for a font that is perfectly
+ * well configured.
+ *
+ * That is exactly what route code-splitting introduced: the entry chunk now loads, then
+ * pulls the route chunk, so first paint lands later than it did from a single bundle. These
+ * tests used a bare `page.goto("/")`, whose default `load` fires before React renders.
+ *
+ * Waiting for real painted content first restores what these tests were always asserting —
+ * that the Google Fonts link is correct and unblocked — without depending on how the
+ * bundler happens to chunk the app. Do not weaken these to `document.fonts.load()`: forcing
+ * a fetch would pass even if nothing on the page used the font, which is the regression
+ * the Bungee guard below exists to catch.
+ */
+async function gotoAndAwaitFonts(page: Page): Promise<void> {
+  await page.goto("/", { waitUntil: "networkidle" });
+  // A header element that uses the display + mono faces, so a real layout has happened.
+  await page
+    .getByRole("link", { name: /TARKOVGUNSMITH/i })
+    .first()
+    .waitFor();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+}
+
 test.describe("smoke — design system", () => {
   test("Bungee display font actually loads (regression guard for the M3 Fonts bug)", async ({
     page,
   }) => {
-    await page.goto("/");
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-    });
+    await gotoAndAwaitFonts(page);
     const bungeeLoaded = await page.evaluate(() => document.fonts.check("1em Bungee"));
     expect(
       bungeeLoaded,
@@ -71,19 +97,13 @@ test.describe("smoke — design system", () => {
   });
 
   test("Chivo body font actually loads", async ({ page }) => {
-    await page.goto("/");
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-    });
+    await gotoAndAwaitFonts(page);
     const loaded = await page.evaluate(() => document.fonts.check("1em Chivo"));
     expect(loaded).toBe(true);
   });
 
   test("Azeret Mono numeric font actually loads", async ({ page }) => {
-    await page.goto("/");
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-    });
+    await gotoAndAwaitFonts(page);
     const loaded = await page.evaluate(() => document.fonts.check('1em "Azeret Mono"'));
     expect(loaded).toBe(true);
   });

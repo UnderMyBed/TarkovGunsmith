@@ -8,6 +8,15 @@ export default defineConfig({
     TanStackRouterVite({
       routesDirectory: "src/routes",
       generatedRouteTree: "src/route-tree.gen.ts",
+      // Splits each route's `component` (plus its other lazy-eligible route options) into
+      // its own chunk at build time, loaded on navigation instead of upfront. Before this,
+      // route-tree.gen.ts statically imported every route file, so a visit to any single
+      // route (e.g. /calc) paid for the Builder, the optimizer, the compare workspace and
+      // the charts in one 937 kB chunk — see Stage 5.3 of
+      // docs/plans/2026-08-19-pre-refactor-hardening-plan.md. Router-owned code splitting
+      // (not manual `React.lazy`) so route registration stays exactly as it is today —
+      // `createFileRoute` per file — with no `.lazy.tsx` split files to hand-maintain.
+      autoCodeSplitting: true,
     }),
     react(),
     tailwindcss(),

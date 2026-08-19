@@ -10,7 +10,7 @@ import {
   CardTitle,
   Skeleton,
 } from "@tarkov/ui";
-import { BuilderPage } from "./builder.js";
+import { BuilderPage } from "../features/builder/builder-page.js";
 
 const builderIdSearchSchema = z.object({
   view: z.enum(["editor", "optimize"]).optional(),

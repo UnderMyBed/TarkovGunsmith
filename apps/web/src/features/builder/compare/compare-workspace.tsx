@@ -8,6 +8,7 @@ import {
   useSavePair,
   useForkPair,
   slotDiff,
+  loadBuild,
   CURRENT_PAIR_VERSION,
   type BuildV6,
   type BuildPair,
@@ -91,10 +92,19 @@ export function CompareWorkspace({
       if (mode === "clone-both") {
         draft.setSide("right", structuredClone(left));
       } else if (mode === "paste-url" && rightId) {
-        // Dynamic import to avoid pulling loadBuild into every compare bundle.
+        // This used to be a `const { loadBuild } = await import("@tarkov/data")` — a dead
+        // split. This file already statically imports six other bindings from the same
+        // package (above), and `app.tsx` statically imports `TarkovDataProvider` from it
+        // too, so `@tarkov/data`'s module graph was already in the eagerly-loaded chunk
+        // before this dynamic import ever ran; Rollup can't move an already-eager module
+        // into a lazy chunk for one caller. That produced Vite's
+        // [INEFFECTIVE_DYNAMIC_IMPORT] warning for no benefit — see Stage 5.3 of
+        // docs/plans/2026-08-19-pre-refactor-hardening-plan.md. `loadBuild` is imported
+        // statically above instead; genuine bundle savings come from lazy-loading whole
+        // routes (vite.config.ts's `autoCodeSplitting`), not from splitting a shared
+        // package that's already resident.
         void (async () => {
           try {
-            const { loadBuild } = await import("@tarkov/data");
             const right = await loadBuild(fetch, rightId);
             if (right.version === 6) draft.setSide("right", right);
           } catch {
