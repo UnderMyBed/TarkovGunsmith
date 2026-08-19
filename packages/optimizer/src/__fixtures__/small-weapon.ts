@@ -12,6 +12,11 @@ import type { BallisticWeapon } from "@tarkov/ballistics";
  *
  * Min-recoil optimum under no budget: brake + vertical + standard.
  * Recoil scoring: verticalRecoil + horizontalRecoil (after multiplier).
+ *
+ * `recoilModifier` values are fractions, matching upstream's own unit and live
+ * range (-0.35..0). They were percent-scale here until the unit fix in
+ * docs/operations/data-api-audit.md §B; magnitudes that cannot occur upstream
+ * are exactly how that bug stayed invisible, so keep these plausible.
  */
 export const SMALL_WEAPON: BallisticWeapon = {
   id: "weap1",
@@ -24,10 +29,10 @@ export const SMALL_WEAPON: BallisticWeapon = {
 };
 
 export const SMALL_MODS: readonly ModListItem[] = [
-  makeMod("muzzle_brake", "Brake", -12, 2, 0.3, 1500),
-  makeMod("muzzle_silencer", "Silencer", -8, 3, 0.5, 3500),
-  makeMod("grip_vertical", "Vertical grip", -4, 5, 0.15, 900),
-  makeMod("stock_standard", "Standard stock", -6, 8, 0.4, 2200),
+  makeMod("muzzle_brake", "Brake", -0.12, 2, 0.3, 1500),
+  makeMod("muzzle_silencer", "Silencer", -0.08, 3, 0.5, 3500),
+  makeMod("grip_vertical", "Vertical grip", -0.04, 5, 0.15, 900),
+  makeMod("stock_standard", "Standard stock", -0.06, 8, 0.4, 2200),
 ];
 
 export const SMALL_TREE: WeaponTree = {

@@ -1,6 +1,7 @@
-import type { BallisticMod, BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
+import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { weaponSpec } from "@tarkov/ballistics";
 import type { ModListItem, PlayerProfile, SlotNode } from "@tarkov/data";
+import { adaptMod } from "@tarkov/data";
 import { cheapestPrice, slotCandidates } from "./feasibility.js";
 import { lowerBoundForRemaining } from "./bounds.js";
 import { score } from "./objective.js";
@@ -68,7 +69,7 @@ function dfs(
 
   if (remainingSlots.length === 0) {
     // Leaf.
-    const stats = weaponSpec(state.weapon, partialMods.map(adaptModListItem));
+    const stats = weaponSpec(state.weapon, partialMods.map(adaptMod));
     const leafScore = score(state.objective, stats);
     if (
       best.value === null ||
@@ -120,7 +121,7 @@ function dfs(
     // Lower-bound pruning.
     if (best.value !== null) {
       const partialForBoundCheck = candidate ? [...partialMods, candidate] : partialMods;
-      const runningStats = weaponSpec(state.weapon, partialForBoundCheck.map(adaptModListItem));
+      const runningStats = weaponSpec(state.weapon, partialForBoundCheck.map(adaptMod));
       const bound = lowerBoundForRemaining(
         newRemaining,
         state.modList,
@@ -148,17 +149,6 @@ function dfs(
   return true;
 }
 
-function adaptModListItem(item: ModListItem): BallisticMod {
-  return {
-    id: item.id,
-    name: item.name,
-    ergonomicsDelta: item.properties.ergonomics,
-    recoilModifierPercent: item.properties.recoilModifier,
-    weight: item.weight,
-    accuracyDelta: item.properties.accuracyModifier,
-  };
-}
-
 function singleItemScore(objective: Objective, item: ModListItem | null): number {
   if (item === null) return 0;
   switch (objective) {
@@ -169,7 +159,9 @@ function singleItemScore(objective: Objective, item: ModListItem | null): number
     case "min-weight":
       return item.weight;
     case "max-accuracy":
-      return item.properties.accuracyModifier;
+      // Negated: a larger accuracyModifier is better accuracy, and this
+      // function is "smaller sorts first". See bounds.ts's max-accuracy case.
+      return -item.properties.accuracyModifier;
   }
 }
 

@@ -12,6 +12,11 @@ export interface ChangedRow {
   readonly proposedRecoil: number;
   readonly proposedPrice: number;
   readonly ergoDelta: number;
+  /**
+   * Difference of two `recoilModifier` values, so it carries upstream's
+   * fractional unit: -0.22 means 22 percentage points less recoil. Renderers
+   * scale by 100 — see mod-changes-table.tsx.
+   */
   readonly recoilDelta: number;
   readonly priceDelta: number;
 }

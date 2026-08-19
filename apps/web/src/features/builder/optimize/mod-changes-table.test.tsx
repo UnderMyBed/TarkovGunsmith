@@ -13,13 +13,14 @@ const row = (overrides: Partial<ChangedRow> = {}): ChangedRow => ({
   currentName: "Old Muzzle",
   proposedName: "New Muzzle",
   currentErgo: 2,
-  currentRecoil: -5,
+  // Recoil values are upstream's fractions, not percents.
+  currentRecoil: -0.05,
   currentPrice: 10_000,
   proposedErgo: 3,
-  proposedRecoil: -9,
+  proposedRecoil: -0.09,
   proposedPrice: 22_000,
   ergoDelta: 1,
-  recoilDelta: -4,
+  recoilDelta: -0.04,
   priceDelta: 12_000,
   ...overrides,
 });
@@ -114,5 +115,26 @@ describe("ModChangesTable", () => {
     );
     expect(screen.getByText(/NO IMPROVEMENTS FOUND/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /ACCEPT ALL/ })).toBeDisabled();
+  });
+
+  it("renders the recoil delta as a percentage, not a rounded-to-zero fraction", () => {
+    // Regression: recoilDelta is a fraction, and rendering it through a
+    // 0-decimal formatter turned every changed row into "−0" — the column was
+    // dead on every real build.
+    render(
+      <ModChangesTable
+        rows={[row({ recoilDelta: -0.225 })]}
+        selected={new Set()}
+        onToggle={vi.fn()}
+        onAcceptAll={vi.fn()}
+        onAcceptSelected={vi.fn()}
+        onDiscard={vi.fn()}
+        scoreDelta={-30}
+        mode="result"
+        unchangedCount={0}
+      />,
+    );
+    expect(screen.getByText("−22.5")).toBeInTheDocument();
+    expect(screen.queryByText("−0")).not.toBeInTheDocument();
   });
 });

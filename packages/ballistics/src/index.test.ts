@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { simulateShot, simulateBurst, armorEffectiveness, weaponSpec } from "./index.js";
 import { M855, M995, PS_545, BP_545 } from "./__fixtures__/ammo.js";
 import { PACA_C3, KORD_C4, HEXGRID_C5, SLICK_C6 } from "./__fixtures__/armor.js";
-import { M4A1, MK16_GRIP, BUFFER_STOCK, COMPENSATOR } from "./__fixtures__/weapons.js";
+import { M4A1, CQR_GRIP, UBR_GEN2_STOCK, VP09_MUZZLE_BRAKE } from "./__fixtures__/weapons.js";
 
 describe("public API integration", () => {
   it("simulateShot produces a deterministic result for a known matchup", () => {
@@ -34,10 +34,11 @@ describe("public API integration", () => {
   });
 
   it("weaponSpec aggregates the M4A1 with three mods correctly", () => {
-    const spec = weaponSpec(M4A1, [MK16_GRIP, BUFFER_STOCK, COMPENSATOR]);
+    const spec = weaponSpec(M4A1, [CQR_GRIP, UBR_GEN2_STOCK, VP09_MUZZLE_BRAKE]);
     expect(spec.weaponId).toBe(M4A1.id);
     expect(spec.modCount).toBe(3);
-    expect(spec.ergonomics).toBe(50 + 8 - 2 - 3);
-    expect(spec.verticalRecoil).toBeCloseTo(56 * (1 - 0.26), 4);
+    expect(spec.ergonomics).toBe(48 + 15 + 8 - 2);
+    // Real fractions: -0.23 + -0.225 + -0.085 = -0.54, a -54% build.
+    expect(spec.verticalRecoil).toBeCloseTo(119 * 0.46, 4);
   });
 });

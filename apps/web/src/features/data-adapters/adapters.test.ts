@@ -75,45 +75,51 @@ describe("adaptArmor", () => {
   });
 });
 
+// Colt M4A1 5.56x45 assault rifle, as the live document returns it.
 const sampleWeaponListItem: WeaponListItem = {
-  id: "weapon-1",
-  name: "Colt M4A1",
+  id: "5447a9cd4bdc2dbd208b4567",
+  name: "Colt M4A1 5.56x45 assault rifle",
   shortName: "M4A1",
   iconLink: "https://assets.tarkov.dev/weapon-1-icon.webp",
-  weight: 2.7,
+  weight: 0.75,
   properties: {
     propertiesType: "ItemPropertiesWeapon",
     caliber: "Caliber556x45NATO",
-    ergonomics: 50,
-    recoilVertical: 56,
-    recoilHorizontal: 220,
+    ergonomics: 48,
+    recoilVertical: 119,
+    recoilHorizontal: 342,
     fireRate: 800,
   },
 };
 
+// AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake, as the live
+// document returns it. `recoilModifier` is a fraction and `accuracyModifier` is
+// a fraction where positive means better — the previous fixture asserted -15
+// and -0.5, magnitudes 43x and 8x beyond anything upstream can return, which is
+// why nothing here caught the 100x unit error.
 const sampleModListItem: ModListItem = {
-  id: "mod-1",
-  name: "Compensator",
-  shortName: "Comp",
+  id: "5a7c147ce899ef00150bd8b8",
+  name: "AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake",
+  shortName: "VP-09",
   iconLink: "https://assets.tarkov.dev/mod-1-icon.webp",
-  weight: 0.1,
+  weight: 0.2,
   properties: {
     propertiesType: "ItemPropertiesWeaponMod",
-    ergonomics: -3,
-    recoilModifier: -15,
-    accuracyModifier: -0.5,
+    ergonomics: -2,
+    recoilModifier: -0.085,
+    accuracyModifier: 0.04,
   },
 };
 
 describe("adaptWeapon", () => {
   it("maps WeaponListItem to BallisticWeapon", () => {
     const out = adaptWeapon(sampleWeaponListItem);
-    expect(out.id).toBe("weapon-1");
-    expect(out.name).toBe("Colt M4A1");
-    expect(out.baseErgonomics).toBe(50);
-    expect(out.baseVerticalRecoil).toBe(56);
-    expect(out.baseHorizontalRecoil).toBe(220);
-    expect(out.baseWeight).toBe(2.7);
+    expect(out.id).toBe("5447a9cd4bdc2dbd208b4567");
+    expect(out.name).toBe("Colt M4A1 5.56x45 assault rifle");
+    expect(out.baseErgonomics).toBe(48);
+    expect(out.baseVerticalRecoil).toBe(119);
+    expect(out.baseHorizontalRecoil).toBe(342);
+    expect(out.baseWeight).toBe(0.75);
   });
 
   it("defaults baseAccuracy to a reasonable value (upstream schema doesn't expose it)", () => {
@@ -126,11 +132,19 @@ describe("adaptWeapon", () => {
 describe("adaptMod", () => {
   it("maps ModListItem to BallisticMod", () => {
     const out = adaptMod(sampleModListItem);
-    expect(out.id).toBe("mod-1");
-    expect(out.name).toBe("Compensator");
-    expect(out.ergonomicsDelta).toBe(-3);
-    expect(out.recoilModifierPercent).toBe(-15);
-    expect(out.weight).toBe(0.1);
-    expect(out.accuracyDelta).toBe(-0.5);
+    expect(out.id).toBe("5a7c147ce899ef00150bd8b8");
+    expect(out.name).toBe("AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake");
+    expect(out.ergonomicsDelta).toBe(-2);
+    expect(out.weight).toBe(0.2);
+  });
+
+  it("passes recoil and accuracy through in upstream's fractional unit", () => {
+    const out = adaptMod(sampleModListItem);
+    // No scaling, in either direction. -0.085 is -8.5%; display sites multiply
+    // by 100, the model never does. See docs/operations/data-api-audit.md §B.
+    expect(out.recoilModifier).toBe(sampleModListItem.properties.recoilModifier);
+    expect(out.accuracyModifier).toBe(sampleModListItem.properties.accuracyModifier);
+    expect(out.recoilModifier).toBeGreaterThanOrEqual(-0.35);
+    expect(out.recoilModifier).toBeLessThanOrEqual(0);
   });
 });

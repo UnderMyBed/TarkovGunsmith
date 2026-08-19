@@ -1,4 +1,5 @@
 import type { BuildV6 } from "@tarkov/data";
+import { DEFAULT_BASE_ACCURACY } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
 import type { BuildCardViewModel, PairCardViewModel, SideViewModel } from "./view-model.js";
 
@@ -73,15 +74,24 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
           baseErgonomics: weapon.properties.ergonomics,
           baseVerticalRecoil: weapon.properties.recoilVertical,
           baseHorizontalRecoil: weapon.properties.recoilHorizontal,
+          // `weight` is summed separately below, so the base is intentionally 0.
           baseWeight: 0,
-          baseAccuracy: 0,
+          // Accuracy is multiplicative, so a 0 base pinned the card's ACCURACY
+          // cell to a meaningless 0.0 on every share image. Use the same
+          // fabricated baseline the Builder shows, so the card mirrors it.
+          baseAccuracy: DEFAULT_BASE_ACCURACY,
         },
+        // Passthrough, no unit conversion: `recoilModifier` and
+        // `accuracyModifier` are fractions on both sides. Stays inline rather
+        // than using @tarkov/data's `adaptMod` because `HydrateMod` is a
+        // deliberately looser Pages-Function shape, not a `ModListItem` —
+        // optional properties, `shortName`, and a `buyFor` price list.
         attachedMods.map((m) => ({
           id: m.id,
           name: m.shortName,
           ergonomicsDelta: m.properties?.ergonomics ?? 0,
-          recoilModifierPercent: m.properties?.recoilModifier ?? 0,
-          accuracyDelta: m.properties?.accuracyModifier ?? 0,
+          recoilModifier: m.properties?.recoilModifier ?? 0,
+          accuracyModifier: m.properties?.accuracyModifier ?? 0,
           weight: m.weight,
         })),
       )

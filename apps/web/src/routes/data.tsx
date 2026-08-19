@@ -380,8 +380,12 @@ function ModTable({ query }: { query: string }) {
       (q.data ?? []).map((m) => ({
         ...m,
         ergo: m.properties.ergonomics,
-        recoilPct: m.properties.recoilModifier,
-        accuracyPct: m.properties.accuracyModifier,
+        // Upstream ships these as fractions (-0.21 for the AK-74 polymer
+        // stock's in-game -21%). The columns are labelled "%", so scale here,
+        // at the render boundary — never in the model. Scaling is monotonic,
+        // so sorting by these keys is unaffected.
+        recoilPct: m.properties.recoilModifier * 100,
+        accuracyPct: m.properties.accuracyModifier * 100,
       })),
     [q.data],
   );
@@ -433,8 +437,10 @@ function ModTable({ query }: { query: string }) {
             >
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-right tabular-nums">{r.ergo}</td>
-              <td className="py-1.5 text-right tabular-nums">{r.recoilPct}</td>
-              <td className="py-1.5 text-right tabular-nums">{r.accuracyPct}</td>
+              {/* toFixed absorbs float noise: -0.21 * 100 is -21.000000000000004.
+                  One decimal is exact for every upstream value (finest is 0.005). */}
+              <td className="py-1.5 text-right tabular-nums">{r.recoilPct.toFixed(1)}</td>
+              <td className="py-1.5 text-right tabular-nums">{r.accuracyPct.toFixed(1)}</td>
               <td className="py-1.5 text-right tabular-nums">{r.weight.toFixed(2)}</td>
             </tr>
           ))}

@@ -23,7 +23,7 @@ const modList: readonly ModListItem[] = [
     properties: {
       propertiesType: "ItemPropertiesWeaponMod",
       ergonomics: 2,
-      recoilModifier: -5,
+      recoilModifier: -0.05,
       accuracyModifier: 0,
     },
     buyFor: [
@@ -47,7 +47,7 @@ const modList: readonly ModListItem[] = [
     properties: {
       propertiesType: "ItemPropertiesWeaponMod",
       ergonomics: 3,
-      recoilModifier: -9,
+      recoilModifier: -0.09,
       accuracyModifier: 0,
     },
     buyFor: [
@@ -71,7 +71,7 @@ const modList: readonly ModListItem[] = [
     properties: {
       propertiesType: "ItemPropertiesWeaponMod",
       ergonomics: 4,
-      recoilModifier: -2,
+      recoilModifier: -0.02,
       accuracyModifier: 0,
     },
     buyFor: [
@@ -149,9 +149,12 @@ describe("slotDiff", () => {
     const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-new" }, slotTree, modList);
     expect(row).toMatchObject<Partial<ChangedRow>>({
       ergoDelta: 1, // 3 - 2
-      recoilDelta: -4, // -9 - -5
       priceDelta: 12_000, // 22_000 - 10_000
     });
+    // recoilDelta keeps upstream's fractional unit: -0.09 - -0.05 = -0.04,
+    // i.e. 4 percentage points less recoil. toBeCloseTo because subtracting
+    // binary fractions leaves noise (-0.04000000000000001).
+    expect(row?.recoilDelta).toBeCloseTo(-0.04, 10);
   });
 
   it("appends fallback rows for slot paths outside the tree, after tree-ordered rows", () => {

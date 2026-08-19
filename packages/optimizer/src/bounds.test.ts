@@ -48,8 +48,9 @@ describe("lowerBoundForRemaining", () => {
       "min-recoil",
       SMALL_WEAPON,
     );
-    // Best per-slot recoilModifier: muzzle min(-12, -8, 0) = -12; grip min(-4, 0) = -4; stock min(-6, 0) = -6.
-    // Sum = -22%. base = 100 + 200 = 300. bound = 300 * (-22 / 100) = -66.
+    // Best per-slot recoilModifier: muzzle min(-0.12, -0.08, 0) = -0.12;
+    // grip min(-0.04, 0) = -0.04; stock min(-0.06, 0) = -0.06.
+    // Sum = -0.22 (a real -22%). base = 100 + 200 = 300. bound = 300 * -0.22 = -66.
     expect(bound).toBeCloseTo(-66, 5);
   });
 
@@ -73,7 +74,7 @@ describe("lowerBoundForRemaining", () => {
     ).toBe(0);
   });
 
-  it("max-accuracy: best (smallest) accuracyModifier per slot summed", () => {
+  it("max-accuracy: zero bound when no candidate can improve accuracy", () => {
     // SMALL_MODS have accuracyModifier: 0 for all. Best is 0. Sum = 0.
     expect(
       lowerBoundForRemaining(
@@ -84,6 +85,31 @@ describe("lowerBoundForRemaining", () => {
         "max-accuracy",
         SMALL_WEAPON,
       ),
-    ).toBe(0);
+    ).toBeCloseTo(0, 10);
+  });
+
+  it("max-accuracy: takes the LARGEST accuracyModifier per slot, not the smallest", () => {
+    // Upstream reports positive for better accuracy and negative for worse, so
+    // the reachable optimum uses the precision brake (+0.06), never the
+    // suppressor (-0.05). Picking the smallest is what made this objective
+    // select for the worst accuracy available.
+    const mods = SMALL_MODS.map((m) =>
+      m.id === "muzzle_brake"
+        ? { ...m, properties: { ...m.properties, accuracyModifier: 0.06 } }
+        : m.id === "muzzle_silencer"
+          ? { ...m, properties: { ...m.properties, accuracyModifier: -0.05 } }
+          : m,
+    );
+    const bound = lowerBoundForRemaining(
+      [SMALL_TREE.slots[0]],
+      mods,
+      flea,
+      new Map(),
+      "max-accuracy",
+      SMALL_WEAPON,
+    );
+    // Best is +0.06; weaponSpec applies `A * (1 - sum)`, so the additive delta
+    // against the running score is -A * 0.06 = -3.0 * 0.06 = -0.18.
+    expect(bound).toBeCloseTo(-0.18, 10);
   });
 });

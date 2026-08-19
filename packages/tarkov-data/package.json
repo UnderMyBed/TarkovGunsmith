@@ -30,10 +30,12 @@
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
+    "@tarkov/ballistics": "workspace:*",
     "react": "^19.0.0"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.101.4",
+    "@tarkov/ballistics": "workspace:*",
     "@types/react": "^19.2.18",
     "react": "^19.2.8"
   }
