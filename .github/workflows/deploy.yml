@@ -32,8 +32,14 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Via turbo, NOT `pnpm --filter @tarkov/builds-api build`. The worker gained its first
+      # workspace dependency (@tarkov/data, for schema validation) and a plain pnpm filter
+      # builds only the named package — so wrangler bundled against a @tarkov/data with no
+      # dist/ and failed on `Could not resolve "@tarkov/data/schemas"`. CI never caught it
+      # because `pnpm build` at the root goes through turbo, whose build task declares
+      # dependsOn: ["^build"]. Deploy is the only place that filtered to one package.
       - name: Build (verify bundle)
-        run: pnpm --filter @tarkov/builds-api build
+        run: pnpm turbo run build --filter=@tarkov/builds-api
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v4
