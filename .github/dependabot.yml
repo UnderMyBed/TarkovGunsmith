@@ -22,6 +22,9 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    # Counts OPEN npm PRs. A backlog of stale ones consumes every slot and blocks Dependabot
+    # from opening correctly-formed replacements — and closing them to free the slots
+    # permanently suppresses those versions. See docs/operations/repo-security.md.
     open-pull-requests-limit: 5
     # Deploys fire ONLY on release-please PR merges, and release-please hides `chore` and
     # bumps nothing for it. A production-dependency security patch committed as chore(deps)

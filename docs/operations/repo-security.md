@@ -98,6 +98,29 @@ arrives as its own PR. That is the desired behaviour: a breaking change should b
 merged on its own, not swept into a batch. A first run that opens ten PRs is not a grouping
 failure — check the update types before treating it as one.
 
+### Closing a Dependabot PR suppresses it permanently
+
+`@dependabot close`, and closing the PR by hand, both tell Dependabot **not to recreate that pull
+request** — see
+[Managing pull requests for dependency updates](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/managing-pull-requests-for-dependency-updates).
+It is a dismissal, not a "try again later". The suppression is per _version_: a newer release of the
+same dependency still opens a fresh PR, so it is self-healing for anything actively maintained, but
+do not reach for close as a way to tidy up a PR you actually want rebuilt. Use `@dependabot rebase`
+or `@dependabot recreate` for that.
+
+**Orphaned PRs are the exception, and they take manual closing.** A PR opened by an update job whose
+`directory:` no longer appears in `dependabot.yml` cannot be processed at all — Dependabot silently
+ignores `recreate`, `rebase`, and `close` on it, because it can no longer resolve the job that
+produced it. That happened to #123–#127 after the root-only change and they had to be closed by
+hand. Record what you are dismissing before you do it.
+
+### The PR limit and the close-suppression rule can deadlock
+
+`open-pull-requests-limit` counts _open_ PRs per ecosystem. Five stale npm PRs occupy all five npm
+slots, so Dependabot cannot open a correctly-formed replacement until they close — while closing
+them suppresses those exact versions. If you hit this, close deliberately and write down the
+versions you are giving up, or raise the limit first.
+
 ### `github-actions` runs on the default PR limit of 5
 
 That entry sets no `open-pull-requests-limit`, so it takes GitHub's default of 5. When five Actions
