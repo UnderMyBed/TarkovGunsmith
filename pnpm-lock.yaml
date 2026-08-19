@@ -215,6 +215,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.101.4
         version: 5.101.4(react@19.2.8)
+      '@tarkov/ballistics':
+        specifier: workspace:*
+        version: link:../ballistics
       '@types/react':
         specifier: ^19.2.18
         version: 19.2.18

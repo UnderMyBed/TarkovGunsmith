@@ -23,9 +23,9 @@ export function lowerBoundForRemaining(
 
   switch (objective) {
     case "min-recoil": {
-      let sumPercent = 0;
+      let sumFraction = 0;
       for (const slot of remaining) {
-        sumPercent += bestContribution(
+        sumFraction += bestContribution(
           slot,
           modList,
           profile,
@@ -35,7 +35,15 @@ export function lowerBoundForRemaining(
         );
       }
       const baseRecoil = weapon.baseVerticalRecoil + weapon.baseHorizontalRecoil;
-      return baseRecoil * (sumPercent / 100);
+      // MUST stay on the same scale as `weaponSpec`, which computes
+      // `base * (1 + sum)` with `recoilModifier` as a fraction. The DFS prunes
+      // on `score(running) + bound >= best`, which for `score = B(1 + k*sum)`
+      // and `bound = B*k*sum_min` reduces to `sum_running + sum_min >= sum_best`
+      // for any k > 0 — so the two are only ever consistent together. That
+      // scale-invariance is why the solver still picked correct mods while both
+      // sides carried the /100 error; changing one alone shrinks the bound 100x
+      // toward zero, raises the projected score, and prunes the true optimum.
+      return baseRecoil * sumFraction;
     }
     case "max-ergonomics": {
       let sumErgo = 0;
@@ -66,18 +74,26 @@ export function lowerBoundForRemaining(
       return sumWeight;
     }
     case "max-accuracy": {
-      let sumMoa = 0;
+      // The best candidate per slot is the LARGEST accuracyModifier, not the
+      // smallest: upstream reports positive for better accuracy (M700 AI AT
+      // AICS chassis +0.06) and negative for worse (Mosin Bramit suppressor
+      // -0.05). Taking Math.min here made "max-accuracy" select suppressors.
+      let sumAccuracy = 0;
       for (const slot of remaining) {
-        sumMoa += bestContribution(
+        sumAccuracy += bestContribution(
           slot,
           modList,
           profile,
           pinnedSlots,
           (m) => m?.properties.accuracyModifier ?? 0,
-          Math.min,
+          Math.max,
         );
       }
-      return sumMoa;
+      // `weaponSpec` computes `accuracy = A * (1 - sum)`, so the lowest score
+      // reachable from here is `A * (1 - sum_running - sum_best)`, and the
+      // additive delta against the running score is `-A * sum_best`. Same
+      // lockstep requirement as min-recoil: this scale is set by weaponSpec.
+      return -weapon.baseAccuracy * sumAccuracy;
     }
   }
 }

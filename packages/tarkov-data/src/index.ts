@@ -98,6 +98,9 @@ export type { WeaponPreset } from "./presets.js";
 export { slotDiff } from "./slot-diff.js";
 export type { SlotDiffStatus, SlotDiffInput, SlotDiffMap } from "./slot-diff.js";
 
+// Ballistics input adapters (upstream item shape -> @tarkov/ballistics shape)
+export { adaptMod, adaptWeapon, DEFAULT_BASE_ACCURACY } from "./ballistic-adapters.js";
+
 // Stat delta (Build comparison)
 export { statDelta } from "./stat-delta.js";
 export type { StatDeltaRow, StatDeltaResult, StatDirection, StatKey } from "./stat-delta.js";

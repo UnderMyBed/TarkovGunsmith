@@ -7,23 +7,28 @@ import type { BallisticWeapon } from "@tarkov/ballistics";
  * tractable for hand-verification of the optimum while still exercising
  * pruning and nested recursion.
  */
+// Base recoil and ergonomics are the live Colt M4A1's (119 / 342, ergo 48).
 export const M4A1_WEAPON: BallisticWeapon = {
   id: "m4a1",
   name: "M4A1",
-  baseErgonomics: 47,
-  baseVerticalRecoil: 56,
-  baseHorizontalRecoil: 220,
+  baseErgonomics: 48,
+  baseVerticalRecoil: 119,
+  baseHorizontalRecoil: 342,
   baseWeight: 3.1,
-  baseAccuracy: 2.5,
+  baseAccuracy: 3.5,
 };
 
+// `recoilBase` values are fractions on upstream's scale (live range -0.35..0),
+// stepping 0.01 per variant. Percent-scale magnitudes here would be unreachable
+// upstream — the condition that hid the 100x error described in
+// docs/operations/data-api-audit.md §B.
 export const M4A1_MODS: readonly ModListItem[] = [
-  ...generateSlotMods("muzzle", 4, { recoilBase: -10, priceBase: 5000 }),
-  ...generateSlotMods("barrel", 3, { recoilBase: -5, priceBase: 8000 }),
+  ...generateSlotMods("muzzle", 4, { recoilBase: -0.1, priceBase: 5000 }),
+  ...generateSlotMods("barrel", 3, { recoilBase: -0.05, priceBase: 8000 }),
   ...generateSlotMods("handguard", 3, { recoilBase: 0, priceBase: 3000, ergonomicsBase: 10 }),
-  ...generateSlotMods("foregrip", 3, { recoilBase: -8, priceBase: 2000 }),
-  ...generateSlotMods("stock", 3, { recoilBase: -15, priceBase: 4000 }),
-  ...generateSlotMods("pistolgrip", 3, { recoilBase: -3, priceBase: 1200, ergonomicsBase: 4 }),
+  ...generateSlotMods("foregrip", 3, { recoilBase: -0.08, priceBase: 2000 }),
+  ...generateSlotMods("stock", 3, { recoilBase: -0.15, priceBase: 4000 }),
+  ...generateSlotMods("pistolgrip", 3, { recoilBase: -0.03, priceBase: 1200, ergonomicsBase: 4 }),
   ...generateSlotMods("sight", 3, { recoilBase: 0, priceBase: 10000, ergonomicsBase: -2 }),
   ...generateSlotMods("mag", 2, { recoilBase: 0, priceBase: 500, weightBase: 0.2 }),
 ];
@@ -55,7 +60,7 @@ function generateSlotMods(
 ): readonly ModListItem[] {
   const out: ModListItem[] = [];
   for (let i = 0; i < count; i++) {
-    const recoilModifier = base.recoilBase - i;
+    const recoilModifier = base.recoilBase - i * 0.01;
     const ergonomics = (base.ergonomicsBase ?? 0) + i;
     const weight = (base.weightBase ?? 0.1) + i * 0.05;
     const accuracyModifier = 0;
