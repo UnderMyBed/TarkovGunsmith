@@ -350,6 +350,22 @@ test.describe("smoke — OG cards", () => {
     expect(body[0]).toBe(0x89);
   });
 
+  // A well-formed-but-missing id gets the fallback card (above); a MALFORMED
+  // id is a client error and is refused before any upstream call. `..%2F`
+  // decodes to `../`, which would otherwise make
+  // `${BUILDS_API_URL}/builds/../healthz` resolve to the Worker's /healthz.
+  test("/og/build/<malformed id> is refused with 400", async ({ request }) => {
+    const res = await request.get("/og/build/..%2Fhealthz");
+    expect(res.status()).toBe(400);
+    expect(await res.text()).toBe("Invalid id");
+  });
+
+  test("/og/pair/<malformed id> is refused with 400", async ({ request }) => {
+    const res = await request.get("/og/pair/..%2Fhealthz");
+    expect(res.status()).toBe(400);
+    expect(await res.text()).toBe("Invalid id");
+  });
+
   test(`/builder/${FIXTURE_BUILD_ID} HTML has OG meta`, async ({ request }) => {
     await primeFixtures(request);
 
