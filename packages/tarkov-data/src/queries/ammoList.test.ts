@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fetchAmmoList } from "./ammoList.js";
 import fixture from "../__fixtures__/items-sample.json" with { type: "json" };
 import { fixtureClient } from "../__fixtures__/client.js";
+import type { TarkovJsonClient } from "../client.js";
 
 describe("fetchAmmoList", () => {
   it("returns only ItemPropertiesAmmo items", async () => {
@@ -30,5 +31,19 @@ describe("fetchAmmoList", () => {
       expect(ammo.name).not.toMatch(/ Name$/);
       expect(ammo.shortName).not.toMatch(/ ShortName$/);
     }
+  });
+
+  it("does not log when every item in the document is already valid ammo", async () => {
+    // The console.debug line only fires when `ammoItems.length < all.length` — every other
+    // test here drives it off the real mixed-type fixture, where that's always true. Feed
+    // fetchAmmoList a document containing ONLY already-parsed ammo (still schema-valid,
+    // since the parsed shape is a subset of the raw one) to exercise the `false` arm.
+    const onlyAmmo = await fetchAmmoList(fixtureClient());
+    const onlyAmmoClient: TarkovJsonClient = {
+      fetchResource: <T>(): Promise<T> =>
+        Promise.resolve({ items: Object.fromEntries(onlyAmmo.map((a) => [a.id, a])) } as T),
+    };
+    const list = await fetchAmmoList(onlyAmmoClient);
+    expect(list.length).toBe(onlyAmmo.length);
   });
 });

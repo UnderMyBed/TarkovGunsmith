@@ -41,6 +41,27 @@ describe("fetchProgression", () => {
     await expect(fetchProgression("x")).rejects.toBeInstanceOf(NetworkError);
   });
 
+  it("throws NetworkError on a non-ok status that isn't 401 or 429", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(new Response("", { status: 503 }));
+    await expect(fetchProgression("x")).rejects.toBeInstanceOf(NetworkError);
+  });
+
+  it("reports retryAfterSeconds=null on a 429 with no Retry-After header", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(new Response("", { status: 429 }));
+    const err = (await fetchProgression("x").catch((e: unknown) => e)) as RateLimitedError;
+    expect(err).toBeInstanceOf(RateLimitedError);
+    expect(err.retryAfterSeconds).toBeNull();
+  });
+
+  it("reports retryAfterSeconds=null when Retry-After isn't a finite number", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response("", { status: 429, headers: { "Retry-After": "soon" } }),
+    );
+    const err = (await fetchProgression("x").catch((e: unknown) => e)) as RateLimitedError;
+    expect(err).toBeInstanceOf(RateLimitedError);
+    expect(err.retryAfterSeconds).toBeNull();
+  });
+
   it("throws ShapeMismatchError when the response body doesn't match the schema", async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ unexpected: true }), { status: 200 }),

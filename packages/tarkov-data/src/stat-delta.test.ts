@@ -26,6 +26,14 @@ describe("statDelta", () => {
     expect(row?.direction).toBe<StatDirection>("better");
   });
 
+  it("marks ergo decrease as 'worse' (higher is better)", () => {
+    const b = { ...a, ergonomics: 40 };
+    const res = statDelta(a, b);
+    const row = res.find((r) => r.key === "ergonomics");
+    expect(row?.delta).toBe(-10);
+    expect(row?.direction).toBe<StatDirection>("worse");
+  });
+
   it("marks vertical-recoil decrease as 'better' (lower is better)", () => {
     const b = { ...a, verticalRecoil: 80 };
     const res = statDelta(a, b);
@@ -62,6 +70,19 @@ describe("statDelta", () => {
     const res = statDelta(a, null);
     for (const row of res) {
       expect(row.direction).toBe<StatDirection>("unavailable");
+      expect(row.delta).toBeNull();
+    }
+  });
+
+  it("handles null on the LEFT side too, not just the right", () => {
+    // The `a` fixture above only ever exercises `left` as a real spec — every existing null
+    // test nulls out `right`. `lVal = typeof l === "number" ? l : null` needs `left` itself
+    // to be missing at least once.
+    const res = statDelta(null, a);
+    for (const row of res) {
+      expect(row.direction).toBe<StatDirection>("unavailable");
+      expect(row.left).toBeNull();
+      expect(row.right).toBe(a[row.key]);
       expect(row.delta).toBeNull();
     }
   });

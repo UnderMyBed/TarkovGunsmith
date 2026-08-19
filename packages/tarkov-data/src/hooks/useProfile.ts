@@ -62,6 +62,31 @@ function seedLegacyLevel(raw: unknown, profile: PlayerProfile): PlayerProfile {
 }
 
 /**
+ * Resolve the profile `useProfile` should start with: `DEFAULT_PROFILE` when there is no
+ * `window` to read from (SSR — this app doesn't ship one today, but the guard is here for
+ * whichever environment runs this hook), otherwise whatever `parseStoredProfile` makes of
+ * `localStorage`, with `DEFAULT_PROFILE` as the fallback if reading localStorage itself
+ * throws (disabled / blocked by policy — distinct from `parseStoredProfile`'s own catch,
+ * which only ever sees a string that's already been read).
+ *
+ * Split out of the `useState` initializer, mirroring `parseStoredProfile` above, so this
+ * is directly callable without mounting a component through React — react-dom itself
+ * requires `window` to render, so the `typeof window === "undefined"` branch cannot be
+ * exercised through any React-based test harness (verified: `renderHook` throws
+ * `ReferenceError: window is not defined` from inside react-dom before this function is
+ * ever reached).
+ */
+export function resolveInitialProfile(): PlayerProfile {
+  if (typeof window === "undefined") return DEFAULT_PROFILE;
+  try {
+    return parseStoredProfile(window.localStorage.getItem(STORAGE_KEY));
+  } catch {
+    // localStorage itself threw (disabled / blocked by policy).
+    return DEFAULT_PROFILE;
+  }
+}
+
+/**
  * Reactive player profile backed by `localStorage["tg:player-profile"]`.
  *
  * Returns a `[profile, setProfile]` tuple. Writes are synchronous to state
@@ -74,15 +99,7 @@ function seedLegacyLevel(raw: unknown, profile: PlayerProfile): PlayerProfile {
  * rather than throwing.
  */
 export function useProfile(): [PlayerProfile, (next: PlayerProfile) => void] {
-  const [profile, setProfileState] = useState<PlayerProfile>(() => {
-    if (typeof window === "undefined") return DEFAULT_PROFILE;
-    try {
-      return parseStoredProfile(window.localStorage.getItem(STORAGE_KEY));
-    } catch {
-      // localStorage itself threw (disabled / blocked by policy).
-      return DEFAULT_PROFILE;
-    }
-  });
+  const [profile, setProfileState] = useState<PlayerProfile>(resolveInitialProfile);
 
   const setProfile = useCallback((next: PlayerProfile) => {
     setProfileState(next);

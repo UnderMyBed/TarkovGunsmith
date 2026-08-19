@@ -14,7 +14,8 @@ That drives every convention below:
 - `translations.ts` — upstream returns `{ data, translations }` where `translations` is a list of JSONPaths whose values are translation keys. `mergeTranslations` resolves them against the `<resource>_en` document. The path list comes from upstream deliberately; hard-coding it would silently stop translating new fields instead of failing visibly.
 - `queries/<name>.ts` — a Zod schema plus `fetch<Name>(client)`. Fetchers **select from the items document by `properties.propertiesType`** and `safeParse` each candidate, dropping non-matches. One unrelated item shape must never fail the whole call.
 - `queries/documents.ts` — the upstream document shapes after the translation merge.
-- `hooks/use<Name>.ts` — thin TanStack Query wrappers. Behavioural tests live in `apps/web`.
+- `hooks/use<Name>.ts` — thin TanStack Query wrappers, covered here (see below). Route-level
+  integration (a hook wired into an actual page) is still `apps/web`'s job.
 
 ## Conventions
 
@@ -22,7 +23,18 @@ That drives every convention below:
 - **Fixture values must be able to occur upstream.** See the warning below — this is not a style preference.
 - **Zod schemas are the runtime contract.** Cheaper to evolve than generated types.
 - **Joins happen here, not upstream.** The JSON API returns bare ids where GraphQL embedded objects: armor `material` joins to `armorMaterials`, task/offer `trader` joins to the traders document, and `buyFor` is reconstructed from `buyFromTrader` + `minLevelForFlea` in `queries/shared/buy-for.ts`.
-- **No React in tests.** The vitest env is `node`; tests stub the client, not `fetch`.
+- **Non-hook tests stay React-free.** The vitest env defaults to `node`; tests stub the
+  client, not `fetch`.
+- **Hook tests opt into jsdom per-file.** `hooks/use*.test.ts` files carry a
+  `// @vitest-environment jsdom` pragma (the package default stays `node`) and render through
+  `@testing-library/react`'s `renderHook`, using the shared wrappers in
+  `__test-utils__/query-wrapper.ts` (`withTarkovProvider(client)` for the `useTarkovClient()`
+  hooks, `withQueryClient()` for the `buildsApi`/`pairsApi`-backed ones). That wrapper file
+  builds its provider tree with `createElement` instead of JSX so it — and every hook test
+  that imports it — can stay a plain `.ts` file; see its own comment for why. The `apps/web`
+  pattern this otherwise mirrors (e.g. `features/builder/build-header.test.tsx`) uses real JSX
+  because that package's root ESLint config already has a `.test.tsx`-aware project entry —
+  this package's didn't, and adding one is `eslint.config.js`, out of scope here.
 
 ## ⚠️ Units: upstream sends fractions, and it has cost us before
 
@@ -47,6 +59,7 @@ Use the `add-data-query` project skill in `.claude/skills/`. Verify a suspected 
 
 ## Out of scope
 
-- React component tests — `apps/web`.
+- React _component_ tests (JSX pages/panels) — `apps/web`. This package's own hooks tests
+  are in scope here (see Conventions above); it's route-level UI that isn't.
 - KV storage and share URLs — `apps/builds-api`.
 - Ballistics math — `packages/ballistics`.

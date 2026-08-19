@@ -18,8 +18,13 @@ export async function renderSvg(
  * assertions must run against the concatenated form.
  */
 export function textContent(svg: string): string {
-  return Array.from(svg.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g))
-    .map((m) => m[1] ?? "")
-    .join(" ")
-    .replace(/\s+/g, " ");
+  return (
+    Array.from(svg.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g))
+      .map((m) => m[1] ?? "") // `?? ""` is defensive: group 1 is `[\s\S]*?`, which always
+      // matches (as `""` at minimum) whenever the outer regex matches at all — `m[1]` is
+      // never actually `undefined` at runtime. Left as a documented, deliberate coverage
+      // gap rather than removed, since TypeScript's regex-match typing can't prove that.
+      .join(" ")
+      .replace(/\s+/g, " ")
+  );
 }
