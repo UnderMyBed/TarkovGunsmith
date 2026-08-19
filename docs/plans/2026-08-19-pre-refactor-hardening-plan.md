@@ -18,9 +18,9 @@ system and the route layer — we currently cannot.
 
 The audit that produced this plan found that **no coverage threshold has ever been enforced
 in CI**. `pnpm test` resolves to `vitest run` with no `--coverage` flag. Five packages
-declare thresholds; nothing invokes them. Two of those packages fail their own gate, one
-measures 6% of itself and reports 100%, and one names a coverage provider that was never
-installed.
+declare thresholds; nothing invokes them. Three of those packages fail their own gate — `web` worst, at 35.96%
+statements against a declared 100% — one measures 6% of itself and reports 100%, and one
+names a coverage provider that was never installed.
 
 Everything in Stage 1 exists to fix that. Nothing else starts until it is done.
 
@@ -57,7 +57,8 @@ Coverage as of `dc7fa11`. These are the numbers the ratchet starts from.
 | `tarkov-data` | 93.57 | 81.06 | 92.30 | 96.00 | **fails** 100/95; excludes `hooks/**` |
 | `repo-guards` | 91.48 | 75.75 | 87.50 | 93.02 | no coverage config at all |
 | `og` | 69.92 | 69.87 | 76.31 | 73.50 | **fails** 95/85 |
-| `web` (incl. routes) | 22.11 | 21.04 | 15.85 | 22.64 | `src/routes/**` excluded today |
+| `web` (routes excluded) | 35.96 | 34.92 | 29.76 | 36.61 | **fails** its declared 100/95 |
+| `web` (incl. routes) | 22.11 | 21.04 | 15.85 | 22.64 | what 1.4 opts into |
 | `ui` (widened) | 15.85 | 5.26 | 10.00 | — | reports 100% over 5 statements today |
 | `builds-api` | — | — | — | — | **provider `istanbul` never installed** |
 
@@ -89,9 +90,12 @@ render-tested.
 - Add a `test:coverage` task to `turbo.json`.
 - Give every package a `test:coverage` script. `web`, `builds-api` and `repo-guards`
   currently have none.
-- Install `@vitest/coverage-istanbul` for `builds-api` — its config names that provider and
-  it was never added. `@cloudflare/vitest-pool-workers` cannot use the v8 provider, so
-  switching provider is not an option.
+- ~~Install `@vitest/coverage-istanbul` for `builds-api`.~~ **Attempted and abandoned.**
+  Installing the provider does not help: `@cloudflare/vitest-pool-workers@0.22.0` dies at
+  test-file import under coverage instrumentation with `TypeError: Cannot read properties
+  of undefined (reading 'config')` across all four test files, and workerd cannot use the
+  v8 provider. Upstream limitation, not a gap in our tests. Deferred per D4 with the full
+  reasoning recorded in `apps/builds-api/vitest.config.ts`. Its 29 tests still run in CI.
 - Add a `repo-guards` coverage config; it has none.
 - CI runs `pnpm test:coverage` in place of, or in addition to, `pnpm test`.
 - Set every package's thresholds to its **measured baseline above**, not to an aspiration.
