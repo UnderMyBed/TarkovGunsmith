@@ -26,9 +26,17 @@ pins forward on their own, and every duplicate collapsed:
 | `esbuild` | 0.25.12 + 0.28.x       | 0.28.1, 0.28.2    | >=0.28.1            |
 | `vite`    | 6.4.3 + 8.0.8          | 8.2.1             | >=8.0.16            |
 
-The bumps that did it: `vite` 6→8 (via 7), `@vitejs/plugin-react` 4→6, `satori` 0.10→0.29,
+The bumps that did it: `vite` 6→8 (via 7), `@vitejs/plugin-react` 4→6,
 `@cloudflare/vitest-pool-workers` 0.14→0.22, `@cloudflare/workers-types` 4→5, `nanoid` 5→6, and
 `@testing-library/jest-dom` 6→7.
+
+`satori` was tried at 0.29.0 and **reverted to 0.10.14**. It breaks the OG card routes at runtime:
+0.29 instantiates WebAssembly asynchronously, and the Workers runtime refuses with
+`CompileError: WebAssembly.instantiate(): Wasm code generation disallowed by embedder`, so
+`/og/build/:id` and `/og/pair/:id` both return 500. Typecheck passes — the API surface is
+compatible — so only the e2e suite catches it. Reverting costs nothing on the advisory front:
+`pnpm audit` is clean either way. Upgrading satori means solving WASM loading under Workers and
+belongs in its own PR.
 
 **The lesson worth keeping:** the residue was never "no fix exists". It was a deferred major-bump
 backlog wearing an advisory costume. Overrides would have papered over it; upgrading dissolved it.
