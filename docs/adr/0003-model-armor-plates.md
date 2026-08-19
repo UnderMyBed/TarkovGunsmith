@@ -129,8 +129,8 @@ that we are feeding the formula the wrong _item_. That is settled by the documen
 ## Sequencing
 
 The decision is accepted; the implementation is **not** scheduled by this ADR. It is a milestone,
-not a PR, and it should be planned as one — `docs/plans/`, its own spec, and a decision about the
-`/matrix` presentation question before any code is written.
+not a PR, and it should be scoped as one — a tracker epic, and a decision about the `/matrix`
+presentation question before any code is written.
 
 **In the interim, `/matrix` carries a visible caveat** stating that armor is modelled as a single
 layer and that plate-equipped vests will therefore read as more durable than they are. Shipping a

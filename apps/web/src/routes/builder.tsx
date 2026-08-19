@@ -21,7 +21,7 @@ export const Route = createFileRoute("/builder")({
  *
  * `BuilderPage` itself lives in `features/builder/builder-page.tsx`, not here — see that
  * file's header comment for why keeping it out of the route file matters for
- * `autoCodeSplitting` (Stage 5.3, docs/plans/2026-08-19-pre-refactor-hardening-plan.md).
+ * `autoCodeSplitting`.
  */
 function BuilderRouteLayout() {
   const matchRoute = useMatchRoute();

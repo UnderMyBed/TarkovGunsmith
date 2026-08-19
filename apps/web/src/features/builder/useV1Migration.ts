@@ -7,8 +7,7 @@ import { migrateV1ToV2, type BuildV1, type SlotNodeForMigration } from "@tarkov/
  * router-coupled page component with no existing test harness) so this logic — 100% of what
  * the original react-hooks/set-state-in-effect finding was about — can be exercised directly
  * with `renderHook`, independent of TanStack Router/Query context. Moved into its own file as
- * part of the Stage 5.1 `BuilderPage` decomposition (docs/plans/2026-08-19-pre-refactor-hardening-plan.md);
- * `builder.test.tsx` imports it from here.
+ * part of the `BuilderPage` decomposition; `builder.test.tsx` imports it from here.
  *
  * This used to be a useEffect that called setAttachments + setOrphaned after commit: render
  * once with empty attachments, paint that, then the effect fires and forces a second render

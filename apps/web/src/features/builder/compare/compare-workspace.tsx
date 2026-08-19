@@ -98,8 +98,7 @@ export function CompareWorkspace({
         // too, so `@tarkov/data`'s module graph was already in the eagerly-loaded chunk
         // before this dynamic import ever ran; Rollup can't move an already-eager module
         // into a lazy chunk for one caller. That produced Vite's
-        // [INEFFECTIVE_DYNAMIC_IMPORT] warning for no benefit — see Stage 5.3 of
-        // docs/plans/2026-08-19-pre-refactor-hardening-plan.md. `loadBuild` is imported
+        // [INEFFECTIVE_DYNAMIC_IMPORT] warning for no benefit. `loadBuild` is imported
         // statically above instead; genuine bundle savings come from lazy-loading whole
         // routes (vite.config.ts's `autoCodeSplitting`), not from splitting a shared
         // package that's already resident.
