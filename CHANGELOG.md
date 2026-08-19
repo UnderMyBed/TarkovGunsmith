@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.16.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.15.0...v1.16.0) (2026-08-19)
+
+
+### Features
+
+* **builds-api:** validate and rate-limit the share endpoints, add a CSP ([#158](https://github.com/UnderMyBed/TarkovGunsmith/issues/158)) ([0ee8e38](https://github.com/UnderMyBed/TarkovGunsmith/commit/0ee8e3850b48c88aa04c2fc4c9c5a21dbfd1173c))
+
+
+### Bug Fixes
+
+* **builder:** render &lt;Outlet/&gt; on /builder/compare so the pair route can mount ([#155](https://github.com/UnderMyBed/TarkovGunsmith/issues/155)) ([08f3210](https://github.com/UnderMyBed/TarkovGunsmith/commit/08f3210a7ef23fba3ac15acedd9f698853dc32f5))
+* **optimizer:** stop a timeout test from measuring the CI runner ([#154](https://github.com/UnderMyBed/TarkovGunsmith/issues/154)) ([a881426](https://github.com/UnderMyBed/TarkovGunsmith/commit/a881426ca75d8e21fc1c8a00cc4a99d79b6eb63e))
+* turn on React hook + a11y lint and fix everything it found ([#150](https://github.com/UnderMyBed/TarkovGunsmith/issues/150)) ([a2d86ae](https://github.com/UnderMyBed/TarkovGunsmith/commit/a2d86aee0cbb29ce514d39124b2a127b6e82e8e7))
+
+
+### Performance
+
+* split the bundle and add route-level error boundaries ([#159](https://github.com/UnderMyBed/TarkovGunsmith/issues/159)) ([30ae359](https://github.com/UnderMyBed/TarkovGunsmith/commit/30ae359c63adac970096596c9025105e95e98b1e))
+
+
+### Refactoring
+
+* **builder:** decompose BuilderPage into hooks and panels ([#156](https://github.com/UnderMyBed/TarkovGunsmith/issues/156)) ([9533ee5](https://github.com/UnderMyBed/TarkovGunsmith/commit/9533ee5a4cdd83fe1f9d71081c457600479b4dbf))
+* **design:** extract hardcoded type values into [@theme](https://github.com/theme) tokens ([#161](https://github.com/UnderMyBed/TarkovGunsmith/issues/161)) ([9ff3857](https://github.com/UnderMyBed/TarkovGunsmith/commit/9ff38574af151496063c51af041ec0c6cc4c0f62))
+
+
+### Documentation
+
+* add the pre-refactor hardening plan ([#147](https://github.com/UnderMyBed/TarkovGunsmith/issues/147)) ([7a972c0](https://github.com/UnderMyBed/TarkovGunsmith/commit/7a972c0f6be77ea28a0b1df331a93d61a54a48f3))
+* record what actually happened during the hardening run ([#160](https://github.com/UnderMyBed/TarkovGunsmith/issues/160)) ([41a6126](https://github.com/UnderMyBed/TarkovGunsmith/commit/41a6126ab58a9a28c0b005f27009554ca1c80810))
+
 ## [1.15.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.14.1...v1.15.0) (2026-08-19)
 
 
