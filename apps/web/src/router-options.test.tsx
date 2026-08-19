@@ -15,8 +15,7 @@ import { routerOptions } from "./router-options.js";
 afterEach(() => cleanup());
 
 /**
- * Stage 5.2 (docs/plans/2026-08-19-pre-refactor-hardening-plan.md): before `routerOptions`
- * existed, no route in apps/web set `errorComponent`, so TanStack Router's `Match`
+ * Before `routerOptions` existed, no route in apps/web set `errorComponent`, so TanStack Router's `Match`
  * component resolved `ResolvedCatchBoundary` to a no-op `SafeFragment` for every route — a
  * render throw had nothing to catch it and unmounted the whole tree (a blank page).
  *

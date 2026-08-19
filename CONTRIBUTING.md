@@ -82,9 +82,9 @@ Things that are genuinely ours (not upstream):
 
 ## How this project is built
 
-This repo is developed with Claude as the primary collaborator, using a strict spec → plan → TDD → review workflow. The maintainer handbook is [`CLAUDE.md`](./CLAUDE.md); methodology detail is in [`docs/ai-workflow/`](./docs/ai-workflow/).
+This repo is developed with Claude as the primary collaborator, using a TDD → review → PR workflow. Planned work lives in the issue tracker; the maintainer handbook is [`CLAUDE.md`](./CLAUDE.md).
 
-**You do not need to adopt this workflow to contribute.** A working PR with tests is all we ask. The Claude-specific infrastructure (`.claude/`, `.superpowers/`, `docs/superpowers/`) is there because it's how the maintainer actually works — it's never a gate on your contribution.
+**You do not need to adopt this workflow to contribute.** A working PR with tests is all we ask. The Claude-specific infrastructure (`.claude/`) is there because it's how the maintainer actually works — it's never a gate on your contribution.
 
 ## Reporting a security issue
 

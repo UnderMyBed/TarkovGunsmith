@@ -27,7 +27,7 @@ Use the `add-calc-function` project skill. It scaffolds the test file with requi
 
 The original is **live and is the ground truth**: `BackEnd/WishGranter/Statics/Ballistics.cs`
 in [Xerxes-17/TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith). An earlier note in
-`docs/plans/` claiming it was "archived as defunct" was wrong. Read it before changing any
+this repo claiming it was "archived as defunct" was wrong. Read it before changing any
 armor math.
 
 `src/armor/groundTruth.test.ts` pins our output against four reference pairs derived from it.

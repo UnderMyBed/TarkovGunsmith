@@ -39,7 +39,7 @@ Yes please — bug reports, data corrections, small fixes, new features. Good fi
 
 ## How this project is built
 
-This repo is developed collaboratively with [Claude](https://claude.ai/code), using a spec → plan → TDD → review flow documented in [`CLAUDE.md`](./CLAUDE.md) (the maintainer handbook) and [`docs/ai-workflow/`](./docs/ai-workflow/). Contributors are welcome to use any workflow they prefer — adopting the Claude workflow is never required to submit a PR.
+This repo is developed collaboratively with [Claude](https://claude.ai/code), using a TDD → review → PR flow documented in [`CLAUDE.md`](./CLAUDE.md) (the maintainer handbook). Contributors are welcome to use any workflow they prefer — adopting the Claude workflow is never required to submit a PR.
 
 ## Acknowledgments
 

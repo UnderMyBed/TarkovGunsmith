@@ -38,9 +38,8 @@ JSX → SVG, `@resvg/resvg-wasm` for SVG → PNG.
 - **Type does not follow the design tokens either — same reason as colors.**
   `packages/ui/src/styles/index.css` has a `@theme` type scale
   (`--text-*` / `--tracking-*`) that every `font-size` / `letter-spacing` in
-  `apps/web` and `packages/ui` is built on (added in the Stage 3 pre-refactor
-  hardening pass, see
-  `docs/plans/2026-08-19-pre-refactor-hardening-plan.md`). `build-card.tsx`
+  `apps/web` and `packages/ui` is built on (added in the pre-refactor
+  hardening pass). `build-card.tsx`
   and `pair-card.tsx` do not use it and cannot: satori only understands
   inline style objects with literal values, the same limitation that keeps
   `colors.ts` a hand-copied hex mirror instead of `var(--color-*)`

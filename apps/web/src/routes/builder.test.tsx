@@ -9,9 +9,8 @@ import type { SlotNodeForMigration } from "@tarkov/data";
 import { renderRoute } from "../test/render-route.js";
 import { createTestClient } from "../test/test-client.js";
 
-// `BuilderPage` is 512 lines / 12 useState / 45 hook calls in one function body (see
-// docs/plans/2026-08-19-pre-refactor-hardening-plan.md, Stage 1.4) and is the priority
-// surface for this unit — Stage 5.1 decomposes it and needs this as a behaviour net.
+// `BuilderPage` was 512 lines / 12 useState / 45 hook calls in one function body, and these
+// tests were written as the behaviour net that made decomposing it safe.
 // These tests drive it through the REAL `/builder` route (real router, real fetchers,
 // real Zod schemas) rather than importing `BuilderPage` directly, so `useNavigate` /
 // `Route.useSearch` work exactly as they do in production.

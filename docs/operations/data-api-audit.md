@@ -169,7 +169,7 @@ Across the full live matrix (200 ammo × 47 armor = 9,400 cells) at the default 
 
 ### The ground truth exists, and the repo's own note about it was wrong
 
-`docs/plans/2026-04-19-packages-ballistics-plan.md` says the C# original is "archived as defunct; we'd need to spin it up to compare. Defer until needed." **That premise is false.** [`Xerxes-17/TarkovGunsmith`](https://github.com/Xerxes-17/TarkovGunsmith) is live, default branch `main`, last pushed 2025-12-17, with commits to the ballistics file through 2025-12-10 — including one titled _"Fixed durability bugs"_. The math is in `BackEnd/WishGranter/Statics/Ballistics.cs`, self-documented as "gleaned from reverse regression analysis of a big data set of test results from in-game":
+An earlier note in this repo said the C# original was "archived as defunct; we'd need to spin it up to compare. Defer until needed." **That premise was false.** [`Xerxes-17/TarkovGunsmith`](https://github.com/Xerxes-17/TarkovGunsmith) is live, default branch `main`, last pushed 2025-12-17, with commits to the ballistics file through 2025-12-10 — including one titled _"Fixed durability bugs"_. The math is in `BackEnd/WishGranter/Statics/Ballistics.cs`, self-documented as "gleaned from reverse regression analysis of a big data set of test results from in-game":
 
 ```
 blocked    = Max( pen × (armorDamage%/100) × Clamp(pen/armor_class*10, 0.6, 1.1) × destructibility, 1 )

@@ -1,4 +1,4 @@
-> **For external contributors:** This file is the maintainer handbook for working on this repo with Claude. You are **not required** to adopt the spec → plan → TDD → review workflow described here to submit a PR. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor bar and [`docs/ai-workflow/`](./docs/ai-workflow/) for methodology detail.
+> **For external contributors:** This file is the maintainer handbook for working on this repo with Claude. You are **not required** to adopt the workflow described here to submit a PR. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor bar.
 
 ---
 
@@ -15,7 +15,7 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 >
 > Plus `/smoke` + `/` (Builder-forward landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Deploys fire on release-please PR merges (tagged version bumps) — feature PR merges stage changes on `main` without deploying.
 >
-> **Roadmap from here — M3 Differentiators, all 5 shipped:** (1) ✅ Frontend design pass. (2) ✅ Build comparison (diff two builds). (3) ✅ Build optimization (constraint solver). (4) ✅ OG share cards (server-rendered PNG). (5) ✅ `tarkov.dev` profile import. See [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) §13. Visual polish / fix-up items discovered during the design pass are tracked ad-hoc and landed before the next feature PR.
+> **Roadmap from here — M3 Differentiators, all 5 shipped:** (1) ✅ Frontend design pass. (2) ✅ Build comparison (diff two builds). (3) ✅ Build optimization (constraint solver). (4) ✅ OG share cards (server-rendered PNG). (5) ✅ `tarkov.dev` profile import. Visual polish / fix-up items discovered during the design pass are tracked as issues and landed before the next feature PR.
 >
 > **Deferred M1.5 items (still open):** Undo/redo; `craftsFor`/`bartersFor` in availability; Dialog primitive; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
 >
@@ -44,26 +44,28 @@ A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Bui
 
 ## Where to look first
 
-| If you want to …                           | Read                                                                                                                                         |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Understand _why_ anything is the way it is | [`docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md`](docs/superpowers/specs/2026-04-18-tarkov-gunsmith-rebuild-design.md) |
-| See the locked architectural decisions     | `docs/adr/` (ADR-0001 onwards)                                                                                                               |
-| Plan a new feature                         | Use `superpowers:brainstorming`, then `writing-plans` → output goes to `docs/plans/`                                                         |
-| Understand the AI workflow tier we're on   | [`docs/ai-workflow/tier-b.md`](docs/ai-workflow/tier-b.md)                                                                                   |
-| Activate the next AI workflow tier         | [`docs/ai-workflow/tier-c-upgrade.md`](docs/ai-workflow/tier-c-upgrade.md)                                                                   |
-| Work in a specific app/package             | That directory's own `CLAUDE.md`                                                                                                             |
+| If you want to …                           | Read                                                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Understand _why_ anything is the way it is | `docs/adr/` for the locked decisions; `git log` for everything else — commit bodies carry the why |
+| See the locked architectural decisions     | `docs/adr/` (ADR-0001 onwards)                                                                    |
+| Propose a new feature                      | Open an issue. Planned work lives in the tracker, never in a committed document                   |
+| Deploy, rotate a token, set up locally     | `docs/operations/`                                                                                |
+| Work in a specific app/package             | That directory's own `CLAUDE.md`                                                                  |
 
-## How we work here (Tier B)
+## How we work here
 
-Every feature flows: **brainstorm → spec → plan → TDD execution → code review → PR → merge → auto-deploy.**
+Every change flows: **issue → TDD execution → code review → PR → merge → auto-deploy.**
 
-- Specs live in `docs/superpowers/specs/`
-- Plans live in `docs/plans/`
-- Architectural decisions live in `docs/adr/`
+**Docs state what is true. The tracker states what is planned. Commits state what changed.**
+Do not mix them. No plan documents, no spec archive, no progress logs, no milestone narrative in
+technical docs. The reasoning behind a change belongs in its commit body and PR description, where
+it stays attached to the diff it explains.
+
+- Planned and in-flight work lives in the [issue tracker](https://github.com/UnderMyBed/TarkovGunsmith/issues)
+- Architectural decisions live in `docs/adr/` — these record what was decided and why, and stay true
+- Runbooks live in `docs/operations/`
 - Project-specific Claude skills live in `.claude/skills/`
 - Project-specific subagents live in `.claude/agents/`
-
-Skip none of these steps. Even "simple" changes warrant a plan — it takes a minute and prevents drift.
 
 ### Testing discipline (hard rule)
 

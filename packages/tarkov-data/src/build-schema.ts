@@ -4,9 +4,9 @@ import { z } from "zod";
  * Build schema v1 — flat model, minimum viable.
  *
  * Mirrors the current in-memory state of `/builder`: a weapon id and a flat
- * list of attached mod ids. Future schema versions (v2+) add slot paths,
- * player-profile snapshot, and name/description. See
- * `docs/superpowers/specs/2026-04-19-builder-robustness-design.md` §5.
+ * list of attached mod ids. Later schema versions (v2+) add slot paths, a
+ * player-profile snapshot, and name/description; see `build-migrations.ts`
+ * for how each version upgrades to the next.
  */
 export const BuildV1 = z.object({
   version: z.literal(1),
