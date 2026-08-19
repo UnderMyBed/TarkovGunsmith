@@ -1,6 +1,14 @@
+import { Build } from "@tarkov/data";
 import { newBuildId, BUILD_ID_REGEX } from "./id.js";
 import { maybeSeedOgFixtures } from "./og-fixtures.js";
 import { handlePostPair, handleGetPair, handleForkPair } from "./pairs.js";
+import {
+  checkRateLimit,
+  clientIp,
+  recordAdmission,
+  tooManyRequestsResponse,
+} from "./rate-limit.js";
+import { formatValidationError } from "./validation.js";
 
 let ogSeeded = false;
 
@@ -23,9 +31,27 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
     return new Response("Invalid JSON", { status: 400 });
   }
 
+  // Validate against the same `Build` discriminated union apps/web parses saved builds
+  // through (`@tarkov/data`'s `loadBuild`) — every version v1-v6 a real client could ever
+  // send is a member, so this only ever rejects shapes no client actually produces.
+  const validation = Build.safeParse(parsed);
+  if (!validation.success) {
+    return new Response(`Invalid build: ${formatValidationError(validation.error)}`, {
+      status: 400,
+    });
+  }
+
+  // Cheap checks (size, JSON syntax, schema) all happen before this KV read, so a flood of
+  // malformed payloads costs zero KV operations — only requests that would otherwise
+  // succeed ever touch the rate limiter. See rate-limit.ts for the full reasoning.
+  const ip = clientIp(request);
+  const rate = await checkRateLimit(env.BUILDS, ip);
+  if (!rate.allowed) return tooManyRequestsResponse();
+
   const id = newBuildId();
   const ttl = Number(env.BUILD_TTL_SECONDS);
-  await env.BUILDS.put(`b:${id}`, JSON.stringify(parsed), { expirationTtl: ttl });
+  await env.BUILDS.put(`b:${id}`, JSON.stringify(validation.data), { expirationTtl: ttl });
+  await recordAdmission(env.BUILDS, ip, rate.count);
 
   const requestUrl = new URL(request.url);
   const url = `${requestUrl.origin}/builds/${id}`;

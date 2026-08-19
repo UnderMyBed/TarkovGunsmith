@@ -68,9 +68,15 @@ importers:
 
   apps/builds-api:
     dependencies:
+      '@tarkov/data':
+        specifier: workspace:*
+        version: link:../../packages/tarkov-data
       nanoid:
         specifier: ^6.0.1
         version: 6.0.1
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.22.0
