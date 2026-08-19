@@ -99,37 +99,129 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
 
 ## Post-merge sequence (strict order)
 
-- [ ] **Step 1: Merge the `github-actions` PRs** (#117–#121)
+- [x] **Step 1: Merge the `github-actions` PRs** (#117–#121)
 
-4 of the 5 are green. #118 (`actions/cache` 4→6) failed on a **flaky** `apps/web` unit test
-(`optimize-view.test.tsx`, "ACCEPT SELECTED (1)"), not on the bump — re-run it before merging.
+All five merged. #118 (`actions/cache` 4→6) needed a re-run first — it had failed on a flaky
+`apps/web` unit test, not on the bump (see Step 6). `ci.yml` now runs `paths-filter@v4`,
+`action-setup@v6`, `setup-node@v7`, `cache@v6`, `upload-artifact@v7`.
 
-Branch protection is `strict: true`, so each merge makes the others out-of-date; rebase via
-`@dependabot rebase` as needed.
+Branch protection is `strict: true`, so the four remaining PRs went out of date the moment the
+first merged. They were admin-merged rather than rebased five times, and the _combination_ was then
+validated directly with a `workflow_dispatch` run on `main` — a stronger check than five
+independent passes, since only the combination actually ships.
 
-- [ ] **Step 2: Confirm `actions/checkout` gets a PR once the limit frees up**
+- [x] **Step 2: Confirm `actions/checkout` gets a PR once the limit frees up**
 
-It is queued behind `open-pull-requests-limit: 5` and is the last Node 20 deprecation warning.
+Confirmed, and the queue theory with it. Freeing the five slots released three more PRs within
+minutes: #133 (`actions/checkout` 4→7), #132 (`cloudflare/wrangler-action` 3→4), and #131
+(`googleapis/release-please-action` 4→5). `actions/checkout` was on v4 against an upstream v7.0.1.
 
-- [ ] **Step 3: Close the 6 stale npm version-update PRs** (#122–#127)
+**Not merged in this arc.** #132 and #131 touch deploy and release machinery that CI never
+exercises — `deploy.yml` only runs on a release-please merge. They need a deliberate pass.
 
-`@dependabot close` on each, so Dependabot records them as handled rather than re-opening.
+- [x] **Step 3: Close the stale npm version-update PRs** (#122–#127)
 
-**Leave #128 open.** It is a security update, it already carries a correct `pnpm-lock.yaml`, and it
-passes CI — but its manifest change is `vite` ^6.4.3 → ^7.3.5 in `apps/web`, a major bump of the
-SPA's build tool that `dependency-residue.md` says is pinned to 6.x deliberately. It belongs with
-the major-bump review pass, not here.
+#122 **auto-closed by Dependabot** the moment its directory left the config — direct evidence the
+new config took effect.
+
+#123–#127 had to be closed by hand, and doing so cost something. They were orphaned: the update job
+that created them no longer exists, so Dependabot silently ignored both `@dependabot close` and
+`@dependabot recreate` on them. And per GitHub's docs, closing a Dependabot PR — by command or by
+hand — **permanently suppresses recreation of that version**. So closing these dismissed four
+specific majors:
+
+| Dependency                   | Suppressed version |
+| ---------------------------- | ------------------ |
+| `vite` (`apps/web`)          | 8.2.1              |
+| `nanoid` (`apps/builds-api`) | 6.0.1              |
+| `@cloudflare/workers-types`  | 5.20260815.1       |
+| `@testing-library/jest-dom`  | 7.0.1              |
+
+They are recorded here deliberately: a newer release of any of them re-triggers a fresh PR, so the
+loss is per-version and self-healing, but until then these bumps are invisible to Dependabot.
+
+Closing was necessary because `open-pull-requests-limit: 5` was fully consumed by those five PRs —
+Dependabot could not open a correctly-formed replacement until they closed. That deadlock is now
+written up in `docs/operations/repo-security.md`.
+
+**#128 left open**, as planned. It is a security update, already carries a correct `pnpm-lock.yaml`,
+and passes CI — but its manifest change is `vite` ^6.4.3 → ^7.3.5 in `apps/web`, a major bump of the
+SPA's build tool that `dependency-residue.md` says is pinned to 6.x deliberately.
 
 - [ ] **Step 4: Verify the re-run produces correctly-formed npm PRs**
 
-The gate for this whole arc: the new PRs must touch `pnpm-lock.yaml` **and** the member
-`package.json`, and CI must be green. Verify with:
+The gate for this arc: new npm PRs must touch `pnpm-lock.yaml` **and** the member `package.json`.
 
 ```bash
 gh pr view <n> --json files -q '.files[].path'
 ```
 
+Evidence already in hand, short of the end-to-end run:
+
+- **#128 is the control case.** A root-scoped job on this repo, same day, produced
+  `apps/web/package.json` + `pnpm-lock.yaml` and passed CI.
+- **#122's auto-closure** proves the root-only config is live.
+
 - [ ] **Step 5: Confirm member coverage did not regress**
 
-At least one new PR must target a package under `apps/*` or `packages/*`. If every PR is
+At least one new npm PR must target a package under `apps/*` or `packages/*`. If every PR is
 root-only, root discovery is not working and the arc has failed its main criterion.
+
+- [x] **Step 6: Fix the flaky test the arc surfaced** (#134)
+
+`optimize-view.test.tsx` failed ~50% of the time in CI (#118 attempt 1, and the `main` dispatch
+run) while passing 8/8 locally. `OptimizeView` defaults every changed row to selected from an
+effect landing a tick after the rows render; at the instant the checkbox becomes queryable the
+button still reads `ACCEPT SELECTED (0)`. The test interacted inside that window, so the click
+toggled against an empty set and the effect clobbered it back to all-selected.
+
+Reproduced deterministically, then fixed by waiting for `(2)` before unchecking. Promoted into
+scope because a coin-flip test puts a coin flip in front of every future Dependabot PR — which is
+exactly what this arc exists to prevent.
+
+---
+
+## Follow-ups this arc surfaced
+
+### Fixed here: the e2e step's 10-minute apt install (#134)
+
+`Install Playwright browsers` ran 20s to 24m+ across today's runs, and two runs were cancelled
+after 20 and 24 minutes. It was not flaky infrastructure. Timestamps from run 32211686184, whose
+step took 11m27s:
+
+```
+03:21:09  > playwright install --with-deps chromium
+03:21:09  apt-get update
+03:21:58  apt-get install
+          ... 10m27s of silence ...
+03:32:26  Downloading Chrome for Testing
+03:32:35  done
+```
+
+The browser download the cache exists to protect took **9 seconds**. `apt-get install` took
+**10m27s**. And the cache-hit/cache-miss split ran apt down _both_ branches — a perfect cache hit
+would have saved 9 seconds and still paid the full apt bill. The cache also never hits: caches
+written on a PR branch are not readable from sibling branches, and CI does not run on push to
+`main`, so nothing shared is ever written.
+
+`--with-deps` is dropped (ubuntu-24.04 already ships Chromium's libraries), the two steps collapse
+to one, and `timeout-minutes: 5` caps the downside. If a future runner image drops a library,
+Chromium fails to launch and e2e goes red in seconds instead of stalling silently.
+
+**Result: the step went from 11m27s to 11 seconds, and the whole CI run from ~14 minutes to
+2m56s.**
+
+### Still open
+
+1. **#132 `cloudflare/wrangler-action` 3→4 and #131 `release-please-action` 4→5.** Both touch
+   machinery CI never exercises — `deploy.yml` runs only on a release-please merge. They need a
+   deliberate pass with a real deploy behind it.
+
+2. **#133 `actions/checkout` 4→7.** Straightforward and CI-exercised, but left with the other two
+   rather than mixed into this arc.
+
+3. **The four suppressed majors** in Step 3's table, plus **#128's `vite` 6→7**, all belong to the
+   major-bump review pass.
+
+4. **The Playwright cache is now near-pointless.** It guards an 11-second download and never hits
+   across branches. Either seed it from a dispatch run on `main` or delete the cache steps.

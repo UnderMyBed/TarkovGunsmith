@@ -58,6 +58,11 @@ jobs:
               - 'apps/**'
               - 'packages/**'
               - '.github/workflows/**'
+              # packages/repo-guards asserts things about dependabot.yml — most importantly that
+              # the npm entry never names a pnpm workspace member again. Without this glob a PR
+              # editing only dependabot.yml is treated as docs-only and skips the very test that
+              # guards it, which is exactly the change most likely to reintroduce the bug.
+              - '.github/dependabot.yml'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
               - 'package.json'
