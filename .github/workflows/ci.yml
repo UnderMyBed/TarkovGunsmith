@@ -126,13 +126,18 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
 
+      # No `--with-deps`. That flag runs `apt-get update && apt-get install` on every job, and
+      # measured against run 32211686184 it cost 10m27s of an 11m27s step — the browser download
+      # either side of it took 9 SECONDS. ubuntu-24.04 already ships the libraries Chromium
+      # needs. If a future runner image drops one, Chromium fails to launch and the e2e step
+      # goes red immediately, which is a far better signal than a silent ten-minute apt stall.
+      #
+      # The old cache-hit/cache-miss split ran apt down BOTH branches, so a cache hit saved
+      # those 9 seconds and still paid the full apt bill. One step replaces both.
       - name: Install Playwright browsers (cache miss only)
         if: steps.changes.outputs.code == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 5
         run: pnpm --filter @tarkov/web test:e2e:install
-
-      - name: Install Playwright system deps (cache hit — apt only)
-        if: steps.changes.outputs.code == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter @tarkov/web exec playwright install-deps chromium
 
       - name: E2E smoke tests
         if: steps.changes.outputs.code == 'true'

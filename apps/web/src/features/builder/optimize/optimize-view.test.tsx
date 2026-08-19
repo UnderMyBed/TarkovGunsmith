@@ -149,9 +149,16 @@ describe("OptimizeView", () => {
     await new Promise((r) => queueMicrotask(() => r(undefined)));
     // Proposal changes both muzzle and handguard (m-new / h-new vs m-old / h-old).
     // Uncheck handguard row — expect merged build to keep h-old.
-    const handguardBox = await screen.findByRole("checkbox", { name: /Accept HANDGUARD/i });
-    fireEvent.click(handguardBox);
-    fireEvent.click(screen.getByRole("button", { name: /ACCEPT SELECTED \(1\)/ }));
+    // Synchronise on the settled selection before interacting. OptimizeView defaults every
+    // changed row to selected from an effect that lands a tick AFTER the rows first render —
+    // at the moment the checkbox becomes queryable the button still reads "ACCEPT SELECTED (0)".
+    // Clicking inside that window toggles against an empty set and the effect then clobbers the
+    // click back to all-selected, so the assertion below looks for "(1)" and finds "(2)". That
+    // is why this test failed roughly half the time in CI while passing every local run.
+    // Waiting for "(2)" makes the uncheck mean what the test name says it means.
+    await screen.findByRole("button", { name: /ACCEPT SELECTED \(2\)/ });
+    fireEvent.click(screen.getByRole("checkbox", { name: /Accept HANDGUARD/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /ACCEPT SELECTED \(1\)/ }));
     expect(onAccept).toHaveBeenCalledTimes(1);
     const acceptedBuild = onAccept.mock.calls[0][0] as BuildV5;
     expect(acceptedBuild.attachments).toEqual({ muzzle: "m-new", handguard: "h-old" });
