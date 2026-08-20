@@ -113,6 +113,48 @@ jobs:
             echo "FAILED to ensure custom domain:"; cat /tmp/domain.json; exit 1
           fi
 
+      # Registering the hostname with the Pages project and pointing DNS at it are two
+      # separate operations. The dashboard's "add a custom domain" flow does both, which is
+      # why this is easy to miss: the first deploy after adding the domain returned
+      # `POST domains -> HTTP 200` and the site still did not resolve, because the zone had
+      # no record for it at all. Same lesson as the Worker's route — infrastructure that
+      # only exists because someone clicked it is infrastructure nobody can rebuild.
+      - name: Ensure the site's DNS record exists
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_NAME: undermybed.dev
+          SITE_HOST: tarkovgunsmith.undermybed.dev
+          PAGES_HOST: tarkov-gunsmith-web.pages.dev
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4"
+          auth=(-H "Authorization: Bearer $CF_API_TOKEN")
+
+          zone_id=$(curl -sS "${auth[@]}" "$api/zones?name=$ZONE_NAME" | jq -r '.result[0].id // empty')
+          if [ -z "$zone_id" ]; then
+            echo "Could not read the zone id for $ZONE_NAME."
+            echo "The API token needs Zone -> Zone -> Read in addition to Zone -> DNS -> Edit."
+            exit 1
+          fi
+
+          existing=$(curl -sS "${auth[@]}" \
+            "$api/zones/$zone_id/dns_records?name=$SITE_HOST" | jq -r '.result[0].id // empty')
+          if [ -n "$existing" ]; then
+            echo "DNS record already present for $SITE_HOST"
+            exit 0
+          fi
+
+          # Proxied, so the record resolves to Cloudflare's edge and the Pages project is
+          # served through it. An unproxied CNAME to *.pages.dev does not serve the project.
+          code=$(curl -sS -o /tmp/dns.json -w '%{http_code}' -X POST "$api/zones/$zone_id/dns_records" \
+            "${auth[@]}" -H 'content-type: application/json' \
+            --data "{\"type\":\"CNAME\",\"name\":\"$SITE_HOST\",\"content\":\"$PAGES_HOST\",\"proxied\":true}")
+          if [ "$code" = "200" ]; then
+            echo "created CNAME $SITE_HOST -> $PAGES_HOST (proxied)"
+          else
+            echo "FAILED to create the DNS record (HTTP $code):"; cat /tmp/dns.json; exit 1
+          fi
+
   smoke:
     name: Post-deploy smoke
     needs: [builds-api, pages]
@@ -131,10 +173,32 @@ jobs:
           set -euo pipefail
           fail=0
 
+          # Retries ONLY on connection- and certificate-shaped failures. The first deploy
+          # onto a brand-new custom domain fails here for a minute or two while Cloudflare
+          # provisions the edge certificate: DNS resolves, TLS does not complete yet, and
+          # curl reports 000. That is not a broken deploy and must not be reported as one.
+          #
+          # A real wrong status — 500 because the edge cannot reach the Worker, 404 because
+          # a route vanished — breaks out immediately. Retrying those would only delay a
+          # failure the gate exists to surface, so the distinction is load-bearing.
           probe() { # name, expected, url, extra curl args...
             local name="$1" expect="$2" url="$3"; shift 3
-            local code
-            code=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 25 "$@" "$url" || echo 000)
+            local code deadline=$((SECONDS + 420))
+            while :; do
+              # `-w` already prints 000 when the transfer never completes, so the exit code
+              # is swallowed rather than turned into a second value. An earlier version
+              # appended its own "000" and reported the code as "000000".
+              code=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 25 "$@" "$url" 2>/dev/null || true)
+              [ -n "$code" ] || code=000
+              [ "$code" = "$expect" ] && break
+              case "$code" in
+                000|502|503|521|522|523|525|526) ;;   # not serving yet — keep waiting
+                *) break ;;                            # a real answer, and the wrong one
+              esac
+              [ "$SECONDS" -ge "$deadline" ] && break
+              echo "  ...  $name -> $code, retrying (cert/DNS may still be provisioning)"
+              sleep 20
+            done
             if [ "$code" = "$expect" ]; then
               echo "  ok   $name -> $code"
             else
