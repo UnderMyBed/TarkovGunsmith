@@ -59,14 +59,15 @@ Create at https://dash.cloudflare.com/profile/api-tokens → **Create Token** �
 
 ### Permissions
 
-| Scope       | Permission         | Access | Why                                                            |
-| ----------- | ------------------ | ------ | -------------------------------------------------------------- |
-| **Account** | Workers Scripts    | Edit   | `wrangler deploy` for `builds-api`                             |
-| **Account** | Workers KV Storage | Edit   | Read/write the `BUILDS` namespace from the `builds-api` Worker |
-| **Account** | Cloudflare Pages   | Edit   | `wrangler pages deploy` for `apps/web`                         |
-| **Account** | Account Settings   | Read   | Wrangler validates the token against the account on startup    |
-| **Account** | Workers Routes     | Edit   | Create the Worker's `api.` custom domain from `wrangler.jsonc` |
-| **Zone**    | DNS                | Edit   | Create the DNS records both custom domains resolve through     |
+| Scope       | Permission         | Access | Why                                                             |
+| ----------- | ------------------ | ------ | --------------------------------------------------------------- |
+| **Account** | Workers Scripts    | Edit   | `wrangler deploy` for `builds-api`                              |
+| **Account** | Workers KV Storage | Edit   | Read/write the `BUILDS` namespace from the `builds-api` Worker  |
+| **Account** | Cloudflare Pages   | Edit   | `wrangler pages deploy` for `apps/web`                          |
+| **Account** | Account Settings   | Read   | Wrangler validates the token against the account on startup     |
+| **Zone**    | Workers Routes     | Edit   | Create the Worker's `api.` custom domain from `wrangler.jsonc`  |
+| **Zone**    | DNS                | Edit   | Create the DNS record the site's custom domain resolves through |
+| **Zone**    | Zone               | Read   | Look up the zone id before writing a DNS record                 |
 
 ### Account resources
 
@@ -74,8 +75,14 @@ Create at https://dash.cloudflare.com/profile/api-tokens → **Create Token** �
 
 ### Zone resources
 
-**Include:** the `undermybed.dev` zone. Required for the two custom domains above —
-`wrangler deploy` creates the Worker's DNS record, and the Pages domain step creates the site's.
+**Include:** the `undermybed.dev` zone.
+
+> **Workers Routes is a Zone permission, not an Account one.** It sits under **Zone** in the
+> token editor alongside DNS. Granting it at the account level looks right and fails at
+> deploy time with `A request to the Cloudflare API (/zones/<id>/workers/routes) failed.
+Authentication error [code: 10000]`.
+> Required for the two custom domains above —
+> `wrangler deploy` creates the Worker's DNS record, and the Pages domain step creates the site's.
 
 ### Client IP filtering
 

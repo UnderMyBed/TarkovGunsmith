@@ -89,8 +89,13 @@ jobs:
 
       # Declared here rather than clicked in the dashboard, for the same reason the Worker's
       # route now lives in wrangler.jsonc: infrastructure nobody can see from the repo is
-      # infrastructure that disappears without anyone noticing. Idempotent — re-adding an
-      # existing domain returns 409, which is a success for our purposes.
+      # infrastructure that disappears without anyone noticing.
+      #
+      # Idempotency is a LIST-then-CREATE, not a create-and-forgive. The first version keyed
+      # off the error body and broke on the second run: re-adding an existing domain returns
+      # HTTP 400 with code 8000018 ("You have already added this custom domain"), which is
+      # neither the 409 nor the message text it was matching. Asking what exists is stable;
+      # pattern-matching another service's error strings is not.
       - name: Ensure the Pages custom domain exists
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -99,18 +104,22 @@ jobs:
           SITE_HOST: tarkovgunsmith.undermybed.dev
         run: |
           set -euo pipefail
-          code=$(curl -sS -o /tmp/domain.json -w '%{http_code}' -X POST \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/domains" \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
-            -H 'content-type: application/json' \
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/domains"
+          auth=(-H "Authorization: Bearer $CF_API_TOKEN")
+
+          if curl -sS "${auth[@]}" "$api" \
+             | jq -e --arg h "$SITE_HOST" '.result[]? | select(.name == $h)' >/dev/null 2>&1; then
+            echo "custom domain already attached: $SITE_HOST"
+            exit 0
+          fi
+
+          code=$(curl -sS -o /tmp/domain.json -w '%{http_code}' -X POST "$api" \
+            "${auth[@]}" -H 'content-type: application/json' \
             --data "{\"name\":\"$SITE_HOST\"}")
-          echo "POST domains -> HTTP $code"
-          if [ "$code" = "200" ] || [ "$code" = "409" ]; then
-            echo "custom domain present: $SITE_HOST"
-          elif grep -q 'already exists\|8000007' /tmp/domain.json 2>/dev/null; then
-            echo "custom domain already present: $SITE_HOST"
+          if [ "$code" = "200" ]; then
+            echo "attached custom domain: $SITE_HOST"
           else
-            echo "FAILED to ensure custom domain:"; cat /tmp/domain.json; exit 1
+            echo "FAILED to attach custom domain (HTTP $code):"; cat /tmp/domain.json; exit 1
           fi
 
       # Registering the hostname with the Pages project and pointing DNS at it are two
