@@ -121,6 +121,11 @@ The Pages emulator reads `apps/web/.dev.vars` (for `BUILDS_API_URL`) and speaks 
   ```
 - **`pnpm seed:build` fixture validation fails** — the Build schema changed. Update `scripts/fixtures/build-m4a1.json` to match `packages/tarkov-data/src/build-schema.ts`. The error output names the exact field that's off.
 - **Fresh-install issues after pulling main** — `pnpm install --frozen-lockfile` from the repo root; if that complains, delete the root `node_modules` and retry.
+- **Worker tests fail at import with `Cannot read properties of undefined (reading 'config')`** — every test file reports it and zero tests run. `@cloudflare/vitest-pool-workers` must load the same physical vitest instance the CLI runs, and pnpm keys each instance by its resolved peers; changing any vitest peer re-keys `.pnpm/vitest@<hash>` and can leave an orphaned `apps/builds-api/node_modules/.bin/vitest` shim pointing at the old one. Run `pnpm install`; if it survives that, delete the stale shim and reinstall:
+  ```bash
+  rm -rf apps/builds-api/node_modules/.bin && pnpm install
+  ```
+  CI never sees this because it always installs from scratch. Note the same orphaned-shim mechanism can affect any workspace package whose runner is peer-resolved.
 - **Pages Functions return 500 on `pages:dev`** — `apps/web/.dev.vars` is missing or doesn't have `BUILDS_API_URL=http://localhost:8788`. Copy from `.dev.vars.example`.
 
 ## Deeper references

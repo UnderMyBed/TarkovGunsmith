@@ -59,5 +59,4 @@ between two working options — one of them had stopped existing.
   `0.1875`), so ballistics output shifts. That is upstream tracking working as intended, not a
   regression, but it is visible to users.
 - Upstream restructured the Gunsmith quest series, which required a `BuildV5` migration so
-  shared builds did not silently lose their unlocks. See
-  [`docs/superpowers/specs/2026-08-18-json-api-migration-design.md`](../superpowers/specs/2026-08-18-json-api-migration-design.md).
+  shared builds did not silently lose their unlocks.

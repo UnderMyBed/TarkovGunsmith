@@ -62,8 +62,7 @@ export interface UseBuilderStateResult {
  * tracking, and everything derived from them (availability, specs, price, drift detection).
  * Takes the viewer's profile and save metadata as inputs rather than owning them, since both
  * are genuinely shared with sibling hooks (`useShareBuild`, `useCompareHandoff`) that build
- * their own independent payloads from the same pieces — see
- * docs/plans/2026-08-19-pre-refactor-hardening-plan.md, Stage 5.1.
+ * their own independent payloads from the same pieces.
  */
 export function useBuilderState({
   initialWeaponId,
