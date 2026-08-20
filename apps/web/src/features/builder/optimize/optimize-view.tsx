@@ -1,7 +1,7 @@
 import { useMemo, useReducer, useState, type ReactElement } from "react";
 import type { BuildV6, ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
-import { Button, Card, Pill } from "@tarkov/ui";
+import { Button, Card, Pill, focusRing } from "@tarkov/ui";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
 import {
   constraintsReducer,
@@ -173,7 +173,7 @@ export function OptimizeView({
           type="button"
           onClick={onExit}
           aria-label="Back to builder editor"
-          className="font-mono text-11 uppercase tracking-20 text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)]"
+          className={`font-mono text-11 uppercase tracking-20 text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] ${focusRing}`}
         >
           ← EDITOR
         </button>

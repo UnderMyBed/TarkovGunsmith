@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   Input,
+  focusRing,
 } from "@tarkov/ui";
 import { TarkovTrackerConnectPopover } from "./tarkovtracker-connect-popover.js";
 import { TarkovTrackerSyncBanner } from "./tarkovtracker-sync-banner.js";
@@ -256,7 +257,7 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
                       key={key}
                       type="button"
                       onClick={() => setFilter(key)}
-                      className={`border px-2 py-0.5 font-mono uppercase tracking-wider ${
+                      className={`border px-2 py-0.5 font-mono uppercase tracking-wider ${focusRing} ${
                         filter === key
                           ? "border-[var(--color-primary)] text-[var(--color-primary)]"
                           : "border-[var(--color-border)] text-[var(--color-muted-foreground)]"

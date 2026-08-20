@@ -10,7 +10,15 @@ import {
   type WeaponListItem,
   type ModListItem,
 } from "@tarkov/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@tarkov/ui";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  focusRing,
+} from "@tarkov/ui";
 import { filterRowsByName } from "../features/data-sheets/filterRows.js";
 import { sortRows, type SortDirection } from "../features/data-sheets/sortRows.js";
 import { WipBanner } from "../features/nav/wip-banner.js";
@@ -49,11 +57,11 @@ function DataPage() {
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className={
+            className={`${
               tab === t
                 ? "border-b-2 border-[var(--color-primary)] px-3 py-2 font-mono text-11 tracking-18 uppercase text-[var(--color-primary)]"
                 : "px-3 py-2 font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
-            }
+            } ${focusRing}`}
           >
             {t.toUpperCase()}
           </button>
@@ -115,7 +123,7 @@ function Header<T>({
       <button
         type="button"
         onClick={() => onSort(keyName)}
-        className="text-xs font-semibold uppercase tracking-wide hover:text-[var(--color-primary)]"
+        className={`text-xs font-semibold uppercase tracking-wide hover:text-[var(--color-primary)] ${focusRing}`}
       >
         {label}
         {active && (

@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useAmmoList, useArmorList } from "@tarkov/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "@tarkov/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+} from "@tarkov/ui";
 import { adaptAmmo } from "../features/data-adapters/adapters.js";
 import { useScenario } from "../features/sim/useScenario.js";
 import { BodySilhouette } from "../features/sim/BodySilhouette.js";
@@ -200,15 +208,14 @@ function SimPage() {
           <CardContent className="flex flex-col gap-4">
             <BodySilhouette onZoneClick={(zone) => append({ zone, distance })} />
             <ShotQueue plan={plan} onMove={move} onRemove={remove} onClear={clear} />
-            <button
-              type="button"
+            <Button
               onClick={onRun}
               disabled={!canRun}
               title={canRun ? "" : "Select ammo to enable"}
-              className="rounded-[var(--radius)] border bg-[var(--color-primary)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-foreground)] hover:bg-[var(--color-primary)]/90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="self-start"
             >
               Run
-            </button>
+            </Button>
           </CardContent>
         </Card>
 

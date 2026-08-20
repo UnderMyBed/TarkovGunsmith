@@ -1,5 +1,5 @@
 import type { SlotNode, WeaponTree, ItemAvailability, SlotDiffMap } from "@tarkov/data";
-import { Pill } from "@tarkov/ui";
+import { Pill, focusRing } from "@tarkov/ui";
 
 // ---------- Keyboard navigation handler ----------
 
@@ -203,7 +203,7 @@ function SlotRow({
                 <button
                   type="button"
                   onClick={() => onAttach(slot.path, null)}
-                  className={`w-full px-3 py-1.5 text-left text-sm border-l-2 ${
+                  className={`w-full px-3 py-1.5 text-left text-sm border-l-2 ${focusRing} ${
                     !selectedId
                       ? "border-[var(--color-primary)] bg-[var(--color-muted)] text-[var(--color-primary)]"
                       : "border-transparent hover:bg-[var(--color-muted)]"
@@ -223,7 +223,7 @@ function SlotRow({
                     <button
                       type="button"
                       onClick={() => onAttach(slot.path, item.id)}
-                      className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm border-l-2 ${
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm border-l-2 ${focusRing} ${
                         isSelected
                           ? "border-[var(--color-primary)] bg-[var(--color-muted)]"
                           : "border-transparent hover:bg-[var(--color-muted)]"
