@@ -56,14 +56,18 @@ jobs:
           echo
 
           echo "zone scope ($ZONE_NAME):"
+          # NOT a permission check. `GET /zones?name=` is satisfied by account-level access,
+          # so it succeeds for a zone the token cannot touch. An earlier version reported
+          # this as "ok read the zone" while every write to that zone was being refused —
+          # the exact false-reassurance this job exists to remove. It resolves an id; the
+          # probes below are what establish whether the token has rights here.
           zone_id=$(curl -sS "${auth[@]}" "$api/zones?name=$ZONE_NAME" | jq -r '.result[0].id // empty')
           if [ -z "$zone_id" ]; then
-            echo "  DENIED  read the zone                        needs: Zone -> Zone -> Read"
-            echo "          (also check Zone Resources INCLUDES $ZONE_NAME — a permission"
-            echo "           granted with the wrong resource scope fails identically)"
+            echo "  DENIED  resolve the zone id                  needs: Zone -> Zone -> Read"
+            echo "          $ZONE_NAME is not visible to this token at all."
             exit 1
           fi
-          echo "  ok      read the zone"
+          echo "  --      resolved zone id (visible; rights unproven)"
           check "read DNS records" "Zone -> DNS -> Edit" \
             "$api/zones/$zone_id/dns_records?per_page=1"
           check "read Workers routes" "Zone -> Workers Routes -> Edit" \
@@ -71,9 +75,14 @@ jobs:
 
           echo
           if [ "$fail" != "0" ]; then
-            echo "The API token is missing at least one permission above."
-            echo "Edit it at https://dash.cloudflare.com/profile/api-tokens"
-            echo "Zone permissions must ALSO have Zone Resources including $ZONE_NAME."
+            echo "The API token cannot do everything this deploy needs."
+            echo
+            echo "If the permission rows above already look correct on the token, check the"
+            echo "ZONE RESOURCES selector next to them — permissions granted on the wrong zone"
+            echo "fail exactly like permissions that were never granted. It must read:"
+            echo "    Include -> Specific zone -> $ZONE_NAME"
+            echo
+            echo "Edit at https://dash.cloudflare.com/profile/api-tokens"
             exit 1
           fi
           echo "token has everything this deploy needs"
