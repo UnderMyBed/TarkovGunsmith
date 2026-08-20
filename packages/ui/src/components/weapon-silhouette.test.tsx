@@ -3,6 +3,7 @@ import { createRef } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { WeaponSilhouette, weaponSilhouetteSrc } from "./weapon-silhouette.js";
+import { classList } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
@@ -16,11 +17,12 @@ describe("WeaponSilhouette", () => {
     );
   });
 
-  it("applies the monochrome filter and reduced opacity by default", () => {
+  /* The monochrome filter and blend mode are class-driven, so whether they resolve to real
+   * rules is a stylesheet fact — checked in apps/web/src/styles.test.ts, where under GitHub
+   * issue #162 they did not. The reduced opacity is an inline style and is assertable here. */
+  it("renders at reduced opacity so it reads as a backdrop, not content", () => {
     render(<WeaponSilhouette itemId="5447a9cd4bdc2dbd208b4567" alt="mono" />);
-    const img = screen.getByRole("img", { name: "mono" });
-    expect(img.className).toContain("grayscale(1)");
-    expect(img.style.opacity).toBe("0.55");
+    expect(screen.getByRole("img", { name: "mono" }).style.opacity).toBe("0.55");
   });
 
   it("hides itself on image load error so a broken CDN link doesn't break layout", () => {
@@ -38,13 +40,16 @@ describe("WeaponSilhouette", () => {
     expect(img).toHaveAttribute("loading", "lazy");
   });
 
-  it("merges caller className with the base classes", () => {
+  it("merges a caller className on top of its own classes instead of replacing them", () => {
+    render(<WeaponSilhouette itemId="5447a9cd4bdc2dbd208b4567" alt="base" />);
+    const base = classList(screen.getByRole("img", { name: "base" }));
+    cleanup();
     render(
       <WeaponSilhouette itemId="5447a9cd4bdc2dbd208b4567" alt="cls" className="h-full w-full" />,
     );
     const img = screen.getByRole("img", { name: "cls" });
-    expect(img.className).toContain("h-full w-full");
-    expect(img.className).toContain("mix-blend-multiply");
+    expect(img).toHaveClass("h-full", "w-full");
+    expect(img).toHaveClass(...base);
   });
 
   it("forwards a ref to the underlying <img>", () => {

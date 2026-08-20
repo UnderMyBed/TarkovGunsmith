@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { StatRow } from "./stat-row.js";
+import { classSignature } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
@@ -22,20 +23,26 @@ describe("StatRow", () => {
     expect(container.textContent).not.toContain("undefined");
   });
 
-  it("colors an 'up' delta with the olive (improvement) token", () => {
-    render(<StatRow label="Ergo" delta="+18" deltaDirection="up" value={66} />);
-    const deltaEl = screen.getByText("+18");
-    expect(deltaEl.className).toContain("text-[var(--color-olive)]");
+  /* An improvement, a regression and a neutral delta have to be told apart at a glance, so
+   * each direction must style its cell differently. Which colour token each one picks is a
+   * stylesheet fact — checked, along with the five-column grid template that holds the row
+   * together, in apps/web/src/styles.test.ts. */
+  it("styles up, down and neutral deltas differently from one another", () => {
+    const signatures = (["up", "down", "neutral"] as const).map((direction) => {
+      render(<StatRow label="Ergo" delta={direction} deltaDirection={direction} value={1} />);
+      const sig = classSignature(screen.getByText(direction));
+      cleanup();
+      return sig;
+    });
+    expect(new Set(signatures).size).toBe(3);
   });
 
-  it("colors a 'down' delta with the destructive (regression) token", () => {
-    render(<StatRow label="Ergo" delta="-9" deltaDirection="down" value={39} />);
-    expect(screen.getByText("-9").className).toContain("text-[var(--color-destructive)]");
-  });
-
-  it("colors a neutral (default) delta with the muted-foreground token", () => {
-    render(<StatRow label="Ergo" delta="0" value={48} />);
-    expect(screen.getByText("0").className).toContain("text-[var(--color-muted-foreground)]");
+  it("treats an omitted deltaDirection as neutral", () => {
+    render(<StatRow label="Ergo" delta="implicit" value={1} />);
+    const implicit = classSignature(screen.getByText("implicit"));
+    cleanup();
+    render(<StatRow label="Ergo" delta="explicit" deltaDirection="neutral" value={1} />);
+    expect(classSignature(screen.getByText("explicit"))).toBe(implicit);
   });
 
   it("omits the bar fill entirely when percent is not provided", () => {
@@ -58,13 +65,31 @@ describe("StatRow", () => {
     expect((under.querySelector('[style*="width"]') as HTMLElement).style.width).toBe("0%");
   });
 
-  it.each([
-    ["olive", "bg-[var(--color-olive)]"],
-    ["destructive", "bg-[var(--color-destructive)]"],
-    ["primary", "bg-[var(--color-primary)]"],
-  ] as const)("uses the %s barTone's background class on the fill", (barTone, expectedClass) => {
-    const { container } = render(<StatRow label="Tone" value={1} percent={50} barTone={barTone} />);
-    const bar = container.querySelector('[style*="width"]');
-    expect(bar?.className).toContain(expectedClass);
+  it("gives every barTone its own class set on the fill", () => {
+    const tones = ["primary", "olive", "destructive"] as const;
+    const signatures = tones.map((barTone) => {
+      const { container } = render(
+        <StatRow label="Tone" value={1} percent={50} barTone={barTone} />,
+      );
+      const sig = classSignature(container.querySelector('[style*="width"]')!);
+      cleanup();
+      return sig;
+    });
+    expect(new Set(signatures).size).toBe(tones.length);
+  });
+
+  it("treats an omitted barTone as primary", () => {
+    const { container: implicit } = render(<StatRow label="Implicit" value={1} percent={50} />);
+    const implicitSig = classSignature(implicit.querySelector('[style*="width"]')!);
+    cleanup();
+    const { container: explicit } = render(
+      <StatRow label="Explicit" value={1} percent={50} barTone="primary" />,
+    );
+    expect(classSignature(explicit.querySelector('[style*="width"]')!)).toBe(implicitSig);
+  });
+
+  it("merges a caller className onto the row wrapper", () => {
+    const { container } = render(<StatRow label="Styled" value={1} className="extra-class" />);
+    expect(container.firstElementChild).toHaveClass("extra-class");
   });
 });

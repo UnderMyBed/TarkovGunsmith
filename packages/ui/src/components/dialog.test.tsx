@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Dialog, DialogBody, DialogPanel, DialogTitle } from "./dialog.js";
+import { cardVariants } from "./card.js";
+import { classList } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
@@ -151,7 +153,22 @@ describe("Dialog", () => {
 });
 
 describe("DialogPanel", () => {
-  it("renders a bracket-variant Card and merges caller className", () => {
+  /* DialogPanel's contract is composition: it IS a bracket-variant <Card>, so a consumer
+   * gets the Field Ledger corner marks without reaching for Card themselves. Deriving the
+   * expectation from `cardVariants` rather than naming a token keeps this honest if the
+   * bracket is restyled — and whether those classes paint anything is checked against the
+   * compiled stylesheet in apps/web/src/styles.test.ts. */
+  it("renders as a bracket-variant Card", () => {
+    render(
+      <Dialog open onClose={vi.fn()}>
+        <DialogPanel data-testid="panel">content</DialogPanel>
+      </Dialog>,
+    );
+    const bracket = cardVariants({ variant: "bracket" }).split(/\s+/).filter(Boolean);
+    expect(screen.getByTestId("panel")).toHaveClass(...bracket);
+  });
+
+  it("lets a caller override its default width cap rather than emitting both", () => {
     render(
       <Dialog open onClose={vi.fn()}>
         <DialogPanel className="max-w-sm" data-testid="panel">
@@ -159,27 +176,45 @@ describe("DialogPanel", () => {
         </DialogPanel>
       </Dialog>,
     );
-    const panel = screen.getByTestId("panel");
-    expect(panel.className).toContain("before:border-[var(--color-primary)]");
-    expect(panel.className).toContain("max-w-sm");
+    const caps = classList(screen.getByTestId("panel")).filter((c) => c.startsWith("max-w-"));
+    expect(caps).toEqual(["max-w-sm"]);
   });
 });
 
 describe("DialogTitle and DialogBody", () => {
-  it("render their children with the expected merged classes", () => {
+  it("renders the title as a level-2 heading that can label the dialog", () => {
+    render(<DialogTitle id="dlg">Heading</DialogTitle>);
+    const heading = screen.getByRole("heading", { name: "Heading", level: 2 });
+    expect(heading).toHaveAttribute("id", "dlg");
+  });
+
+  it("merges caller classNames on top of their own", () => {
     render(
       <>
-        <DialogTitle className="extra-title">Heading</DialogTitle>
+        <DialogTitle data-testid="base-title">Base</DialogTitle>
+        <DialogBody data-testid="base-body">Base</DialogBody>
+      </>,
+    );
+    const ownTitle = classList(screen.getByTestId("base-title"));
+    const ownBody = classList(screen.getByTestId("base-body"));
+    cleanup();
+
+    render(
+      <>
+        <DialogTitle className="extra-title" data-testid="title">
+          Heading
+        </DialogTitle>
         <DialogBody className="extra-body" data-testid="body">
           Body copy
         </DialogBody>
       </>,
     );
-    const heading = screen.getByRole("heading", { name: "Heading", level: 2 });
-    expect(heading.className).toContain("extra-title");
-    expect(heading.className).toContain("font-display");
+    const title = screen.getByTestId("title");
+    expect(title).toHaveClass("extra-title");
+    expect(title).toHaveClass(...ownTitle);
     const body = screen.getByTestId("body");
-    expect(body.className).toContain("extra-body");
+    expect(body).toHaveClass("extra-body");
+    expect(body).toHaveClass(...ownBody);
     expect(body).toHaveTextContent("Body copy");
   });
 });

@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { SectionTitle } from "./section-title.js";
+import { classList } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
@@ -32,8 +33,23 @@ describe("SectionTitle", () => {
     expect(screen.getByText("12 items")).toBeInTheDocument();
   });
 
-  it("merges caller className onto the wrapping div", () => {
+  it("renders a non-text meta node", () => {
+    render(<SectionTitle index={1} title="Node meta" meta={<em>emphasised</em>} />);
+    expect(screen.getByText("emphasised").tagName).toBe("EM");
+  });
+
+  it("merges a caller className onto the wrapping div without dropping its own", () => {
+    const { container: base } = render(<SectionTitle index={1} title="Base" />);
+    const own = classList(base.firstElementChild!);
+    cleanup();
     const { container } = render(<SectionTitle index={1} title="Styled" className="extra-class" />);
-    expect(container.firstElementChild?.className).toContain("extra-class");
+    const el = container.firstElementChild!;
+    expect(el).toHaveClass("extra-class");
+    expect(el).toHaveClass(...own);
+  });
+
+  it("passes through arbitrary div attributes", () => {
+    render(<SectionTitle index={1} title="Attrs" data-testid="section" />);
+    expect(screen.getByTestId("section")).toBeInTheDocument();
   });
 });

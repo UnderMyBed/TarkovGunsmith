@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Input } from "./input.js";
+import { classList } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
@@ -24,11 +25,23 @@ describe("Input", () => {
     expect(ref.current).toBeInstanceOf(HTMLInputElement);
   });
 
-  it("merges caller className without dropping the base layout classes", () => {
-    render(<Input className="w-40" aria-label="merged" />);
+  it("merges a non-conflicting caller className on top of its own classes", () => {
+    render(<Input aria-label="base" />);
+    const base = classList(screen.getByLabelText("base"));
+    cleanup();
+    render(<Input className="mt-4" aria-label="merged" />);
     const el = screen.getByLabelText("merged");
-    expect(el.className).toContain("w-40");
-    expect(el.className).toContain("rounded-[var(--radius)]");
+    expect(el).toHaveClass("mt-4");
+    expect(el).toHaveClass(...base);
+  });
+
+  /* <Input> is full-width by default and every consumer that needs a narrower field passes
+   * its own width (`/data`'s filter box is `w-56`). `cn`'s tailwind-merge pass has to let the
+   * caller win outright rather than emit both widths and leave the outcome to source order. */
+  it("lets a caller width replace its own rather than emitting both", () => {
+    render(<Input className="w-40" aria-label="override" />);
+    const widths = classList(screen.getByLabelText("override")).filter((c) => /^w-/.test(c));
+    expect(widths).toEqual(["w-40"]);
   });
 
   it("accepts typed input and reports changes via onChange", async () => {
@@ -48,5 +61,16 @@ describe("Input", () => {
     expect(el).toBeDisabled();
     await user.type(el, "x");
     expect(el).toHaveValue("");
+  });
+
+  /* The focus RING itself is a stylesheet fact, checked in apps/web/src/styles.test.ts —
+   * `focus-visible:outline-none` suppresses the browser's own focus indicator, so the ring
+   * that replaces it has to actually reach the compiled CSS. What is assertable here is that
+   * the control takes keyboard focus at all. */
+  it("takes keyboard focus", async () => {
+    const user = userEvent.setup();
+    render(<Input aria-label="focusable" />);
+    await user.tab();
+    expect(screen.getByLabelText("focusable")).toHaveFocus();
   });
 });
