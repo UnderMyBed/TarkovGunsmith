@@ -131,10 +131,32 @@ jobs:
           set -euo pipefail
           fail=0
 
+          # Retries ONLY on connection- and certificate-shaped failures. The first deploy
+          # onto a brand-new custom domain fails here for a minute or two while Cloudflare
+          # provisions the edge certificate: DNS resolves, TLS does not complete yet, and
+          # curl reports 000. That is not a broken deploy and must not be reported as one.
+          #
+          # A real wrong status — 500 because the edge cannot reach the Worker, 404 because
+          # a route vanished — breaks out immediately. Retrying those would only delay a
+          # failure the gate exists to surface, so the distinction is load-bearing.
           probe() { # name, expected, url, extra curl args...
             local name="$1" expect="$2" url="$3"; shift 3
-            local code
-            code=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 25 "$@" "$url" || echo 000)
+            local code deadline=$((SECONDS + 420))
+            while :; do
+              # `-w` already prints 000 when the transfer never completes, so the exit code
+              # is swallowed rather than turned into a second value. An earlier version
+              # appended its own "000" and reported the code as "000000".
+              code=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 25 "$@" "$url" 2>/dev/null || true)
+              [ -n "$code" ] || code=000
+              [ "$code" = "$expect" ] && break
+              case "$code" in
+                000|502|503|521|522|523|525|526) ;;   # not serving yet — keep waiting
+                *) break ;;                            # a real answer, and the wrong one
+              esac
+              [ "$SECONDS" -ge "$deadline" ] && break
+              echo "  ...  $name -> $code, retrying (cert/DNS may still be provisioning)"
+              sleep 20
+            done
             if [ "$code" = "$expect" ]; then
               echo "  ok   $name -> $code"
             else
