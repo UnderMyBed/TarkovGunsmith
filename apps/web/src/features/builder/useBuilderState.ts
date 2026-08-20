@@ -48,7 +48,6 @@ export interface UseBuilderStateResult {
   acceptOptimized: (attachments: Record<string, string>, orphaned: string[]) => void;
   modNamesById: Record<string, string>;
   availabilityById: Map<string, ReturnType<typeof itemAvailability>>;
-  modSourcesById: Map<string, { hasCraft: boolean; hasBarter: boolean }>;
 
   spec: WeaponSpec | null;
   stockSpec: WeaponSpec | null;
@@ -126,17 +125,6 @@ export function useBuilderState({
     }
     return map;
   }, [mods.data, profile]);
-
-  const modSourcesById = useMemo(() => {
-    const map = new Map<string, { hasCraft: boolean; hasBarter: boolean }>();
-    for (const m of mods.data ?? []) {
-      map.set(m.id, {
-        hasCraft: (m.craftsFor?.length ?? 0) > 0,
-        hasBarter: (m.bartersFor?.length ?? 0) > 0,
-      });
-    }
-    return map;
-  }, [mods.data]);
 
   const spec = useMemo(() => {
     if (!selectedWeapon) return null;
@@ -240,7 +228,6 @@ export function useBuilderState({
     acceptOptimized,
     modNamesById,
     availabilityById,
-    modSourcesById,
 
     spec,
     stockSpec,

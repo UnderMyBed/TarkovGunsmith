@@ -66,6 +66,7 @@ export {
   loadPair,
   forkPair,
   LoadPairError,
+  SavePairError,
   type LoadPairErrorCode,
   type SavePairResponse,
 } from "./pairsApi.js";

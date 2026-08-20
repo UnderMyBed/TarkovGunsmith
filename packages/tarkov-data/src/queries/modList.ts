@@ -13,9 +13,6 @@ const modPropertiesSchema = z.object({
   accuracyModifier: z.number(),
 });
 
-const craftReferenceSchema = z.object({ id: z.string() });
-const barterReferenceSchema = z.object({ id: z.string() });
-
 const modListItemSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -26,8 +23,6 @@ const modListItemSchema = z.object({
   minLevelForFlea: z.number().int().nullable(),
   properties: modPropertiesSchema,
   buyFor: z.array(buyForEntrySchema).nullable(),
-  craftsFor: z.array(craftReferenceSchema).nullable(),
-  bartersFor: z.array(barterReferenceSchema).nullable(),
 });
 
 export const modListSchema = z.object({
@@ -55,14 +50,15 @@ export async function fetchModList(client: TarkovJsonClient): Promise<ModListIte
   const all = Object.values(doc.items);
   const out: ModListItem[] = [];
   for (const item of all) {
-    // craftsFor / bartersFor moved to separate /crafts and /barters resources upstream.
-    // Both are nullable in the domain type and their consumers are still deferred, so they
-    // are null rather than fabricated.
+    // `buyFor` is the only acquisition path this query resolves. Crafting and barter
+    // sourcing live in the upstream `/crafts` and `/barters` resources, which nothing in
+    // this package fetches — see docs/superpowers/specs/2026-08-18-json-api-migration-design.md
+    // §"deferred". A mod item therefore carries no craft/barter fields at all rather than
+    // always-empty ones, so a consumer can't derive a "this is craftable" signal that the
+    // data cannot support.
     const candidate = {
       ...(item as object),
       buyFor: resolveBuyFor(item, traders, tasks),
-      craftsFor: null,
-      bartersFor: null,
     };
     const parsed = modListItemSchema.safeParse(candidate);
     if (parsed.success) out.push(parsed.data);

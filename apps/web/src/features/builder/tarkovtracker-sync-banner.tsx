@@ -56,6 +56,29 @@ export function TarkovTrackerSyncBanner({
 
   if (detail.state === "disconnected") return null;
 
+  if (detail.state === "connected") {
+    return (
+      <Shell tone="amber">
+        <div className="flex flex-col gap-0.5 text-xs">
+          <span className="font-mono uppercase tracking-wider text-[var(--color-primary)]">
+            ▲ TARKOVTRACKER · CONNECTED
+          </span>
+          <span className="text-[var(--color-muted-foreground)]">
+            Token stored in this browser. Re-sync to pull your current progression.
+          </span>
+        </div>
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" onClick={handleReSync}>
+            Re-sync
+          </Button>
+          <Button size="sm" variant="ghost" onClick={handleDisconnect}>
+            Disconnect
+          </Button>
+        </div>
+      </Shell>
+    );
+  }
+
   if (detail.state === "syncing") {
     return (
       <Shell tone="amber">

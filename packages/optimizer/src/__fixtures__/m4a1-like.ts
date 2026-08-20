@@ -90,7 +90,7 @@ function generateSlotMods(
           },
         },
       ],
-    } as ModListItem);
+    });
   }
   return out;
 }

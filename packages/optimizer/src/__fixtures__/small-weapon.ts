@@ -78,7 +78,7 @@ function makeMod(
         },
       },
     ],
-  } as ModListItem;
+  };
 }
 
 function slot(nameId: string, itemIds: readonly string[]) {

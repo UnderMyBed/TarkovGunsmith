@@ -190,9 +190,6 @@ export function BuilderPage({
                 attachments={builder.attachments}
                 onAttach={builder.handleAttach}
                 getAvailability={(id) => builder.availabilityById.get(id) ?? null}
-                getModSources={(id) =>
-                  builder.modSourcesById.get(id) ?? { hasCraft: false, hasBarter: false }
-                }
                 orphaned={builder.orphaned}
                 modNames={builder.modNamesById}
                 onDismissOrphaned={builder.clearOrphaned}

@@ -48,6 +48,11 @@ export function ProfileReadout({
 }: ProfileReadoutProps): ReactElement {
   const isSynced = sync.detail.state === "synced";
   const isSyncing = sync.detail.state === "syncing";
+  // RE-IMPORT calls `sync.reSync()`, which needs a stored token — every state except
+  // `disconnected` has one, including `connected` (a returning visitor who hasn't imported
+  // yet this session) and `error` (a fetch that failed and is worth retrying). Gating on
+  // `synced` instead would leave exactly those two users looking at a dead button.
+  const canReSync = sync.detail.state !== "disconnected";
 
   const meta = isSynced
     ? `TARKOVTRACKER · ${formatRelativeTime((sync.detail as Extract<typeof sync.detail, { state: "synced" }>).lastSyncedAt)}`
@@ -103,7 +108,7 @@ export function ProfileReadout({
           onClick={() => {
             void sync.reSync();
           }}
-          disabled={!isSynced || isSyncing}
+          disabled={!canReSync || isSyncing}
           className="flex-1"
         >
           RE-IMPORT
