@@ -1,4 +1,5 @@
 import type { Zone } from "@tarkov/ballistics";
+import { focusRing } from "@tarkov/ui";
 import { ZONE_META } from "./zoneMetadata.js";
 
 interface BodySilhouetteProps {
@@ -46,7 +47,7 @@ function ZoneButton({ zone, onZoneClick, className = "" }: ZoneButtonProps) {
       aria-label={`Add ${meta.label} shot`}
       title={meta.label}
       onClick={() => onZoneClick(zone)}
-      className={`${meta.colorClass} flex items-center justify-center text-xs font-medium text-white opacity-80 transition-opacity hover:opacity-100 ${className}`}
+      className={`${meta.colorClass} flex items-center justify-center text-xs font-medium text-white opacity-80 transition-opacity hover:opacity-100 ${focusRing} ${className}`}
     >
       {meta.label}
     </button>

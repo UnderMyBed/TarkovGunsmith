@@ -26,6 +26,32 @@ function releaseScrollLock(): void {
   }
 }
 
+/**
+ * Elements that take keyboard focus inside a dialog, in DOM order.
+ *
+ * `[disabled]` controls are excluded because they are not focusable and would otherwise be
+ * mistaken for the cycle's first or last stop, wrapping Tab one element too early.
+ * `tabindex="-1"` is excluded because it means "focusable by script, not by Tab" — which
+ * includes the dialog panel itself, the fallback target when a dialog has no focusable
+ * content at all.
+ */
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function focusableWithin(panel: HTMLElement): HTMLElement[] {
+  return Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+}
+
+/**
+ * Open dialog panels, outermost first. Only the topmost entry answers Escape or contains
+ * focus — without this, two stacked dialogs would both handle one Escape (closing both) and
+ * the outer one's containment would keep yanking focus out of the inner one.
+ *
+ * Same reasoning as the ref-counted scroll lock above: the state that has to be shared
+ * between sibling dialogs cannot live in either one's hook.
+ */
+const dialogStack: HTMLElement[] = [];
+
 export interface DialogProps {
   open: boolean;
   onClose: () => void;
@@ -39,8 +65,13 @@ export interface DialogProps {
 /**
  * Portal-based modal dialog. Renders a fixed-position backdrop and centers
  * its children. Handles Escape-to-close, backdrop-click-to-close (opt-out),
- * body-scroll-lock, and a lightweight focus trap (moves focus to the first
- * focusable child on open; restores previous focus on close).
+ * body-scroll-lock, and real focus containment.
+ *
+ * The containment is what `aria-modal="true"` on the panel below promises to assistive
+ * tech: while this dialog is open, focus cannot reach the page behind it. Tab from the last
+ * focusable element wraps to the first, Shift+Tab from the first wraps to the last, focus
+ * that lands outside by any other route is pulled back, and the element that was focused
+ * before the dialog opened is restored on close.
  *
  * Consumers wrap their content in <DialogPanel> (applies Card.bracket styling)
  * and use <DialogTitle>/<DialogBody> for semantic layout.
@@ -55,18 +86,15 @@ export function Dialog({
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // Escape key
+  /* `onClose` is almost always an inline arrow at the call site, so it is a new function on
+   * every parent render. Reading it through a ref keeps the containment effect below
+   * depending on `[open]` alone — if it depended on `onClose`, every parent re-render would
+   * tear the effect down and set it up again, which re-runs the "focus the first focusable
+   * element" step and would bounce focus out of whatever the user was typing in. */
+  const onCloseRef = useRef(onClose);
   useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        onClose();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   // Body-scroll-lock (ref-counted)
   useEffect(() => {
@@ -75,18 +103,72 @@ export function Dialog({
     return releaseScrollLock;
   }, [open]);
 
-  // Focus trap — move focus to first focusable on open; restore on close.
+  // Focus containment — see the component docblock for the contract this upholds.
   useEffect(() => {
-    if (!open) return;
+    // One guard, not two: while closed there is no portal and so no panel, and every line
+    // below needs a panel to talk about.
+    const panel = open ? panelRef.current : null;
+    if (panel === null) return;
+
     previouslyFocused.current = document.activeElement as HTMLElement | null;
-    const panel = panelRef.current;
-    if (panel) {
-      const focusable = panel.querySelector<HTMLElement>(
-        'a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])',
-      );
-      (focusable ?? panel).focus();
-    }
+    dialogStack.push(panel);
+    (focusableWithin(panel)[0] ?? panel).focus();
+
+    /** Stacked dialogs: only the innermost one reacts. */
+    const isTopmost = (): boolean => dialogStack[dialogStack.length - 1] === panel;
+
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (!isTopmost()) return;
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const focusable = focusableWithin(panel);
+      // The stop this keystroke must land on if it would otherwise leave: Shift+Tab off the
+      // front wraps to the back, Tab off the back wraps to the front.
+      const wrapTarget = e.shiftKey ? focusable[focusable.length - 1] : focusable[0];
+      if (wrapTarget === undefined) {
+        // Nothing inside to cycle between. Tab would walk straight out into the page behind
+        // the backdrop, so hold focus on the panel instead.
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      // The panel itself is the active element only when it took the fallback focus above —
+      // a dialog that had no focusable content when it opened and gained some since. Treat
+      // it as sitting just before the first stop: Shift+Tab from there wraps to the back,
+      // and a plain Tab falls through to the browser's own move onto the first stop.
+      const leavingDialog = e.shiftKey
+        ? document.activeElement === focusable[0] || document.activeElement === panel
+        : document.activeElement === focusable[focusable.length - 1];
+      if (!leavingDialog) return;
+      e.preventDefault();
+      wrapTarget.focus();
+    };
+
+    const onFocusIn = (): void => {
+      if (!isTopmost()) return;
+      // Read `document.activeElement` rather than the event target: what matters is where
+      // focus actually came to rest. `contains(null)` is false, which is the answer we want.
+      if (panel.contains(document.activeElement)) return;
+      // Focus reached the page behind the dialog by a route Tab-interception cannot cover —
+      // a click on the backdrop when `closeOnBackdropClick` is off, or a programmatic
+      // `focus()` somewhere else on the page. `aria-modal` says that cannot happen, so
+      // undo it.
+      (focusableWithin(panel)[0] ?? panel).focus();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("focusin", onFocusIn);
     return () => {
+      // Listeners come off BEFORE focus is restored — `previouslyFocused` is by definition
+      // outside the panel, and onFocusIn would drag it straight back in.
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("focusin", onFocusIn);
+      dialogStack.splice(dialogStack.indexOf(panel), 1);
       previouslyFocused.current?.focus?.();
     };
   }, [open]);

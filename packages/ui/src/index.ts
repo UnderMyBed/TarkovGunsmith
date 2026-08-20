@@ -1,5 +1,6 @@
 // Utility
 export { cn } from "./lib/cn.js";
+export { focusRing } from "./lib/focus-ring.js";
 
 // Components
 export { Button, buttonVariants } from "./components/button.js";
