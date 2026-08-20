@@ -113,6 +113,48 @@ jobs:
             echo "FAILED to ensure custom domain:"; cat /tmp/domain.json; exit 1
           fi
 
+      # Registering the hostname with the Pages project and pointing DNS at it are two
+      # separate operations. The dashboard's "add a custom domain" flow does both, which is
+      # why this is easy to miss: the first deploy after adding the domain returned
+      # `POST domains -> HTTP 200` and the site still did not resolve, because the zone had
+      # no record for it at all. Same lesson as the Worker's route — infrastructure that
+      # only exists because someone clicked it is infrastructure nobody can rebuild.
+      - name: Ensure the site's DNS record exists
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_NAME: undermybed.dev
+          SITE_HOST: tarkovgunsmith.undermybed.dev
+          PAGES_HOST: tarkov-gunsmith-web.pages.dev
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4"
+          auth=(-H "Authorization: Bearer $CF_API_TOKEN")
+
+          zone_id=$(curl -sS "${auth[@]}" "$api/zones?name=$ZONE_NAME" | jq -r '.result[0].id // empty')
+          if [ -z "$zone_id" ]; then
+            echo "Could not read the zone id for $ZONE_NAME."
+            echo "The API token needs Zone -> Zone -> Read in addition to Zone -> DNS -> Edit."
+            exit 1
+          fi
+
+          existing=$(curl -sS "${auth[@]}" \
+            "$api/zones/$zone_id/dns_records?name=$SITE_HOST" | jq -r '.result[0].id // empty')
+          if [ -n "$existing" ]; then
+            echo "DNS record already present for $SITE_HOST"
+            exit 0
+          fi
+
+          # Proxied, so the record resolves to Cloudflare's edge and the Pages project is
+          # served through it. An unproxied CNAME to *.pages.dev does not serve the project.
+          code=$(curl -sS -o /tmp/dns.json -w '%{http_code}' -X POST "$api/zones/$zone_id/dns_records" \
+            "${auth[@]}" -H 'content-type: application/json' \
+            --data "{\"type\":\"CNAME\",\"name\":\"$SITE_HOST\",\"content\":\"$PAGES_HOST\",\"proxied\":true}")
+          if [ "$code" = "200" ]; then
+            echo "created CNAME $SITE_HOST -> $PAGES_HOST (proxied)"
+          else
+            echo "FAILED to create the DNS record (HTTP $code):"; cat /tmp/dns.json; exit 1
+          fi
+
   smoke:
     name: Post-deploy smoke
     needs: [builds-api, pages]
