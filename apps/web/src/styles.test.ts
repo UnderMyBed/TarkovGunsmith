@@ -48,6 +48,12 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
     [
       // The focus ring, and the `outline-none` that suppresses the UA default. These two
       // travel together: `outline-none` without the ring means NO focus indicator at all.
+      //
+      // <Button> still renders every one of these, but the string literals now live in
+      // `packages/ui/src/lib/focus-ring.ts` — the single `focusRing` definition that both
+      // this primitive and the app's raw <button> elements (tab strips, table sort headers,
+      // body-zone hotspots, mod-list rows) share. Tailwind scans that file for the same
+      // reason it scans this one, so the guard is unchanged: these classes must have rules.
       "focus-visible:outline-none",
       "focus-visible:ring-2",
       "focus-visible:ring-[var(--color-ring)]",

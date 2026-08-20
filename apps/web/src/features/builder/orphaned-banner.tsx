@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@tarkov/ui";
+import { Card, CardContent, focusRing } from "@tarkov/ui";
 
 export interface OrphanedBannerProps {
   /** Mod ids that couldn't be placed in the current slot tree. */
@@ -28,7 +28,7 @@ export function OrphanedBanner({ orphanedIds, names, onDismiss }: OrphanedBanner
         <button
           type="button"
           onClick={onDismiss}
-          className="text-xs underline underline-offset-4 hover:opacity-80"
+          className={`text-xs underline underline-offset-4 hover:opacity-80 ${focusRing}`}
         >
           Dismiss
         </button>
