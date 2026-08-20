@@ -24,6 +24,7 @@ import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
 import { type BuildV6, DEFAULT_PROFILE } from "@tarkov/data";
 import { fetchOgRowsForBuild, type OgMod } from "../../lib/og-graphql.js";
 import { availabilityPillText } from "../../lib/og-availability.js";
+import { isValidBuildId } from "../../lib/build-id.js";
 
 export interface Env {
   BUILDS_API_URL: string;
@@ -69,6 +70,12 @@ async function hydrateSide(build: BuildV6 | null): Promise<SideArgs | null> {
 
 export const onRequestGet: PagesFunction<Env> = async ({ params, request, env }) => {
   const id = String(params.pairId ?? "");
+  // Same guard as /og/build/:id — reject before the id reaches the
+  // `${env.BUILDS_API_URL}/pairs/${id}` template below. Pair ids come from the
+  // same generator as build ids (apps/builds-api/src/pairs.ts:50), so the same
+  // rule applies.
+  if (!isValidBuildId(id)) return invalidId(id);
+
   const cache = caches.default;
   const cacheKey = new Request(request.url, { method: "GET" });
   const cached = await cache.match(cacheKey);
@@ -125,6 +132,22 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     return fallback("error", id, startedAt, { "cache-control": "no-store" });
   }
 };
+
+/**
+ * A malformed id is a client error. Mirrors the builds-api Worker's own
+ * response for the same condition (`apps/builds-api/src/pairs.ts:68` —
+ * `"Invalid id"`, 400). The rejected id is not echoed into the log line; see
+ * the note in `/og/build/[id].ts`.
+ */
+function invalidId(id: string): Response {
+  console.log(
+    JSON.stringify({ route: "og/pair", status: 400, kind: "invalid-id", len: id.length }),
+  );
+  return new Response("Invalid id", {
+    status: 400,
+    headers: { "content-type": "text/plain;charset=UTF-8", "cache-control": "no-store" },
+  });
+}
 
 function fallback(
   kind: "miss" | "upstream" | "error",

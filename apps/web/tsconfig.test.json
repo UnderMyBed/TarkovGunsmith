@@ -5,7 +5,10 @@
     "rootDir": ".",
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["node", "react", "vite/client"],
+    // `@cloudflare/workers-types` so the Pages Function tests under functions/
+    // can see `PagesFunction`. Without it the handlers' exported type is an
+    // error type, and type-aware lint rules flag every call into them.
+    "types": ["node", "react", "vite/client", "@cloudflare/workers-types"],
     "moduleResolution": "Bundler"
   },
   "include": ["src/**/*", "functions/**/*.ts", "vite.config.ts", "vitest.config.ts"],

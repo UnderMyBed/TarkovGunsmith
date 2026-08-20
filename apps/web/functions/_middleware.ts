@@ -4,6 +4,8 @@
  * responses so crawlers (Discord, Twitter, Slack) see `og:image` and unfurl
  * the preview card. All other paths pass through untouched.
  */
+import { isValidBuildId } from "./lib/build-id.js";
+
 interface Env {
   BUILDS_API_URL: string;
 }
@@ -23,15 +25,24 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const path = url.pathname;
 
-  const buildMatch = /^\/builder\/([a-zA-Z0-9_-]{4,16})$/.exec(path);
-  const pairMatch = /^\/builder\/compare\/([a-zA-Z0-9_-]{4,16})$/.exec(path);
+  // These two patterns decide the ROUTE SHAPE only — one path segment, no
+  // separators. What counts as a valid id is `isValidBuildId`'s job, so the
+  // rule lives in exactly one place (functions/lib/build-id.ts) instead of
+  // being restated as a character class here.
+  const buildMatch = /^\/builder\/([^/]+)$/.exec(path);
+  const pairMatch = /^\/builder\/compare\/([^/]+)$/.exec(path);
 
   if (!buildMatch && !pairMatch) return context.next();
 
   const isPair = pairMatch !== null;
   const matched = buildMatch ?? pairMatch;
   const id = matched?.[1] ?? "";
-  if (!id) return context.next();
+  // Pass an unusable id straight through to the SPA rather than answering it
+  // here: this is an HTML navigation, and the app renders its own invalid-id
+  // state. Skipping the subrequest below is the point — an id that fails this
+  // test would only ever earn a 400 from the Worker, and must never be
+  // interpolated into the fetch URL.
+  if (!isValidBuildId(id)) return context.next();
 
   const origin = url.origin;
 

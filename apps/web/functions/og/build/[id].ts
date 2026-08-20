@@ -33,6 +33,7 @@ import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
 import { type BuildV6, DEFAULT_PROFILE } from "@tarkov/data";
 import { fetchOgRowsForBuild } from "../../lib/og-graphql.js";
 import { availabilityPillText } from "../../lib/og-availability.js";
+import { isValidBuildId } from "../../lib/build-id.js";
 
 export interface Env {
   BUILDS_API_URL: string;
@@ -50,6 +51,15 @@ const HEADERS_FALLBACK = {
 
 export const onRequestGet: PagesFunction<Env> = async ({ params, request, env }) => {
   const id = String(params.id ?? "");
+  // Reject before the cache probe and before the id reaches the
+  // `${env.BUILDS_API_URL}/builds/${id}` template below — see
+  // functions/lib/build-id.ts for why interpolating an unvalidated id into a
+  // URL is the bug. A malformed id can never name a real record (the Worker
+  // 400s it), so this is a client error, not a missing build: it gets a 400
+  // rather than the "BUILD NOT FOUND" fallback card, which stays reserved for
+  // a well-formed id that has expired or never existed.
+  if (!isValidBuildId(id)) return invalidId(id);
+
   const cache = caches.default;
   const cacheKey = new Request(request.url, { method: "GET" });
   const cached = await cache.match(cacheKey);
@@ -99,6 +109,25 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     return fallback("error", id, startedAt, { "cache-control": "no-store" });
   }
 };
+
+/**
+ * A malformed id is a client error. Mirrors the builds-api Worker's own
+ * response for the same condition (`apps/builds-api/src/index.ts:65` —
+ * `"Invalid id"`, 400) so the two tiers answer identically.
+ *
+ * The rejected id is NOT echoed into the log line: it is attacker-controlled
+ * and unbounded, and this is the one path a scanner can hit at will. The
+ * length is enough to tell a typo from a probe.
+ */
+function invalidId(id: string): Response {
+  console.log(
+    JSON.stringify({ route: "og/build", status: 400, kind: "invalid-id", len: id.length }),
+  );
+  return new Response("Invalid id", {
+    status: 400,
+    headers: { "content-type": "text/plain;charset=UTF-8", "cache-control": "no-store" },
+  });
+}
 
 function fallback(
   kind: "miss" | "upstream" | "error",

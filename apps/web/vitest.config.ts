@@ -9,7 +9,9 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   test: {
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "functions/lib/**/*.test.ts"],
+    // `functions/**` (not just `functions/lib/**`) so the Pages Function route
+    // handlers themselves are testable, not only the helpers they import.
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "functions/**/*.test.ts"],
     environment: "node",
     coverage: {
       provider: "v8",
