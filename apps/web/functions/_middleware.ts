@@ -5,9 +5,10 @@
  * the preview card. All other paths pass through untouched.
  */
 import { isValidBuildId } from "./lib/build-id.js";
+import { buildsApiBase } from "./lib/builds-api.js";
 
 interface Env {
-  BUILDS_API_URL: string;
+  BUILDS_API_URL?: string;
 }
 
 interface BuildRecord {
@@ -48,7 +49,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   const [htmlRes, entityRes] = await Promise.all([
     context.next(),
-    fetch(`${context.env.BUILDS_API_URL}/${isPair ? "pairs" : "builds"}/${id}`),
+    fetch(`${buildsApiBase(context.env)}/${isPair ? "pairs" : "builds"}/${id}`),
   ]);
 
   if (!entityRes.ok) return htmlRes;

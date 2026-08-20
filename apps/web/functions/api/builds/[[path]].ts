@@ -5,21 +5,19 @@
  * `/api/builds/<id>` (GET) hit this handler. The downstream Worker expects
  * paths under `/builds/...`, so we strip `/api` before forwarding.
  *
- * The Worker URL is configured via the `BUILDS_API_URL` Pages env var —
- * typically `https://tarkov-gunsmith-builds-api.<subdomain>.workers.dev`.
+ * The Worker URL comes from `buildsApiBase`: the `BUILDS_API_URL` binding when
+ * set, otherwise the Worker's declared custom domain. See `lib/builds-api.ts`.
  */
 
+import { buildsApiBase } from "../../lib/builds-api.js";
+
 interface Env {
-  BUILDS_API_URL: string;
+  BUILDS_API_URL?: string;
 }
 
 export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
-  if (!env.BUILDS_API_URL) {
-    return new Response("BUILDS_API_URL not configured on this environment", { status: 500 });
-  }
-
   const incoming = new URL(request.url);
-  const downstream = new URL(env.BUILDS_API_URL);
+  const downstream = new URL(buildsApiBase(env));
   // Strip `/api` from the incoming path; keep `/builds/...` so the Worker routes it.
   downstream.pathname = incoming.pathname.replace(/^\/api/, "");
   downstream.search = incoming.search;
