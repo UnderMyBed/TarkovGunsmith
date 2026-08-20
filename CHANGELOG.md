@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.16.2](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.16.1...v1.16.2) (2026-08-20)
+
+
+### Bug Fixes
+
+* **a11y:** trap focus in Dialog, fix nav semantics, add a skip link ([#184](https://github.com/UnderMyBed/TarkovGunsmith/issues/184)) ([cc072cc](https://github.com/UnderMyBed/TarkovGunsmith/commit/cc072cc9facb2b914275f68ef71f14c8e887e609))
+* **builder:** surface compare save failures and drop the dead craft/barter path ([#179](https://github.com/UnderMyBed/TarkovGunsmith/issues/179)) ([e3f8774](https://github.com/UnderMyBed/TarkovGunsmith/commit/e3f87743fedaff8602b6efe588e66505dd9c2015))
+* **deploy:** ask what exists instead of parsing another service's error text ([#193](https://github.com/UnderMyBed/TarkovGunsmith/issues/193)) ([fa800b2](https://github.com/UnderMyBed/TarkovGunsmith/commit/fa800b2d30ef2f4a91c0235cc80b1f2dacc98d45))
+* **deploy:** create the site's DNS record and let the smoke gate wait out provisioning ([#192](https://github.com/UnderMyBed/TarkovGunsmith/issues/192)) ([8dfed90](https://github.com/UnderMyBed/TarkovGunsmith/commit/8dfed908baaa7af6ef915ab2a45d75ce997c4567))
+* **deploy:** give the Worker a declared custom domain and gate the deploy on it ([#190](https://github.com/UnderMyBed/TarkovGunsmith/issues/190)) ([6bbad05](https://github.com/UnderMyBed/TarkovGunsmith/commit/6bbad059786268557b7561ebeaca929a0b256e9d)), closes [#164](https://github.com/UnderMyBed/TarkovGunsmith/issues/164) [#167](https://github.com/UnderMyBed/TarkovGunsmith/issues/167)
+* **security:** validate build and pair ids before proxying them upstream ([#178](https://github.com/UnderMyBed/TarkovGunsmith/issues/178)) ([d5dc243](https://github.com/UnderMyBed/TarkovGunsmith/commit/d5dc2437217816749f49d5d5d07ab63f771fa37d))
+* **ui:** scan packages/ui so design-system classes reach production CSS ([#181](https://github.com/UnderMyBed/TarkovGunsmith/issues/181)) ([2893737](https://github.com/UnderMyBed/TarkovGunsmith/commit/2893737c145d8f628665b7549cd6b76c26f74772)), closes [#162](https://github.com/UnderMyBed/TarkovGunsmith/issues/162)
+
+
+### Documentation
+
+* delete the plan and spec archives; planned work lives in the tracker ([#170](https://github.com/UnderMyBed/TarkovGunsmith/issues/170)) ([c277872](https://github.com/UnderMyBed/TarkovGunsmith/commit/c277872c0f65ee77c123fa03ad27ee600f8c8392))
+* describe the codebase that exists ([#189](https://github.com/UnderMyBed/TarkovGunsmith/issues/189)) ([dea8c95](https://github.com/UnderMyBed/TarkovGunsmith/commit/dea8c95b484e373b764fb591f4f2ce7b3bed7b25)), closes [#177](https://github.com/UnderMyBed/TarkovGunsmith/issues/177)
+* group the independent review's findings into a remediation plan ([#168](https://github.com/UnderMyBed/TarkovGunsmith/issues/168)) ([1025c72](https://github.com/UnderMyBed/TarkovGunsmith/commit/1025c72e424d6c61a7ede5055e75bee428883c70))
+
 ## [1.16.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.16.0...v1.16.1) (2026-08-19)
 
 
