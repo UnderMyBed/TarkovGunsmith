@@ -111,8 +111,46 @@ pnpm --filter @tarkov/web pages:dev
 
 The Pages emulator reads `apps/web/.dev.vars` (for `BUILDS_API_URL`) and speaks to the builds-api Worker on :8788.
 
+## Running the e2e suite
+
+```bash
+pnpm --filter @tarkov/web build && pnpm --filter @tarkov/web test:e2e
+```
+
+The build is not optional: Playwright serves `dist/` through `wrangler pages dev`, so an
+unbuilt tree has nothing to serve. The config checks for `apps/web/dist/index.html` before
+starting anything and stops with that command if it's missing.
+
+Playwright starts three servers of its own, on ports separate from `pnpm dev`:
+
+| Port   | Process                          | Serves                                                                |
+| ------ | -------------------------------- | --------------------------------------------------------------------- |
+| `4173` | `wrangler pages dev dist`        | The built SPA + Pages Functions.                                      |
+| `8787` | `wrangler dev` (builds-api)      | Save/load + the seeded OG fixture build and pair.                     |
+| `8790` | `e2e/upstream-fixture-server.ts` | The captured `json.tarkov.dev` documents, for the OG Pages Functions. |
+
+**The suite does not call live `json.tarkov.dev`.** Game data comes from the captures in
+`packages/tarkov-data/src/__fixtures__/`: the browser's own requests are intercepted in
+`apps/web/e2e/upstream.ts`, and the OG Pages Functions — which fetch server-side, out of that
+interception's reach — are pointed at the fixture server above via the `TARKOV_JSON_API_BASE`
+binding. Any other live host the page reaches is blocked and fails the test by name. Google
+Fonts is the one deliberate exception, because three smoke tests assert that the real font
+`<link>` resolves.
+
+Before the first spec runs, a preflight launches Chromium once so a browser that cannot start
+reports itself in one message instead of once per test. It runs after the three servers boot,
+so give it a few seconds.
+
 ## Troubleshooting
 
+- **`chrome-headless-shell: error while loading shared libraries: libasound.so.2`** (or any
+  other `.so`) — Playwright ships its own Chromium but not the system libraries it links
+  against. Install them (needs sudo):
+  ```bash
+  pnpm --filter @tarkov/web exec playwright install-deps chromium
+  ```
+  CI doesn't hit this: `ubuntu-24.04` already carries them, which is why
+  `.github/workflows/ci.yml` skips `--with-deps`.
 - **"Port 8787 already in use"** — another wrangler instance is running. Find it with `lsof -i :8787` (macOS/Linux) or `netstat -ano | findstr 8787` (Windows) and kill it. Or restart `pnpm dev` after making sure no stray `wrangler dev` terminals are open.
 - **`.dev.vars` changes not taking effect** — wrangler only reads `.dev.vars` at startup. Kill the dev server (Ctrl-C) and `pnpm dev` again.
 - **Stale KV state in builds-api** — KV is simulated locally in `apps/builds-api/.wrangler/state/`. To reset:

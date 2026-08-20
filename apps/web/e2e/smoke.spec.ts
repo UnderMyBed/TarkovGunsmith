@@ -1,11 +1,17 @@
-import {
-  test,
-  expect,
-  type APIRequestContext,
-  type Page,
-  type ConsoleMessage,
-} from "@playwright/test";
+import type { APIRequestContext, Page, ConsoleMessage } from "@playwright/test";
+import { test, expect } from "./upstream.js";
+import { fixtureItemCount } from "./upstream-fixtures.js";
 import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with { type: "json" };
+
+/**
+ * Game data comes from the captured upstream documents, not live `json.tarkov.dev` — see
+ * `upstream.ts`, which also blocks (and fails on) any other live third party the page reaches.
+ * Google Fonts is the one deliberate exception, because the three font tests below assert
+ * that the real `<link>` in `index.html` resolves.
+ */
+
+/** Placeholder option + one per weapon in the capture. `<option value="">Select weapon…</option>`. */
+const WEAPON_OPTION_COUNT = fixtureItemCount("ItemPropertiesWeapon") + 1;
 
 /** Every route we ship today. Keep in sync with __root.tsx nav. */
 const ROUTES: ReadonlyArray<{
@@ -221,11 +227,13 @@ test.describe("smoke — compare interaction", () => {
     await expect(leftPicker).toBeVisible({ timeout: 10_000 });
     await expect(rightPicker).toBeVisible({ timeout: 10_000 });
 
-    // Wait for the weapon list query to resolve (>2 options means the
-    // placeholder plus at least two real weapons).
+    // Wait for the weapon list query to resolve. CompareSide lists every weapon in the
+    // document rather than gating on the profile (compare-side.tsx:57), so the count is
+    // exactly what the capture carries — a partially-parsed list fails here instead of
+    // quietly leaving a shorter picker to pass a `> 2`.
     await expect
       .poll(async () => await leftPicker.locator("option").count(), { timeout: 15_000 })
-      .toBeGreaterThan(2);
+      .toBe(WEAPON_OPTION_COUNT);
 
     // Grab two distinct real-weapon values (index 0 is the placeholder).
     const leftValue = await leftPicker.locator("option").nth(1).getAttribute("value");
@@ -263,7 +271,7 @@ test.describe("smoke — compare save round-trip", () => {
     await expect(rightPicker).toBeVisible({ timeout: 10_000 });
     await expect
       .poll(async () => await leftPicker.locator("option").count(), { timeout: 15_000 })
-      .toBeGreaterThan(2);
+      .toBe(WEAPON_OPTION_COUNT);
 
     const leftValue = await leftPicker.locator("option").nth(1).getAttribute("value");
     const rightValue = await rightPicker.locator("option").nth(2).getAttribute("value");

@@ -1,10 +1,16 @@
+// Every id below is present in `packages/tarkov-data/src/__fixtures__/items-sample.json` and
+// sits in the named slot's own `allowedItems`, so the OG cards these seed render real stats
+// from the captured document rather than from live json.tarkov.dev. The e2e suite serves
+// those captures to the OG Pages Functions (apps/web/e2e/upstream-fixture-server.ts); an id
+// the captures don't carry silently drops out of the card — and a missing WEAPON id throws,
+// which shows up as the fallback PNG rather than as a useful failure.
 const SAMPLE_BUILD = {
   version: 6 as const,
-  weaponId: "5447a9cd4bdc2dbd208b4567", // M4A1
+  weaponId: "5447a9cd4bdc2dbd208b4567", // Colt M4A1
   attachments: {
-    mod_pistol_grip: "55d4af3a4bdc2d972f8b456f",
-    mod_stock: "5c793fc42e221600114ca25d",
-    mod_barrel: "5b7be4895acfc400170e2dd5",
+    mod_pistol_grip: "5a33e75ac4a2826c6e06d759", // AR-15 Hera Arms CQR pistol grip/buttstock
+    mod_reciever: "55d355e64bdc2d962f8b4569", // M4A1 5.56x45 upper receiver
+    mod_stock: "5649be884bdc2d79388b4577", // AR-15 Colt Carbine buffer tube
   },
   orphaned: [] as string[],
   createdAt: "2026-04-21T00:00:00.000Z",
@@ -14,7 +20,11 @@ const SAMPLE_BUILD = {
 
 const SAMPLE_PAIR_RIGHT = {
   ...SAMPLE_BUILD,
-  weaponId: "5bb2475ed4351e00853264e3", // HK 416A5
+  weaponId: "5448bd6b4bdc2dfc2f8b4569", // Makarov PM
+  attachments: {
+    mod_reciever: "6374a822e629013b9c0645c8", // PM pistol slide
+    mod_pistolgrip: "637784c5f7b3f4ac1a0d1a9a", // PM FAB Defense PM-G pistol grip
+  },
   name: "BASELINE",
   description: "",
 };

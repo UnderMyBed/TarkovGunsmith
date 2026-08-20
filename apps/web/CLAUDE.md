@@ -63,7 +63,16 @@ Smoke-level Chromium tests live at `apps/web/e2e/`. Run:
 - `pnpm --filter @tarkov/web build` — **required before the line below.** Playwright's `webServer` runs `wrangler pages dev dist`, which serves the built output; a stale or absent `dist/` produces a 120s timeout and 404s on every request, not a missing-build error.
 - `pnpm --filter @tarkov/web test:e2e` — run the suite.
 
-Tests use a `preview`-backed webServer on port 4173. CI runs them as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `smoke.spec.ts`. Any new route added to `__root.tsx` nav must also be added there.
+Playwright starts three webServers: `wrangler pages dev dist` on 4173, the builds-api Worker on 8787, and `e2e/upstream-fixture-server.ts` on 8790. CI runs the suite as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `smoke.spec.ts`. Any new route added to `__root.tsx` nav must also be added there.
+
+**No spec may depend on a live third party.** Game data is served from the captures in `packages/tarkov-data/src/__fixtures__/`, not from `json.tarkov.dev`:
+
+- Import `test` / `expect` from `./upstream.js`, never from `@playwright/test`. That module intercepts the browser's upstream calls, stubs the `assets.tarkov.dev` image CDN, and **fails the test** on any other live host the page reaches, naming the URL.
+- The OG Pages Functions fetch upstream server-side, where `page.route` can't reach them; they read the fixture server instead via the `TARKOV_JSON_API_BASE` binding set in `playwright.config.ts`.
+- Google Fonts is the one allowed live host — the font tests below assert the real `<link>` resolves.
+- Because the data is fixed, assertions are exact. `expect(rows).toBeGreaterThan(50)` against whatever upstream shipped that morning is not a contract; derive the number from the capture (`fixtureItemCount`) or from the shared constants in `upstream.ts`.
+
+Live-upstream drift is checked separately by `pnpm verify:upstream`, on a schedule — `.github/workflows/upstream-contract.yml`, deliberately not in CI.
 
 Fonts are guarded by a separate test using `document.fonts.check("1em <Family>")`. If you change the font stack, update that test.
 
