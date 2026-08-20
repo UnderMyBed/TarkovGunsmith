@@ -74,8 +74,9 @@ jobs:
 
       - name: Build SPA (and its workspace deps)
         # ...build = include the workspace packages @tarkov/web depends on
-        # (@tarkov/data, @tarkov/ui, @tarkov/types). Without this, vite/tsc
-        # can't resolve the workspace imports because their dist/ is missing.
+        # (@tarkov/ballistics, @tarkov/data, @tarkov/og, @tarkov/optimizer,
+        # @tarkov/ui). Without this, vite/tsc can't resolve the workspace
+        # imports because their dist/ is missing.
         run: pnpm --filter "@tarkov/web..." build
 
       - name: Deploy

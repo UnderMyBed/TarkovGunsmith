@@ -52,7 +52,7 @@ export async function fetchModList(client: TarkovJsonClient): Promise<ModListIte
   for (const item of all) {
     // `buyFor` is the only acquisition path this query resolves. Crafting and barter
     // sourcing live in the upstream `/crafts` and `/barters` resources, which nothing in
-    // this package fetches — see docs/superpowers/specs/2026-08-18-json-api-migration-design.md
+    // this package fetches — see docs/adr/0002-json-api-migration.md
     // §"deferred". A mod item therefore carries no craft/barter fields at all rather than
     // always-empty ones, so a consumer can't derive a "this is craftable" signal that the
     // data cannot support.

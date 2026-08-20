@@ -1,37 +1,35 @@
 ---
 name: add-data-query
-description: Use when adding a new GraphQL query against tarkov-api. Scaffolds the query file in packages/tarkov-data, generates types via packages/tarkov-types codegen, creates a typed TanStack Query hook, and stubs an MSW mock + a Vitest test using a recorded fixture.
+description: Use when the SPA needs data from json.tarkov.dev that no existing hook exposes. Adds the Zod-validated selector to packages/tarkov-data/src/queries, the TanStack Query hook beside it, and a Vitest test that runs against the committed fixture captures.
 ---
 
 # add-data-query
 
 ## When to use
 
-Any time the SPA needs data from `api.tarkov.dev` that isn't already exposed by an existing hook in `packages/tarkov-data/src/hooks/`.
+Any time the SPA needs data from `json.tarkov.dev` that isn't already exposed by an existing hook in `packages/tarkov-data/src/hooks/`.
 
 ## What it does
 
-1. Asks: "What's the query name (camelCase) and the GraphQL operation?"
-2. Writes the `.graphql` file to `packages/tarkov-data/src/queries/<name>.graphql`.
-3. Runs `pnpm --filter @tarkov/types codegen` to regenerate types.
-4. Writes the hook to `packages/tarkov-data/src/hooks/use<Name>.ts` using TanStack Query + the generated types.
-5. Records a fixture by calling tarkov-api once via the dev proxy and saves it to `packages/tarkov-data/src/__fixtures__/<name>.json`.
-6. Writes an MSW handler in `packages/tarkov-data/src/__mocks__/handlers.ts`.
-7. Writes a Vitest test that asserts the hook returns the fixture-shaped data.
+1. Asks: "What's the selector name (camelCase), and which upstream document holds the records — `items`, `tasks` or `traders`?"
+2. Writes `packages/tarkov-data/src/queries/<name>.ts`: a Zod schema for the records you want, plus `fetch<Name>(client)` calling `client.fetchResource<Document>("<doc>")` and `safeParse`-ing each candidate out of the id-keyed map.
+3. Writes the hook to `packages/tarkov-data/src/hooks/use<Name>.ts` — `useQuery` with `queryKey: ["<name>"]` over `useTarkovClient()`.
+4. Exports the schema, the fetcher, the inferred type and the hook from `packages/tarkov-data/src/index.ts`.
+5. Writes `packages/tarkov-data/src/queries/<name>.test.ts` against the committed captures in `packages/tarkov-data/src/__fixtures__/`, through that directory's `client.ts`.
 
 ## What it requires
 
-- The query name (e.g. `ammoList`).
-- The GraphQL operation body.
-- Confirmation that the operation parses against the current tarkov-api schema (the codegen step will fail loudly otherwise).
+- The selector name (e.g. `ammoList`).
+- Which upstream document holds the records, and what one record looks like. Ask `tarkov-api-explorer` if you don't know.
 
 ## Conventions
 
+- The upstream documents are **id-keyed maps, not arrays**, and one document carries every item type. A selector filters by shape (`properties.propertiesType`); it is never handed a pre-filtered list.
+- **Reject, don't throw.** `safeParse` each candidate and skip the failures, so a single unrelated item shape can't fail the whole call. Log the dropped count at `console.debug` — that's how a new upstream variant becomes discoverable.
 - Hook names: `useAmmoList`, `useArmorList`, `useWeapon` — camelCase, prefixed `use`.
-- Fixture file names match the query name.
-- Every query MUST have a recorded fixture — never test against the live API in CI.
+- Every selector MUST be tested against a fixture, never the live API. If `items-sample.json` lacks a record the selector should accept — or one it should reject — add it, keeping that accept/reject mix intact.
 
 ## Out of scope
 
-- Modifying `data-proxy` cache rules. Use `add-cache-rule` (future) for that.
-- UI components that consume the hook. Those are scaffolded by `add-feature-route`.
+- UI that consumes the hook. That's `add-feature-route`.
+- Checking a fixture against live upstream. That's `pnpm verify:upstream`, on a schedule, off CI.

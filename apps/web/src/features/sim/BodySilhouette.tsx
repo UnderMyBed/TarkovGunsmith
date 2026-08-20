@@ -47,7 +47,7 @@ function ZoneButton({ zone, onZoneClick, className = "" }: ZoneButtonProps) {
       aria-label={`Add ${meta.label} shot`}
       title={meta.label}
       onClick={() => onZoneClick(zone)}
-      className={`${meta.colorClass} flex items-center justify-center text-xs font-medium text-white opacity-80 transition-opacity hover:opacity-100 ${focusRing} ${className}`}
+      className={`${meta.colorClass} ${meta.textClass} flex items-center justify-center text-xs font-medium opacity-80 transition-opacity hover:opacity-100 ${focusRing} ${className}`}
     >
       {meta.label}
     </button>

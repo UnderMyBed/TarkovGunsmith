@@ -1,6 +1,6 @@
 # `@tarkov/web`
 
-Vite + React SPA. Deploys to Cloudflare Pages. Consumes all four `packages/*` and (eventually) both `apps/*` Workers.
+Vite + React SPA. Deploys to Cloudflare Pages. Consumes `@tarkov/ballistics`, `@tarkov/data`, `@tarkov/og`, `@tarkov/optimizer` and `@tarkov/ui`, and reaches the `builds-api` Worker through its own Pages Functions.
 
 ## What's in this package
 
@@ -28,7 +28,7 @@ The SPA hits `https://json.tarkov.dev/regular/` directly (CORS is enabled upstre
 
 ## Deploy
 
-Auto-deploys to Cloudflare Pages on every merge to `main` via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-gunsmith-web.pages.dev`.
+Deploys to Cloudflare Pages via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) when a release-please PR merges — the job gates on the head commit message starting `chore(main): release`, so ordinary feature merges stage changes on `main` without deploying. Production URL: `https://tarkov-gunsmith-web.pages.dev`.
 
 The first CI deploy auto-creates the Pages project (`tarkov-gunsmith-web`). Manual deploy (rare):
 
@@ -60,7 +60,7 @@ Production setup + verification + rotation commands live in [`docs/operations/lo
 Smoke-level Chromium tests live at `apps/web/e2e/`. Run:
 
 - `pnpm --filter @tarkov/web test:e2e:install` — first-time browser install.
-- `pnpm --filter @tarkov/web build` — **required before the line below.** Playwright's `webServer` runs `wrangler pages dev dist`, which serves the built output; a stale or absent `dist/` produces a 120s timeout and 404s on every request, not a missing-build error.
+- `pnpm --filter @tarkov/web build` — **required before the line below.** Playwright's `webServer` runs `wrangler pages dev dist`, which serves the built output. `playwright.config.ts` checks for `dist/index.html` while the config is still evaluating, so an unbuilt tree stops immediately with the command that fixes it.
 - `pnpm --filter @tarkov/web test:e2e` — run the suite.
 
 Playwright starts three webServers: `wrangler pages dev dist` on 4173, the builds-api Worker on 8787, and `e2e/upstream-fixture-server.ts` on 8790. CI runs the suite as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `smoke.spec.ts`. Any new route added to `__root.tsx` nav must also be added there.
@@ -75,8 +75,3 @@ Playwright starts three webServers: `wrangler pages dev dist` on 4173, the build
 Live-upstream drift is checked separately by `pnpm verify:upstream`, on a schedule — `.github/workflows/upstream-contract.yml`, deliberately not in CI.
 
 Fonts are guarded by a separate test using `document.fonts.check("1em <Family>")`. If you change the font stack, update that test.
-
-## Out of scope (deferred to follow-up plans / Milestone 1)
-
-- The three killer features (Calc, Matrix, Builder) — Milestone 1.
-- Auth, build sharing UI, more `@tarkov/ui` primitives.

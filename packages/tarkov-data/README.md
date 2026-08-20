@@ -1,13 +1,13 @@
 # @tarkov/data
 
-Typed, Zod-validated TanStack Query data layer for `api.tarkov.dev`.
+Typed, Zod-validated TanStack Query data layer for the [`json.tarkov.dev`](https://json.tarkov.dev/endpoints) JSON API.
 
 ## Use
 
 ```tsx
 import { TarkovDataProvider, createTarkovClient, useAmmoList } from "@tarkov/data";
 
-const client = createTarkovClient("https://api.tarkov.dev/graphql");
+const client = createTarkovClient("https://json.tarkov.dev/regular/");
 
 function App() {
   return (

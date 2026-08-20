@@ -71,7 +71,7 @@ pnpm --filter @tarkov/web test:e2e
 
 ## Game data corrections
 
-Most EFT game data (weapons, ammo, armor, traders) comes from upstream — [`api.tarkov.dev`](https://api.tarkov.dev), run by the [`the-hideout`](https://github.com/the-hideout) community. If the data is wrong _there_, it's wrong _here_, and the fix belongs in their repos. The `data-correction` issue template will help you figure out where a fix should go.
+Most EFT game data (weapons, ammo, armor, traders) comes from upstream — [`json.tarkov.dev`](https://json.tarkov.dev/endpoints), run by the [`the-hideout`](https://github.com/the-hideout) community. If the data is wrong _there_, it's wrong _here_, and the fix belongs in their repos. The `data-correction` issue template will help you figure out where a fix should go.
 
 Things that are genuinely ours (not upstream):
 

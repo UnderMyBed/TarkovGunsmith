@@ -31,7 +31,7 @@ pnpm install
 pnpm dev
 ```
 
-That brings up the SPA at `http://localhost:5173` plus the two Workers (`data-proxy`, `builds-api`). For fresh-clone setup (env files, seeded demo builds), see [`docs/operations/local-development.md`](./docs/operations/local-development.md).
+That brings up the SPA at `http://localhost:5173` plus the `builds-api` Worker on `http://localhost:8788`. For fresh-clone setup (env files, seeded demo builds), see [`docs/operations/local-development.md`](./docs/operations/local-development.md).
 
 ## Contribute
 
@@ -43,7 +43,7 @@ This repo is developed collaboratively with [Claude](https://claude.ai/code), us
 
 ## Acknowledgments
 
-Original [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) by [Xerxes-17](https://github.com/Xerxes-17). Game data from [`api.tarkov.dev`](https://api.tarkov.dev) by [`the-hideout`](https://github.com/the-hideout). Full credits: [`ACKNOWLEDGMENTS.md`](./ACKNOWLEDGMENTS.md).
+Original [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) by [Xerxes-17](https://github.com/Xerxes-17). Game data from [`json.tarkov.dev`](https://json.tarkov.dev/endpoints) by [`the-hideout`](https://github.com/the-hideout). Full credits: [`ACKNOWLEDGMENTS.md`](./ACKNOWLEDGMENTS.md).
 
 ## License
 
