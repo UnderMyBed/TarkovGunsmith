@@ -62,8 +62,11 @@ test.describe("skip link (issue #174, defect 3)", () => {
     await expect(skip).toBeFocused();
 
     // Revealed — the transform that parked it is undone, so it lands inside the viewport.
-    const revealed = await skip.boundingBox();
-    expect(revealed!.y).toBeGreaterThanOrEqual(0);
+    // Polled rather than read once: the reveal is a CSS transition, so a single read right
+    // after the keypress catches the link mid-slide and still above the fold.
+    await expect
+      .poll(async () => (await skip.boundingBox())?.y ?? -1, { timeout: 5_000 })
+      .toBeGreaterThanOrEqual(0);
   });
 
   test("moves focus past the whole header, not just the scroll position", async ({ page }) => {

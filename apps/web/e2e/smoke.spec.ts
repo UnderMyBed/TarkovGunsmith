@@ -429,7 +429,9 @@ test.describe("smoke — Builder-focus nav + WIP banners", () => {
 
     await page.getByRole("button", { name: "Calc", exact: true }).click();
 
-    const simLink = page.getByRole("menuitem", { name: "Simulator" });
+    // A plain link, not a `menuitem` — the dropdown is a disclosure containing navigation
+    // links, not an ARIA menu. See the docblock on `features/nav/nav-dropdown.tsx`.
+    const simLink = page.getByRole("navigation").getByRole("link", { name: "Simulator" });
     await expect(simLink).toBeVisible({ timeout: 5_000 });
 
     await simLink.click();
