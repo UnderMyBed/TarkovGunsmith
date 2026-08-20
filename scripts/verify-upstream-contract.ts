@@ -36,8 +36,14 @@ import {
   UBR_GEN2_STOCK,
   VP09_MUZZLE_BRAKE,
 } from "../packages/ballistics/src/__fixtures__/weapons.js";
+import { createTarkovClient } from "../packages/tarkov-data/src/client.js";
+import { fetchAmmoList } from "../packages/tarkov-data/src/queries/ammoList.js";
+import { fetchArmorList } from "../packages/tarkov-data/src/queries/armorList.js";
+import { fetchModList } from "../packages/tarkov-data/src/queries/modList.js";
+import { fetchWeaponList } from "../packages/tarkov-data/src/queries/weaponList.js";
 
-const ITEMS_URL = "https://json.tarkov.dev/regular/items";
+const API_BASE = "https://json.tarkov.dev/regular/";
+const ITEMS_URL = `${API_BASE}items`;
 
 interface LiveItem {
   id: string;
@@ -237,7 +243,55 @@ async function main(): Promise<void> {
     checkNumber(`mod/${mod.name}/weight`, item?.weight, mod.weight);
   }
 
+  await checkSelectorsAcceptLiveDocument();
+
   report();
+}
+
+/**
+ * Every list selector still finds its items in the live document.
+ *
+ * The checks above compare individual FIELDS against upstream. This runs the real fetchers,
+ * which means the real Zod schemas: each drops any item that fails a strict per-item parse and
+ * keeps going, so a renamed or retyped field doesn't error — it silently empties a picker.
+ *
+ * This lived, incidentally, in the e2e suite until issue #175: a schema break emptied the
+ * Builder's weapon `<select>` and the smoke tests noticed. Those specs now run on committed
+ * captures so the pre-merge gate can't fail on upstream's availability, which means this is
+ * the only place left that puts our schemas in front of the real document. The thresholds are
+ * deliberately far below today's counts — this is a "the selector still works at all" check,
+ * not a census.
+ */
+async function checkSelectorsAcceptLiveDocument(): Promise<void> {
+  const client = createTarkovClient(API_BASE);
+  const minimums = { weapons: 50, mods: 500, ammo: 50, armor: 20 } as const;
+
+  const [weapons, mods, ammo, armor] = await Promise.all([
+    fetchWeaponList(client),
+    fetchModList(client),
+    fetchAmmoList(client),
+    fetchArmorList(client),
+  ]);
+
+  const counts = {
+    weapons: weapons.length,
+    mods: mods.length,
+    ammo: ammo.length,
+    armor: armor.length,
+  };
+
+  for (const [name, minimum] of Object.entries(minimums)) {
+    const actual = counts[name as keyof typeof counts];
+    check(
+      `selector/${name}`,
+      actual >= minimum,
+      `only ${actual} items survived the schema (expected at least ${minimum}) — a field upstream ` +
+        `renamed or retyped makes safeParse drop rows silently, which reaches users as an empty picker`,
+    );
+  }
+  notes.push(
+    `selectors parsed: ${counts.weapons} weapons, ${counts.mods} mods, ${counts.ammo} ammo, ${counts.armor} armor`,
+  );
 }
 
 function report(): void {

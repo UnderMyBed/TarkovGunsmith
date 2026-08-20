@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { test, expect } from "./upstream.js";
 
 /**
  * End-to-end coverage for the PMC level control on the progression profile.
@@ -8,6 +9,11 @@ import { test, expect, type Page } from "@playwright/test";
  * tests protect the three things that can silently break — the control edits the profile,
  * the profile survives a reload, and out-of-range input is clamped rather than persisted.
  */
+
+// The rest of the suite seeds a progressed profile so the captured weapons are reachable in
+// the Builder's picker. This file's subject is the *unseeded* state — "a fresh profile starts
+// at level 1" is the first thing it asserts — so it opts out and starts from DEFAULT_PROFILE.
+test.use({ playerProfile: "fresh" });
 
 /** The editor lives behind a <details> that is collapsed on first paint. */
 async function openProfileEditor(page: Page): Promise<void> {

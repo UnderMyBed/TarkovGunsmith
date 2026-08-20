@@ -28,6 +28,12 @@ import { isValidBuildId } from "../../lib/build-id.js";
 
 export interface Env {
   BUILDS_API_URL: string;
+  /**
+   * Optional override for the json.tarkov.dev base this card reads item stats from. Unset in
+   * production; the e2e suite binds it to a local fixture server so the pre-merge gate never
+   * depends on upstream being reachable. See `apps/web/functions/lib/og-graphql.ts`.
+   */
+  TARKOV_JSON_API_BASE?: string;
 }
 
 interface PairRecord {
@@ -59,12 +65,15 @@ interface SideArgs {
   mods: OgMod[];
 }
 
-async function hydrateSide(build: BuildV6 | null): Promise<SideArgs | null> {
+async function hydrateSide(build: BuildV6 | null, baseUrl?: string): Promise<SideArgs | null> {
   if (!build) return null;
-  const rows = await fetchOgRowsForBuild({
-    weaponId: build.weaponId,
-    modIds: Object.values(build.attachments),
-  });
+  const rows = await fetchOgRowsForBuild(
+    {
+      weaponId: build.weaponId,
+      modIds: Object.values(build.attachments),
+    },
+    baseUrl,
+  );
   return { build, weapon: rows.weapon, mods: rows.mods };
 }
 
@@ -95,8 +104,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     const pair = (await upstream.json()) as PairRecord;
     const [leftArgs, rightArgs] = await Promise.all([
-      hydrateSide(pair.left),
-      hydrateSide(pair.right),
+      hydrateSide(pair.left, env.TARKOV_JSON_API_BASE),
+      hydrateSide(pair.right, env.TARKOV_JSON_API_BASE),
     ]);
     const vm = hydratePairCard({ left: leftArgs, right: rightArgs });
 

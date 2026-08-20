@@ -1,6 +1,12 @@
 import type { HydrateMod, HydrateWeapon } from "@tarkov/og";
 import type { AvailabilityMod } from "./og-availability.js";
-import { createTarkovClient, resolveBuyFor, fetchTraders, fetchTasks } from "@tarkov/data";
+import {
+  createTarkovClient,
+  resolveBuyFor,
+  fetchTraders,
+  fetchTasks,
+  type TarkovJsonClient,
+} from "@tarkov/data";
 
 /**
  * The mods returned by this fetcher serve two consumers: `hydrateBuildCard`
@@ -19,11 +25,23 @@ export type OgMod = HydrateMod & AvailabilityMod;
 export const OG_JSON_API_BASE = "https://json.tarkov.dev/regular/";
 
 /**
- * Module-scope client so the items document is fetched once per isolate rather than once
- * per card render. The client's own TTL cache does the work; OG rendering is per-request and
- * the document is 1.36 MB gzipped, so an uncached fetch per card would be untenable.
+ * Clients keyed by base URL, at module scope so the items document is fetched once per
+ * isolate rather than once per card render. The client's own TTL cache does the work; OG
+ * rendering is per-request and the document is 1.36 MB gzipped, so an uncached fetch per card
+ * would be untenable.
+ *
+ * Keyed rather than singular because the base is configurable (see `fetchOgRowsForBuild`),
+ * and a client built for one base must never answer a request meant for another.
  */
-const client = createTarkovClient(OG_JSON_API_BASE);
+const clientsByBase = new Map<string, TarkovJsonClient>();
+
+function clientFor(baseUrl: string): TarkovJsonClient {
+  const existing = clientsByBase.get(baseUrl);
+  if (existing !== undefined) return existing;
+  const created = createTarkovClient(baseUrl);
+  clientsByBase.set(baseUrl, created);
+  return created;
+}
 
 interface Args {
   weaponId: string;
@@ -40,9 +58,21 @@ function readNumber(source: unknown, key: string): number {
   return typeof value === "number" ? value : 0;
 }
 
+/**
+ * @param baseUrl - Where to read the items/traders/tasks documents from. Defaults to
+ *   {@link OG_JSON_API_BASE}, which is what production runs on. The override exists for the
+ *   e2e suite: these Functions execute server-side inside `wrangler pages dev`, so their
+ *   upstream call is out of reach of the browser-side interception in
+ *   `apps/web/e2e/upstream.ts`, and Playwright points them at a local fixture server through
+ *   the `TARKOV_JSON_API_BASE` binding instead. An empty or absent value falls back to
+ *   production rather than producing a request to `undefined/items`.
+ */
 export async function fetchOgRowsForBuild(
   args: Args,
+  baseUrl?: string,
 ): Promise<{ weapon: HydrateWeapon; mods: OgMod[] }> {
+  const client = clientFor(baseUrl !== undefined && baseUrl !== "" ? baseUrl : OG_JSON_API_BASE);
+
   const [doc, traders, tasks] = await Promise.all([
     client.fetchResource<ItemsDoc>("items"),
     fetchTraders(client),

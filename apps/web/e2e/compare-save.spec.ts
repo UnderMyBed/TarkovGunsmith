@@ -1,4 +1,6 @@
-import { test, expect, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { test, expect } from "./upstream.js";
+import { fixtureItemCount } from "./upstream-fixtures.js";
 
 /**
  * End-to-end coverage for what a failed save on `/builder/compare` looks like.
@@ -20,9 +22,10 @@ async function fillBothSides(page: Page): Promise<void> {
   const leftPicker = page.locator("#compare-weapon-A");
   const rightPicker = page.locator("#compare-weapon-B");
   await expect(leftPicker).toBeVisible({ timeout: 10_000 });
+  // Placeholder + one option per weapon in the captured document.
   await expect
     .poll(async () => await leftPicker.locator("option").count(), { timeout: 15_000 })
-    .toBeGreaterThan(2);
+    .toBe(fixtureItemCount("ItemPropertiesWeapon") + 1);
 
   const leftValue = await leftPicker.locator("option").nth(1).getAttribute("value");
   const rightValue = await rightPicker.locator("option").nth(2).getAttribute("value");
