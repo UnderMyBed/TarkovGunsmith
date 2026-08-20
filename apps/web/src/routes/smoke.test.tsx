@@ -11,11 +11,11 @@ describe("/smoke", () => {
   it("loads the fixture ammo list and lists each entry", async () => {
     await renderRoute("/smoke");
 
-    // "Loaded " / <strong>2</strong> / " ammo entries from " / <code>api.tarkov.dev</code> / "."
+    // "Loaded " / <strong>2</strong> / " ammo entries from " / <code>json.tarkov.dev</code> / "."
     // is split across inline nodes, so match the whole paragraph rather than one exact string.
     const paragraph = await screen.findByText((_content, node) => {
       if (node?.tagName.toLowerCase() !== "p") return false;
-      return (node.textContent ?? "").includes("Loaded 2 ammo entries from api.tarkov.dev.");
+      return (node.textContent ?? "").includes("Loaded 2 ammo entries from json.tarkov.dev.");
     });
     expect(paragraph).toBeInTheDocument();
 

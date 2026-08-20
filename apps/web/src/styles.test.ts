@@ -110,13 +110,18 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
       // The five-column template. Without it the whole row collapses to a single column.
       "grid-cols-[110px_46px_56px_48px_1fr]",
       "gap-2.5",
-      "bg-[var(--color-olive)]",
+      // `bg-[var(--color-olive)]` was here until the /sim zone buttons moved onto the palette
+      // and started using it too. Every other class this component paints with is likewise
+      // shared with apps/web, so there is no third entry to promote — the meta-test below is
+      // what caught the collision, and it will catch a re-add.
     ],
   ],
   ["skeleton.tsx", ["animate-pulse", "space-y-2"]],
   ["dialog.tsx", ["max-w-2xl", "duration-150"]],
   ["pill.tsx", ["bg-[color:rgba(122,139,63,0.1)]", "bg-[color:rgba(245,158,11,0.08)]", "py-[2px]"]],
-  ["section-title.tsx", ["my-8", "h-px", "bg-[var(--color-border)]"]],
+  // `bg-[var(--color-border)]` dropped for the same reason as stat-row's olive: the /sim zone
+  // buttons paint with it now, so apps/web's own scan emits it either way.
+  ["section-title.tsx", ["my-8", "h-px"]],
   [
     "weapon-silhouette.tsx",
     ["[filter:grayscale(1)_brightness(0.95)_contrast(1.15)]", "mix-blend-multiply"],

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Typed, Zod-validated TanStack Query data layer for the api.tarkov.dev GraphQL API.",
+  "description": "Typed, Zod-validated TanStack Query data layer for the json.tarkov.dev JSON API.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

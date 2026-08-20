@@ -6,31 +6,22 @@
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
 
-> **Status: M1 + M1.5 + M2 + M3 frontend design pass all live.** The whole stack — 8 routes, Builder-forward landing, full ballistics + reference tools — now ships in the "Field Ledger" aesthetic.
+> **Status: live.** 13 routes on the $0/mo Cloudflare free tier — Pages for the SPA, one Worker
+> (`builds-api`) plus KV behind share URLs, and Pages Functions that render Open Graph cards:
 >
-> - **M1 (v1.0.0):** `/calc`, `/matrix`, `/builder` (flat mod list).
-> - **M1.5 (v1.1 – v1.4):** Builder Robustness arc — build schema v1 → v4, save/share URL, slot-based mod compatibility, player-progression gating, UX depth.
-> - **M2 (unreleased):** Parity — `/sim`, `/adc`, `/aec`, `/data`, `/charts`.
-> - **M3 frontend design pass (unreleased, 5 PRs):** "Field Ledger" aesthetic — Bungee display + Chivo body + Azeret Mono numerics, amber-phosphor accent, corner-bracketed panels, tick-mark dividers, and new `@tarkov/ui` primitives (`Pill`, `Stamp`, `SectionTitle`, `StatRow`, `Card variant="bracket"`). Applied across every route.
+> `/` `/builder` `/builder/:id` `/builder/compare` `/builder/compare/:pairId` `/calc` `/matrix`
+> `/sim` `/adc` `/aec` `/data` `/charts` `/smoke`
 >
-> Plus `/smoke` + `/` (Builder-forward landing). All on $0/mo Cloudflare free tier (Workers + Pages + KV). Deploys fire on release-please PR merges (tagged version bumps) — feature PR merges stage changes on `main` without deploying.
+> Ballistics, the build optimizer, and `tarkov.dev` profile import all run client-side. The UI is
+> the "Field Ledger" aesthetic — Bungee display + Chivo body + Azeret Mono numerics, amber-phosphor
+> accent, corner-bracketed panels, tick-mark dividers, and the `@tarkov/ui` primitives. Dark only;
+> there is no light theme.
 >
-> **Roadmap from here — M3 Differentiators, all 5 shipped:** (1) ✅ Frontend design pass. (2) ✅ Build comparison (diff two builds). (3) ✅ Build optimization (constraint solver). (4) ✅ OG share cards (server-rendered PNG). (5) ✅ `tarkov.dev` profile import. Visual polish / fix-up items discovered during the design pass are tracked as issues and landed before the next feature PR.
+> Deploys fire on release-please PR merges (tagged version bumps) — feature PR merges stage changes
+> on `main` without deploying.
 >
-> **Deferred M1.5 items (still open):** Undo/redo; `craftsFor`/`bartersFor` in availability; Dialog primitive; slot-tree polish (sticky headers, keyboard nav); recursion depth 5.
->
-> **Two M1.5 items were retired by the 2026-08-18 data audit, not by being built:**
->
-> - `allowedCategories` slot filtering is **not implementable** — all 3,564 slots in the live document have an empty `allowedCategories`. The resolution code in `weaponTree.ts` is correct and simply has nothing to resolve. Do not schedule this without first re-checking upstream.
-> - **Weapon preset content no longer needs hand-authoring.** Upstream ships 484 `ItemPropertiesPreset` items plus a per-weapon `presets` array and `defaultPreset` id. `presets.ts` still carries an empty hand-curated map awaiting a content PR; the work is now a mapping job, not a data-entry one.
->
-> Recursion depth 5 is also now free: the depth-3 limit existed because the GraphQL API returned ~7.5 MB for the M4A1 at depth 4. Resolution is client-side over an already-loaded document, so that constraint is gone.
->
-> **Deferred M2 items (still open):** Helmet-only query for `/sim`'s helmet picker; thorax-overflow damage / bleed / probabilistic mode in the Simulator; scenario save/share; ammo caliber column on `/data`.
->
-> **Deferred M3 design-polish items:** Light theme; loading skeleton shimmers in the Field Ledger aesthetic; custom favicon + OG social cards (the latter pairs with M3 sub-project 4); keyboard shortcut overlay; real weapon silhouettes. Revisit after functional M3 work lands.
->
-> **Cross-milestone deferred:** ~~Playwright e2e~~ — shipped in this PR.
+> Planned and in-flight work lives in the
+> [issue tracker](https://github.com/UnderMyBed/TarkovGunsmith/issues), not in this file.
 
 ## What this project is
 
@@ -54,7 +45,7 @@ A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Bui
 
 ## How we work here
 
-Every change flows: **issue → TDD execution → code review → PR → merge → auto-deploy.**
+Every change flows: **issue → TDD execution → code review → PR → merge → release PR → deploy.**
 
 **Docs state what is true. The tracker states what is planned. Commits state what changed.**
 Do not mix them. No plan documents, no spec archive, no progress logs, no milestone narrative in
@@ -69,33 +60,36 @@ it stays attached to the diff it explains.
 
 ### Testing discipline (hard rule)
 
-- **Every feature PR includes e2e coverage.** If the PR adds a new route, `apps/web/e2e/smoke.spec.ts` gets a new entry in the `ROUTES` array. If it adds a user-facing interaction flow worth protecting, a new test file.
-- **"Visual walkthrough deferred" is no longer acceptable.** If you can't verify a change works in a browser, you can't ship it. Playwright is the verification mechanism; run it locally with `pnpm --filter @tarkov/web build && pnpm --filter @tarkov/web test:e2e` before pushing. **The build is not optional** — Playwright serves `dist/` via `wrangler pages dev`, so without it you get a 120-second timeout and a wall of 404s rather than a useful error. CI builds first, which is why this only bites locally.
+- **Every feature PR includes e2e coverage.** If the PR adds a route to the `__root.tsx` nav, `apps/web/e2e/smoke.spec.ts` gets a new entry in the `ROUTES` array. If it adds a user-facing interaction flow worth protecting, a new test file.
+- **"Visual walkthrough deferred" is no longer acceptable.** If you can't verify a change works in a browser, you can't ship it. Playwright is the verification mechanism; run it locally with `pnpm --filter @tarkov/web build && pnpm --filter @tarkov/web test:e2e` before pushing. **The build is not optional** — Playwright serves `dist/` via `wrangler pages dev`. `playwright.config.ts` checks for `apps/web/dist/index.html` while the config is still evaluating and stops with the command that fixes it, so an unbuilt tree fails in a second instead of timing out.
+- **No spec may depend on a live third party.** Specs import `test`/`expect` from `e2e/upstream.js`, never from `@playwright/test`. That module answers `json.tarkov.dev` from the committed captures and fails the test — naming the URL — on any live host not on its allowlist. Google Fonts is the one deliberate exception, because three tests assert the real font `<link>` resolves. Live-upstream drift is checked instead by `pnpm verify:upstream`, on a schedule, deliberately off CI.
 - **Console errors fail the build.** If a real false positive appears, allowlist it in `smoke.spec.ts` with a comment explaining why.
 - **Fonts are load-checked.** The Bungee / Chivo / Azeret Mono fonts are part of the contract — changing them means updating the font-load test.
 
-## Project conventions (preview — full version after Milestone 0)
+## Project conventions
 
 - **Package manager:** pnpm (workspaces) + Turborepo
 - **Style:** Prettier + ESLint, TypeScript strict mode everywhere
+- **Styling:** design tokens only for colour and radius — the `@theme` block in `packages/ui/src/styles/index.css` is the palette, and raw Tailwind palette classes (`bg-red-700`) do not belong in app code. Tailwind scans `packages/ui/src` through the `@source` directive in that same file; without it, a class used only by a `@tarkov/ui` primitive ships with no matching CSS rule (issue #162), and `apps/web/src/styles.test.ts` compiles the stylesheet to guard against exactly that. The neighbouring `@source not` exclusions for test files are load-bearing: a scanned test file that names a class makes Tailwind emit it, which would let the guard pass on the strength of its own assertion.
 - **Tests:** Vitest for units, Playwright for e2e, `@cloudflare/vitest-pool-workers` for Worker tests
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`)
 - **Branches:** `main` is protected; all changes via PR
 - **Deploy:** release-please PR merge (tagged version bump) → CF Pages (frontend) and `wrangler deploy` (workers) via GitHub Actions. Feature PR merges to `main` stage changes without deploying.
 
-## Repo layout (target)
+## Repo layout
 
 ```
-apps/web              Vite SPA (the user-facing site)
+apps/web              Vite SPA (the user-facing site) + its Pages Functions
 apps/builds-api       CF Worker — KV-backed build sharing
 packages/ballistics   Pure TS — penetration & damage math
-packages/tarkov-data  Typed query layer (TanStack Query hooks)
+packages/tarkov-data  Typed, Zod-validated query layer over json.tarkov.dev
 packages/ui           Shared shadcn components, design tokens
-docs/                 Specs, plans, ADRs, AI workflow guides
-.claude/              Project skills, agents, settings, commands
+packages/optimizer    Pure TS — constraint solver behind Builder's "optimize"
+packages/og           Pure TS — Open Graph share cards (satori → resvg → PNG)
+packages/repo-guards  Vitest guards over repo config; tests only, nothing ships
+docs/                 ADRs and operations runbooks
+.claude/              Project skills, agents, settings
 ```
-
-This layout is created across Milestones 0a–0d. After 0a (current), only `docs/`, `.claude/`, and root config files exist.
 
 ## Local development
 
@@ -129,6 +123,8 @@ GitHub Actions runs typecheck, lint, format check, Vitest, and Playwright smoke 
 - CI fires on `pull_request` (the pre-merge gate) + `workflow_dispatch` (release-please fires this on its branch). It does NOT fire on push to `main` — branch protection requires PRs to be up-to-date + green before merging, so post-merge CI would be a duplicate of the just-passed PR check.
 - Docs-only PRs (changes confined to `docs/**`, `*.md`, `.gitignore`, `LICENSE`, issue templates) skip the whole pipeline via a `dorny/paths-filter` gate at the top of the job. The job name still reports success to satisfy branch protection.
 
+**Turbo cache:** `.turbo/cache` sits at the repo root and is shared with every git worktree beneath it. A task whose `dependsOn` is incomplete can therefore replay a recorded pass for code it never saw — `lint` did exactly that until it declared `dependsOn: ["^build"]`. When a green result looks too easy, re-run it with `pnpm turbo run <task> --force`.
+
 ## Releases & versioning
 
 Versioning is fully automated via [release-please](https://github.com/googleapis/release-please-action). On every push to `main`, the workflow inspects Conventional Commits since the last release and opens (or updates) a `chore(release): vX.Y.Z` PR with an auto-generated CHANGELOG.
@@ -156,13 +152,13 @@ The token uses **least-privilege** scoping — only the four permissions actuall
 
 ## Gotcha: per-package `tsconfig.json` is required
 
-The root ESLint config uses typescript-eslint's `projectService: true` with the root `tsconfig.json` which only `include`s root-level `.ts` files. Any `.ts`/`.tsx` file under `apps/*` or `packages/*` MUST belong to a package-local `tsconfig.json` — otherwise `eslint --fix` (in pre-commit and CI) will fail with `was not found by the project service`. Every new app or package added in 0b/0c/0d must ship its own `tsconfig.json` extending `tsconfig.base.json`.
+The root ESLint config uses typescript-eslint's `projectService: true` with the root `tsconfig.json` which only `include`s root-level `.ts` files. Any `.ts`/`.tsx` file under `apps/*` or `packages/*` MUST belong to a package-local `tsconfig.json` — otherwise `eslint --fix` (in pre-commit and CI) will fail with `was not found by the project service`. Every new app or package must ship its own `tsconfig.json` extending `tsconfig.base.json`.
 
 ## AI tooling installed
 
 - **`.claude/settings.json`** — permissions allowlist (pnpm, vitest, wrangler, gh, git) + post-edit `tsc --noEmit` hook for `.ts`/`.tsx` files
-- **`.claude/skills/`** — `add-data-query`, `add-calc-function`, `add-feature-route`, `verify-data-shape`, `update-tarkov-schema`
-- **`.claude/agents/`** — `tarkov-api-explorer` (read-only research), `ballistics-verifier` (math correctness)
+- **`.claude/skills/`** — `add-data-query`, `add-calc-function`, `add-feature-route`
+- **`.claude/agents/`** — `tarkov-api-explorer` (read-only data-layer research), `ballistics-verifier` (math correctness)
 
 ## Acknowledgements
 

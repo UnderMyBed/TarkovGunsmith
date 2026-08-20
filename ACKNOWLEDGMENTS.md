@@ -8,9 +8,9 @@ TarkovGunsmith began as [TarkovGunsmith by Xerxes-17](https://github.com/Xerxes-
 
 ## Game data
 
-Ballistics, weapon, ammo, armor, and trader data comes from [`api.tarkov.dev`](https://api.tarkov.dev), maintained by [`the-hideout`](https://github.com/the-hideout) community. The API is released under the [GPL-3.0 license](https://github.com/the-hideout/tarkov-api/blob/master/LICENSE). No separate terms-of-use document is published; the project describes itself as free, open source, and community-driven, with no documented prohibition on caching or proxy use.
+Ballistics, weapon, ammo, armor, and trader data comes from [`json.tarkov.dev`](https://json.tarkov.dev/endpoints), maintained by [`the-hideout`](https://github.com/the-hideout) community. The API is released under the [GPL-3.0 license](https://github.com/the-hideout/tarkov-api/blob/master/LICENSE). No separate terms-of-use document is published; the project describes itself as free, open source, and community-driven, with no documented prohibition on caching or proxy use.
 
-Please respect their infrastructure — if you're running this project locally against live data, the `data-proxy` Worker caches responses at the edge to reduce load. If you want heavy programmatic access, run your own proxy or mirror their dataset.
+Please respect their infrastructure — the SPA fetches each JSON document once per session and caches it in TanStack Query, and the test suites run against committed captures rather than the live API. If you want heavy programmatic access, run your own proxy or mirror their dataset.
 
 ## Stack
 
@@ -43,5 +43,5 @@ Escape from Tarkov, the EFT logo, and related marks are trademarks of Battlestat
 ## Open items
 
 - The original [Xerxes-17/TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) repository carries no declared license. Because the current codebase is a ground-up rewrite with no copied assets, this does not affect the current project's MIT license. Noted here for transparency.
-- The `api.tarkov.dev` / `assets.tarkov.dev` projects (the-hideout) do not publish a formal terms-of-use document. Usage is consistent with their stated intent (free, open source, community-driven). If they publish a ToU in the future, update this file accordingly.
+- The `json.tarkov.dev` / `assets.tarkov.dev` projects (the-hideout) do not publish a formal terms-of-use document. Usage is consistent with their stated intent (free, open source, community-driven). If they publish a ToU in the future, update this file accordingly.
 - Weapon silhouette and item icon images derive from EFT game assets. Battlestate Games has not issued a formal fan-tool asset policy; current usage (decorative, non-commercial, no redistribution of bundled assets) is in line with standard community tool precedent.

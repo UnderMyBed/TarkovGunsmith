@@ -81,8 +81,8 @@
    * item there), so a single semantic name would assert a shared meaning that was never
    * actually decided. Naming them after their own value avoids inventing that meaning.
    * Deliberately NOT rounded into a tidier ramp and NOT consolidated beyond exact
-   * duplicates — see docs/plans/2026-08-19-pre-refactor-hardening-plan.md Stage 3. Inventing
-   * an actual scale (and giving sizes role-based names) is the redesign's job.
+   * duplicates. Inventing an actual scale (and giving sizes role-based names) is the
+   * redesign's job.
    *
    * `--tracking-N` names the em value ×100 (`--tracking-18` == `letter-spacing: 0.18em`).
    * These sit far outside Tailwind's built-in `--tracking-tighter…widest` range (max

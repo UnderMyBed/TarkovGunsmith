@@ -14,7 +14,7 @@ function SmokePage() {
       <section>
         <h1 className="text-3xl font-bold tracking-tight">Smoke</h1>
         <p className="mt-2 text-[var(--color-muted-foreground)]">
-          End-to-end proof that <code>@tarkov/data</code> → <code>api.tarkov.dev</code> → Zod parse
+          End-to-end proof that <code>@tarkov/data</code> → <code>json.tarkov.dev</code> → Zod parse
           → render works in the browser.
         </p>
       </section>
@@ -29,7 +29,7 @@ function SmokePage() {
             <div className="flex flex-col gap-2">
               <p>
                 Loaded <strong>{ammo.data.length}</strong> ammo entries from{" "}
-                <code>api.tarkov.dev</code>.
+                <code>json.tarkov.dev</code>.
               </p>
               <ul className="grid gap-1 text-sm">
                 {ammo.data.slice(0, 8).map((a) => (
