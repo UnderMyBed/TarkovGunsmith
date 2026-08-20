@@ -1,5 +1,17 @@
 @import "@tarkov/ui/styles.css";
 
+/* Tailwind's automatic source detection walks the Vite root — `apps/web` — so it also
+ * reads this app's own test files and Playwright specs. Those assert on Tailwind class
+ * STRINGS, and a scanned assertion string emits a real production rule: `src/styles.test.ts`
+ * would have made itself pass by being scanned, and any test naming a class a component no
+ * longer uses would keep that class's CSS shipping forever. Excluded so the stylesheet is
+ * built from what the app actually renders. Paths are relative to this file, so `../` is
+ * `apps/web`. (`packages/ui` excludes its own test files the same way — see the header in
+ * packages/ui/src/styles/index.css.) */
+@source not "../**/*.test.ts";
+@source not "../**/*.test.tsx";
+@source not "../e2e/**";
+
 /* App-specific overrides + utilities go below this line. */
 html,
 body,

@@ -10,7 +10,8 @@ Vite + React SPA. Deploys to Cloudflare Pages. Consumes all four `packages/*` an
 - `src/route-tree.gen.ts` — **generated** by `@tanstack/router-plugin/vite` whenever `src/routes/` changes. Do NOT edit by hand.
 - `src/routes/` — file-based routes (TanStack Router conventions: `__root.tsx`, `index.tsx`, etc.).
 - `src/tarkov-client.ts` — the default `json.tarkov.dev` client instance the SPA uses.
-- `src/styles.css` — `@import "@tarkov/ui/styles.css"` plus any app-specific styles.
+- `src/styles.css` — `@import "@tarkov/ui/styles.css"` plus any app-specific styles. It also carries `@source not` directives for this app's test files and Playwright specs: Tailwind's auto-detection walks the Vite root, so without them a class named in an assertion string emits a real production rule.
+- `src/styles.test.ts` — compiles the stylesheet in memory and asserts every `@tarkov/ui` primitive's classes have a matching rule. Regression guard for GitHub issue #162.
 
 ## Local dev
 

@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { Skeleton } from "./skeleton.js";
+import { classList, classSignature } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
@@ -40,10 +41,32 @@ describe("Skeleton", () => {
     });
   });
 
-  it("merges caller className and forwards other div attributes", () => {
+  /* A skeleton that does not animate reads as broken content rather than pending content, so
+   * the single-block and stacked-row shapes have to style their placeholders identically.
+   * That the animation class resolves to a real rule is checked against the compiled
+   * stylesheet in apps/web/src/styles.test.ts — under GitHub issue #162 it did not. */
+  it("styles a stacked row exactly like a standalone block", () => {
+    render(<Skeleton data-testid="single" />);
+    const single = classSignature(screen.getByTestId("single"));
+    cleanup();
+    render(<Skeleton rows={2} data-testid="wrapper" />);
+    const firstRow = screen.getByTestId("wrapper").children[0]!;
+    expect(classSignature(firstRow)).toBe(single);
+  });
+
+  it("merges a caller className and forwards other div attributes", () => {
+    render(<Skeleton data-testid="base" />);
+    const base = classList(screen.getByTestId("base"));
+    cleanup();
     render(<Skeleton data-testid="skel" className="mb-4" aria-label="loading" />);
     const el = screen.getByTestId("skel");
-    expect(el.className).toContain("mb-4");
+    expect(el).toHaveClass("mb-4");
+    expect(el).toHaveClass(...base);
     expect(el).toHaveAttribute("aria-label", "loading");
+  });
+
+  it("lets a caller style override the defaulted width and height", () => {
+    render(<Skeleton data-testid="skel" width="10rem" style={{ width: "50%" }} />);
+    expect(screen.getByTestId("skel").style.width).toBe("50%");
   });
 });

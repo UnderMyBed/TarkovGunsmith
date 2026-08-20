@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+/* Tailwind v4 auto-detects source files by walking the build root — for apps/web that
+ * is `apps/web/**` — and it deliberately never descends into node_modules. `@tarkov/ui`
+ * resolves through `node_modules/@tarkov/ui` (a pnpm workspace symlink), so every class
+ * that exists ONLY in this package's components was invisible to the scanner and its
+ * rules were never emitted: no `focus-visible:` ring on Button or Input, no `before:`/
+ * `after:` corner brackets on `<Card variant="bracket">`, no `animate-pulse` on Skeleton,
+ * no `grid-cols-[110px_46px_56px_48px_1fr]` on StatRow. The markup shipped the class
+ * names; the stylesheet had no matching rule. See GitHub issue #162.
+ *
+ * The directive lives here rather than in a consumer's stylesheet because this package
+ * owns those classes: any app that imports `@tarkov/ui/styles.css` gets the scan with it,
+ * and a second consumer cannot forget to add it. Paths are relative to THIS file, so
+ * `../` is `packages/ui/src`.
+ *
+ * Test files are excluded on purpose. They assert on Tailwind class strings, and a scanned
+ * assertion string emits CSS for a class no component uses any more — and would let
+ * apps/web's `src/styles.test.ts` guard pass on the strength of the very assertion it is
+ * supposed to be proving. */
+@source "../";
+@source not "../**/*.test.ts";
+@source not "../**/*.test.tsx";
+
 /* Fonts are loaded via <link rel="stylesheet"> in apps/web/index.html.
  * They cannot live here: CSS spec requires @import to precede all other rules
  * (including Tailwind's @layer output), so compilers strip it from the bundle. */

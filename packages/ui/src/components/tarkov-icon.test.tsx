@@ -3,6 +3,7 @@ import { createRef } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { TarkovIcon, iconUrl } from "./tarkov-icon.js";
+import { classList } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
@@ -40,11 +41,14 @@ describe("TarkovIcon", () => {
     expect(screen.getByRole("img", { name: "eager-check" })).toHaveAttribute("loading", "eager");
   });
 
-  it("merges caller className with the base inline-block class", () => {
+  it("merges a caller className on top of its own classes instead of replacing them", () => {
+    render(<TarkovIcon itemId="5656d7c34bdc2d9d198b4587" alt="base" />);
+    const base = classList(screen.getByRole("img", { name: "base" }));
+    cleanup();
     render(<TarkovIcon itemId="5656d7c34bdc2d9d198b4587" alt="cls" className="h-8 w-8" />);
     const img = screen.getByRole("img", { name: "cls" });
-    expect(img.className).toContain("h-8 w-8");
-    expect(img.className).toContain("inline-block");
+    expect(img).toHaveClass("h-8", "w-8");
+    expect(img).toHaveClass(...base);
   });
 
   it("forwards a ref to the underlying <img>", () => {
