@@ -9,17 +9,15 @@
  * live on the same Worker.
  */
 
+import { buildsApiBase } from "../../lib/builds-api.js";
+
 interface Env {
-  BUILDS_API_URL: string;
+  BUILDS_API_URL?: string;
 }
 
 export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
-  if (!env.BUILDS_API_URL) {
-    return new Response("BUILDS_API_URL not configured on this environment", { status: 500 });
-  }
-
   const incoming = new URL(request.url);
-  const downstream = new URL(env.BUILDS_API_URL);
+  const downstream = new URL(buildsApiBase(env));
   // Strip `/api` from the incoming path; keep `/pairs/...` so the Worker routes it.
   downstream.pathname = incoming.pathname.replace(/^\/api/, "");
   downstream.search = incoming.search;

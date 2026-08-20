@@ -25,9 +25,10 @@ import { type BuildV6, DEFAULT_PROFILE } from "@tarkov/data";
 import { fetchOgRowsForBuild, type OgMod } from "../../lib/og-graphql.js";
 import { availabilityPillText } from "../../lib/og-availability.js";
 import { isValidBuildId } from "../../lib/build-id.js";
+import { buildsApiBase } from "../../lib/builds-api.js";
 
 export interface Env {
-  BUILDS_API_URL: string;
+  BUILDS_API_URL?: string;
   /**
    * Optional override for the json.tarkov.dev base this card reads item stats from. Unset in
    * production; the e2e suite binds it to a local fixture server so the pre-merge gate never
@@ -94,7 +95,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
   try {
     await initResvg(resvgWasm);
 
-    const upstream = await fetch(`${env.BUILDS_API_URL}/pairs/${id}`);
+    const upstream = await fetch(`${buildsApiBase(env)}/pairs/${id}`);
     if (upstream.status === 404) return fallback("miss", id, startedAt);
     if (!upstream.ok) return fallback("upstream", id, startedAt, { "cache-control": "no-store" });
 

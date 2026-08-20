@@ -5,6 +5,18 @@
   "compatibility_date": "2024-09-23",
   "observability": { "enabled": true },
   "dev": { "port": 8788, "inspector_port": 9230 },
+
+  // Reachability is declared HERE, deliberately. Before this block existed the Worker had
+  // neither `routes` nor `workers_dev`, so nothing in the repo said how it was reachable —
+  // and when its route went away in the Cloudflare dashboard, no amount of redeploying
+  // brought it back. `wrangler deploy` now creates and owns the DNS record.
+  //
+  // `workers_dev` is explicitly false rather than omitted: with a custom domain configured,
+  // a second public address for the same KV-backed store buys nothing. If the custom domain
+  // cannot be provisioned, `wrangler deploy` fails and the deploy job goes red — which is
+  // the intended behaviour. A silent fallback is how this became invisible the first time.
+  "workers_dev": false,
+  "routes": [{ "pattern": "api.tarkovgunsmith.undermybed.dev", "custom_domain": true }],
   "kv_namespaces": [
     {
       "binding": "BUILDS",

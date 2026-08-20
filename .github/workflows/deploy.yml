@@ -18,7 +18,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: production-builds-api
-      url: https://tarkov-gunsmith-builds-api.workers.dev
+      url: https://api.tarkovgunsmith.undermybed.dev
     steps:
       - uses: actions/checkout@v7
 
@@ -58,7 +58,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: production-pages
-      url: https://tarkov-gunsmith-web.pages.dev
+      url: https://tarkovgunsmith.undermybed.dev
     steps:
       - uses: actions/checkout@v7
 
@@ -86,3 +86,76 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/web
           command: pages deploy ./dist --project-name=tarkov-gunsmith-web --branch=main
+
+      # Declared here rather than clicked in the dashboard, for the same reason the Worker's
+      # route now lives in wrangler.jsonc: infrastructure nobody can see from the repo is
+      # infrastructure that disappears without anyone noticing. Idempotent — re-adding an
+      # existing domain returns 409, which is a success for our purposes.
+      - name: Ensure the Pages custom domain exists
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: tarkov-gunsmith-web
+          SITE_HOST: tarkovgunsmith.undermybed.dev
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/domain.json -w '%{http_code}' -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/domains" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H 'content-type: application/json' \
+            --data "{\"name\":\"$SITE_HOST\"}")
+          echo "POST domains -> HTTP $code"
+          if [ "$code" = "200" ] || [ "$code" = "409" ]; then
+            echo "custom domain present: $SITE_HOST"
+          elif grep -q 'already exists\|8000007' /tmp/domain.json 2>/dev/null; then
+            echo "custom domain already present: $SITE_HOST"
+          else
+            echo "FAILED to ensure custom domain:"; cat /tmp/domain.json; exit 1
+          fi
+
+  smoke:
+    name: Post-deploy smoke
+    needs: [builds-api, pages]
+    if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
+    runs-on: ubuntu-latest
+    steps:
+      # A deploy that reports success while its own API 500s is exactly what shipped for
+      # months. This job is the difference between "wrangler exited 0" and "production
+      # works". It deliberately probes through the Pages proxy, not the Worker directly,
+      # because the proxy hop is the part that was broken.
+      - name: Probe production
+        env:
+          SITE: https://tarkovgunsmith.undermybed.dev
+          API: https://api.tarkovgunsmith.undermybed.dev
+        run: |
+          set -euo pipefail
+          fail=0
+
+          probe() { # name, expected, url, extra curl args...
+            local name="$1" expect="$2" url="$3"; shift 3
+            local code
+            code=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 25 "$@" "$url" || echo 000)
+            if [ "$code" = "$expect" ]; then
+              echo "  ok   $name -> $code"
+            else
+              echo "  FAIL $name -> $code (expected $expect)"; head -c 200 /tmp/body; echo; fail=1
+            fi
+          }
+
+          echo "site:"
+          probe "GET /"            200 "$SITE/"
+          probe "GET /builder"     200 "$SITE/builder"
+
+          echo "worker reachable on its own hostname:"
+          probe "GET api /healthz" 200 "$API/healthz"
+
+          # The load-bearing one. An invalid body must reach the Worker and come back 400.
+          # A 500 here means the edge could not reach the Worker at all -- the exact
+          # failure that made build sharing dead in production while CI stayed green.
+          echo "edge -> worker path:"
+          probe "POST /api/builds (invalid body)" 400 "$SITE/api/builds" \
+            -X POST -H 'content-type: application/json' --data '{}'
+          probe "GET /api/builds/zzzzzzzz" 404 "$SITE/api/builds/zzzzzzzz"
+
+          [ "$fail" = "0" ] || { echo; echo "Production is not serving correctly."; exit 1; }
+          echo; echo "production verified"
