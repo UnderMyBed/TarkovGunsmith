@@ -39,11 +39,16 @@ export default defineConfig({
       // child route up so it actually mounts, plus covering its loading/error/loaded-pair
       // branches (routes/builder.compare.$pairId.test.tsx), moved measured coverage to
       // 73.04 / 70.35 / 73.57 / 73.93. Floored per-metric again.
+      //
+      // Raised again by the behavioural suites for the deep interactive components a Builder
+      // redesign has to cut through — slot-tree (39.72 → 94.52 stmts), profile-editor
+      // (41.37 → 98.27) and features/nav (25.88 → 92.94). Measured 84.03 / 80.95 / 82.57 /
+      // 85.71 (stmts/branch/funcs/lines). Floored per-metric, same convention as above.
       thresholds: {
-        lines: 73,
-        functions: 73,
-        branches: 70,
-        statements: 73,
+        lines: 85,
+        functions: 82,
+        branches: 80,
+        statements: 84,
       },
     },
   },
