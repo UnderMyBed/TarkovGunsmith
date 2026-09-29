@@ -21,32 +21,32 @@
   },
   "dependencies": {
     "@resvg/resvg-wasm": "^2.6.2",
-    "@tanstack/react-query": "^5.101.4",
-    "@tanstack/react-router": "^1.170.31",
+    "@tanstack/react-query": "^5.104.0",
+    "@tanstack/react-router": "^1.170.39",
     "@tarkov/ballistics": "workspace:*",
     "@tarkov/data": "workspace:*",
     "@tarkov/og": "workspace:^",
     "@tarkov/optimizer": "workspace:*",
     "@tarkov/ui": "workspace:*",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "recharts": "^3.10.1",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260819.1",
-    "@playwright/test": "^1.62.1",
+    "@cloudflare/workers-types": "^5.20260926.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@tanstack/router-plugin": "^1.168.34",
+    "@tanstack/router-plugin": "^1.168.40",
     "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.5",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
-    "jsdom": "^30.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^30.1.1",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.1",
-    "wrangler": "^4.124.0"
+    "vite": "^8.3.1",
+    "wrangler": "^4.141.0"
   }
 }
