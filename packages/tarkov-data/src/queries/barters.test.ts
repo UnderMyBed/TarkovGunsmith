@@ -40,9 +40,15 @@ describe("parseBarters", () => {
       requiredItems: [{ item: "i1", count: 2, attributes: {} }],
       offeredItem: { item: "i2", count: 1, attributes: {} },
     };
-    const parsed = parseBarters([good, { ...good, id: "b2", minTraderLevel: "two" }, null]);
+    const parsed = parseBarters([
+      good,
+      { ...good, id: "b2", minTraderLevel: "two" },
+      null,
+      // A zero count would make the per-unit barter cost divide by zero.
+      { ...good, id: "b3", offeredItem: { item: "i2", count: 0, attributes: {} } },
+    ]);
     expect(parsed.map((b) => b.id)).toEqual(["b1"]);
-    expect(debug).toHaveBeenCalledWith(expect.stringContaining("dropped 2 malformed barters"));
+    expect(debug).toHaveBeenCalledWith(expect.stringContaining("dropped 3 malformed barters"));
   });
 
   it("throws on a document that is not an array rather than reporting no barters", () => {

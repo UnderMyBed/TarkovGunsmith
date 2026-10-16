@@ -389,3 +389,68 @@ describe("createOfferResolver (captured documents)", () => {
     expect(resolve({ id: "a", types: ["noFlea"] })).toEqual([]);
   });
 });
+
+describe("createOfferResolver — malformed records", () => {
+  // The resolver reads unvalidated upstream documents (and, under #211, a snapshot built from
+  // them). A malformed record must neither throw nor invent an offer.
+  const traders = [{ id: "tr-mech", normalizedName: "mechanic" }];
+  const barter = (id: string, offered: string, required: string) => ({
+    id,
+    trader: "tr-mech",
+    taskUnlock: null,
+    minTraderLevel: 2,
+    requiredItems: [{ item: required, count: 2, attributes: {} }],
+    offeredItem: { item: offered, count: 1, attributes: {} },
+  });
+
+  it("skips non-object items and presets without a usable baseItem or name", () => {
+    const resolve = createOfferResolver({
+      items: {
+        gun: { id: "gun", types: ["gun", "noFlea"] },
+        hole: null,
+        "preset-no-base": {
+          id: "preset-no-base",
+          normalizedName: "gun-default",
+          properties: { propertiesType: "ItemPropertiesPreset", baseItem: null },
+        },
+        "preset-no-name": {
+          id: "preset-no-name",
+          properties: { propertiesType: "ItemPropertiesPreset", baseItem: "gun" },
+        },
+      },
+      traders,
+      tasks: [],
+      barters: [barter("b1", "preset-no-name", "gun")],
+    });
+    expect(resolve({ id: "gun", types: ["gun", "noFlea"] })).toEqual([]);
+  });
+
+  it("names a barter ingredient by id when its record carries no name", () => {
+    const resolve = createOfferResolver({
+      items: {
+        stock: { id: "stock", types: ["mods", "noFlea"] },
+        bolts: { id: "bolts", types: ["barter"] },
+      },
+      traders,
+      tasks: [],
+      barters: [barter("b2", "stock", "bolts")],
+    });
+    const [entry] = resolve({ id: "stock", types: ["mods", "noFlea"] });
+    expect(entry?.priceRUB).toBeNull();
+    expect(entry?.vendor).toMatchObject({ costUnavailableReason: "bolts has no flea price" });
+  });
+
+  it("resolves only an item's own cash and flea offers when it carries no id", () => {
+    const resolve = createOfferResolver({
+      items: {},
+      traders,
+      tasks: [],
+      barters: [],
+    });
+    const entries = resolve({
+      types: ["mods"],
+      buyFromTrader: [{ trader: "tr-mech", priceRUB: 5000, currency: "RUB", minTraderLevel: 1 }],
+    });
+    expect(entries.map((e) => e.vendor.__typename)).toEqual(["TraderOffer", "FleaMarket"]);
+  });
+});

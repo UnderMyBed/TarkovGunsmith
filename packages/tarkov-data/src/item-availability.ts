@@ -93,10 +93,6 @@ function compareText(a: string, b: string): number {
 
 const KIND_ORDER = { trader: 0, barter: 1, flea: 2 } as const;
 
-function traderOf(sat: { kind: string; traderNormalizedName?: string }): string {
-  return sat.traderNormalizedName ?? "";
-}
-
 function isFleaBlacklisted(item: AvailabilityInput): boolean {
   return item.types.includes("noFlea");
 }
@@ -140,10 +136,8 @@ export function itemAvailability(
   item: AvailabilityInput,
   profile: PlayerProfile,
 ): ItemAvailability {
+  // No offers at all falls through every accumulator below to `no-sources`.
   const offers = item.buyFor ?? [];
-  if (offers.length === 0) {
-    return { available: false, reason: "no-sources" };
-  }
 
   type SatTrader = {
     kind: "trader";
@@ -163,8 +157,12 @@ export function itemAvailability(
     priceRUB: number | null;
     offerKey: string;
   };
-  // `offerKey` is a tie-break id only; it never reaches the result.
-  const satisfied: Array<{ sat: SatTrader | SatBarter | SatFlea; offerKey: string }> = [];
+  // `trader` and `offerKey` are tie-break keys only; they never reach the result.
+  const satisfied: Array<{
+    sat: SatTrader | SatBarter | SatFlea;
+    trader: string;
+    offerKey: string;
+  }> = [];
   const unmetTrader: Array<Unmet & { shortBy: number }> = [];
   const unmetQuest: Array<Unmet & { questNormalizedName: string }> = [];
   const unmetFleaLevel: Array<{ minPlayerLevel: number }> = [];
@@ -232,6 +230,7 @@ export function itemAvailability(
             vendor.__typename === "TraderBarter"
               ? { ...base, kind: "barter", barterId: vendor.barterId }
               : { ...base, kind: "trader" },
+          trader: traderName,
           offerKey,
         });
         break;
@@ -253,7 +252,11 @@ export function itemAvailability(
           unmetFleaLevel.push({ minPlayerLevel });
           continue;
         }
-        satisfied.push({ sat: { kind: "flea", priceRUB: offer.priceRUB }, offerKey: "flea" });
+        satisfied.push({
+          sat: { kind: "flea", priceRUB: offer.priceRUB },
+          trader: "",
+          offerKey: "flea",
+        });
         break;
       }
       default: {
@@ -270,7 +273,7 @@ export function itemAvailability(
       (a, b) =>
         byPrice(a.sat.priceRUB, b.sat.priceRUB) ||
         KIND_ORDER[a.sat.kind] - KIND_ORDER[b.sat.kind] ||
-        compareText(traderOf(a.sat), traderOf(b.sat)) ||
+        compareText(a.trader, b.trader) ||
         compareText(a.offerKey, b.offerKey),
     );
     const best = satisfied[0]!.sat;

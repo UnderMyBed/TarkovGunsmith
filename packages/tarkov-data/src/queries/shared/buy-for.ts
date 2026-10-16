@@ -182,8 +182,8 @@ export function barterCostRUB(
     }
     total += required.count * item.fleaPriceRUB;
   }
-  const offered = barter.offeredItem.count > 0 ? barter.offeredItem.count : 1;
-  return { priceRUB: Math.round(total / offered), reason: null };
+  // `parseBarters` guarantees a positive count.
+  return { priceRUB: Math.round(total / barter.offeredItem.count), reason: null };
 }
 
 /** Cash `buyFromTrader` offers on one upstream item, joined to trader/task names. */

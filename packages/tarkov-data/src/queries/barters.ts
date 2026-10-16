@@ -14,7 +14,8 @@ import { fetchTasks } from "./tasks.js";
  */
 const barterItemSchema = z.object({
   item: z.string(),
-  count: z.number(),
+  // Positive: barter cost is divided by the offered count.
+  count: z.number().positive(),
   attributes: z.record(z.string(), z.unknown()),
 });
 

@@ -628,6 +628,68 @@ describe("itemAvailability — barters and preset offers", () => {
     }
   });
 
+  it("breaks a satisfied tie between two presets from one trader by offer id", () => {
+    // Live shape: Mechanic sells several M4A1 presets at the same loyalty level.
+    const viaPreset = (id: string) => ({
+      ...traderOffer("mechanic", 1, 109841),
+      preset: { id, normalizedName: `preset-${id}` },
+    });
+    for (const buyFor of [
+      [viaPreset("p2"), viaPreset("p1")],
+      [viaPreset("p1"), viaPreset("p2")],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), baseProfile)).toMatchObject({
+        kind: "trader",
+        preset: { id: "p1" },
+      });
+    }
+  });
+
+  it("names cash before barter whichever order the offers arrive in", () => {
+    const cash = traderOffer("jaeger", 2);
+    const barter = barterOffer("jaeger", 2, 900);
+    for (const buyFor of [
+      [cash, barter],
+      [barter, cash],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), baseProfile)).toMatchObject({
+        reason: "trader-ll-required",
+        payment: "cash",
+      });
+    }
+  });
+
+  it("reports the nearest untracked offer: lowest level, then cash, then cheapest", () => {
+    // Live shape: Ref barters several M4A1 presets for GP coins at LL2-LL4, and Fence sells
+    // for cash. None of these traders has a level on the profile.
+    const refLL4 = barterOffer("ref", 4, null, "b-ref-4");
+    const refLL3Dear = barterOffer("ref", 3, 9000, "b-ref-3a");
+    const refLL3Cheap = barterOffer("ref", 3, 4000, "b-ref-3b");
+    const orders = [
+      [refLL4, refLL3Dear, refLL3Cheap],
+      [refLL3Cheap, refLL4, refLL3Dear],
+      [refLL3Dear, refLL3Cheap, refLL4],
+    ];
+    for (const buyFor of orders) {
+      const result = itemAvailability(mod({ buyFor }), baseProfile);
+      expect(result).toEqual({
+        available: false,
+        reason: "untracked-trader",
+        traderNormalizedName: "ref",
+        minLevel: 3,
+        payment: "barter",
+      });
+    }
+    const fenceLL3 = traderOffer("fence", 3);
+    for (const buyFor of orders.map((o) => [...o, fenceLL3])) {
+      expect(itemAvailability(mod({ buyFor }), baseProfile)).toMatchObject({
+        reason: "untracked-trader",
+        traderNormalizedName: "fence",
+        payment: "cash",
+      });
+    }
+  });
+
   it("falls back to the offer id when price and trader tie", () => {
     const viaPreset = (id: string) => ({
       ...traderOffer("skier", 2, 1000),
