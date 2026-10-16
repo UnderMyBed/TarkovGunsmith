@@ -36,12 +36,6 @@ function HomePage() {
             >
               Open the Builder ▸
             </Link>
-            <Link
-              to="/sim"
-              className="inline-flex items-center gap-2 border border-[var(--color-border)] text-[var(--color-foreground)] font-mono text-12 tracking-18 uppercase h-10 px-5 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
-            >
-              Run a simulation
-            </Link>
           </div>
           <div className="mt-3">
             <Link

@@ -13,22 +13,18 @@ import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with 
 /** Placeholder option + one per weapon in the capture. `<option value="">Select weapon…</option>`. */
 const WEAPON_OPTION_COUNT = fixtureItemCount("ItemPropertiesWeapon") + 1;
 
-/** Every route we ship today. Keep in sync with __root.tsx nav. */
+/** Every routed page we ship today. Keep in sync with __root.tsx nav. */
 const ROUTES: ReadonlyArray<{
   path: string;
   /** Text we expect on the loaded page. */ contains: string;
 }> = [
   { path: "/", contains: "BUILD THE" },
   { path: "/builder", contains: "NO WEAPON SELECTED" },
-  { path: "/calc", contains: "Ballistic" },
-  { path: "/matrix", contains: "AmmoVsArmor" },
-  { path: "/sim", contains: "Ballistics" },
-  { path: "/adc", contains: "Armor Damage" },
-  { path: "/aec", contains: "Armor Effectiveness" },
-  { path: "/data", contains: "Data" },
-  { path: "/charts", contains: "Effectiveness" },
   { path: "/builder/compare", contains: "Add a second build" },
 ];
+
+/** Parked features: no route, no nav entry; the old URL lands on the Builder (#210). */
+const PARKED_PATHS = ["/calc", "/sim", "/adc", "/aec", "/matrix", "/data", "/charts", "/smoke"];
 
 /**
  * Attach a console-error listener that fails the test on any `error`-level
@@ -57,6 +53,20 @@ test.describe("smoke — per-route load", () => {
         timeout: 10_000,
       });
       expect(errors, `Console errors on ${route.path}:\n${errors.join("\n")}`).toEqual([]);
+    });
+  }
+});
+
+test.describe("smoke — parked feature URLs redirect to the Builder", () => {
+  for (const path of PARKED_PATHS) {
+    test(`${path} redirects to /builder`, async ({ page }) => {
+      const { errors } = captureConsoleErrors(page);
+      await page.goto(path, { waitUntil: "networkidle" });
+      await expect(page).toHaveURL(/\/builder$/);
+      await expect(page.getByText("NO WEAPON SELECTED", { exact: false }).first()).toBeVisible({
+        timeout: 10_000,
+      });
+      expect(errors, `Console errors after ${path} redirect:\n${errors.join("\n")}`).toEqual([]);
     });
   }
 });
@@ -430,46 +440,26 @@ test.describe("smoke — TarkovTracker import", () => {
   });
 });
 
-test.describe("smoke — Builder-focus nav + WIP banners", () => {
-  test("Calc dropdown opens and navigates to /sim", async ({ page }) => {
+test.describe("smoke — Builder-only nav", () => {
+  test("the header offers Builder and Compare only, and Compare navigates", async ({ page }) => {
     const { errors } = captureConsoleErrors(page);
     await page.goto("/", { waitUntil: "networkidle" });
 
-    await page.getByRole("button", { name: "Calc", exact: true }).click();
+    const nav = page.getByRole("navigation");
+    await expect(nav.getByRole("link")).toHaveText(["Builder", "Compare"]);
+    await expect(nav.getByRole("button")).toHaveCount(0);
 
-    // A plain link, not a `menuitem` — the dropdown is a disclosure containing navigation
-    // links, not an ARIA menu. See the docblock on `features/nav/nav-dropdown.tsx`.
-    const simLink = page.getByRole("navigation").getByRole("link", { name: "Simulator" });
-    await expect(simLink).toBeVisible({ timeout: 5_000 });
+    await nav.getByRole("link", { name: "Compare" }).click();
+    await expect(page).toHaveURL(/\/builder\/compare$/);
+    await expect(nav.getByRole("link", { name: "Builder" })).not.toHaveAttribute("aria-current");
 
-    await simLink.click();
-    await expect(page).toHaveURL(/\/sim$/);
-
-    expect(errors, `Console errors on dropdown navigation:\n${errors.join("\n")}`).toEqual([]);
+    expect(errors, `Console errors on nav:\n${errors.join("\n")}`).toEqual([]);
   });
 
-  test("/calc shows the WIP banner", async ({ page }) => {
-    const { errors } = captureConsoleErrors(page);
-    await page.goto("/calc", { waitUntil: "networkidle" });
-    await expect(page.getByText(/Subject to change or removal/)).toBeVisible();
-    expect(errors).toEqual([]);
-  });
-});
-
-test.describe("smoke — matrix accuracy disclosure", () => {
-  // The single-layer model overstates shots-to-break by 4-17x on plate-equipped
-  // vests (ADR-0003). Shipping that silently is not acceptable, so the caveat is
-  // a tested contract rather than decoration. Delete this test only when
-  // ADR-0003 is implemented and the caveat is no longer true.
-  test("/matrix discloses that armor is modelled as a single layer", async ({ page }) => {
-    const { errors } = captureConsoleErrors(page);
-    await page.goto("/matrix", { waitUntil: "networkidle" });
-
-    await expect(page.getByText(/Single-layer model/i)).toBeVisible();
-    await expect(page.getByText(/far more durable than they are/i)).toBeVisible();
-    await expect(page.getByText(/ADR-0003/)).toBeVisible();
-
-    expect(errors).toEqual([]);
+  test("the landing page offers no simulator link", async ({ page }) => {
+    await page.goto("/", { waitUntil: "networkidle" });
+    await expect(page.getByRole("link", { name: "Open the Builder" })).toBeVisible();
+    await expect(page.locator('a[href="/sim"]')).toHaveCount(0);
   });
 });
 

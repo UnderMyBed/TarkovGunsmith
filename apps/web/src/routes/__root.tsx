@@ -1,22 +1,8 @@
 import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
-import { NavDropdown, type NavDropdownItem } from "../features/nav/nav-dropdown.js";
 
 export const Route = createRootRoute({
   component: RootLayout,
 });
-
-const CALC_ITEMS: readonly NavDropdownItem[] = [
-  { to: "/calc", label: "Calc" },
-  { to: "/sim", label: "Simulator" },
-  { to: "/adc", label: "Armor Damage" },
-  { to: "/aec", label: "Armor Effectiveness" },
-];
-
-const DATA_ITEMS: readonly NavDropdownItem[] = [
-  { to: "/matrix", label: "Ammo × Armor Matrix" },
-  { to: "/data", label: "Datasheets" },
-  { to: "/charts", label: "Charts" },
-];
 
 function RootLayout() {
   return (
@@ -56,6 +42,7 @@ function RootLayout() {
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link
               to="/builder"
+              activeOptions={{ exact: true }}
               activeProps={{
                 className:
                   "text-[var(--color-primary)] border-b-[1.5px] border-[var(--color-primary)]",
@@ -64,8 +51,16 @@ function RootLayout() {
             >
               Builder
             </Link>
-            <NavDropdown label="Calc" items={CALC_ITEMS} />
-            <NavDropdown label="Data" items={DATA_ITEMS} />
+            <Link
+              to="/builder/compare"
+              activeProps={{
+                className:
+                  "text-[var(--color-primary)] border-b-[1.5px] border-[var(--color-primary)]",
+              }}
+              className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors"
+            >
+              Compare
+            </Link>
           </nav>
         </div>
       </header>

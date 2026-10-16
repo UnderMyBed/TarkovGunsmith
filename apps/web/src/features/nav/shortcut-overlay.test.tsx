@@ -20,8 +20,6 @@ describe("ShortcutOverlay", () => {
     for (const [key, action] of [
       ["?", "Toggle this overlay"],
       ["g b", "Go to /builder"],
-      ["g c", "Go to /calc"],
-      ["g d", "Go to /data"],
       ["/", "Focus the first picker on this page"],
       ["Esc", "Close this overlay"],
     ] as const) {
