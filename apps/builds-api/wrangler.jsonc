@@ -23,7 +23,4 @@
       "id": "c42204b518fd4af2a5f3aa5bd8f24d69",
     },
   ],
-  "vars": {
-    "BUILD_TTL_SECONDS": "2592000",
-  },
 }

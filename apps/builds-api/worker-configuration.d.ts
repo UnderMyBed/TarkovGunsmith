@@ -7,7 +7,6 @@ declare namespace Cloudflare {
   }
   interface Env {
     BUILDS: KVNamespace;
-    BUILD_TTL_SECONDS: "2592000";
   }
 }
 interface Env extends Cloudflare.Env {}

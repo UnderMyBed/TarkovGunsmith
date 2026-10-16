@@ -114,7 +114,7 @@ function LoadErrorCard({ error, id, onRetry }: { error: Error; id: string; onRet
       case "not-found":
         return {
           title: "Build not found",
-          body: "This build has expired (30-day lifetime) or never existed.",
+          body: "This build doesn't exist. Builds saved under the old 30-day policy may have expired; new ones never do.",
         };
       case "invalid-schema":
         return {
