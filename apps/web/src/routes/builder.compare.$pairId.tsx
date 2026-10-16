@@ -64,7 +64,7 @@ function LoadErrorCard({ error, id, onRetry }: { error: Error; id: string; onRet
       case "not-found":
         return {
           title: "Comparison not found",
-          body: "This comparison has expired (30-day lifetime) or never existed.",
+          body: "This comparison doesn't exist. Comparisons saved under the old 30-day policy may have expired; new ones never do.",
         };
       case "invalid-schema":
         return {
