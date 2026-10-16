@@ -17,9 +17,11 @@ function handleSlotTreeKeyDown(e: React.KeyboardEvent<HTMLUListElement>) {
     return;
   }
 
+  // Disabled options (a conflicting part) are skipped: focus() on one is a no-op, so including
+  // them would strand ArrowDown on the option above.
   const targets = Array.from(
     root.querySelectorAll<HTMLElement>(
-      "details[data-slot-path] > summary, details[data-slot-path] > div button",
+      "details[data-slot-path] > summary, details[data-slot-path] > div button:not(:disabled)",
     ),
   );
   const active = document.activeElement as HTMLElement | null;
