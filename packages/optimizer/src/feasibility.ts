@@ -3,7 +3,9 @@ import type { AttachablePart, PlayerProfile, SlotNode } from "@tarkov/data";
 
 /**
  * Returns the cheapest RUB price at which `item` is obtainable under the
- * given player profile, or `null` if the item is unavailable.
+ * given player profile, or `null` if the item is unavailable OR obtainable only at an
+ * unknown price (a barter whose ingredient has no flea price). Callers that need to tell
+ * those apart ask `itemAvailability` — see the budget check in `branch-and-bound.ts`.
  */
 export function cheapestPrice(item: AttachablePart, profile: PlayerProfile): number | null {
   const avail = itemAvailability(item, profile);

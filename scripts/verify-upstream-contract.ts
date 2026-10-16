@@ -43,6 +43,7 @@ import { fetchPartCatalog } from "../packages/tarkov-data/src/queries/parts.js";
 import type { ItemsDocument } from "../packages/tarkov-data/src/queries/documents.js";
 import { buildSlotGraph } from "../packages/tarkov-data/src/queries/slot-graph.js";
 import { fetchWeaponList } from "../packages/tarkov-data/src/queries/weaponList.js";
+import { fetchBarters } from "../packages/tarkov-data/src/queries/barters.js";
 
 const API_BASE = "https://json.tarkov.dev/regular/";
 const ITEMS_URL = `${API_BASE}items`;
@@ -266,13 +267,16 @@ async function main(): Promise<void> {
  */
 async function checkSelectorsAcceptLiveDocument(): Promise<void> {
   const client = createTarkovClient(API_BASE);
-  const minimums = { weapons: 50, parts: 2000, ammo: 50, armor: 20 } as const;
+  const minimums = { weapons: 50, parts: 2000, ammo: 50, armor: 20, barters: 300 } as const;
 
-  const [weapons, parts, ammo, armor, doc] = await Promise.all([
+  const [weapons, parts, ammo, armor, barters, doc] = await Promise.all([
     fetchWeaponList(client),
     fetchPartCatalog(client),
     fetchAmmoList(client),
     fetchArmorList(client),
+    // Barters are offers, not a picker: a schema break here silently turns every barter-only
+    // mod and every preset-barter weapon back into "unobtainable".
+    fetchBarters(client),
     client.fetchResource<ItemsDocument>("items"),
   ]);
 
@@ -281,6 +285,7 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
     parts: parts.length,
     ammo: ammo.length,
     armor: armor.length,
+    barters: barters.length,
   };
 
   for (const [name, minimum] of Object.entries(minimums)) {
@@ -324,7 +329,7 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
 
   notes.push(`${visited.size - weapons.length} items reachable through weapon slots`);
   notes.push(
-    `selectors parsed: ${counts.weapons} weapons, ${counts.parts} parts, ${counts.ammo} ammo, ${counts.armor} armor`,
+    `selectors parsed: ${counts.weapons} weapons, ${counts.parts} parts, ${counts.ammo} ammo, ${counts.armor} armor, ${counts.barters} barters`,
   );
 }
 

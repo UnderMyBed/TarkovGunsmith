@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { branchAndBound, type BnbState } from "./branch-and-bound.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
 import { tinyTree } from "./__fixtures__/tree.js";
-import { partsById, type PlayerProfile } from "@tarkov/data";
+import { partsById, type AttachablePart, type PlayerProfile } from "@tarkov/data";
 
 const flea: PlayerProfile = {
   mode: "basic",
@@ -322,3 +322,77 @@ function makeVeryWideState(): { state: BnbState; slots: never[] } {
     slots: slots as never[],
   };
 }
+
+describe("branchAndBound — unpriced but obtainable candidates", () => {
+  // Unknown price is not free. The brake here is obtainable only through a Prapor LL1 barter
+  // whose ingredient has no flea price, so itemAvailability says available, priceRUB null.
+  const unpricedBrake: AttachablePart = {
+    ...SMALL_MODS[0]!,
+    buyFor: [
+      {
+        priceRUB: null,
+        currency: null,
+        vendor: {
+          __typename: "TraderBarter",
+          normalizedName: "prapor",
+          minTraderLevel: 1,
+          taskUnlock: null,
+          trader: { normalizedName: "prapor" },
+          barterId: "b-brake",
+          offeredCount: 1,
+          requiredItems: [{ itemId: "gp-coin", count: 6.25, attributes: {} }],
+          costUnavailableReason: "GP coin has no flea price",
+        },
+      },
+    ],
+  };
+  const mods = [unpricedBrake, ...SMALL_MODS.slice(1)];
+
+  it("does not treat an unpriced candidate as free under a budget", () => {
+    const best = branchAndBound(
+      makeState({ parts: partsById(mods), budgetRub: 5000 }),
+      SMALL_TREE.slots,
+    );
+    expect(best).not.toBeNull();
+    expect(best!.attachments.muzzle).not.toBe("muzzle_brake");
+  });
+
+  it("skips a flea-only candidate with no flea price under a budget, too", () => {
+    // Upstream sends some flea-tradeable items with neither avg24hPrice nor lastLowPrice.
+    const unpricedFleaBrake: AttachablePart = {
+      ...SMALL_MODS[0]!,
+      buyFor: [
+        {
+          priceRUB: null,
+          currency: "RUB",
+          vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 15 },
+        },
+      ],
+    };
+    const fleaMods = [unpricedFleaBrake, ...SMALL_MODS.slice(1)];
+    const budgeted = branchAndBound(
+      makeState({ parts: partsById(fleaMods), budgetRub: 5000 }),
+      SMALL_TREE.slots,
+    );
+    expect(budgeted!.attachments.muzzle).not.toBe("muzzle_brake");
+    const unbudgeted = branchAndBound(makeState({ parts: partsById(fleaMods) }), SMALL_TREE.slots);
+    expect(unbudgeted!.attachments.muzzle).toBe("muzzle_brake");
+  });
+
+  it("still considers it when no budget is set", () => {
+    const best = branchAndBound(makeState({ parts: partsById(mods) }), SMALL_TREE.slots);
+    expect(best!.attachments.muzzle).toBe("muzzle_brake");
+  });
+
+  it("still honours a pin on it under a budget", () => {
+    const best = branchAndBound(
+      makeState({
+        parts: partsById(mods),
+        budgetRub: 5000,
+        pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
+      }),
+      SMALL_TREE.slots,
+    );
+    expect(best!.attachments.muzzle).toBe("muzzle_brake");
+  });
+});

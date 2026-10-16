@@ -26,12 +26,15 @@ import { readFileSync } from "node:fs";
 const FIXTURE_DIR = new URL("../../../packages/tarkov-data/src/__fixtures__/", import.meta.url);
 
 /** The resources `packages/tarkov-data` fetches. Each has an `_en` translation sibling. */
-export const UPSTREAM_RESOURCES = ["items", "tasks", "traders"] as const;
+export const UPSTREAM_RESOURCES = ["items", "tasks", "traders", "barters"] as const;
 export type UpstreamResource = (typeof UPSTREAM_RESOURCES)[number];
 
 interface CapturedFixture {
-  /** The raw upstream envelope: payload plus the JSONPaths whose values are translation keys. */
-  readonly document: { data: Record<string, unknown>; translations?: readonly string[] };
+  /**
+   * The raw upstream envelope: payload plus the JSONPaths whose values are translation keys.
+   * `data` is an object for items/tasks/traders and an array for barters.
+   */
+  readonly document: { data: unknown; translations?: readonly string[] };
   /** The subset of the `_en` map those records need. */
   readonly lang: Record<string, string>;
 }
@@ -74,10 +77,29 @@ export function upstreamFixtureBody(segment: string): string | null {
  * capture, the rows come from `fetchPartCatalog` + Zod + React.
  */
 export function fixtureItemCount(propertiesType: string): number {
-  const items = capture("items").document.data.items as Record<
-    string,
-    { properties?: { propertiesType?: unknown } | null }
-  >;
-  return Object.values(items).filter((item) => item.properties?.propertiesType === propertiesType)
+  return capturedItems().filter((item) => item.properties?.propertiesType === propertiesType)
     .length;
+}
+
+interface CapturedItem {
+  readonly types?: readonly string[];
+  readonly properties?: { propertiesType?: unknown } | null;
+}
+
+function capturedItems(): CapturedItem[] {
+  const data = capture("items").document.data as { items: Record<string, CapturedItem> };
+  return Object.values(data.items);
+}
+
+/**
+ * How many captured weapons the Builder's picker can offer: `ItemPropertiesWeapon` items
+ * minus the special-slot ones (the SP-81 signal pistol and RSP-30 cartridges), which
+ * `isBuildableWeapon` (`packages/tarkov-data/src/queries/weaponList.ts`) drops.
+ */
+export function fixtureBuildableWeaponCount(): number {
+  return capturedItems().filter(
+    (item) =>
+      item.properties?.propertiesType === "ItemPropertiesWeapon" &&
+      !(item.types ?? []).includes("specialSlot"),
+  ).length;
 }

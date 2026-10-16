@@ -113,12 +113,29 @@ describe("selectPartCatalog", () => {
     expect(barrel.conflictingItems.length).toBe(3);
     expect(barrel.conflictingSlotIds).toEqual([]);
     expect(parts.some((p) => (p.buyFor ?? []).length > 0)).toBe(true);
-    for (const p of parts) expect(p.name).not.toMatch(/ Name$/);
+    for (const p of parts) {
+      expect(p.name).not.toMatch(/ Name$/);
+      for (const entry of p.buyFor ?? []) {
+        expect(["TraderOffer", "TraderBarter", "FleaMarket"]).toContain(entry.vendor.__typename);
+        expect(entry.vendor.normalizedName).not.toBe("");
+      }
+    }
+  });
+
+  it("resolves barters through the offer resolver, for a barter-only scope too", async () => {
+    // ELCAN SpecterDR (FDE): no cash offer anywhere, bartered by Mechanic and Peacekeeper.
+    const elcan = partsById(await fetchPartCatalog(fixtureClient())).get(
+      "57aca93d2459771f2c7e26db",
+    )!;
+    expect(elcan.properties.propertiesType).toBe("ItemPropertiesScope");
+    expect(elcan.buyFor?.some((b) => b.vendor.__typename === "TraderBarter")).toBe(true);
+    expect(elcan.buyFor?.some((b) => b.vendor.__typename === "TraderOffer")).toBe(false);
   });
 
   it("carries no craft or barter sourcing fields", async () => {
-    // Crafting and barter sourcing live in upstream resources nothing here fetches, so a
-    // part carries no such field at all; Zod strips them if upstream starts sending them.
+    // Barters arrive inside `buyFor` as `TraderBarter` entries; crafting lives in the upstream
+    // `/crafts` resource, which nothing here fetches. A part carries no separate field for
+    // either, and Zod strips them if upstream starts sending them.
     for (const part of await fetchPartCatalog(fixtureClient())) {
       expect(part).not.toHaveProperty("craftsFor");
       expect(part).not.toHaveProperty("bartersFor");

@@ -1,10 +1,11 @@
 import type { TarkovJsonClient } from "@tarkov/data";
-import { ITEMS_DOCUMENT, TRADERS_DOCUMENT, TASKS_DOCUMENT } from "./fixtures.js";
+import { ITEMS_DOCUMENT, TRADERS_DOCUMENT, TASKS_DOCUMENT, BARTERS_DOCUMENT } from "./fixtures.js";
 
 const RESOURCES: Record<string, unknown> = {
   items: ITEMS_DOCUMENT,
   traders: TRADERS_DOCUMENT,
   tasks: TASKS_DOCUMENT,
+  barters: BARTERS_DOCUMENT,
 };
 
 /**

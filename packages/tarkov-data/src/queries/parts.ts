@@ -1,9 +1,8 @@
 import { z } from "zod";
 import type { TarkovJsonClient } from "../client.js";
 import type { ItemsDocument } from "./documents.js";
-import { buyForEntrySchema, resolveBuyFor, type BuyForEntry } from "./shared/buy-for.js";
-import { fetchTraders } from "./traders.js";
-import { fetchTasks } from "./tasks.js";
+import { buyForEntrySchema, type OfferResolver } from "./shared/buy-for.js";
+import { fetchOfferResolver } from "./barters.js";
 
 /**
  * Stat modifiers every mod-like part carries. Fractions, not percents — see the units warning
@@ -59,9 +58,6 @@ export function isModLikePart(part: AttachablePart): part is ModLikePart {
   return part.properties.propertiesType !== "ItemPropertiesAmmo";
 }
 
-/** Resolves one raw upstream item to its purchase offers. */
-export type OfferResolver = (item: unknown) => BuyForEntry[];
-
 /**
  * Parse one raw upstream item as an attachable part, or `null` when it is not one (another item
  * type, or a part whose record no longer matches the schema). For callers that hold a handful of
@@ -74,9 +70,9 @@ export function parseAttachablePart(
   const type = (item as { properties?: { propertiesType?: unknown } | null } | null)?.properties
     ?.propertiesType;
   if (typeof type !== "string" || !PART_TYPES.has(type)) return null;
-  // `buyFor` is the only acquisition path this resolves. Crafting and barter sourcing live in
-  // upstream resources nothing here fetches (docs/adr/0002-json-api-migration.md §"deferred"),
-  // so a part carries no craft/barter fields rather than always-empty ones.
+  // `buyFor` carries cash, barter and flea offers (`createOfferResolver`). Crafting lives in the
+  // upstream `/crafts` resource, which nothing in this package fetches, so a part carries no
+  // craft field at all rather than an always-empty one.
   const parsed = attachablePartSchema.safeParse({
     ...(item as object),
     buyFor: resolveOffers(item),
@@ -122,11 +118,10 @@ export function partsById(parts: readonly AttachablePart[]): ReadonlyMap<string,
 
 /** Fetch the catalog through a client. A thin wrapper over {@link selectPartCatalog}. */
 export async function fetchPartCatalog(client: TarkovJsonClient): Promise<AttachablePart[]> {
-  // All three come from the client cache, so this is one network round trip in practice.
-  const [doc, traders, tasks] = await Promise.all([
+  // Both come from the client cache, so this is one network round trip in practice.
+  const [doc, resolveOffers] = await Promise.all([
     client.fetchResource<ItemsDocument>("items"),
-    fetchTraders(client),
-    fetchTasks(client),
+    fetchOfferResolver(client),
   ]);
-  return selectPartCatalog(doc, (item) => resolveBuyFor(item, traders, tasks));
+  return selectPartCatalog(doc, resolveOffers);
 }

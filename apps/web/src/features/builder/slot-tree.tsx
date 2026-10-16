@@ -323,6 +323,7 @@ function availabilityShortLabel(a: ItemAvailability): string | null {
   // Prefer compact labels like "LL2" / "FLEA".
   if (a.kind === "flea") return "FLEA";
   if (a.kind === "trader") return `LL${a.minLevel}`;
+  if (a.kind === "barter") return `LL${a.minLevel} BARTER`;
   return null;
 }
 
@@ -330,9 +331,11 @@ function formatRequirement(a: ItemAvailability): string {
   if (a.available) return "";
   switch (a.reason) {
     case "trader-ll-required":
-      return `${a.traderNormalizedName} LL${a.minLevel}`;
+      return `${a.traderNormalizedName} LL${a.minLevel}${a.payment === "barter" ? " barter" : ""}`;
     case "quest-required":
       return `Quest: ${a.questNormalizedName}`;
+    case "untracked-trader":
+      return `${a.traderNormalizedName} LL${a.minLevel} (not in profile)`;
     case "flea-level-required":
       return `Flea level ${a.minPlayerLevel}`;
     case "flea-locked":

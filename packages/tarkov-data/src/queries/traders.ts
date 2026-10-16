@@ -28,15 +28,28 @@ const PROFILE_TRADERS = new Set([
 export type TradersDocument = Record<string, unknown>;
 
 /**
- * Fetch the list of traders, filtered to the 7 that have loyalty-level gating relevant to
- * builds (excludes Fence, Ref, and any future non-LL-gated vendors).
+ * Every trader in the document — the 7 profile traders plus Ref, Fence, Lightkeeper and any
+ * vendor added later.
+ *
+ * Offer resolution reads this rather than {@link fetchTraders}: an offer from a trader the
+ * profile cannot gate (Ref's GP-coin barters) still has to be resolvable by name, so
+ * availability can report it as `untracked-trader` instead of dropping it unseen.
  */
-export async function fetchTraders(client: TarkovJsonClient): Promise<TraderListItem[]> {
+export async function fetchTraderDirectory(client: TarkovJsonClient): Promise<TraderListItem[]> {
   const doc = await client.fetchResource<TradersDocument>("traders");
   const out: TraderListItem[] = [];
   for (const raw of Object.values(doc)) {
     const parsed = traderListItemSchema.safeParse(raw);
-    if (parsed.success && PROFILE_TRADERS.has(parsed.data.normalizedName)) out.push(parsed.data);
+    if (parsed.success) out.push(parsed.data);
   }
   return out;
+}
+
+/**
+ * Fetch the list of traders, filtered to the 7 that have loyalty-level gating relevant to
+ * builds (excludes Fence, Ref, and any future non-LL-gated vendors).
+ */
+export async function fetchTraders(client: TarkovJsonClient): Promise<TraderListItem[]> {
+  const all = await fetchTraderDirectory(client);
+  return all.filter((t) => PROFILE_TRADERS.has(t.normalizedName));
 }

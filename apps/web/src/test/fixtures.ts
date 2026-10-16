@@ -39,6 +39,12 @@ export const TRADERS_DOCUMENT: Record<string, unknown> = {
 // `fetchTasks` still round-trips this resource on every render that calls `useTasks`.
 export const TASKS_DOCUMENT: { tasks: Record<string, unknown> } = { tasks: {} };
 
+// ---------- Barters ----------
+// Empty: the route scenarios gate on cash and flea offers only. `fetchWeaponList` and
+// `fetchPartCatalog` still round-trip this resource (upstream's `data` is an array) on every
+// render that resolves offers.
+export const BARTERS_DOCUMENT: unknown[] = [];
+
 // ---------- Armor materials ----------
 export const ARMOR_MATERIALS: Record<
   string,
