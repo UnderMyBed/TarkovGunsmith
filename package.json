@@ -3,7 +3,7 @@
   "version": "1.16.2",
   "private": true,
   "type": "module",
-  "description": "AI-first rebuild of TarkovGunsmith — a community tool for Escape from Tarkov ballistics, weapon builds, and ammo-vs-armor analysis.",
+  "description": "AI-first rebuild of TarkovGunsmith \u2014 a community tool for Escape from Tarkov ballistics, weapon builds, and ammo-vs-armor analysis.",
   "license": "MIT",
   "engines": {
     "node": ">=22",
@@ -55,7 +55,16 @@
   },
   "pnpm": {
     "overrides": {
-      "@types/node": "^22.20.1"
+      "@types/node": "^22.20.1",
+      "sharp@<0.35.5": "0.35.5",
+      "seroval@<1.6.3": "1.6.3",
+      "source-map-js@<1.2.2": "1.2.2",
+      "brace-expansion@<1.1.21": "1.1.21",
+      "brace-expansion@>=5.0.0 <5.0.12": "5.0.12",
+      "fast-uri@<3.1.8": "3.1.8",
+      "undici@>=7.0.0 <7.29.1": "7.29.1",
+      "undici@>=8.0.0 <8.10.2": "8.10.2",
+      "js-yaml@>=4.0.0 <4.3.2": "4.3.2"
     }
   }
 }
