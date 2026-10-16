@@ -50,14 +50,16 @@ updates:
       # point.
       - dependency-name: "@types/node"
         versions: [">=23.0.0"]
-      # satori >= 0.33 cannot render on Cloudflare Workers, where /og/* runs. It bundles
-      # harfbuzzjs, whose Emscripten glue reads `self.location.href` at init (undefined on
-      # workerd), and from 0.35.2 compiles that wasm from bytes at runtime, which Workers
-      # forbid. `satori/standalone` does not help: it externalises only the layout wasm.
-      # Unblock: vercel/satori#878 ships a way to hand harfbuzz a precompiled module or turn
-      # it off; then bump and re-run the /og/* e2e specs under `wrangler pages dev`.
+      # satori > 0.10 cannot render on Cloudflare Workers, where /og/* runs. Workers forbid
+      # compiling wasm from bytes at runtime, and later versions do exactly that for their
+      # layout engine (0.32: "Wasm code generation disallowed by embedder"). From 0.33 they
+      # also bundle harfbuzzjs, whose Emscripten glue reads `self.location.href` at init
+      # (undefined on workerd). `satori/standalone` externalises only the layout wasm, not
+      # harfbuzz. Unblock: vercel/satori#878 ships a way to hand every wasm module in
+      # precompiled (or turn harfbuzz off); then bump and re-run the /og/* e2e specs under
+      # `wrangler pages dev`.
       - dependency-name: "satori"
-        versions: [">=0.33.0"]
+        versions: [">=0.11.0"]
 
   # `directory: /` scans .github/workflows/ and NOTHING ELSE. Composite actions under
   # .github/actions/*/action.yml need their own entry, one per directory. None exist today;
