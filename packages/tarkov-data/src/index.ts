@@ -27,6 +27,8 @@ export type {
   OfferResolver,
 } from "./queries/parts.js";
 export { attachedParts, fleaPriceRub } from "./attached-parts.js";
+export { conflictsWith } from "./conflicts.js";
+export type { Conflict, ConflictContext } from "./conflicts.js";
 export type { AttachedParts, AttachedPartEntry } from "./attached-parts.js";
 
 // Build schema
