@@ -22,8 +22,6 @@ export interface UseKeyboardShortcutsResult {
  * Shortcuts:
  *   ?     Toggle the shortcut overlay
  *   g b   → /builder
- *   g c   → /calc
- *   g d   → /data
  *   /     Focus first <select>/<input type="search">
  *   Esc   Close overlay (dialogs handle their own Esc)
  *
@@ -79,11 +77,9 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsResult {
 
       // Chord: `g` + letter
       if (chordPrefix === "g") {
-        const dest =
-          e.key === "b" ? "/builder" : e.key === "c" ? "/calc" : e.key === "d" ? "/data" : null;
-        if (dest) {
+        if (e.key === "b") {
           e.preventDefault();
-          void router.navigate({ to: dest });
+          void router.navigate({ to: "/builder" });
         }
         clearChord();
         return;

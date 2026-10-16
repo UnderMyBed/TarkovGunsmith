@@ -3,8 +3,9 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
 import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { renderRoute } from "../test/render-route.js";
-import { createTestClient } from "../test/test-client.js";
+import { renderPage } from "../../test/render-page.js";
+import { DataPage } from "./data-page.js";
+import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
@@ -12,9 +13,9 @@ function rowsOf(table: HTMLTableElement) {
   return within(table).getAllByRole("row").slice(1); // drop the header row
 }
 
-describe("/data", () => {
+describe("data page (parked, no route)", () => {
   it("defaults to the Ammo tab with both fixture ammo rows", async () => {
-    await renderRoute("/data");
+    await renderPage(<DataPage />);
 
     const table = await screen.findByRole("table");
     expect(await screen.findByText("2 rows")).toBeInTheDocument();
@@ -29,7 +30,7 @@ describe("/data", () => {
 
   it("switches to the Armor tab and shows both fixture armor rows", async () => {
     const user = userEvent.setup();
-    await renderRoute("/data");
+    await renderPage(<DataPage />);
     await screen.findByRole("table");
 
     await user.click(screen.getByRole("button", { name: "ARMOR" }));
@@ -42,7 +43,7 @@ describe("/data", () => {
 
   it("switches to the Weapons tab (1 row) and the Modules tab (2 rows)", async () => {
     const user = userEvent.setup();
-    await renderRoute("/data");
+    await renderPage(<DataPage />);
     await screen.findByRole("table");
 
     await user.click(screen.getByRole("button", { name: "WEAPONS" }));
@@ -59,7 +60,7 @@ describe("/data", () => {
 
   it("filters the active tab's rows by name", async () => {
     const user = userEvent.setup();
-    await renderRoute("/data");
+    await renderPage(<DataPage />);
     const table = await screen.findByRole("table");
     expect(rowsOf(table)).toHaveLength(2);
 
@@ -73,7 +74,7 @@ describe("/data", () => {
 
   it("toggles sort direction when a column header is clicked twice", async () => {
     const user = userEvent.setup();
-    await renderRoute("/data");
+    await renderPage(<DataPage />);
     await screen.findByRole("table");
 
     // Ascending by default: Name header already shows the ascending indicator.
@@ -98,7 +99,7 @@ describe("/data", () => {
   });
 
   it("shows an error card on the active tab when the items resource fails", async () => {
-    await renderRoute("/data", { client: createTestClient({ errorResources: ["items"] }) });
+    await renderPage(<DataPage />, { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load:/)).toBeInTheDocument();
   });
 });

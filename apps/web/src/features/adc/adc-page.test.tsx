@@ -3,8 +3,9 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { renderRoute } from "../test/render-route.js";
-import { createTestClient } from "../test/test-client.js";
+import { renderPage } from "../../test/render-page.js";
+import { AdcPage } from "./adc-page.js";
+import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
@@ -22,9 +23,9 @@ function bodyRows(): HTMLTableRowElement[] {
   return Array.from(table.querySelectorAll("tbody tr"));
 }
 
-describe("/adc", () => {
+describe("adc page (parked, no route)", () => {
   it("shows the picker prompt before an ammo + armor are both selected", async () => {
-    await renderRoute("/adc");
+    await renderPage(<AdcPage />);
     const ammoSelect = await screen.findByLabelText("Ammo");
     // The prompt is gated on `!isLoading` too, so wait for data to actually settle.
     await waitFor(() => expect(ammoSelect).not.toBeDisabled());
@@ -34,7 +35,7 @@ describe("/adc", () => {
 
   it("renders a per-shot results table with summary stats once ammo + armor are picked", async () => {
     const user = userEvent.setup();
-    await renderRoute("/adc");
+    await renderPage(<AdcPage />);
     await selectAmmoAndArmor(user);
 
     expect(await screen.findByText("First penetration")).toBeInTheDocument();
@@ -48,7 +49,7 @@ describe("/adc", () => {
 
   it("changing the shot count changes the number of result rows", async () => {
     const user = userEvent.setup();
-    await renderRoute("/adc");
+    await renderPage(<AdcPage />);
     await selectAmmoAndArmor(user);
     await screen.findByText("First penetration");
 
@@ -64,7 +65,7 @@ describe("/adc", () => {
 
   it("shows the selected armor's max durability as the starting-durability placeholder, and an override clamps final durability", async () => {
     const user = userEvent.setup();
-    await renderRoute("/adc");
+    await renderPage(<AdcPage />);
     await selectAmmoAndArmor(user);
     await screen.findByText("First penetration");
 
@@ -85,7 +86,7 @@ describe("/adc", () => {
   });
 
   it("shows an error card when the items resource fails to load", async () => {
-    await renderRoute("/adc", { client: createTestClient({ errorResources: ["items"] }) });
+    await renderPage(<AdcPage />, { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load data:/)).toBeInTheDocument();
   });
 });

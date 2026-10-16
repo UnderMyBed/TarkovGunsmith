@@ -129,7 +129,7 @@ export type BuildV6 = z.infer<typeof BuildV6>;
 /**
  * Discriminated union over all known build versions. Grows one variant per
  * Builder Robustness PR. Never mutates existing variants — old shared URLs
- * must keep parsing forever (modulo the 30-day KV TTL on builds-api).
+ * must keep parsing forever; builds-api stores shared builds with no expiry.
  */
 export const Build = z.discriminatedUnion("version", [
   BuildV1,

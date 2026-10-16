@@ -8,8 +8,6 @@ interface Shortcut {
 const SHORTCUTS: readonly Shortcut[] = [
   { key: "?", action: "Toggle this overlay" },
   { key: "g b", action: "Go to /builder" },
-  { key: "g c", action: "Go to /calc" },
-  { key: "g d", action: "Go to /data" },
   { key: "/", action: "Focus the first picker on this page" },
   { key: "Esc", action: "Close this overlay" },
 ];

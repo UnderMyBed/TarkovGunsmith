@@ -6,11 +6,14 @@
 
 A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xerxes-17/TarkovGunsmith) — a community tool for Escape from Tarkov players to evaluate weapon builds, ammo-vs-armor matchups, and ballistic outcomes.
 
-> **Status: live.** 13 routes on the $0/mo Cloudflare free tier — Pages for the SPA, one Worker
+> **Status: live.** 5 routes on the $0/mo Cloudflare free tier — Pages for the SPA, one Worker
 > (`builds-api`) plus KV behind share URLs, and Pages Functions that render Open Graph cards:
 >
-> `/` `/builder` `/builder/:id` `/builder/compare` `/builder/compare/:pairId` `/calc` `/matrix`
-> `/sim` `/adc` `/aec` `/data` `/charts` `/smoke`
+> `/` `/builder` `/builder/:id` `/builder/compare` `/builder/compare/:pairId`
+>
+> The site is the Builder (builder, optimizer, compare). The calculator, simulator, armor, matrix,
+> data and chart pages are parked: their components live in `apps/web/src/features/`, and their old
+> URLs (`/calc` `/sim` `/adc` `/aec` `/matrix` `/data` `/charts` `/smoke`) redirect to `/builder`.
 >
 > Ballistics, the build optimizer, and `tarkov.dev` profile import all run client-side. The UI is
 > the "Field Ledger" aesthetic — Bungee display + Chivo body + Azeret Mono numerics, amber-phosphor
