@@ -41,6 +41,7 @@ import { fetchAmmoList } from "../packages/tarkov-data/src/queries/ammoList.js";
 import { fetchArmorList } from "../packages/tarkov-data/src/queries/armorList.js";
 import { fetchPartCatalog } from "../packages/tarkov-data/src/queries/parts.js";
 import type { ItemsDocument } from "../packages/tarkov-data/src/queries/documents.js";
+import { buildSlotGraph } from "../packages/tarkov-data/src/queries/slot-graph.js";
 import { fetchWeaponList } from "../packages/tarkov-data/src/queries/weaponList.js";
 
 const API_BASE = "https://json.tarkov.dev/regular/";
@@ -291,32 +292,37 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
         `renamed or retyped makes safeParse drop rows silently, which reaches users as an empty picker`,
     );
   }
-  // Every option a weapon (or a part fitted to one) offers must resolve to a catalog part, or
-  // it contributes nothing to stats or price and reads as "missing" on shared builds (#213).
-  // A new ItemPropertiesX type appearing in a weapon slot is exactly how that would start.
+  // Every item reachable through slots from a weapon must resolve to a catalog part, or it
+  // contributes nothing to stats or price and reads as "missing" on shared builds (#213). A new
+  // ItemPropertiesX type appearing in a weapon's slot graph is exactly how that would start.
+  // Walked from the weapons rather than over every slot owner: gear has slots too (helmet NVG
+  // mounts hold goggles), and those are not weapon parts.
   const partIds = new Set(parts.map((p) => p.id));
+  const graph = buildSlotGraph(doc);
   const unresolved = new Set<string>();
-  for (const item of Object.values(doc.items)) {
-    const props = (
-      item as { id: string; properties?: { propertiesType?: string; slots?: unknown } }
-    ).properties;
-    const isOwner =
-      props?.propertiesType === "ItemPropertiesWeapon" || partIds.has((item as { id: string }).id);
-    if (!isOwner || !Array.isArray(props?.slots)) continue;
-    for (const slot of props.slots as { filters?: { allowedItems?: string[] } | null }[]) {
-      for (const id of slot.filters?.allowedItems ?? []) {
-        if (id in doc.items && !partIds.has(id)) unresolved.add(id);
+  const visited = new Set<string>();
+  const stack = weapons.map((w) => w.id);
+  for (let owner = stack.pop(); owner !== undefined; owner = stack.pop()) {
+    if (visited.has(owner)) continue;
+    visited.add(owner);
+    for (const slot of graph.owners[owner]?.slots ?? []) {
+      for (const id of slot.allowedItemIds) {
+        if (!partIds.has(id)) unresolved.add(id);
+        stack.push(id);
       }
     }
   }
   check(
     "selector/parts-cover-slots",
     unresolved.size === 0,
-    `${unresolved.size} slot-allowed item(s) are not in the part catalog, e.g. ${[...unresolved]
+    `${unresolved.size} weapon-reachable slot item(s) are not in the part catalog, e.g. ${[
+      ...unresolved,
+    ]
       .slice(0, 5)
       .join(", ")} — a new item type in weapon slots, or a part schema that rejects real rows`,
   );
 
+  notes.push(`${visited.size - weapons.length} items reachable through weapon slots`);
   notes.push(
     `selectors parsed: ${counts.weapons} weapons, ${counts.parts} parts, ${counts.ammo} ammo, ${counts.armor} armor`,
   );

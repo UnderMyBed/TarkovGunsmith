@@ -7,6 +7,7 @@ import {
   selectPartCatalog,
 } from "./parts.js";
 import { adaptMod } from "../ballistic-adapters.js";
+import { buildSlotGraph } from "./slot-graph.js";
 import { fixtureClient } from "../__fixtures__/client.js";
 import type { ItemsDocument } from "./documents.js";
 
@@ -51,27 +52,31 @@ describe("selectPartCatalog", () => {
     for (const item of rejected) expect(ids.has((item as { id: string }).id)).toBe(false);
   });
 
-  it("resolves every item id a weapon or weapon-part slot allows", async () => {
+  it("resolves every item reachable through slots from a weapon", async () => {
     // The point of #213: a slot option the catalog cannot resolve contributes nothing to
-    // stats or price and reads as "missing" on a shared build. Gear slots (a helmet's face
-    // shield mount) are out of scope, so only weapons and parts are owners here.
+    // stats or price and reads as "missing" on a shared build. Walked from the weapons, since
+    // gear has slots too (a helmet's face-shield mount) and those are not weapon parts.
     const doc = await itemsDoc();
     const byId = partsById(selectPartCatalog(doc, () => []));
+    const graph = buildSlotGraph(doc);
+    const stack = Object.keys(doc.items).filter(
+      (id) =>
+        (doc.items[id] as { properties?: { propertiesType?: string } }).properties
+          ?.propertiesType === "ItemPropertiesWeapon",
+    );
+    const visited = new Set<string>();
     const unresolved: string[] = [];
-    for (const item of Object.values(doc.items)) {
-      const props = (
-        item as { id: string; properties?: { propertiesType?: string; slots?: unknown } }
-      ).properties;
-      const isOwner =
-        props?.propertiesType === "ItemPropertiesWeapon" || byId.has((item as { id: string }).id);
-      const slots = props?.slots;
-      if (!isOwner || !Array.isArray(slots)) continue;
-      for (const slot of slots as { filters?: { allowedItems?: string[] } }[]) {
-        for (const id of slot.filters?.allowedItems ?? []) {
-          if (id in doc.items && !byId.has(id)) unresolved.push(id);
+    for (let owner = stack.pop(); owner !== undefined; owner = stack.pop()) {
+      if (visited.has(owner)) continue;
+      visited.add(owner);
+      for (const slot of graph.owners[owner]?.slots ?? []) {
+        for (const id of slot.allowedItemIds) {
+          if (!byId.has(id)) unresolved.push(id);
+          stack.push(id);
         }
       }
     }
+    expect(visited.size).toBeGreaterThan(40);
     expect(unresolved).toEqual([]);
   });
 
