@@ -1,24 +1,49 @@
-import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
-import { NavDropdown, type NavDropdownItem } from "../features/nav/nav-dropdown.js";
+import { createRootRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
 export const Route = createRootRoute({
   component: RootLayout,
 });
 
-const CALC_ITEMS: readonly NavDropdownItem[] = [
-  { to: "/calc", label: "Calc" },
-  { to: "/sim", label: "Simulator" },
-  { to: "/adc", label: "Armor Damage" },
-  { to: "/aec", label: "Armor Effectiveness" },
-];
+const COMPARE_PREFIX = "/builder/compare";
 
-const DATA_ITEMS: readonly NavDropdownItem[] = [
-  { to: "/matrix", label: "Ammo × Armor Matrix" },
-  { to: "/data", label: "Datasheets" },
-  { to: "/charts", label: "Charts" },
-];
+/**
+ * Active state is computed from the pathname rather than the router's own `activeOptions`:
+ * a shared build lives at `/builder/:id`, which is the Builder (so Builder stays lit there),
+ * while `/builder/compare*` is Compare and must not also light Builder.
+ */
+function NavLink({
+  to,
+  active,
+  children,
+}: {
+  readonly to: "/builder" | "/builder/compare";
+  readonly active: boolean;
+  readonly children: ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      // Exact, so the router's own fuzzy active match never lights Builder on /builder/compare*.
+      activeOptions={{ exact: true }}
+      aria-current={active ? "page" : undefined}
+      className={
+        "font-mono text-11 tracking-18 uppercase border-b-[1.5px] pb-[2px] transition-colors " +
+        (active
+          ? "text-[var(--color-primary)] border-[var(--color-primary)]"
+          : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-transparent")
+      }
+    >
+      {children}
+    </Link>
+  );
+}
 
 function RootLayout() {
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const compareActive = pathname === COMPARE_PREFIX || pathname.startsWith(COMPARE_PREFIX + "/");
+  const builderActive =
+    !compareActive && (pathname === "/builder" || pathname.startsWith("/builder/"));
   return (
     <div className="min-h-full bg-[var(--color-background)] text-[var(--color-foreground)]">
       {/* First focusable element on every page: a keyboard user can jump the masthead and
@@ -54,18 +79,12 @@ function RootLayout() {
             </span>
           </Link>
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <Link
-              to="/builder"
-              activeProps={{
-                className:
-                  "text-[var(--color-primary)] border-b-[1.5px] border-[var(--color-primary)]",
-              }}
-              className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors"
-            >
+            <NavLink to="/builder" active={builderActive}>
               Builder
-            </Link>
-            <NavDropdown label="Calc" items={CALC_ITEMS} />
-            <NavDropdown label="Data" items={DATA_ITEMS} />
+            </NavLink>
+            <NavLink to="/builder/compare" active={compareActive}>
+              Compare
+            </NavLink>
           </nav>
         </div>
       </header>

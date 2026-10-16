@@ -2,14 +2,15 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
 import { cleanup, screen } from "@testing-library/react";
-import { renderRoute } from "../test/render-route.js";
-import { createTestClient } from "../test/test-client.js";
+import { renderPage } from "../../test/render-page.js";
+import { SmokePage } from "./smoke-page.js";
+import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
-describe("/smoke", () => {
+describe("smoke page (parked, no route)", () => {
   it("loads the fixture ammo list and lists each entry", async () => {
-    await renderRoute("/smoke");
+    await renderPage(<SmokePage />);
 
     // "Loaded " / <strong>2</strong> / " ammo entries from " / <code>json.tarkov.dev</code> / "."
     // is split across inline nodes, so match the whole paragraph rather than one exact string.
@@ -25,7 +26,7 @@ describe("/smoke", () => {
   });
 
   it("shows the error block when the items resource fails to load", async () => {
-    await renderRoute("/smoke", { client: createTestClient({ errorResources: ["items"] }) });
+    await renderPage(<SmokePage />, { client: createTestClient({ errorResources: ["items"] }) });
 
     expect(await screen.findByText(/^Error:/)).toBeInTheDocument();
   });

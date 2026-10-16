@@ -3,8 +3,9 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { renderRoute } from "../test/render-route.js";
-import { createTestClient } from "../test/test-client.js";
+import { renderPage } from "../../test/render-page.js";
+import { AecPage } from "./aec-page.js";
+import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
@@ -21,9 +22,9 @@ function bodyRows(): HTMLTableRowElement[] {
   return Array.from(table.querySelectorAll("tbody tr"));
 }
 
-describe("/aec", () => {
+describe("aec page (parked, no route)", () => {
   it("shows the picker prompt before an armor is selected", async () => {
-    await renderRoute("/aec");
+    await renderPage(<AecPage />);
     const armorSelect = await screen.findByLabelText("Armor");
     // The prompt is gated on `!isLoading` too, so wait for data to actually settle.
     await waitFor(() => expect(armorSelect).not.toBeDisabled());
@@ -33,7 +34,7 @@ describe("/aec", () => {
 
   it("ranks every fixture ammo against the selected armor, each with a classification pill", async () => {
     const user = userEvent.setup();
-    await renderRoute("/aec");
+    await renderPage(<AecPage />);
     await selectArmor(user);
 
     // Two fixture ammo types (M855, M995) — see apps/web/src/test/fixtures.ts — so one
@@ -57,7 +58,7 @@ describe("/aec", () => {
 
   it("recomputes the ranking (same row count) when shot cap or distance change", async () => {
     const user = userEvent.setup();
-    await renderRoute("/aec");
+    await renderPage(<AecPage />);
     await selectArmor(user);
     await waitFor(() => expect(bodyRows()).toHaveLength(2));
 
@@ -75,7 +76,7 @@ describe("/aec", () => {
   });
 
   it("shows an error card when the items resource fails to load", async () => {
-    await renderRoute("/aec", { client: createTestClient({ errorResources: ["items"] }) });
+    await renderPage(<AecPage />, { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load data:/)).toBeInTheDocument();
   });
 });
