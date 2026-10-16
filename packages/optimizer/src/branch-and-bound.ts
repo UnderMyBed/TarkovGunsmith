@@ -1,7 +1,7 @@
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { weaponSpec } from "@tarkov/ballistics";
-import type { AttachablePart, PlayerProfile, SlotNode } from "@tarkov/data";
-import { adaptMod } from "@tarkov/data";
+import type { AttachablePart, PlayerProfile, SlotGraph, SlotNode } from "@tarkov/data";
+import { adaptMod, expandSlots } from "@tarkov/data";
 import { cheapestPrice, slotCandidates } from "./feasibility.js";
 import { lowerBoundForRemaining } from "./bounds.js";
 import { score } from "./objective.js";
@@ -11,6 +11,8 @@ export interface BnbState {
   readonly weapon: BallisticWeapon;
   /** The part catalog, indexed by id. */
   readonly parts: ReadonlyMap<string, AttachablePart>;
+  /** The slot graph sub-slots expand from, one level per attached candidate. */
+  readonly graph: SlotGraph;
   readonly profile: PlayerProfile;
   readonly pinnedSlots: ReadonlyMap<string, string | null>;
   readonly objective: Objective;
@@ -49,13 +51,28 @@ interface MutableBest {
 export function branchAndBound(state: BnbState, slots: readonly SlotNode[]): BnbBest | null {
   const best: { value: MutableBest | null } = { value: null };
   const visits = { count: 0 };
-  dfs(state, slots, [], 0, {}, best, visits);
+  const root: ReadonlySet<string> = new Set();
+  dfs(
+    state,
+    slots.map((slot) => ({ slot, ancestors: root })),
+    [],
+    0,
+    {},
+    best,
+    visits,
+  );
   return best.value;
+}
+
+/** A slot still to decide, with the item ids attached above it (the cycle guard). */
+interface PendingSlot {
+  readonly slot: SlotNode;
+  readonly ancestors: ReadonlySet<string>;
 }
 
 function dfs(
   state: BnbState,
-  remainingSlots: readonly SlotNode[],
+  remainingSlots: readonly PendingSlot[],
   partialMods: AttachablePart[],
   runningPrice: number,
   attachments: Record<string, string>,
@@ -90,12 +107,17 @@ function dfs(
     return true;
   }
 
-  const [slot, ...rest] = remainingSlots;
-  // Defensive: `slot` is guaranteed defined by the `remainingSlots.length === 0`
+  const [pending, ...rest] = remainingSlots;
+  // Defensive: `pending` is guaranteed defined by the `remainingSlots.length === 0`
   // early-return above, but TS's `noUncheckedIndexedAccess` forces the guard.
   /* v8 ignore next */
-  if (!slot) return true;
-  const candidates = slotCandidates(slot, state.parts, state.profile, state.pinnedSlots);
+  if (!pending) return true;
+  const { slot, ancestors } = pending;
+  // An item already attached above this slot cannot go in it again: that would be a cycle in
+  // the slot graph, which the live document does not have but nothing upstream guarantees.
+  const candidates = slotCandidates(slot, state.parts, state.profile, state.pinnedSlots).filter(
+    (c) => c === null || !ancestors.has(c.id),
+  );
 
   // Sort candidates best-first (by single-item score) for better pruning.
   const sorted = [...candidates].sort(
@@ -113,9 +135,12 @@ function dfs(
     const newPrice = runningPrice + additionalPrice;
     if (state.budgetRub !== undefined && newPrice > state.budgetRub) continue;
 
-    // Sub-slots unlocked by this item.
-    const subSlots: readonly SlotNode[] = candidate
-      ? (slot.allowedItems.find((ai) => ai.id === candidate.id)?.children ?? [])
+    // Sub-slots unlocked by this item, expanded lazily from the graph.
+    const subSlots: readonly PendingSlot[] = candidate
+      ? expandSlots(state.graph, candidate.id, slot.path).map((sub) => ({
+          slot: sub,
+          ancestors: new Set([...ancestors, candidate.id]),
+        }))
       : [];
     const newRemaining = [...subSlots, ...rest];
 
@@ -124,7 +149,7 @@ function dfs(
       const partialForBoundCheck = candidate ? [...partialMods, candidate] : partialMods;
       const runningStats = weaponSpec(state.weapon, partialForBoundCheck.map(adaptMod));
       const bound = lowerBoundForRemaining(
-        newRemaining,
+        newRemaining.map((p) => p.slot),
         state.parts,
         state.profile,
         state.pinnedSlots,

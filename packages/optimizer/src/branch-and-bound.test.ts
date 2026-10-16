@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { branchAndBound, type BnbState } from "./branch-and-bound.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
+import { tinyTree } from "./__fixtures__/tree.js";
 import { partsById, type PlayerProfile } from "@tarkov/data";
 
 const flea: PlayerProfile = {
@@ -16,6 +17,7 @@ function makeState(overrides: Partial<BnbState> = {}): BnbState {
   return {
     weapon: SMALL_WEAPON,
     parts: partsById(SMALL_MODS),
+    graph: SMALL_TREE.graph,
     profile: flea,
     pinnedSlots: new Map(),
     objective: "min-recoil",
@@ -25,6 +27,33 @@ function makeState(overrides: Partial<BnbState> = {}): BnbState {
     ...overrides,
   };
 }
+
+describe("branchAndBound — lazy sub-slots", () => {
+  it("expands a chosen part's own slots from the graph and fills them", () => {
+    // A barrel-like part whose child slot holds the best muzzle device: the optimum is only
+    // reachable by expanding the attached part, which is what the eager tree used to hide.
+    const tree = tinyTree("w", [
+      { nameId: "barrel", items: [["brl", [{ nameId: "muzzle", items: ["brake"] }]]] },
+    ]);
+    const best = branchAndBound(
+      makeState({
+        parts: partsById([tieMod("brl", -0.05, 0, 0.4, 100), tieMod("brake", -0.12, 0, 0.1, 100)]),
+        graph: tree.graph,
+      }),
+      tree.slots,
+    );
+    expect(best!.attachments).toEqual({ barrel: "brl", "barrel/muzzle": "brake" });
+  });
+
+  it("never attaches a part beneath itself", () => {
+    const tree = tinyTree("w", [{ nameId: "s", items: [["a", [{ nameId: "s", items: ["a"] }]]] }]);
+    const best = branchAndBound(
+      makeState({ parts: partsById([tieMod("a", -0.1, 0, 0.1, 100)]), graph: tree.graph }),
+      tree.slots,
+    );
+    expect(best!.attachments).toEqual({ s: "a" });
+  });
+});
 
 describe("branchAndBound", () => {
   it("finds min-recoil optimum on small weapon", () => {
@@ -105,37 +134,14 @@ describe("branchAndBound", () => {
       tieMod("A", 0, 0, 0.1, 100),
       tieMod("B", -10, 0, 0.1, 100),
     ];
-    const slots = [
-      {
-        nameId: "top",
-        path: "top",
-        name: "top",
-        required: false,
-        allowedItemIds: new Set(["A", "B"]),
-        allowedItems: [
-          {
-            id: "A",
-            name: "A",
-            children: [
-              {
-                nameId: "sub",
-                path: "top/sub",
-                name: "sub",
-                required: false,
-                allowedItemIds: new Set(["nonexistent"]),
-                allowedItems: [{ id: "nonexistent", name: "nonexistent", children: [] as never[] }],
-                children: [],
-              },
-            ] as never[],
-          },
-          { id: "B", name: "B", children: [] as never[] },
-        ],
-        children: [],
-      },
-    ] as never[];
+    const tree = tinyTree("w", [
+      { nameId: "top", items: [["A", [{ nameId: "sub", items: ["nonexistent"] }]], "B"] },
+    ]);
+    const slots = tree.slots;
     const best = branchAndBound(
       makeState({
         parts: partsById(modList),
+        graph: tree.graph,
         pinnedSlots: new Map([["top/sub", "nonexistent"]]),
       }),
       slots,

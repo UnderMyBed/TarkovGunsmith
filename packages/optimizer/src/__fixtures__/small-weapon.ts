@@ -1,5 +1,6 @@
 import type { AttachablePart, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon } from "@tarkov/ballistics";
+import { tinyTree } from "./tree.js";
 
 /**
  * Toy 3-slot weapon used by unit tests. The numbers are chosen so
@@ -36,13 +37,12 @@ export const SMALL_MODS: readonly AttachablePart[] = [
 ];
 
 export const SMALL_TREE: WeaponTree = {
-  weaponId: "weap1",
+  ...tinyTree("weap1", [
+    { nameId: "muzzle", items: ["muzzle_brake", "muzzle_silencer"] },
+    { nameId: "grip", items: ["grip_vertical"] },
+    { nameId: "stock", items: ["stock_standard"] },
+  ]),
   weaponName: "Test Rifle",
-  slots: [
-    slot("muzzle", ["muzzle_brake", "muzzle_silencer"]),
-    slot("grip", ["grip_vertical"]),
-    slot("stock", ["stock_standard"]),
-  ],
 };
 
 function makeMod(
@@ -80,18 +80,5 @@ function makeMod(
         },
       },
     ],
-  };
-}
-
-function slot(nameId: string, itemIds: readonly string[]) {
-  return {
-    nameId,
-    path: nameId,
-    name: nameId,
-    required: false,
-    allowedItemIds: new Set(itemIds),
-    allowedItems: itemIds.map((id) => ({ id, name: id, children: [] })),
-    allowedCategories: [],
-    children: [],
   };
 }

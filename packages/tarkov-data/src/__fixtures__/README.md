@@ -14,8 +14,15 @@ OG Pages Functions. Trimming an item out of `items-sample.json` can therefore em
 e2e spec — `apps/web/e2e/upstream.ts` documents which content the specs depend on.
 
 `items-sample.json` deliberately includes item types the selectors must _reject_ as well as ones
-they must accept — a grenade, a helmet, a magazine and a scope alongside ammo, armor, weapons and
-weapon mods — so a selector that is too permissive fails rather than passing quietly.
+they must accept — a grenade, a helmet and an armor attachment alongside ammo, armor, weapons and
+every slot-attachable part type (weapon mods, barrels, scopes, magazines) — so a selector that is
+too permissive fails rather than passing quietly.
+
+The M4A1's parts are chosen to exercise the slot graph and its conflicts with real data: a barrel's
+required gas block (the DD MK12 low-profile gas block) sits four levels deep, the Aeroknox AX-15
+10.5" handguard and the 10.3" barrel are a one-directional `conflictingItems` pair, and the
+Aeroknox AX-15 4" handguard blocks the A2 20" barrel's muzzle, gas-block and launcher slots through
+`conflictingSlotIds`.
 
 **Refresh** by re-capturing from `json.tarkov.dev` when upstream shapes change, keeping the
 accept/reject mix above intact. `scripts/verify-upstream-contract.ts` checks these fixtures

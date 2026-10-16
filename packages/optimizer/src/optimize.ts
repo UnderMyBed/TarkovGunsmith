@@ -17,6 +17,7 @@ export function optimize(input: OptimizationInput): OptimizationResult {
     {
       weapon: input.weapon,
       parts: partsById(input.parts),
+      graph: input.slotTree.graph,
       profile: input.constraints.profile,
       pinnedSlots: input.constraints.pinnedSlots,
       objective: input.objective,

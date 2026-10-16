@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { optimize } from "./optimize.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
+import { tinyTree, type SlotSpec } from "./__fixtures__/tree.js";
 import { M4A1_WEAPON, M4A1_MODS, M4A1_TREE } from "./__fixtures__/m4a1-like.js";
 import type { AttachablePart, PlayerProfile, WeaponTree } from "@tarkov/data";
 
@@ -54,23 +55,15 @@ function makeVeryWideFixture(numSlots: number): {
   mods: readonly AttachablePart[];
 } {
   const mods: AttachablePart[] = [];
-  const slots = [];
+  const slots: SlotSpec[] = [];
   for (let s = 0; s < numSlots; s++) {
     const id = `slot${s}_item`;
     mods.push(makeTieMod(id, id, 0, 0, 0, 1000));
-    slots.push({
-      nameId: `slot${s}`,
-      path: `slot${s}`,
-      name: `slot${s}`,
-      required: false,
-      allowedItemIds: new Set([id]),
-      allowedItems: [{ id, name: id, children: [] as never[] }],
-      children: [],
-    });
+    slots.push({ nameId: `slot${s}`, items: [id] });
   }
   return {
     weapon: SMALL_WEAPON,
-    tree: { weaponId: SMALL_WEAPON.id, weaponName: SMALL_WEAPON.name, slots },
+    tree: { ...tinyTree(SMALL_WEAPON.id, slots), weaponName: SMALL_WEAPON.name },
     mods,
   };
 }

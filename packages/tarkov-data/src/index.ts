@@ -79,8 +79,22 @@ export {
 } from "./pairsApi.js";
 
 // Weapon tree (slot-based compatibility)
-export { fetchWeaponTree, normalizeSlots } from "./queries/weaponTree.js";
-export type { WeaponTree, SlotNode, AllowedItem, SlotCategory } from "./queries/weaponTree.js";
+export { fetchWeaponTree } from "./queries/weaponTree.js";
+export {
+  buildSlotGraph,
+  expandSlots,
+  selectWeaponTree,
+  slotAtPath,
+  visibleSlots,
+} from "./queries/slot-graph.js";
+export type {
+  WeaponTree,
+  SlotNode,
+  SlotDef,
+  SlotGraph,
+  SlotOwner,
+  SlotCategory,
+} from "./queries/slot-graph.js";
 export { useWeaponTree } from "./hooks/useWeaponTree.js";
 
 // Build migrations
@@ -91,6 +105,7 @@ export {
   migrateV4ToV5,
   migrateV5ToV6,
   upgradeLoadedBuild,
+  legacyV1MigrationSlots,
 } from "./build-migrations.js";
 export type { SlotNodeForMigration } from "./build-migrations.js";
 
