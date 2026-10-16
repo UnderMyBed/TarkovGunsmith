@@ -1,8 +1,10 @@
 import {
   adaptMod,
   fleaPriceRub,
+  mountedAttachments,
   visibleSlots,
   type AttachablePart,
+  type SlotNode,
   type WeaponTree,
 } from "@tarkov/data";
 
@@ -47,25 +49,37 @@ function lookupMod(id: string | undefined, parts: ReadonlyMap<string, Attachable
   };
 }
 
+/** Every slot either build shows, current build's first, each path once. */
+export function shownSlots(
+  slotTree: WeaponTree,
+  current: Readonly<Record<string, string>>,
+  proposed: Readonly<Record<string, string>>,
+): SlotNode[] {
+  const seen = new Set<string>();
+  return [...visibleSlots(slotTree, current), ...visibleSlots(slotTree, proposed)].filter(
+    (slot) => !seen.has(slot.path) && seen.add(slot.path),
+  );
+}
+
+/**
+ * One row per slot whose part differs between the two builds, in slot order. Only parts on the
+ * weapon are compared ({@link mountedAttachments}): a stale key beneath a removed or replaced
+ * part is not a change anyone could accept.
+ */
 export function slotDiff(
   current: Readonly<Record<string, string>>,
   proposed: Readonly<Record<string, string>>,
   slotTree: WeaponTree,
   parts: ReadonlyMap<string, AttachablePart>,
 ): readonly ChangedRow[] {
+  const currentOn = mountedAttachments(slotTree, current);
+  const proposedOn = mountedAttachments(slotTree, proposed);
   const rows: ChangedRow[] = [];
-  const walked = new Set<string>();
-
   // Every slot either build shows, so a change deep under a barrel or handguard gets its real
-  // slot name rather than the path fallback below.
-  const seen = new Set<string>();
-  const shown = [...visibleSlots(slotTree, current), ...visibleSlots(slotTree, proposed)].filter(
-    (slot) => !seen.has(slot.path) && seen.add(slot.path),
-  );
-  for (const slot of shown) {
-    const c = current[slot.path];
-    const p = proposed[slot.path];
-    walked.add(slot.path);
+  // slot name.
+  for (const slot of shownSlots(slotTree, currentOn, proposedOn)) {
+    const c = currentOn[slot.path];
+    const p = proposedOn[slot.path];
     if (c === p) continue;
     const cm = lookupMod(c, parts);
     const pm = lookupMod(p, parts);
@@ -85,31 +99,5 @@ export function slotDiff(
       priceDelta: pm.price - cm.price,
     });
   }
-
-  // Catch slot paths that exist in either map but not in the slot tree's flat walk.
-  for (const key of new Set([...Object.keys(current), ...Object.keys(proposed)])) {
-    if (walked.has(key)) continue;
-    const c = current[key];
-    const p = proposed[key];
-    if (c === p) continue;
-    const cm = lookupMod(c, parts);
-    const pm = lookupMod(p, parts);
-    rows.push({
-      slotId: key,
-      slotLabel: key.toUpperCase(),
-      currentName: cm.name,
-      proposedName: pm.name,
-      currentErgo: cm.ergo,
-      currentRecoil: cm.recoil,
-      currentPrice: cm.price,
-      proposedErgo: pm.ergo,
-      proposedRecoil: pm.recoil,
-      proposedPrice: pm.price,
-      ergoDelta: pm.ergo - cm.ergo,
-      recoilDelta: pm.recoil - cm.recoil,
-      priceDelta: pm.price - cm.price,
-    });
-  }
-
   return rows;
 }

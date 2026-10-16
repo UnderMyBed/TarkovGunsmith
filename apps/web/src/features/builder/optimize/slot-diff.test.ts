@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { slotDiff, type ChangedRow } from "./slot-diff.js";
+import { shownSlots, slotDiff, type ChangedRow } from "./slot-diff.js";
 import { partsById, type AttachablePart } from "@tarkov/data";
 import { tinyTree } from "../../../test/tiny-tree.js";
 
@@ -157,15 +157,28 @@ describe("slotDiff", () => {
     expect(row?.recoilDelta).toBeCloseTo(-0.04, 10);
   });
 
-  it("appends fallback rows for slot paths outside the tree, after tree-ordered rows", () => {
+  it("ignores keys that are not on the weapon", () => {
     const rows = slotDiff(
-      { muzzle: "m-old", "tac-device": "t-old" },
+      { muzzle: "m-old", "tac-device": "t-old", "handguard/rail": "r-old" },
       { muzzle: "m-new", handguard: "h-new", "tac-device": "t-new" },
       slotTree,
       parts,
     );
-    expect(rows.map((r) => r.slotId)).toEqual(["muzzle", "handguard", "tac-device"]);
-    // Fallback rows get an uppercased slotLabel since they aren't in the tree.
-    expect(rows[2]).toMatchObject({ slotId: "tac-device", slotLabel: "TAC-DEVICE" });
+    expect(rows.map((r) => r.slotId)).toEqual(["muzzle", "handguard"]);
+  });
+});
+
+describe("shownSlots", () => {
+  it("lists each slot either build shows once, the current build's first", () => {
+    const tree = tinyTree("w1", [
+      { nameId: "a", name: "A", items: [["p", [{ nameId: "x", name: "X", items: ["c"] }]], "q"] },
+      { nameId: "b", name: "B", items: [["r", [{ nameId: "y", name: "Y", items: ["c"] }]]] },
+    ]);
+    expect(shownSlots(tree, { a: "p" }, { a: "q", b: "r" }).map((s) => s.path)).toEqual([
+      "a",
+      "a/x",
+      "b",
+      "b/y",
+    ]);
   });
 });

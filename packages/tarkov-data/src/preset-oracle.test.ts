@@ -39,40 +39,46 @@ interface PresetRecord {
 
 const client = fixtureClient({ items: oracle });
 
+/**
+ * Place a preset's parts through the slot graph, greedily, as a player would. Returns what was
+ * placed and what found no slot.
+ */
+async function placePreset(presetId: string) {
+  const [doc, weapons, parts] = await Promise.all([
+    client.fetchResource<ItemsDocument>("items"),
+    fetchWeaponList(client),
+    fetchPartCatalog(client),
+  ]);
+  const preset = doc.items[presetId] as PresetRecord;
+  const weaponId = preset.properties.baseItem;
+  const tree = await fetchWeaponTree(client, weaponId);
+  const byId = partsById(parts);
+
+  const pending = preset.containsItems.map((c) => c.item).filter((id) => id !== weaponId);
+  const attachments: Record<string, string> = {};
+  for (let progress = true; progress;) {
+    progress = false;
+    for (const slot of visibleSlots(tree, attachments)) {
+      if (attachments[slot.path] !== undefined) continue;
+      const i = pending.findIndex((id) => slot.allowedItemIds.has(id));
+      if (i < 0) continue;
+      attachments[slot.path] = pending[i]!;
+      pending.splice(i, 1);
+      progress = true;
+    }
+  }
+  const { entries, missing } = attachedParts(tree, attachments, byId);
+  const weapon = adaptWeapon(weapons.find((w) => w.id === weaponId)!);
+  const mods = entries.map((e) => adaptMod(e.part));
+  return { doc, preset, byId, pending, missing, weapon, mods };
+}
+
 describe("weaponSpec over every part of a real preset", () => {
   it.each(PRESETS)("matches upstream preset %s", async (presetId) => {
-    const [doc, weapons, parts] = await Promise.all([
-      client.fetchResource<ItemsDocument>("items"),
-      fetchWeaponList(client),
-      fetchPartCatalog(client),
-    ]);
-    const preset = doc.items[presetId] as PresetRecord;
-    const weaponId = preset.properties.baseItem;
-    const tree = await fetchWeaponTree(client, weaponId);
-    const byId = partsById(parts);
-
-    const pending = preset.containsItems.map((c) => c.item).filter((id) => id !== weaponId);
-    const attachments: Record<string, string> = {};
-    for (let progress = true; progress;) {
-      progress = false;
-      for (const slot of visibleSlots(tree, attachments)) {
-        if (attachments[slot.path] !== undefined) continue;
-        const i = pending.findIndex((id) => slot.allowedItemIds.has(id));
-        if (i < 0) continue;
-        attachments[slot.path] = pending[i]!;
-        pending.splice(i, 1);
-        progress = true;
-      }
-    }
+    const { preset, pending, missing, weapon, mods } = await placePreset(presetId);
     expect(pending, "parts the slot graph could not place").toEqual([]);
-
-    const { entries, missing } = attachedParts(attachments, byId);
     expect(missing).toEqual([]);
-    const weapon = weapons.find((w) => w.id === weaponId)!;
-    const spec = weaponSpec(
-      adaptWeapon(weapon),
-      entries.map((e) => adaptMod(e.part)),
-    );
+    const spec = weaponSpec(weapon, mods);
 
     expect(spec.ergonomics).toBeCloseTo(preset.properties.ergonomics, 6);
     expect(Math.abs(spec.verticalRecoil - preset.properties.recoilVertical)).toBeLessThanOrEqual(
@@ -81,5 +87,34 @@ describe("weaponSpec over every part of a real preset", () => {
     expect(
       Math.abs(spec.horizontalRecoil - preset.properties.recoilHorizontal),
     ).toBeLessThanOrEqual(0.5);
+  });
+});
+
+/**
+ * The evidence behind `adaptMod` giving ammo no stat modifiers. No live preset places a cartridge
+ * in a revolver `camora_*` slot, but magazine-loaded presets carry cartridges, and upstream's
+ * recoil for them leaves the cartridge's `recoilModifier` out.
+ */
+describe("cartridge recoil in an upstream preset", () => {
+  const AKS74UN_PRESET = "5a43a85186f7746c914b947a"; // AKS-74UN loaded with 30 rounds
+  const CARTRIDGE = "56dfef82d2720bbd668b4567"; // recoilModifier 0.07 upstream
+
+  it("is excluded: 67 upstream, which counting the round once would make 74.5", async () => {
+    const { doc, preset, byId, pending, weapon, mods } = await placePreset(AKS74UN_PRESET);
+    // The cartridges sit in the magazine, which no slot models; everything else is placed.
+    expect(pending).toEqual([CARTRIDGE]);
+    expect(preset.properties.recoilVertical).toBe(67);
+
+    expect(weaponSpec(weapon, mods).verticalRecoil).toBeCloseTo(67, 0);
+
+    const raw = doc.items[CARTRIDGE] as { properties: { recoilModifier: number } };
+    expect(raw.properties.recoilModifier).toBe(0.07);
+    const withRound = weaponSpec(weapon, [
+      ...mods,
+      { ...adaptMod(byId.get(CARTRIDGE)!), recoilModifier: raw.properties.recoilModifier },
+    ]);
+    expect(withRound.verticalRecoil).toBeCloseTo(74.5, 0);
+    // adaptMod applies the preset's rule: the round adds weight, not recoil.
+    expect(adaptMod(byId.get(CARTRIDGE)!).recoilModifier).toBe(0);
   });
 });

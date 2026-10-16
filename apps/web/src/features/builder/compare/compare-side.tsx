@@ -5,6 +5,8 @@ import {
   useWeaponTree,
   attachedParts,
   itemAvailability,
+  mountedAttachments,
+  withAttachment,
   partsById,
   CURRENT_BUILD_VERSION,
   type AttachablePart,
@@ -13,6 +15,7 @@ import {
   type PlayerProfile,
   type SlotDiffMap,
   type ItemAvailability,
+  type WeaponTree,
 } from "@tarkov/data";
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import { Card, CardContent, SectionTitle, WeaponSilhouette } from "@tarkov/ui";
@@ -101,12 +104,10 @@ export function CompareSide({
     onBuildChange(base);
   }
 
+  // Replacing or clearing a part drops everything beneath it: those slots were the old part's.
   function handleAttach(slotPath: string, itemId: string | null) {
     if (!build) return;
-    const nextAttachments = { ...build.attachments };
-    if (itemId === null) delete nextAttachments[slotPath];
-    else nextAttachments[slotPath] = itemId;
-    onBuildChange({ ...build, attachments: nextAttachments });
+    onBuildChange({ ...build, attachments: withAttachment(build.attachments, slotPath, itemId) });
   }
 
   function handleDismissOrphans() {
@@ -136,7 +137,7 @@ export function CompareSide({
           <SectionTitle
             index={sectionIndex}
             title={`Build ${label}`}
-            meta={build ? `${Object.keys(build.attachments).length} attached` : "empty"}
+            meta={attachedMeta(build, tree.data, tree.error)}
           />
 
           <div className="flex flex-col gap-2">
@@ -210,23 +211,40 @@ export function CompareSide({
 }
 
 /**
+ * The section-title count: parts on the weapon, never stale keys under a removed part. A
+ * non-empty build needs its slot tree to know which keys those are.
+ */
+function attachedMeta(
+  build: BuildV6 | null,
+  tree: WeaponTree | undefined,
+  treeError: Error | null,
+): string {
+  if (!build) return "empty";
+  if (Object.keys(build.attachments).length === 0) return "0 attached";
+  if (tree) return `${Object.keys(mountedAttachments(tree, build.attachments)).length} attached`;
+  return treeError ? "slot tree unavailable" : "loading";
+}
+
+/**
  * Pure helper: compute the {@link WeaponSpec} for one side of the compare
  * workspace. Shared with the parent so stat deltas don't have to reassemble
  * the adapted-weapon / adapted-mods wiring themselves.
  *
- * Returns `null` when the build is missing, the data lists haven't loaded,
- * or the referenced weapon isn't in the current data set (upstream drift).
+ * Returns `null` when the build is missing, the data lists or the build's
+ * slot tree haven't loaded, or the referenced weapon isn't in the current
+ * data set (upstream drift).
  */
 export function computeSideSpec(
   build: BuildV6 | null,
+  tree: WeaponTree | undefined,
   weapons: readonly WeaponListItem[] | undefined,
   parts: readonly AttachablePart[] | undefined,
 ): WeaponSpec | null {
-  if (!build || !weapons || !parts) return null;
+  if (!build || !weapons || !parts || tree?.weaponId !== build.weaponId) return null;
   const weapon = weapons.find((w) => w.id === build.weaponId);
   if (!weapon) return null;
-  // One entry per attached slot: a part fitted twice counts twice.
-  const { entries } = attachedParts(build.attachments, partsById(parts));
+  // Only parts on the weapon, one entry per slot: a part fitted twice counts twice.
+  const { entries } = attachedParts(tree, build.attachments, partsById(parts));
   return weaponSpec(
     adaptWeapon(weapon),
     entries.map((e) => adaptMod(e.part)),

@@ -10430,6 +10430,131 @@
               "currencyItem": "5449016a4bdc2d6f028b456f"
             }
           ]
+        },
+        "5ae30e795acfc408fb139a0b": {
+          "id": "5ae30e795acfc408fb139a0b",
+          "name": "5ae30e795acfc408fb139a0b Name",
+          "shortName": "5ae30e795acfc408fb139a0b ShortName",
+          "normalizedName": "m4a1-front-sight-with-gas-block",
+          "description": "5ae30e795acfc408fb139a0b Description",
+          "updated": "2026-10-16T20:28:10.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.15,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/M4A1_front_sight_with_gas_block",
+          "link": "https://tarkov.dev/item/m4a1-front-sight-with-gas-block",
+          "iconLink": "https://assets.tarkov.dev/5ae30e795acfc408fb139a0b-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5ae30e795acfc408fb139a0b-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5ae30e795acfc408fb139a0b-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5ae30e795acfc408fb139a0b-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5ae30e795acfc408fb139a0b-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5ae30e795acfc408fb139a0b-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 2570,
+          "categories": [
+            "56ea9461d2720b67698b456f",
+            "550aa4154bdc2dd8348b456b",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f760586f774093e6cb509",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 5000,
+          "avg24hPrice": 5000,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-15T08:18:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": -1,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [],
+            "heatFactor": 0.995,
+            "coolingFactor": 1.004
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": -1,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [
+            "55f84c3c4bdc2d5f408b4576",
+            "588b56d02459771481110ae2",
+            "5a329052c4a28200741e22d3",
+            "595cfa8b86f77427437e845b",
+            "595cf16b86f77427440c32e2"
+          ],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 28,
+              "priceRUB": 4808,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 45000,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 1028,
+              "priceRUB": 1028,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 616,
+              "priceRUB": 616,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 1002,
+              "priceRUB": 1002,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 8,
+              "priceRUB": 925,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 1156,
+              "priceRUB": 1156,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 1028,
+              "priceRUB": 1028,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
         }
       },
       "armorMaterials": {
@@ -11756,6 +11881,9 @@
     "63f4ba71f31d4a33b87bd046 Description": "The AX-15 4 inch handguard for AR-15 systems, equipped with an M-LOK interface for the installation of additional devices and accessories. Manufactured by Aeroknox.",
     "68a63ac58e1fe612970728f2 Name": "AR-15 5.56x45 A2 type 20 inch barrel",
     "68a63ac58e1fe612970728f2 ShortName": "AR-15 A2 20\"",
-    "68a63ac58e1fe612970728f2 Description": "A 20 inch (508mm) barrel for AR-15 platform weapons for 5.56x45 NATO ammo. Corresponds with standard service M16A2 barrel."
+    "68a63ac58e1fe612970728f2 Description": "A 20 inch (508mm) barrel for AR-15 platform weapons for 5.56x45 NATO ammo. Corresponds with standard service M16A2 barrel.",
+    "5ae30e795acfc408fb139a0b Name": "M4A1 front sight with gas block",
+    "5ae30e795acfc408fb139a0b ShortName": "M4A1",
+    "5ae30e795acfc408fb139a0b Description": "A standard-issue front sight with gas block for M4A1 assault rifles, manufactured by Colt."
   }
 }

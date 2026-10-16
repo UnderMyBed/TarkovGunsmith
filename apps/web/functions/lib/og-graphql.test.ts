@@ -1,6 +1,16 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fetchOgRowsForBuild, OG_JSON_API_BASE } from "./og-graphql.js";
 
+function slot(nameId: string, allowedItems: string[]) {
+  return {
+    id: `w1:${nameId}`,
+    nameId,
+    name: nameId,
+    required: false,
+    filters: { allowedItems, allowedCategories: [] },
+  };
+}
+
 const ITEMS = {
   data: {
     items: {
@@ -12,6 +22,11 @@ const ITEMS = {
           ergonomics: 50,
           recoilVertical: 70,
           recoilHorizontal: 250,
+          slots: [
+            slot("mod_foregrip", ["m1"]),
+            slot("mod_barrel", ["55d35ee94bdc2d61338b4568"]),
+            slot("camora_000", ["54527ac44bdc2d36668b4567"]),
+          ],
         },
       },
       m1: {
@@ -106,7 +121,7 @@ describe("fetchOgRowsForBuild", () => {
   });
 
   it("returns the weapon with its stats", async () => {
-    const out = await fetchOgRowsForBuild({ weaponId: "w1", modIds: [] });
+    const out = await fetchOgRowsForBuild({ weaponId: "w1", attachments: {} });
     expect(out.weapon).toMatchObject({
       id: "w1",
       shortName: "M4A1",
@@ -115,7 +130,7 @@ describe("fetchOgRowsForBuild", () => {
   });
 
   it("returns mods with flattened buyFor offers", async () => {
-    const out = await fetchOgRowsForBuild({ weaponId: "w1", modIds: ["m1"] });
+    const out = await fetchOgRowsForBuild({ weaponId: "w1", attachments: { mod_foregrip: "m1" } });
     const mod = out.mods[0]!;
     expect(mod).toMatchObject({ id: "m1", shortName: "RVG", weight: 0.1 });
     expect(mod.buyFor).toContainEqual({
@@ -129,7 +144,10 @@ describe("fetchOgRowsForBuild", () => {
     // The Builder's own rule (adaptMod): upstream preset stats leave cartridge recoil out.
     const out = await fetchOgRowsForBuild({
       weaponId: "w1",
-      modIds: ["55d35ee94bdc2d61338b4568", "54527ac44bdc2d36668b4567"],
+      attachments: {
+        mod_barrel: "55d35ee94bdc2d61338b4568",
+        camora_000: "54527ac44bdc2d36668b4567",
+      },
     });
     expect(out.mods.map((m) => [m.id, m.weight, m.properties])).toEqual([
       [
@@ -146,12 +164,28 @@ describe("fetchOgRowsForBuild", () => {
   });
 
   it("skips mod ids that are not in the document instead of throwing", async () => {
-    const out = await fetchOgRowsForBuild({ weaponId: "w1", modIds: ["m1", "ghost"] });
+    const out = await fetchOgRowsForBuild({
+      weaponId: "w1",
+      attachments: { mod_foregrip: "m1", camora_000: "ghost" },
+    });
+    expect(out.mods.map((m) => m.id)).toEqual(["m1"]);
+  });
+
+  it("leaves keys that are not on the weapon off the card", async () => {
+    const out = await fetchOgRowsForBuild({
+      weaponId: "w1",
+      attachments: {
+        mod_foregrip: "m1",
+        "mod_handguard/mod_barrel": "55d35ee94bdc2d61338b4568",
+        camora_000: "m1",
+      },
+    });
+    expect(out.attachments).toEqual({ mod_foregrip: "m1" });
     expect(out.mods.map((m) => m.id)).toEqual(["m1"]);
   });
 
   it("throws when the weapon id is unknown", async () => {
-    await expect(fetchOgRowsForBuild({ weaponId: "ghost", modIds: [] })).rejects.toThrow(
+    await expect(fetchOgRowsForBuild({ weaponId: "ghost", attachments: {} })).rejects.toThrow(
       /not found/,
     );
   });

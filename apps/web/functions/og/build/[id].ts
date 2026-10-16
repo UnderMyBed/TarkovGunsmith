@@ -86,13 +86,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
 
     const build = (await upstream.json()) as BuildV6;
     const rows = await fetchOgRowsForBuild(
-      {
-        weaponId: build.weaponId,
-        modIds: Object.values(build.attachments),
-      },
+      { weaponId: build.weaponId, attachments: build.attachments },
       env.TARKOV_JSON_API_BASE,
     );
-    const vm = hydrateBuildCard({ build, weapon: rows.weapon, mods: rows.mods });
+    const vm = hydrateBuildCard({
+      build: { ...build, attachments: rows.attachments },
+      weapon: rows.weapon,
+      mods: rows.mods,
+    });
     vm.availability = availabilityPillText(
       rows.mods,
       build.profileSnapshot ?? DEFAULT_PROFILE,

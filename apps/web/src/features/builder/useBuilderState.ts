@@ -5,6 +5,8 @@ import {
   useWeaponTree,
   attachedParts,
   fleaPriceRub,
+  mountedAttachments,
+  withAttachment,
   itemAvailability,
   legacyV1MigrationSlots,
   partsById,
@@ -50,6 +52,8 @@ export interface UseBuilderStateResult {
   partsById: ReadonlyMap<string, AttachablePart>;
 
   attachments: Record<string, string>;
+  /** How many parts are on the weapon: filled slots the tree shows, not stale keys. */
+  attachedCount: number;
   orphaned: string[];
   handleAttach: (path: string, itemId: string | null) => void;
   applyPreset: (next: Readonly<Record<string, string>>) => void;
@@ -126,8 +130,18 @@ export function useBuilderState({
 
   const byId = useMemo(() => partsById(catalog.data ?? []), [catalog.data]);
 
-  // One entry per attached slot: a part fitted twice counts twice, for stats and price alike.
-  const attached = useMemo(() => attachedParts(attachments, byId), [attachments, byId]);
+  // Only parts on the weapon count — never a stale key under a removed or replaced part. One
+  // entry per slot: a part fitted twice counts twice, for stats and price alike. Until the
+  // tree loads nothing is known to be on the weapon.
+  const treeData = tree.data;
+  const mounted = useMemo(
+    () => (treeData ? mountedAttachments(treeData, attachments) : {}),
+    [treeData, attachments],
+  );
+  const attached = useMemo(
+    () => (treeData ? attachedParts(treeData, attachments, byId) : { entries: [], missing: [] }),
+    [treeData, attachments, byId],
+  );
 
   const modNamesById = useMemo(
     () => Object.fromEntries((catalog.data ?? []).map((m) => [m.id, m.name])),
@@ -162,12 +176,29 @@ export function useBuilderState({
 
     const missingWeapon = !weapons.data.some((w) => w.id === initialWeaponId);
     const v1Missing = (initialModIds ?? []).filter((id) => !byId.has(id));
-    const v2Missing = attachedParts(initialAttachments ?? {}, byId).missing;
-    const missingModCount = v1Missing.length + v2Missing.length;
+    // Gone parts count only where they sit on the weapon. Without the weapon there is no tree
+    // to place them in, so every saved id the catalog lacks counts.
+    let v2Missing: number;
+    if (missingWeapon) {
+      v2Missing = Object.values(initialAttachments ?? {}).filter((id) => !byId.has(id)).length;
+    } else if (treeData?.weaponId === initialWeaponId) {
+      v2Missing = attachedParts(treeData, initialAttachments ?? {}, byId).missing.length;
+    } else {
+      return null;
+    }
+    const missingModCount = v1Missing.length + v2Missing;
 
     if (!missingWeapon && missingModCount === 0) return null;
     return { missingWeapon, missingModCount };
-  }, [initialWeaponId, initialModIds, initialAttachments, weapons.data, catalog.data, byId]);
+  }, [
+    initialWeaponId,
+    initialModIds,
+    initialAttachments,
+    weapons.data,
+    catalog.data,
+    byId,
+    treeData,
+  ]);
 
   const currentBuild = useMemo<BuildV6>(
     () => ({
@@ -199,13 +230,9 @@ export function useBuilderState({
     setOrphaned([]);
   }
 
+  // Replacing or clearing a part drops everything beneath it: those slots were the old part's.
   function handleAttach(path: string, itemId: string | null) {
-    setAttachments((prev) => {
-      const next = { ...prev };
-      if (itemId === null) delete next[path];
-      else next[path] = itemId;
-      return next;
-    });
+    setAttachments((prev) => withAttachment(prev, path, itemId));
   }
 
   function applyPreset(next: Readonly<Record<string, string>>) {
@@ -238,6 +265,7 @@ export function useBuilderState({
     partsById: byId,
 
     attachments,
+    attachedCount: Object.keys(mounted).length,
     orphaned,
     handleAttach,
     applyPreset,

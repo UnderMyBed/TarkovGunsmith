@@ -21,7 +21,7 @@ import { useOptimizer } from "./useOptimizer.js";
 import { OptimizeTriptych } from "./optimize-triptych.js";
 import { ModChangesTable, type TableMode } from "./mod-changes-table.js";
 import { ProfileReadout } from "./profile-readout.js";
-import { slotDiff, type ChangedRow } from "./slot-diff.js";
+import { shownSlots, slotDiff, type ChangedRow } from "./slot-diff.js";
 import { buildFromSelection } from "./build-from-selection.js";
 
 export interface OptimizeViewProps {
@@ -40,10 +40,14 @@ export interface OptimizeViewProps {
 }
 
 function sumPrice(
+  tree: WeaponTree,
   attachments: Readonly<Record<string, string>>,
   byId: ReadonlyMap<string, AttachablePart>,
 ): number {
-  return attachedParts(attachments, byId).entries.reduce((t, e) => t + fleaPriceRub(e.part), 0);
+  return attachedParts(tree, attachments, byId).entries.reduce(
+    (t, e) => t + fleaPriceRub(e.part),
+    0,
+  );
 }
 
 function computeScoreDelta(objective: string, current: WeaponSpec, proposed: WeaponSpec): number {
@@ -117,10 +121,16 @@ export function OptimizeView({
   }
 
   const optimizedPrice = useMemo(
-    () => (proposed ? sumPrice(proposed.build.attachments, byId) : null),
-    [proposed, byId],
+    () => (proposed ? sumPrice(slotTree, proposed.build.attachments, byId) : null),
+    [proposed, slotTree, byId],
   );
-  const unchangedCount = slotTree.slots.length - rows.length;
+  // Over every slot either build shows, at any depth: rows include deep slots too.
+  const unchangedCount = useMemo(
+    () =>
+      shownSlots(slotTree, currentAttachments, proposed?.build.attachments ?? {}).length -
+      rows.length,
+    [slotTree, currentAttachments, proposed, rows],
+  );
 
   const mode: TableMode = optimizer.state === "running" ? "running" : proposed ? "result" : "idle";
 
@@ -144,12 +154,19 @@ export function OptimizeView({
 
   function handleAcceptAll(): void {
     if (!proposed) return;
-    onAccept(buildFromSelection(currentBuild, proposed.build, new Set(rows.map((r) => r.slotId))));
+    onAccept(
+      buildFromSelection(
+        currentBuild,
+        proposed.build,
+        new Set(rows.map((r) => r.slotId)),
+        slotTree,
+      ),
+    );
   }
 
   function handleAcceptSelected(): void {
     if (!proposed) return;
-    onAccept(buildFromSelection(currentBuild, proposed.build, selected));
+    onAccept(buildFromSelection(currentBuild, proposed.build, selected, slotTree));
   }
 
   function handleDiscard(): void {

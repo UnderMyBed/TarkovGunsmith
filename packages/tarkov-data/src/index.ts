@@ -32,7 +32,12 @@ export type {
   ModLikePart,
   OfferResolver,
 } from "./queries/parts.js";
-export { attachedParts, fleaPriceRub } from "./attached-parts.js";
+export {
+  attachedParts,
+  fleaPriceRub,
+  mountedAttachments,
+  withAttachment,
+} from "./attached-parts.js";
 export { conflictsWith } from "./conflicts.js";
 export type { Conflict, ConflictContext } from "./conflicts.js";
 export type { AttachedParts, AttachedPartEntry } from "./attached-parts.js";
@@ -87,7 +92,7 @@ export {
 } from "./pairsApi.js";
 
 // Weapon tree (slot-based compatibility)
-export { fetchWeaponTree } from "./queries/weaponTree.js";
+export { fetchWeaponTree, slotGraphFor } from "./queries/weaponTree.js";
 export {
   buildSlotGraph,
   expandSlots,

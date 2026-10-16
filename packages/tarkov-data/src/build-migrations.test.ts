@@ -359,11 +359,14 @@ describe("upgradeLoadedBuild", () => {
  * Placements the pre-#214 tree (depth 3, recursing only into WeaponMod children) produced for a
  * v1 build listing every item in the fixture, captured by running that implementation over this
  * same fixture before it was replaced. v1 share links must keep migrating to exactly this.
+ * Every fixture item the old tree cannot place is an orphan, so the counts grow with the fixture:
+ * the M4A1 front sight gas block, added later, sits only in barrel slots the old tree never
+ * opened, and adds one orphan to each weapon while leaving the placements unchanged.
  */
 const LEGACY_V1_PLACEMENTS = [
   {
     weaponId: "5447a9cd4bdc2dbd208b4567",
-    orphanedCount: 22,
+    orphanedCount: 23,
     attachments: {
       "mod_reciever/mod_handguard/mod_tactical": "5a7b483fe899ef0016170d15",
       "mod_reciever/mod_scope": "57aca93d2459771f2c7e26db",
@@ -383,7 +386,7 @@ const LEGACY_V1_PLACEMENTS = [
   },
   {
     weaponId: "5448bd6b4bdc2dfc2f8b4569",
-    orphanedCount: 55,
+    orphanedCount: 56,
     attachments: {
       mod_magazine: "55d485be4bdc2d962f8b456f",
       "mod_pistolgrip/mod_tactical": "5a7b4900e899ef197b331a2a",

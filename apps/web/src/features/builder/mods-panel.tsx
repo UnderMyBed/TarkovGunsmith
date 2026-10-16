@@ -8,6 +8,8 @@ import { OrphanedBanner } from "./orphaned-banner.js";
 export interface ModsPanelProps {
   tree: UseQueryResult<WeaponTree, Error>;
   attachments: Readonly<Record<string, string>>;
+  /** Parts on the weapon (`useBuilderState`'s `attachedCount`), not raw attachment keys. */
+  attachedCount: number;
   onAttach: (path: string, itemId: string | null) => void;
   getAvailability: (itemId: string) => ItemAvailability | null;
   /** See `SlotTree`'s `getConflict`. */
@@ -25,6 +27,7 @@ export interface ModsPanelProps {
 export function ModsPanel({
   tree,
   attachments,
+  attachedCount,
   onAttach,
   getAvailability,
   getConflict,
@@ -47,7 +50,7 @@ export function ModsPanel({
                   Couldn&apos;t load slot tree: {tree.error.message}
                 </span>
               )}
-              {tree.data && `${Object.keys(attachments).length} attached`}
+              {tree.data && `${attachedCount} attached`}
             </CardDescription>
           </div>
           <label className="flex items-center gap-2 text-xs">

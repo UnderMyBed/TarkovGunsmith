@@ -151,12 +151,12 @@ export function CompareWorkspace({
   }, [draft.state.left, draft.state.right, leftTree.data, rightTree.data]);
 
   const leftSpec = useMemo(
-    () => computeSideSpec(draft.state.left, weapons.data, mods.data),
-    [draft.state.left, weapons.data, mods.data],
+    () => computeSideSpec(draft.state.left, leftTree.data, weapons.data, mods.data),
+    [draft.state.left, leftTree.data, weapons.data, mods.data],
   );
   const rightSpec = useMemo(
-    () => computeSideSpec(draft.state.right, weapons.data, mods.data),
-    [draft.state.right, weapons.data, mods.data],
+    () => computeSideSpec(draft.state.right, rightTree.data, weapons.data, mods.data),
+    [draft.state.right, rightTree.data, weapons.data, mods.data],
   );
 
   const handleSave = useCallback(() => {

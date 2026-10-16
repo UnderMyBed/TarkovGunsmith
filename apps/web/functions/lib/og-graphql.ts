@@ -3,8 +3,11 @@ import type { AvailabilityMod } from "./og-availability.js";
 import {
   adaptMod,
   createTarkovClient,
+  mountedAttachments,
   parseAttachablePart,
   resolveBuyFor,
+  selectWeaponTree,
+  slotGraphFor,
   fetchTraders,
   fetchTasks,
   type TarkovJsonClient,
@@ -47,7 +50,8 @@ function clientFor(baseUrl: string): TarkovJsonClient {
 
 interface Args {
   weaponId: string;
-  modIds: readonly string[];
+  /** The saved build's attachments, slot path → item id. */
+  attachments: Readonly<Record<string, string>>;
 }
 
 interface ItemsDoc {
@@ -72,7 +76,12 @@ function readNumber(source: unknown, key: string): number {
 export async function fetchOgRowsForBuild(
   args: Args,
   baseUrl?: string,
-): Promise<{ weapon: HydrateWeapon; mods: OgMod[] }> {
+): Promise<{
+  weapon: HydrateWeapon;
+  mods: OgMod[];
+  /** The attachments actually on the weapon (`mountedAttachments`); the card counts these. */
+  attachments: Record<string, string>;
+}> {
   const client = clientFor(baseUrl !== undefined && baseUrl !== "" ? baseUrl : OG_JSON_API_BASE);
 
   const [doc, traders, tasks] = await Promise.all([
@@ -98,9 +107,16 @@ export async function fetchOgRowsForBuild(
     },
   };
 
+  // Only parts on the weapon reach the card, exactly as the Builder counts them: a key left
+  // beneath a removed or replaced part is not on the gun.
+  const attachments = mountedAttachments(
+    selectWeaponTree(doc, args.weaponId, slotGraphFor(doc)),
+    args.attachments,
+  );
+
   const resolveOffers = (item: unknown) => resolveBuyFor(item, traders, tasks);
   const mods: OgMod[] = [];
-  for (const id of args.modIds) {
+  for (const id of new Set(Object.values(attachments))) {
     // Parsed through the same part schema and adapter the Builder uses, so a barrel, scope or
     // magazine counts here exactly as it does on the page, and cylinder ammo adds weight but
     // no stat modifiers. An id that is not a part (gone upstream) is left off the card.
@@ -129,5 +145,5 @@ export async function fetchOgRowsForBuild(
     });
   }
 
-  return { weapon, mods };
+  return { weapon, mods, attachments };
 }

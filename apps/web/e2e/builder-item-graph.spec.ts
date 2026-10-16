@@ -23,7 +23,10 @@ function slot(page: Page, path: string) {
 
 async function fit(page: Page, path: string, itemName: RegExp): Promise<void> {
   const region = slot(page, path);
-  await region.locator(":scope > summary").click();
+  // A summary click toggles: only open a slot that is closed.
+  if (!(await region.evaluate((d) => (d as HTMLDetailsElement).open))) {
+    await region.locator(":scope > summary").click();
+  }
   await region.locator(":scope > div").getByRole("button", { name: itemName }).first().click();
 }
 
@@ -62,5 +65,34 @@ test.describe("Builder item graph", () => {
       .getByRole("button", { name: /Aeroknox AX-15 10\.5 inch M-LOK handguard/ });
     await expect(clash).toBeDisabled();
     await expect(clash).toContainText("Conflicts with");
+  });
+
+  test("swapping a barrel drops its gas block, so no hidden conflict survives", async ({
+    page,
+  }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    await pickM4A1(page);
+
+    await fit(page, "mod_reciever", /M4A1 5\.56x45 upper receiver/);
+    await fit(page, "mod_reciever/mod_barrel", /10\.3 inch barrel/);
+    await fit(page, "mod_reciever/mod_barrel/mod_gas_block", /M4A1 front sight with gas block/);
+    await fit(page, "mod_reciever/mod_handguard", /Aeroknox AX-15 4 inch/);
+    await expect(page.getByText("4 attached")).toBeVisible();
+
+    // The A2 20" barrel is offered; its gas-block slot is one the AX-15 4" blocks.
+    await fit(page, "mod_reciever/mod_barrel", /A2 type 20 inch barrel/);
+
+    const gasBlock = slot(page, "mod_reciever/mod_barrel/mod_gas_block");
+    await expect(gasBlock.locator(":scope > summary")).toContainText("— empty —");
+    await expect(page.getByText("3 attached")).toBeVisible();
+
+    if (!(await gasBlock.evaluate((d) => (d as HTMLDetailsElement).open))) {
+      await gasBlock.locator(":scope > summary").click();
+    }
+    const refit = gasBlock
+      .locator(":scope > div")
+      .getByRole("button", { name: /M4A1 front sight with gas block/ });
+    await expect(refit).toBeDisabled();
+    await expect(refit).toContainText("Conflicts with");
   });
 });

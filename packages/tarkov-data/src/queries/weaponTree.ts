@@ -15,7 +15,11 @@ export type {
 // fetched from the same document (both sides of a comparison, say) shares one graph.
 const graphs = new WeakMap<object, SlotGraph>();
 
-function graphFor(doc: ItemsDocument): SlotGraph {
+/**
+ * The slot graph for an items document, built once per document object and shared by every
+ * caller holding the same document.
+ */
+export function slotGraphFor(doc: ItemsDocument): SlotGraph {
   let graph = graphs.get(doc);
   if (graph === undefined) {
     graph = buildSlotGraph(doc);
@@ -33,5 +37,5 @@ export async function fetchWeaponTree(
   weaponId: string,
 ): Promise<WeaponTree> {
   const doc = await client.fetchResource<ItemsDocument>("items");
-  return selectWeaponTree(doc, weaponId, graphFor(doc));
+  return selectWeaponTree(doc, weaponId, slotGraphFor(doc));
 }

@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import type { AttachablePart, BuildV6, WeaponListItem } from "@tarkov/data";
 import { computeSideSpec } from "./compare-side.js";
+import { tinyTree } from "../../../test/tiny-tree.js";
 
 // Live values: the Colt M4A1 receiver, the AR-15 10.3" barrel, the Colt STANAG magazine.
 const M4A1: WeaponListItem = {
@@ -51,10 +52,19 @@ function build(attachments: Record<string, string>): BuildV6 {
   return { version: 6, weaponId: M4A1.id, attachments, orphaned: [], createdAt: "x" };
 }
 
+const UPPER = "55d355e64bdc2d962f8b4569";
+const TREE = tinyTree(M4A1.id, [
+  { nameId: "mod_reciever", items: [[UPPER, [{ nameId: "mod_barrel", items: [BARREL.id] }]]] },
+  { nameId: "mod_magazine", items: [MAG.id] },
+  { nameId: "a", items: [MAG.id] },
+  { nameId: "b", items: [MAG.id] },
+]);
+
 describe("computeSideSpec", () => {
   it("counts barrels and magazines, which the WeaponMod-only list used to drop", () => {
     const spec = computeSideSpec(
-      build({ "mod_reciever/mod_barrel": BARREL.id, mod_magazine: MAG.id }),
+      build({ mod_reciever: UPPER, "mod_reciever/mod_barrel": BARREL.id, mod_magazine: MAG.id }),
+      TREE,
       [M4A1],
       [BARREL, MAG],
     );
@@ -63,8 +73,24 @@ describe("computeSideSpec", () => {
   });
 
   it("counts a part fitted in two slots twice", () => {
-    const spec = computeSideSpec(build({ a: MAG.id, b: MAG.id }), [M4A1], [MAG]);
+    const spec = computeSideSpec(build({ a: MAG.id, b: MAG.id }), TREE, [M4A1], [MAG]);
     expect(spec?.ergonomics).toBeCloseTo(48 - 3, 10);
     expect(spec?.weight).toBeCloseTo(2.7 + 0.234, 10);
+  });
+
+  it("leaves out a barrel whose receiver was removed", () => {
+    const spec = computeSideSpec(
+      build({ "mod_reciever/mod_barrel": BARREL.id }),
+      TREE,
+      [M4A1],
+      [BARREL],
+    );
+    expect(spec?.ergonomics).toBe(48);
+    expect(spec?.weight).toBeCloseTo(2.7, 10);
+  });
+
+  it("waits for the build's own tree", () => {
+    expect(computeSideSpec(build({}), undefined, [M4A1], [])).toBeNull();
+    expect(computeSideSpec(build({}), tinyTree("other", []), [M4A1], [])).toBeNull();
   });
 });

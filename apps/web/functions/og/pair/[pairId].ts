@@ -69,13 +69,14 @@ interface SideArgs {
 async function hydrateSide(build: BuildV6 | null, baseUrl?: string): Promise<SideArgs | null> {
   if (!build) return null;
   const rows = await fetchOgRowsForBuild(
-    {
-      weaponId: build.weaponId,
-      modIds: Object.values(build.attachments),
-    },
+    { weaponId: build.weaponId, attachments: build.attachments },
     baseUrl,
   );
-  return { build, weapon: rows.weapon, mods: rows.mods };
+  return {
+    build: { ...build, attachments: rows.attachments },
+    weapon: rows.weapon,
+    mods: rows.mods,
+  };
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ params, request, env }) => {
