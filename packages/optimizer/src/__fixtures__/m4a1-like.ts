@@ -1,4 +1,4 @@
-import type { ModListItem, WeaponTree } from "@tarkov/data";
+import type { AttachablePart, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon } from "@tarkov/ballistics";
 
 /**
@@ -22,7 +22,7 @@ export const M4A1_WEAPON: BallisticWeapon = {
 // stepping 0.01 per variant. Percent-scale magnitudes here would be unreachable
 // upstream — the condition that hid the 100x error described in
 // docs/operations/data-api-audit.md §B.
-export const M4A1_MODS: readonly ModListItem[] = [
+export const M4A1_MODS: readonly AttachablePart[] = [
   ...generateSlotMods("muzzle", 4, { recoilBase: -0.1, priceBase: 5000 }),
   ...generateSlotMods("barrel", 3, { recoilBase: -0.05, priceBase: 8000 }),
   ...generateSlotMods("handguard", 3, { recoilBase: 0, priceBase: 3000, ergonomicsBase: 10 }),
@@ -57,8 +57,8 @@ function generateSlotMods(
     ergonomicsBase?: number;
     weightBase?: number;
   },
-): readonly ModListItem[] {
-  const out: ModListItem[] = [];
+): readonly AttachablePart[] {
+  const out: AttachablePart[] = [];
   for (let i = 0; i < count; i++) {
     const recoilModifier = base.recoilBase - i * 0.01;
     const ergonomics = (base.ergonomicsBase ?? 0) + i;
@@ -79,6 +79,8 @@ function generateSlotMods(
         recoilModifier,
         accuracyModifier,
       },
+      conflictingItems: [],
+      conflictingSlotIds: [],
       buyFor: [
         {
           priceRUB: priceRub,

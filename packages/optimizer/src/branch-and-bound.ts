@@ -1,6 +1,6 @@
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { weaponSpec } from "@tarkov/ballistics";
-import type { ModListItem, PlayerProfile, SlotNode } from "@tarkov/data";
+import type { AttachablePart, PlayerProfile, SlotNode } from "@tarkov/data";
 import { adaptMod } from "@tarkov/data";
 import { cheapestPrice, slotCandidates } from "./feasibility.js";
 import { lowerBoundForRemaining } from "./bounds.js";
@@ -9,7 +9,8 @@ import type { Objective } from "./types.js";
 
 export interface BnbState {
   readonly weapon: BallisticWeapon;
-  readonly modList: readonly ModListItem[];
+  /** The part catalog, indexed by id. */
+  readonly parts: ReadonlyMap<string, AttachablePart>;
   readonly profile: PlayerProfile;
   readonly pinnedSlots: ReadonlyMap<string, string | null>;
   readonly objective: Objective;
@@ -55,7 +56,7 @@ export function branchAndBound(state: BnbState, slots: readonly SlotNode[]): Bnb
 function dfs(
   state: BnbState,
   remainingSlots: readonly SlotNode[],
-  partialMods: ModListItem[],
+  partialMods: AttachablePart[],
   runningPrice: number,
   attachments: Record<string, string>,
   best: { value: MutableBest | null },
@@ -94,7 +95,7 @@ function dfs(
   // early-return above, but TS's `noUncheckedIndexedAccess` forces the guard.
   /* v8 ignore next */
   if (!slot) return true;
-  const candidates = slotCandidates(slot, state.modList, state.profile, state.pinnedSlots);
+  const candidates = slotCandidates(slot, state.parts, state.profile, state.pinnedSlots);
 
   // Sort candidates best-first (by single-item score) for better pruning.
   const sorted = [...candidates].sort(
@@ -124,7 +125,7 @@ function dfs(
       const runningStats = weaponSpec(state.weapon, partialForBoundCheck.map(adaptMod));
       const bound = lowerBoundForRemaining(
         newRemaining,
-        state.modList,
+        state.parts,
         state.profile,
         state.pinnedSlots,
         state.objective,
@@ -149,19 +150,20 @@ function dfs(
   return true;
 }
 
-function singleItemScore(objective: Objective, item: ModListItem | null): number {
+function singleItemScore(objective: Objective, item: AttachablePart | null): number {
   if (item === null) return 0;
+  const mod = adaptMod(item);
   switch (objective) {
     case "min-recoil":
-      return item.properties.recoilModifier;
+      return mod.recoilModifier;
     case "max-ergonomics":
-      return -item.properties.ergonomics;
+      return -mod.ergonomicsDelta;
     case "min-weight":
-      return item.weight;
+      return mod.weight;
     case "max-accuracy":
       // Negated: a larger accuracyModifier is better accuracy, and this
       // function is "smaller sorts first". See bounds.ts's max-accuracy case.
-      return -item.properties.accuracyModifier;
+      return -mod.accuracyModifier;
   }
 }
 

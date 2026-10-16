@@ -1,5 +1,6 @@
 import type { BallisticWeapon } from "@tarkov/ballistics";
-import type { ModListItem, PlayerProfile, SlotNode } from "@tarkov/data";
+import type { AttachablePart, PlayerProfile, SlotNode } from "@tarkov/data";
+import { adaptMod } from "@tarkov/data";
 import { slotCandidates } from "./feasibility.js";
 import type { Objective } from "./types.js";
 
@@ -13,7 +14,7 @@ import type { Objective } from "./types.js";
  */
 export function lowerBoundForRemaining(
   remaining: readonly SlotNode[],
-  modList: readonly ModListItem[],
+  parts: ReadonlyMap<string, AttachablePart>,
   profile: PlayerProfile,
   pinnedSlots: ReadonlyMap<string, string | null>,
   objective: Objective,
@@ -27,10 +28,10 @@ export function lowerBoundForRemaining(
       for (const slot of remaining) {
         sumFraction += bestContribution(
           slot,
-          modList,
+          parts,
           profile,
           pinnedSlots,
-          (m) => m?.properties.recoilModifier ?? 0,
+          (m) => (m ? adaptMod(m).recoilModifier : 0),
           Math.min,
         );
       }
@@ -50,10 +51,10 @@ export function lowerBoundForRemaining(
       for (const slot of remaining) {
         sumErgo += bestContribution(
           slot,
-          modList,
+          parts,
           profile,
           pinnedSlots,
-          (m) => m?.properties.ergonomics ?? 0,
+          (m) => (m ? adaptMod(m).ergonomicsDelta : 0),
           Math.max,
         );
       }
@@ -64,7 +65,7 @@ export function lowerBoundForRemaining(
       for (const slot of remaining) {
         sumWeight += bestContribution(
           slot,
-          modList,
+          parts,
           profile,
           pinnedSlots,
           (m) => m?.weight ?? 0,
@@ -82,10 +83,10 @@ export function lowerBoundForRemaining(
       for (const slot of remaining) {
         sumAccuracy += bestContribution(
           slot,
-          modList,
+          parts,
           profile,
           pinnedSlots,
-          (m) => m?.properties.accuracyModifier ?? 0,
+          (m) => (m ? adaptMod(m).accuracyModifier : 0),
           Math.max,
         );
       }
@@ -100,13 +101,13 @@ export function lowerBoundForRemaining(
 
 function bestContribution(
   slot: SlotNode,
-  modList: readonly ModListItem[],
+  parts: ReadonlyMap<string, AttachablePart>,
   profile: PlayerProfile,
   pinnedSlots: ReadonlyMap<string, string | null>,
-  stat: (mod: ModListItem | null) => number,
+  stat: (mod: AttachablePart | null) => number,
   pick: (...values: number[]) => number,
 ): number {
-  const candidates = slotCandidates(slot, modList, profile, pinnedSlots);
+  const candidates = slotCandidates(slot, parts, profile, pinnedSlots);
   if (candidates.length === 0) return 0;
   const values = candidates.map(stat);
   return pick(...values);

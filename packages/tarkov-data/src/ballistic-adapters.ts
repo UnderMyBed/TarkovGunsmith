@@ -1,5 +1,5 @@
 import type { BallisticMod, BallisticWeapon } from "@tarkov/ballistics";
-import type { ModListItem } from "./queries/modList.js";
+import type { AttachablePart } from "./queries/parts.js";
 import type { WeaponListItem } from "./queries/weaponList.js";
 
 /**
@@ -36,26 +36,42 @@ export function adaptWeapon(item: WeaponListItem): BallisticWeapon {
 }
 
 /**
- * Convert a `ModListItem` to the `@tarkov/ballistics` input shape.
+ * Convert an attachable part to the `@tarkov/ballistics` input shape.
  *
  * Pure passthrough by design. `BallisticMod.recoilModifier` and
  * `.accuracyModifier` carry upstream's own fractional unit, declared one file
- * away in `queries/modList.ts`, so there is nothing to convert here. This
+ * away in `queries/parts.ts`, so there is nothing to convert here. This
  * function lives in `@tarkov/data` rather than in a consumer precisely because
  * a converting version of it once existed in three places and drifted: the
  * 100x recoil error in docs/operations/data-api-audit.md §B was one bug with
  * three copies. Scale for display at the point of render, never here.
  *
+ * Ammo (a cartridge in a revolver `camora_*` slot) contributes its weight and
+ * nothing else. That is a rule for the type, not a default for a missing
+ * field: upstream preset stats exclude cartridge recoil, so the assembled
+ * weapon's ergonomics, recoil and accuracy are unaffected by what is chambered.
+ *
  * @example
- *   const mods = attachedItems.map(adaptMod);
+ *   const mods = attachedParts.map(adaptMod);
  */
-export function adaptMod(item: ModListItem): BallisticMod {
+export function adaptMod(part: AttachablePart): BallisticMod {
+  const p = part.properties;
+  if (p.propertiesType === "ItemPropertiesAmmo") {
+    return {
+      id: part.id,
+      name: part.name,
+      ergonomicsDelta: 0,
+      recoilModifier: 0,
+      weight: part.weight,
+      accuracyModifier: 0,
+    };
+  }
   return {
-    id: item.id,
-    name: item.name,
-    ergonomicsDelta: item.properties.ergonomics,
-    recoilModifier: item.properties.recoilModifier,
-    weight: item.weight,
-    accuracyModifier: item.properties.accuracyModifier,
+    id: part.id,
+    name: part.name,
+    ergonomicsDelta: p.ergonomics,
+    recoilModifier: p.recoilModifier,
+    weight: part.weight,
+    accuracyModifier: p.accuracyModifier,
   };
 }

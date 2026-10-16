@@ -2,7 +2,7 @@ import type { PlayerProfile } from "./build-schema.js";
 import type { BuyForEntry } from "./queries/shared/buy-for.js";
 
 /**
- * Minimal shape `itemAvailability` needs. Both `ModListItem` and
+ * Minimal shape `itemAvailability` needs. Both `AttachablePart` and
  * `WeaponListItem` satisfy this structurally.
  */
 export interface AvailabilityInput {
@@ -79,7 +79,7 @@ function isFleaBlacklisted(item: AvailabilityInput): boolean {
  * targeted quest is more accessible than a multi-level grind, and because that
  * keeps the pre-existing ordering intact.
  *
- * Accepts any `{ buyFor, types }` shape — both `ModListItem` and
+ * Accepts any `{ buyFor, types }` shape — both `AttachablePart` and
  * `WeaponListItem` satisfy `AvailabilityInput` structurally.
  */
 export function itemAvailability(

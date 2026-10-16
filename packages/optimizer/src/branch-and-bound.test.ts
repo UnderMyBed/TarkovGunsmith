@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { branchAndBound, type BnbState } from "./branch-and-bound.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
-import type { PlayerProfile } from "@tarkov/data";
+import { partsById, type PlayerProfile } from "@tarkov/data";
 
 const flea: PlayerProfile = {
   mode: "basic",
@@ -15,7 +15,7 @@ const flea: PlayerProfile = {
 function makeState(overrides: Partial<BnbState> = {}): BnbState {
   return {
     weapon: SMALL_WEAPON,
-    modList: SMALL_MODS,
+    parts: partsById(SMALL_MODS),
     profile: flea,
     pinnedSlots: new Map(),
     objective: "min-recoil",
@@ -135,7 +135,7 @@ describe("branchAndBound", () => {
     ] as never[];
     const best = branchAndBound(
       makeState({
-        modList,
+        parts: partsById(modList),
         pinnedSlots: new Map([["top/sub", "nonexistent"]]),
       }),
       slots,
@@ -147,7 +147,7 @@ describe("branchAndBound", () => {
   });
 
   it("handles a pinned item whose id isn't in slot.allowedItems (?? [] fallback)", () => {
-    // Pin muzzle to a pistolgrip — the item exists in modList but not in
+    // Pin muzzle to a pistolgrip — the item exists in the catalog but not in
     // the muzzle slot's allowedItemIds, so `.find()` returns undefined and
     // the `?? []` fallback path is taken for subSlots.
     const extendedModList = [
@@ -166,6 +166,8 @@ describe("branchAndBound", () => {
           recoilModifier: 0,
           accuracyModifier: 0,
         },
+        conflictingItems: [],
+        conflictingSlotIds: [],
         buyFor: [
           {
             priceRUB: 100,
@@ -181,7 +183,7 @@ describe("branchAndBound", () => {
     ];
     const best = branchAndBound(
       makeState({
-        modList: extendedModList,
+        parts: partsById(extendedModList),
         pinnedSlots: new Map([["muzzle", "rogue_item"]]),
       }),
       SMALL_TREE.slots,
@@ -254,7 +256,7 @@ describe("branchAndBound", () => {
         children: [],
       },
     ] as never[];
-    const best = branchAndBound(makeState({ modList, budgetRub: 500 }), slots);
+    const best = branchAndBound(makeState({ parts: partsById(modList), budgetRub: 500 }), slots);
     expect(best).not.toBeNull();
     // Bc1 < Bc2 by stableKey — ties resolve to Bc1.
     expect(best!.attachments).toEqual({ B: "Bc1", C: "Cc" });
@@ -276,6 +278,8 @@ function tieMod(id: string, recoil: number, ergo: number, weight: number, price:
       recoilModifier: recoil,
       accuracyModifier: 0,
     },
+    conflictingItems: [],
+    conflictingSlotIds: [],
     buyFor: [
       {
         priceRUB: price,
@@ -308,7 +312,7 @@ function makeVeryWideState(): { state: BnbState; slots: never[] } {
     });
   }
   return {
-    state: makeState({ modList: mods as never }),
+    state: makeState({ parts: partsById(mods as never) }),
     slots: slots as never[],
   };
 }

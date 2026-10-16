@@ -19,8 +19,15 @@ export { weaponSchema, fetchWeapon } from "./queries/weapon.js";
 export type { Weapon } from "./queries/weapon.js";
 export { weaponListSchema, fetchWeaponList } from "./queries/weaponList.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
-export { modListSchema, fetchModList } from "./queries/modList.js";
-export type { ModListItem, ModListBuyFor, ModListVendor } from "./queries/modList.js";
+export { selectPartCatalog, fetchPartCatalog, partsById, isModLikePart } from "./queries/parts.js";
+export type {
+  AttachablePart,
+  AttachablePartType,
+  ModLikePart,
+  OfferResolver,
+} from "./queries/parts.js";
+export { attachedParts, fleaPriceRub } from "./attached-parts.js";
+export type { AttachedParts, AttachedPartEntry } from "./attached-parts.js";
 
 // Build schema
 export {
@@ -44,7 +51,7 @@ export { useAmmoList } from "./hooks/useAmmoList.js";
 export { useArmorList } from "./hooks/useArmorList.js";
 export { useWeapon } from "./hooks/useWeapon.js";
 export { useWeaponList } from "./hooks/useWeaponList.js";
-export { useModList } from "./hooks/useModList.js";
+export { usePartCatalog } from "./hooks/usePartCatalog.js";
 export { useSaveBuild } from "./hooks/useSaveBuild.js";
 export { useLoadBuild } from "./hooks/useLoadBuild.js";
 export { useLoadPair } from "./hooks/useLoadPair.js";

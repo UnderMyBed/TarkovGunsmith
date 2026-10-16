@@ -1,4 +1,4 @@
-import type { ModListItem, WeaponTree } from "@tarkov/data";
+import type { AttachablePart, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon } from "@tarkov/ballistics";
 
 /**
@@ -28,7 +28,7 @@ export const SMALL_WEAPON: BallisticWeapon = {
   baseAccuracy: 3.0,
 };
 
-export const SMALL_MODS: readonly ModListItem[] = [
+export const SMALL_MODS: readonly AttachablePart[] = [
   makeMod("muzzle_brake", "Brake", -0.12, 2, 0.3, 1500),
   makeMod("muzzle_silencer", "Silencer", -0.08, 3, 0.5, 3500),
   makeMod("grip_vertical", "Vertical grip", -0.04, 5, 0.15, 900),
@@ -52,7 +52,7 @@ function makeMod(
   ergonomics: number,
   weight: number,
   priceRub: number,
-): ModListItem {
+): AttachablePart {
   return {
     id,
     name,
@@ -67,6 +67,8 @@ function makeMod(
       recoilModifier,
       accuracyModifier: 0,
     },
+    conflictingItems: [],
+    conflictingSlotIds: [],
     buyFor: [
       {
         priceRUB: priceRub,

@@ -39,7 +39,8 @@ import {
 import { createTarkovClient } from "../packages/tarkov-data/src/client.js";
 import { fetchAmmoList } from "../packages/tarkov-data/src/queries/ammoList.js";
 import { fetchArmorList } from "../packages/tarkov-data/src/queries/armorList.js";
-import { fetchModList } from "../packages/tarkov-data/src/queries/modList.js";
+import { fetchPartCatalog } from "../packages/tarkov-data/src/queries/parts.js";
+import type { ItemsDocument } from "../packages/tarkov-data/src/queries/documents.js";
 import { fetchWeaponList } from "../packages/tarkov-data/src/queries/weaponList.js";
 
 const API_BASE = "https://json.tarkov.dev/regular/";
@@ -264,18 +265,19 @@ async function main(): Promise<void> {
  */
 async function checkSelectorsAcceptLiveDocument(): Promise<void> {
   const client = createTarkovClient(API_BASE);
-  const minimums = { weapons: 50, mods: 500, ammo: 50, armor: 20 } as const;
+  const minimums = { weapons: 50, parts: 2000, ammo: 50, armor: 20 } as const;
 
-  const [weapons, mods, ammo, armor] = await Promise.all([
+  const [weapons, parts, ammo, armor, doc] = await Promise.all([
     fetchWeaponList(client),
-    fetchModList(client),
+    fetchPartCatalog(client),
     fetchAmmoList(client),
     fetchArmorList(client),
+    client.fetchResource<ItemsDocument>("items"),
   ]);
 
   const counts = {
     weapons: weapons.length,
-    mods: mods.length,
+    parts: parts.length,
     ammo: ammo.length,
     armor: armor.length,
   };
@@ -289,8 +291,34 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
         `renamed or retyped makes safeParse drop rows silently, which reaches users as an empty picker`,
     );
   }
+  // Every option a weapon (or a part fitted to one) offers must resolve to a catalog part, or
+  // it contributes nothing to stats or price and reads as "missing" on shared builds (#213).
+  // A new ItemPropertiesX type appearing in a weapon slot is exactly how that would start.
+  const partIds = new Set(parts.map((p) => p.id));
+  const unresolved = new Set<string>();
+  for (const item of Object.values(doc.items)) {
+    const props = (
+      item as { id: string; properties?: { propertiesType?: string; slots?: unknown } }
+    ).properties;
+    const isOwner =
+      props?.propertiesType === "ItemPropertiesWeapon" || partIds.has((item as { id: string }).id);
+    if (!isOwner || !Array.isArray(props?.slots)) continue;
+    for (const slot of props.slots as { filters?: { allowedItems?: string[] } | null }[]) {
+      for (const id of slot.filters?.allowedItems ?? []) {
+        if (id in doc.items && !partIds.has(id)) unresolved.add(id);
+      }
+    }
+  }
+  check(
+    "selector/parts-cover-slots",
+    unresolved.size === 0,
+    `${unresolved.size} slot-allowed item(s) are not in the part catalog, e.g. ${[...unresolved]
+      .slice(0, 5)
+      .join(", ")} — a new item type in weapon slots, or a part schema that rejects real rows`,
+  );
+
   notes.push(
-    `selectors parsed: ${counts.weapons} weapons, ${counts.mods} mods, ${counts.ammo} ammo, ${counts.armor} armor`,
+    `selectors parsed: ${counts.weapons} weapons, ${counts.parts} parts, ${counts.ammo} ammo, ${counts.armor} armor`,
   );
 }
 

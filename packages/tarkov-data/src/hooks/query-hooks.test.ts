@@ -24,8 +24,8 @@ import { useAmmoList } from "./useAmmoList.js";
 import { fetchAmmoList } from "../queries/ammoList.js";
 import { useArmorList } from "./useArmorList.js";
 import { fetchArmorList } from "../queries/armorList.js";
-import { useModList } from "./useModList.js";
-import { fetchModList } from "../queries/modList.js";
+import { usePartCatalog } from "./usePartCatalog.js";
+import { fetchPartCatalog } from "../queries/parts.js";
 import { useTasks } from "./useTasks.js";
 import { fetchTasks } from "../queries/tasks.js";
 import { useTraders } from "./useTraders.js";
@@ -84,17 +84,17 @@ describe("useArmorList", () => {
   });
 });
 
-describe("useModList", () => {
-  it("resolves with the same data fetchModList returns, under the ['modList'] key", async () => {
+describe("usePartCatalog", () => {
+  it("resolves with the same data fetchPartCatalog returns, under the ['partCatalog'] key", async () => {
     const client = fixtureClient();
-    const { result } = renderHook(() => useModList(), { wrapper: withTarkovProvider(client) });
+    const { result } = renderHook(() => usePartCatalog(), { wrapper: withTarkovProvider(client) });
     expect(result.current.isPending).toBe(true);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(await fetchModList(client));
+    expect(result.current.data).toEqual(await fetchPartCatalog(client));
   });
 
   it("surfaces a rejected fetch as an Error on .error", async () => {
-    const { result } = renderHook(() => useModList(), {
+    const { result } = renderHook(() => usePartCatalog(), {
       wrapper: withTarkovProvider(failingClient),
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
