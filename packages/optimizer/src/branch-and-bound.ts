@@ -113,9 +113,11 @@ function dfs(
         state.pinnedSlots.get(slot.path) !== candidate.id &&
         itemAvailability(candidate, state.profile).available
       ) {
-        // Obtainable but unpriced — a barter whose ingredient has no flea price. Its cost is
-        // unknown, not zero, so the solver cannot show it fits a budget. A pin is the user's
-        // explicit choice and still goes through, as a pinned unavailable item does.
+        // Any obtainable candidate whose price is unknown: a flea entry with neither
+        // avg24hPrice nor lastLowPrice, or a barter whose ingredient has no flea price. Its
+        // cost is unknown, not zero, so the solver cannot show it fits a budget. (Unpriced
+        // flea entries used to be billed at 0 here.) A pin is the user's explicit choice and
+        // still goes through, as a pinned unavailable item does.
         continue;
       }
       // else: pinned unavailable item, or no budget to respect — proceed at price 0.

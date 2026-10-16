@@ -81,6 +81,22 @@ function isTraderKey(name: string): name is TraderKey {
   return (TRADER_PROFILE_KEYS as readonly string[]).includes(name);
 }
 
+/** Price ascending, `null` (unknown) last. `Infinity - Infinity` is NaN, which reads as a tie. */
+function byPrice(a: number | null, b: number | null): number {
+  return (a ?? Number.POSITIVE_INFINITY) - (b ?? Number.POSITIVE_INFINITY) || 0;
+}
+
+/** Code-unit order: the same on every runtime, unlike `localeCompare`, which follows ICU. */
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+const KIND_ORDER = { trader: 0, barter: 1, flea: 2 } as const;
+
+function traderOf(sat: { kind: string; traderNormalizedName?: string }): string {
+  return sat.traderNormalizedName ?? "";
+}
+
 function isFleaBlacklisted(item: AvailabilityInput): boolean {
   return item.types.includes("noFlea");
 }
@@ -95,7 +111,8 @@ function isFleaBlacklisted(item: AvailabilityInput): boolean {
  * isn't on the `noFlea` list AND `profile.level` meets the offer's `minPlayerLevel`.
  *
  * Returns the cheapest satisfying path (by priceRUB, nulls sort last — so a priced cash
- * offer beats a barter whose cost is unknown).
+ * offer beats a barter whose cost is unknown). An exact price tie goes to trader cash, then
+ * barter, then flea, then trader name, then offer id.
  *
  * If nothing satisfies, returns the most-accessible unmet requirement, in this precedence
  * order:
@@ -146,7 +163,8 @@ export function itemAvailability(
     priceRUB: number | null;
     offerKey: string;
   };
-  const satisfied: Array<SatTrader | SatBarter | SatFlea> = [];
+  // `offerKey` is a tie-break id only; it never reaches the result.
+  const satisfied: Array<{ sat: SatTrader | SatBarter | SatFlea; offerKey: string }> = [];
   const unmetTrader: Array<Unmet & { shortBy: number }> = [];
   const unmetQuest: Array<Unmet & { questNormalizedName: string }> = [];
   const unmetFleaLevel: Array<{ minPlayerLevel: number }> = [];
@@ -209,11 +227,13 @@ export function itemAvailability(
           priceRUB: offer.priceRUB,
           preset,
         };
-        satisfied.push(
-          vendor.__typename === "TraderBarter"
-            ? { ...base, kind: "barter", barterId: vendor.barterId }
-            : { ...base, kind: "trader" },
-        );
+        satisfied.push({
+          sat:
+            vendor.__typename === "TraderBarter"
+              ? { ...base, kind: "barter", barterId: vendor.barterId }
+              : { ...base, kind: "trader" },
+          offerKey,
+        });
         break;
       }
       case "FleaMarket": {
@@ -233,7 +253,7 @@ export function itemAvailability(
           unmetFleaLevel.push({ minPlayerLevel });
           continue;
         }
-        satisfied.push({ kind: "flea", priceRUB: offer.priceRUB });
+        satisfied.push({ sat: { kind: "flea", priceRUB: offer.priceRUB }, offerKey: "flea" });
         break;
       }
       default: {
@@ -244,13 +264,16 @@ export function itemAvailability(
   }
 
   if (satisfied.length > 0) {
-    // Pick cheapest (nulls sort last). Stable sort keeps upstream order on ties.
-    satisfied.sort((a, b) => {
-      const ap = a.priceRUB ?? Number.POSITIVE_INFINITY;
-      const bp = b.priceRUB ?? Number.POSITIVE_INFINITY;
-      return ap - bp;
-    });
-    const best = satisfied[0]!;
+    // Cheapest first (nulls last). Ties are broken by kind (trader, barter, flea), then
+    // trader name, then offer id, so the pick never depends on document order.
+    satisfied.sort(
+      (a, b) =>
+        byPrice(a.sat.priceRUB, b.sat.priceRUB) ||
+        KIND_ORDER[a.sat.kind] - KIND_ORDER[b.sat.kind] ||
+        compareText(traderOf(a.sat), traderOf(b.sat)) ||
+        compareText(a.offerKey, b.offerKey),
+    );
+    const best = satisfied[0]!.sat;
     if (best.kind === "flea") return { available: true, kind: "flea", priceRUB: best.priceRUB };
     return { available: true, ...best };
   }
@@ -261,9 +284,9 @@ export function itemAvailability(
   // Final keys make the pick independent of document order: cheapest known price (nulls
   // last, as in the `satisfied` sort), then trader name, then the offer's own id.
   const stable = (a: Unmet, b: Unmet): number =>
-    (a.priceRUB ?? Number.POSITIVE_INFINITY) - (b.priceRUB ?? Number.POSITIVE_INFINITY) ||
-    a.traderNormalizedName.localeCompare(b.traderNormalizedName) ||
-    a.offerKey.localeCompare(b.offerKey);
+    byPrice(a.priceRUB, b.priceRUB) ||
+    compareText(a.traderNormalizedName, b.traderNormalizedName) ||
+    compareText(a.offerKey, b.offerKey);
 
   if (unmetTrader.length > 0) {
     unmetTrader.sort(
@@ -280,7 +303,12 @@ export function itemAvailability(
     };
   }
   if (unmetQuest.length > 0) {
-    unmetQuest.sort((a, b) => cashFirst(a, b) || stable(a, b));
+    unmetQuest.sort(
+      (a, b) =>
+        cashFirst(a, b) ||
+        compareText(a.questNormalizedName, b.questNormalizedName) ||
+        stable(a, b),
+    );
     const { questNormalizedName, traderNormalizedName, payment, preset } = unmetQuest[0]!;
     return {
       available: false,

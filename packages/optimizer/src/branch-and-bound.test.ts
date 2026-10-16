@@ -314,8 +314,8 @@ function makeVeryWideState(): { state: BnbState; slots: never[] } {
 }
 
 describe("branchAndBound — unpriced but obtainable candidates", () => {
-  // The brake is obtainable only through a Prapor LL1 barter whose ingredient has no flea
-  // price, so itemAvailability says available with priceRUB null.
+  // Unknown price is not free. The brake here is obtainable only through a Prapor LL1 barter
+  // whose ingredient has no flea price, so itemAvailability says available, priceRUB null.
   const unpricedBrake: ModListItem = {
     ...SMALL_MODS[0]!,
     buyFor: [
@@ -342,6 +342,28 @@ describe("branchAndBound — unpriced but obtainable candidates", () => {
     const best = branchAndBound(makeState({ modList: mods, budgetRub: 5000 }), SMALL_TREE.slots);
     expect(best).not.toBeNull();
     expect(best!.attachments.muzzle).not.toBe("muzzle_brake");
+  });
+
+  it("skips a flea-only candidate with no flea price under a budget, too", () => {
+    // Upstream sends some flea-tradeable items with neither avg24hPrice nor lastLowPrice.
+    const unpricedFleaBrake: ModListItem = {
+      ...SMALL_MODS[0]!,
+      buyFor: [
+        {
+          priceRUB: null,
+          currency: "RUB",
+          vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 15 },
+        },
+      ],
+    };
+    const fleaMods = [unpricedFleaBrake, ...SMALL_MODS.slice(1)];
+    const budgeted = branchAndBound(
+      makeState({ modList: fleaMods, budgetRub: 5000 }),
+      SMALL_TREE.slots,
+    );
+    expect(budgeted!.attachments.muzzle).not.toBe("muzzle_brake");
+    const unbudgeted = branchAndBound(makeState({ modList: fleaMods }), SMALL_TREE.slots);
+    expect(unbudgeted!.attachments.muzzle).toBe("muzzle_brake");
   });
 
   it("still considers it when no budget is set", () => {

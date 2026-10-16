@@ -574,6 +574,45 @@ describe("itemAvailability — barters and preset offers", () => {
     }
   });
 
+  it("breaks an exact price tie among satisfied offers by kind, then trader — never by order", () => {
+    // Live shape: the RPK-16 buffer tube sells for 3625 at Mechanic and on the flea.
+    const flea = { ...fleaOffer(3625, 1) };
+    const mechanic = traderOffer("mechanic", 1, 3625);
+    const barter = barterOffer("jaeger", 1, 3625, "b-jg");
+    const prapor = traderOffer("prapor", 1, 3625);
+    const profile = { ...baseProfile, flea: true };
+    for (const buyFor of [
+      [flea, barter, prapor, mechanic],
+      [prapor, mechanic, barter, flea],
+      [barter, flea, mechanic, prapor],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), profile)).toMatchObject({
+        kind: "trader",
+        traderNormalizedName: "mechanic",
+      });
+    }
+    for (const buyFor of [
+      [flea, barter],
+      [barter, flea],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), profile)).toMatchObject({ kind: "barter" });
+    }
+  });
+
+  it("names the quest alphabetically when quest gates otherwise tie", () => {
+    const profile = { ...baseProfile, traders: { ...baseProfile.traders, mechanic: 2 } };
+    const q = (name: string) => traderOffer("mechanic", 2, 1000, name);
+    for (const buyFor of [
+      [q("gunsmith-part-2"), q("gunsmith-part-1")],
+      [q("gunsmith-part-1"), q("gunsmith-part-2")],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), profile)).toMatchObject({
+        reason: "quest-required",
+        questNormalizedName: "gunsmith-part-1",
+      });
+    }
+  });
+
   it("falls back to the offer id when price and trader tie", () => {
     const viaPreset = (id: string) => ({
       ...traderOffer("skier", 2, 1000),
