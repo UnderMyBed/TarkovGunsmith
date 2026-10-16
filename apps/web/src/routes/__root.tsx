@@ -1,10 +1,49 @@
-import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
+import { createRootRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
 export const Route = createRootRoute({
   component: RootLayout,
 });
 
+const COMPARE_PREFIX = "/builder/compare";
+
+/**
+ * Active state is computed from the pathname rather than the router's own `activeOptions`:
+ * a shared build lives at `/builder/:id`, which is the Builder (so Builder stays lit there),
+ * while `/builder/compare*` is Compare and must not also light Builder.
+ */
+function NavLink({
+  to,
+  active,
+  children,
+}: {
+  readonly to: "/builder" | "/builder/compare";
+  readonly active: boolean;
+  readonly children: ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      // Exact, so the router's own fuzzy active match never lights Builder on /builder/compare*.
+      activeOptions={{ exact: true }}
+      aria-current={active ? "page" : undefined}
+      className={
+        "font-mono text-11 tracking-18 uppercase border-b-[1.5px] pb-[2px] transition-colors " +
+        (active
+          ? "text-[var(--color-primary)] border-[var(--color-primary)]"
+          : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-transparent")
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
 function RootLayout() {
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const compareActive = pathname === COMPARE_PREFIX || pathname.startsWith(COMPARE_PREFIX + "/");
+  const builderActive =
+    !compareActive && (pathname === "/builder" || pathname.startsWith("/builder/"));
   return (
     <div className="min-h-full bg-[var(--color-background)] text-[var(--color-foreground)]">
       {/* First focusable element on every page: a keyboard user can jump the masthead and
@@ -40,27 +79,12 @@ function RootLayout() {
             </span>
           </Link>
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <Link
-              to="/builder"
-              activeOptions={{ exact: true }}
-              activeProps={{
-                className:
-                  "text-[var(--color-primary)] border-b-[1.5px] border-[var(--color-primary)]",
-              }}
-              className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors"
-            >
+            <NavLink to="/builder" active={builderActive}>
               Builder
-            </Link>
-            <Link
-              to="/builder/compare"
-              activeProps={{
-                className:
-                  "text-[var(--color-primary)] border-b-[1.5px] border-[var(--color-primary)]",
-              }}
-              className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors"
-            >
+            </NavLink>
+            <NavLink to="/builder/compare" active={compareActive}>
               Compare
-            </Link>
+            </NavLink>
           </nav>
         </div>
       </header>

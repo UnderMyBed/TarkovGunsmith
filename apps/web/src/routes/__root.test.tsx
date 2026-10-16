@@ -19,7 +19,23 @@ describe("__root shell (header nav, footer)", () => {
     expect(nav.queryAllByRole("button")).toEqual([]);
   });
 
-  it("marks only Compare active on /builder/compare (Builder is exact-match)", async () => {
+  it("marks Builder active, and Compare not, on a shared build /builder/abc12345", async () => {
+    await renderRoute("/builder/abc12345");
+
+    const nav = within(screen.getByRole("navigation"));
+    expect(nav.getByRole("link", { name: "Builder" })).toHaveAttribute("aria-current", "page");
+    expect(nav.getByRole("link", { name: "Compare" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks Compare active on a saved pair /builder/compare/abc12345", async () => {
+    await renderRoute("/builder/compare/abc12345");
+
+    const nav = within(screen.getByRole("navigation"));
+    expect(nav.getByRole("link", { name: "Compare" })).toHaveAttribute("aria-current", "page");
+    expect(nav.getByRole("link", { name: "Builder" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks only Compare active on /builder/compare", async () => {
     await renderRoute("/builder/compare");
 
     const nav = within(screen.getByRole("navigation"));
