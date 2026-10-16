@@ -109,6 +109,53 @@ describe("lazy upgrade of legacy keys", () => {
     }
   });
 
+  it("dedupes concurrent reads of one legacy key to at most one write", async () => {
+    await env.BUILDS.put("b:cncrnt22", validBuild, { expirationTtl: 3600 });
+    const put = vi.spyOn(env.BUILDS, "put");
+    try {
+      const results = await Promise.all(
+        Array.from({ length: 10 }, () => fetchWith(env, new Request("https://x/builds/cncrnt22"))),
+      );
+      for (const r of results) expect(r.status).toBe(200);
+      const upgrades = put.mock.calls.filter(([k]) => k === "b:cncrnt22");
+      expect(upgrades.length).toBeLessThanOrEqual(1);
+    } finally {
+      put.mockRestore();
+    }
+    expect((await entry("b:cncrnt22"))?.expiration).toBeUndefined();
+  });
+
+  it("skips the upgrade when the colo marker is already present", async () => {
+    await env.BUILDS.put("b:mrkd2222", validBuild, { expirationTtl: 3600 });
+    await caches.default.put(
+      new Request(`https://upgrade-marker.internal/${encodeURIComponent("b:mrkd2222")}`),
+      new Response("1", { headers: { "Cache-Control": "max-age=300" } }),
+    );
+    const put = vi.spyOn(env.BUILDS, "put");
+    try {
+      const res = await fetchWith(env, new Request("https://x/builds/mrkd2222"));
+      expect(res.status).toBe(200);
+      expect(put).not.toHaveBeenCalled();
+    } finally {
+      put.mockRestore();
+    }
+  });
+
+  it("forking a legacy pair writes only the stamped copy, never upgrades the source", async () => {
+    await env.BUILDS.put("p:frkgcy22", validPair, { expirationTtl: 3600 });
+    const put = vi.spyOn(env.BUILDS, "put");
+    try {
+      const res = await fetchWith(env, post("/pairs/frkgcy22/fork", "", "198.51.100.5"));
+      expect(res.status).toBe(201);
+      const { id } = await res.json<{ id: string }>();
+      const written = put.mock.calls.map(([k]) => k).filter((k) => k.startsWith("p:"));
+      expect(written).toEqual([`p:${id}`]);
+    } finally {
+      put.mockRestore();
+    }
+    expect((await entry("p:frkgcy22"))?.expiration).toBeTypeOf("number");
+  });
+
   it("still serves the read when the re-put throws", async () => {
     await env.BUILDS.put("b:fpgrade2", validBuild, { expirationTtl: 3600 });
     const failingPut = vi.fn().mockRejectedValue(new Error("KV put limit exceeded"));

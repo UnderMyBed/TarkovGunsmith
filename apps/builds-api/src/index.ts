@@ -101,7 +101,7 @@ export default {
 
     const pairForkMatch = /^\/pairs\/([^/]+)\/fork$/.exec(path);
     if (pairForkMatch && request.method === "POST") {
-      return handleForkPair(pairForkMatch[1] ?? "", request, env, ctx);
+      return handleForkPair(pairForkMatch[1] ?? "", request, env);
     }
 
     const pairMatch = /^\/pairs\/([^/]+)$/.exec(path);

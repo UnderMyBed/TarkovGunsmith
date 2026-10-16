@@ -78,16 +78,13 @@ export async function handleGetPair(
   });
 }
 
-export async function handleForkPair(
-  id: string,
-  request: Request,
-  env: Env,
-  ctx: ExecutionContext,
-): Promise<Response> {
+export async function handleForkPair(id: string, request: Request, env: Env): Promise<Response> {
   if (!BUILD_ID_REGEX.test(id)) {
     return new Response("Invalid id", { status: 400 });
   }
-  const source = await getPermanent(env.BUILDS, ctx, `${PAIR_PREFIX}${id}`);
+  // Plain read, no legacy upgrade: a fork rejected with 429 must cost reads only (see
+  // rate-limit.ts). The copy written below is stamped anyway.
+  const source = await env.BUILDS.get(`${PAIR_PREFIX}${id}`);
   if (!source) return new Response("Not Found", { status: 404 });
 
   // Fork copies bytes that are already sitting in KV (either written through
