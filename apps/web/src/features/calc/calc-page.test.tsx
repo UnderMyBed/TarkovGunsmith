@@ -3,15 +3,16 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { renderRoute } from "../test/render-route.js";
-import { createTestClient } from "../test/test-client.js";
+import { renderPage } from "../../test/render-page.js";
+import { CalcPage } from "./calc-page.js";
+import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
-describe("/calc", () => {
+describe("calc page (parked, no route)", () => {
   it("loads ammo + armor options and computes a shot on selection", async () => {
     const user = userEvent.setup();
-    await renderRoute("/calc");
+    await renderPage(<CalcPage />);
 
     // Fixture ammo/armor land once useAmmoList/useArmorList resolve.
     const ammoSelect = await screen.findByLabelText("Ammo");
@@ -36,7 +37,7 @@ describe("/calc", () => {
 
   it("changing distance recomputes the result without re-selecting ammo/armor", async () => {
     const user = userEvent.setup();
-    await renderRoute("/calc");
+    await renderPage(<CalcPage />);
 
     const ammoSelect = await screen.findByLabelText("Ammo");
     // Wait for the fixture ammo to actually populate the <select> before interacting —
@@ -57,7 +58,7 @@ describe("/calc", () => {
   });
 
   it("shows an error card when the items resource fails to load", async () => {
-    await renderRoute("/calc", { client: createTestClient({ errorResources: ["items"] }) });
+    await renderPage(<CalcPage />, { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load data:/)).toBeInTheDocument();
   });
 });

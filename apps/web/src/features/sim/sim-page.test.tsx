@@ -3,14 +3,15 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { renderRoute } from "../test/render-route.js";
-import { createTestClient } from "../test/test-client.js";
+import { renderPage } from "../../test/render-page.js";
+import { SimPage } from "./sim-page.js";
+import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
-describe("/sim", () => {
+describe("sim page (parked, no route)", () => {
   it("populates the helmet and body-armor selects from the correct zone-filtered fixture armor", async () => {
-    await renderRoute("/sim");
+    await renderPage(<SimPage />);
 
     const helmetSelect = await screen.findByLabelText(/Helmet \(optional\)/);
     const bodyArmorSelect = screen.getByLabelText(/Body armor \(optional\)/);
@@ -31,7 +32,7 @@ describe("/sim", () => {
 
   it("queues a shot from the body silhouette and shows it in the shot queue", async () => {
     const user = userEvent.setup();
-    await renderRoute("/sim");
+    await renderPage(<SimPage />);
 
     await waitFor(() => expect(screen.getByLabelText(/Helmet \(optional\)/)).not.toBeDisabled());
 
@@ -57,7 +58,7 @@ describe("/sim", () => {
 
   it("runs a scenario against ammo + helmet + body armor and renders the outcome and shot timeline", async () => {
     const user = userEvent.setup();
-    await renderRoute("/sim");
+    await renderPage(<SimPage />);
 
     const ammoSelect = await screen.findByLabelText("Ammo");
     await waitFor(() => expect(ammoSelect).not.toBeDisabled());
@@ -94,7 +95,7 @@ describe("/sim", () => {
   });
 
   it("shows an error card when the items resource fails to load", async () => {
-    await renderRoute("/sim", { client: createTestClient({ errorResources: ["items"] }) });
+    await renderPage(<SimPage />, { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load data:/)).toBeInTheDocument();
   });
 });

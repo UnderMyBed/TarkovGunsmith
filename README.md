@@ -12,10 +12,9 @@
 
 ## What it does
 
-- **Ballistics calculator (`/calc`)** — penetration chance, damage after armor, and effective range for any ammo-vs-armor matchup.
 - **Weapon builder (`/builder`)** — pick a weapon, attach mods that actually fit its slots, see the stat deltas live.
-- **Ammo-vs-armor matrix (`/matrix`)** — scan a whole armor tier in one view, find the breakpoints that matter.
-- **Simulator (`/sim`)** — shot-by-shot outcome distributions for a full loadout against a full kit.
+- **Optimizer** — set a budget and an objective; the solver picks the mods.
+- **Compare (`/builder/compare`)** — diff two builds, stat by stat and mod by mod.
 - **Share builds** — every build gets a short URL. Send it to your squad. Import on any device.
 
 ## Try it

@@ -79,17 +79,22 @@ describe("useKeyboardShortcuts — overlay", () => {
 });
 
 describe("useKeyboardShortcuts — g chords", () => {
-  it.each([
-    ["b", "/builder"],
-    ["c", "/calc"],
-    ["d", "/data"],
-  ])("sends g %s to %s", async (letter, path) => {
+  it("sends g b to /builder", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    await user.keyboard("gb");
+
+    expect(navigate).toHaveBeenCalledWith({ to: "/builder" });
+  });
+
+  it.each(["c", "d"])("no longer routes g %s anywhere (those pages are parked)", async (letter) => {
     const user = userEvent.setup();
     render(<Harness />);
 
     await user.keyboard(`g${letter}`);
 
-    expect(navigate).toHaveBeenCalledWith({ to: path });
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("goes nowhere when g is followed by an unmapped letter", async () => {

@@ -50,7 +50,8 @@ Production setup + verification + rotation commands live in [`docs/operations/lo
 ## Conventions
 
 - **File-based routes only.** Files in `src/routes/` become routes. The plugin generates `route-tree.gen.ts` automatically.
-- **Page components get a route file.** A new feature (e.g. `/calc`) gets `src/routes/calc.tsx` with the route definition + page component inline, OR delegates to `src/features/<name>/`.
+- **Page components get a route file.** A new feature (e.g. `/widgets`) gets `src/routes/widgets.tsx` with the route definition + page component inline, OR delegates to `src/features/<name>/`.
+- **Parked pages.** Features hidden from the UI keep their page component in `src/features/<name>/` and a route file that only redirects to `/builder`. To un-park one, re-add `createFileRoute` with the component to its route file and add its nav entry in `__root.tsx`.
 - **Data via `@tarkov/data` hooks.** Never call `fetch` or the JSON API directly from a route file.
 - **UI via `@tarkov/ui` primitives.** Shadcn-CLI inline if a primitive isn't there yet, then extract upstream in a follow-up.
 - **`src/route-tree.gen.ts` is generated.** Excluded from coverage, formatting will rewrite it as needed.
