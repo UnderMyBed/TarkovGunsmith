@@ -34,7 +34,6 @@ export default defineConfig({
   },
   build: {
     target: "ES2022",
-    sourcemap: true,
     // Vite 8 switched the default CSS minifier to lightningcss, whose target parser only
     // understands browser targets (chrome110, safari16, …) and rejects the ES-year target
     // above with `Unsupported target "ES2022"`, failing the build outright. Pinning CSS
