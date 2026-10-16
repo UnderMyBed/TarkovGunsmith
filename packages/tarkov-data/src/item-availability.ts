@@ -306,8 +306,8 @@ export function itemAvailability(
     unmetQuest.sort(
       (a, b) =>
         cashFirst(a, b) ||
-        compareText(a.questNormalizedName, b.questNormalizedName) ||
-        stable(a, b),
+        stable(a, b) ||
+        compareText(a.questNormalizedName, b.questNormalizedName),
     );
     const { questNormalizedName, traderNormalizedName, payment, preset } = unmetQuest[0]!;
     return {

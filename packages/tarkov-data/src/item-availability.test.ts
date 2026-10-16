@@ -613,6 +613,21 @@ describe("itemAvailability — barters and preset offers", () => {
     }
   });
 
+  it("prefers the cheaper quest gate over the alphabetically earlier one", () => {
+    const profile = { ...baseProfile, traders: { ...baseProfile.traders, mechanic: 2 } };
+    const cheap = traderOffer("mechanic", 2, 1000, "gunsmith-part-2");
+    const dear = traderOffer("mechanic", 2, 9000, "gunsmith-part-1");
+    for (const buyFor of [
+      [dear, cheap],
+      [cheap, dear],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), profile)).toMatchObject({
+        reason: "quest-required",
+        questNormalizedName: "gunsmith-part-2",
+      });
+    }
+  });
+
   it("falls back to the offer id when price and trader tie", () => {
     const viaPreset = (id: string) => ({
       ...traderOffer("skier", 2, 1000),
