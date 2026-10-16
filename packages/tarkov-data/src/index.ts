@@ -19,7 +19,13 @@ export { weaponSchema, fetchWeapon } from "./queries/weapon.js";
 export type { Weapon } from "./queries/weapon.js";
 export { weaponListSchema, fetchWeaponList } from "./queries/weaponList.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
-export { selectPartCatalog, fetchPartCatalog, partsById, isModLikePart } from "./queries/parts.js";
+export {
+  selectPartCatalog,
+  parseAttachablePart,
+  fetchPartCatalog,
+  partsById,
+  isModLikePart,
+} from "./queries/parts.js";
 export type {
   AttachablePart,
   AttachablePartType,

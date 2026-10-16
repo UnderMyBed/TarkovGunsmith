@@ -62,6 +62,34 @@ export function isModLikePart(part: AttachablePart): part is ModLikePart {
 export type OfferResolver = (item: unknown) => BuyForEntry[];
 
 /**
+ * Parse one raw upstream item as an attachable part, or `null` when it is not one (another item
+ * type, or a part whose record no longer matches the schema). For callers that hold a handful of
+ * ids and should not parse the whole document, such as the Open Graph card function.
+ */
+export function parseAttachablePart(
+  item: unknown,
+  resolveOffers: OfferResolver,
+): AttachablePart | null {
+  const type = (item as { properties?: { propertiesType?: unknown } | null } | null)?.properties
+    ?.propertiesType;
+  if (typeof type !== "string" || !PART_TYPES.has(type)) return null;
+  // `buyFor` is the only acquisition path this resolves. Crafting and barter sourcing live in
+  // upstream resources nothing here fetches (docs/adr/0002-json-api-migration.md §"deferred"),
+  // so a part carries no craft/barter fields rather than always-empty ones.
+  const parsed = attachablePartSchema.safeParse({
+    ...(item as object),
+    buyFor: resolveOffers(item),
+  });
+  if (parsed.success) return parsed.data;
+  if (typeof console !== "undefined") {
+    // A slot-attachable item failing its schema means a picker silently loses an option; say
+    // which one, so `verify:upstream` and the browser console both name it.
+    console.debug(`[parseAttachablePart] dropped ${String((item as { id?: unknown }).id)}`);
+  }
+  return null;
+}
+
+/**
  * Pure core: select every attachable part from a translated items document.
  *
  * Items are safe-parsed one at a time and dropped on mismatch, so one odd upstream record
@@ -74,22 +102,8 @@ export function selectPartCatalog(
 ): AttachablePart[] {
   const out: AttachablePart[] = [];
   for (const item of Object.values(doc.items)) {
-    const type = (item as { properties?: { propertiesType?: unknown } | null } | null)?.properties
-      ?.propertiesType;
-    if (typeof type !== "string" || !PART_TYPES.has(type)) continue;
-    // `buyFor` is the only acquisition path this resolves. Crafting and barter sourcing live
-    // in upstream resources nothing here fetches (docs/adr/0002-json-api-migration.md
-    // §"deferred"), so a part carries no craft/barter fields rather than always-empty ones.
-    const parsed = attachablePartSchema.safeParse({
-      ...(item as object),
-      buyFor: resolveOffers(item),
-    });
-    if (parsed.success) out.push(parsed.data);
-    else if (typeof console !== "undefined") {
-      // A slot-attachable item failing its schema means a picker silently loses an option;
-      // say which one, so `verify:upstream` and the browser console both name it.
-      console.debug(`[selectPartCatalog] dropped ${String((item as { id?: unknown }).id)}`);
-    }
+    const part = parseAttachablePart(item, resolveOffers);
+    if (part !== null) out.push(part);
   }
   return out;
 }

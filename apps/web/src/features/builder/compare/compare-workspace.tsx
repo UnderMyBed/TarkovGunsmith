@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } 
 import { useNavigate } from "@tanstack/react-router";
 import {
   useWeaponList,
-  useModList,
+  usePartCatalog,
   useWeaponTree,
   useSavePair,
   useForkPair,
@@ -45,7 +45,7 @@ export function CompareWorkspace({
   );
 
   const weapons = useWeaponList();
-  const mods = useModList();
+  const mods = usePartCatalog();
   const leftTree = useWeaponTree(draft.state.left?.weaponId ?? "");
   const rightTree = useWeaponTree(draft.state.right?.weaponId ?? "");
 
@@ -136,14 +136,14 @@ export function CompareWorkspace({
     const l =
       draft.state.left && leftTree.data
         ? {
-            tree: leftTree.data.slots,
+            tree: leftTree.data,
             attachments: draft.state.left.attachments,
           }
         : null;
     const r =
       draft.state.right && rightTree.data
         ? {
-            tree: rightTree.data.slots,
+            tree: rightTree.data,
             attachments: draft.state.right.attachments,
           }
         : null;

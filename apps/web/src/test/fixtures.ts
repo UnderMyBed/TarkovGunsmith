@@ -1,7 +1,7 @@
 /**
  * Hand-built upstream-shaped fixtures for route tests.
  *
- * `@tarkov/data`'s hooks (`useWeaponList`, `useModList`, `useAmmoList`, `useArmorList`,
+ * `@tarkov/data`'s hooks (`useWeaponList`, `usePartCatalog`, `useAmmoList`, `useArmorList`,
  * `useWeaponTree`, `useTraders`, `useTasks`) all read through one `TarkovJsonClient` whose
  * `fetchResource(resource)` returns an already-translated document — see
  * `packages/tarkov-data/src/client.ts`. These fixtures are RAW upstream shape (pre-Zod-parse),
@@ -117,6 +117,9 @@ export const ITEMS_DOCUMENT: {
       types: ["mods"],
       minLevelForFlea: 0,
       avg24hPrice: 4_500,
+      // Upstream sends both on every item, empty or not.
+      conflictingItems: [],
+      conflictingSlotIds: [],
       properties: {
         propertiesType: "ItemPropertiesWeaponMod",
         ergonomics: -1,
@@ -148,6 +151,9 @@ export const ITEMS_DOCUMENT: {
       // "trader-ll-required" reason both have something real to render.
       minLevelForFlea: 15,
       avg24hPrice: 9_500,
+      // Upstream sends both on every item, empty or not.
+      conflictingItems: [],
+      conflictingSlotIds: [],
       properties: {
         propertiesType: "ItemPropertiesWeaponMod",
         ergonomics: 8,

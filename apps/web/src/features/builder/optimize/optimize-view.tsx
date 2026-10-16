@@ -1,5 +1,13 @@
 import { useMemo, useReducer, useState, type ReactElement } from "react";
-import type { BuildV6, ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
+import {
+  attachedParts,
+  fleaPriceRub,
+  partsById,
+  type AttachablePart,
+  type BuildV6,
+  type PlayerProfile,
+  type WeaponTree,
+} from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { Button, Card, Pill, focusRing } from "@tarkov/ui";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
@@ -19,7 +27,7 @@ import { buildFromSelection } from "./build-from-selection.js";
 export interface OptimizeViewProps {
   weapon: BallisticWeapon;
   slotTree: WeaponTree;
-  modList: readonly ModListItem[];
+  parts: readonly AttachablePart[];
   profile: PlayerProfile;
   sync: UseTarkovTrackerSyncResult;
   currentAttachments: Readonly<Record<string, string>>;
@@ -33,16 +41,9 @@ export interface OptimizeViewProps {
 
 function sumPrice(
   attachments: Readonly<Record<string, string>>,
-  modList: readonly ModListItem[],
+  byId: ReadonlyMap<string, AttachablePart>,
 ): number {
-  let total = 0;
-  for (const id of Object.values(attachments)) {
-    const m = modList.find((x) => x.id === id);
-    const fleaPrice =
-      (m?.buyFor ?? []).find((b) => b.vendor.__typename === "FleaMarket")?.priceRUB ?? 0;
-    total += fleaPrice;
-  }
-  return total;
+  return attachedParts(attachments, byId).entries.reduce((t, e) => t + fleaPriceRub(e.part), 0);
 }
 
 function computeScoreDelta(objective: string, current: WeaponSpec, proposed: WeaponSpec): number {
@@ -63,7 +64,7 @@ function computeScoreDelta(objective: string, current: WeaponSpec, proposed: Wea
 export function OptimizeView({
   weapon,
   slotTree,
-  modList,
+  parts,
   profile,
   sync,
   currentAttachments,
@@ -98,10 +99,12 @@ export function OptimizeView({
 
   const proposed = optimizer.result && optimizer.result.ok ? optimizer.result : null;
 
+  const byId = useMemo(() => partsById(parts), [parts]);
+
   const rows: readonly ChangedRow[] = useMemo(() => {
     if (!proposed) return [];
-    return slotDiff(currentAttachments, proposed.build.attachments, slotTree, modList);
-  }, [proposed, currentAttachments, slotTree, modList]);
+    return slotDiff(currentAttachments, proposed.build.attachments, slotTree, byId);
+  }, [proposed, currentAttachments, slotTree, byId]);
 
   // Default selection = all changed slots, refreshed whenever a new result arrives. Same
   // "adjust state during render" pattern as above: `setSelected` used to run in a
@@ -114,8 +117,8 @@ export function OptimizeView({
   }
 
   const optimizedPrice = useMemo(
-    () => (proposed ? sumPrice(proposed.build.attachments, modList) : null),
-    [proposed, modList],
+    () => (proposed ? sumPrice(proposed.build.attachments, byId) : null),
+    [proposed, byId],
   );
   const unchangedCount = slotTree.slots.length - rows.length;
 
@@ -127,7 +130,7 @@ export function OptimizeView({
       : null;
 
   function handleRun(): void {
-    optimizer.run(toOptimizerInput(state, { weapon, slotTree, modList, profile }));
+    optimizer.run(toOptimizerInput(state, { weapon, slotTree, parts, profile }));
   }
 
   function handleToggle(slotId: string): void {

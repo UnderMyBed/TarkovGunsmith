@@ -3,7 +3,7 @@ import { Card, CardContent, focusRing } from "@tarkov/ui";
 export interface OrphanedBannerProps {
   /** Mod ids that couldn't be placed in the current slot tree. */
   orphanedIds: readonly string[];
-  /** Lookup: id → display name (from useModList). Unknown ids render as the raw id. */
+  /** Lookup: id → display name (from usePartCatalog). Unknown ids render as the raw id. */
   names: Readonly<Record<string, string>>;
   /** Fires when the user dismisses the banner — parent should clear orphaned from state. */
   onDismiss: () => void;

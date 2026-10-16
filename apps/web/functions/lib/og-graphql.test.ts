@@ -16,8 +16,12 @@ const ITEMS = {
       },
       m1: {
         id: "m1",
+        name: "AR-15 KAC RIS foregrip",
         shortName: "RVG",
+        iconLink: "https://assets.tarkov.dev/m1-icon.webp",
         weight: 0.1,
+        conflictingItems: [],
+        conflictingSlotIds: [],
         types: ["mods"],
         minLevelForFlea: 5,
         avg24hPrice: 9000,
@@ -30,6 +34,40 @@ const ITEMS = {
         buyFromTrader: [
           { trader: "tr1", priceRUB: 8000, currency: "RUB", minTraderLevel: 2, taskUnlock: null },
         ],
+      },
+      // Real values: the AR-15 10.3" barrel and the M855A1 cartridge, as upstream sends them.
+      "55d35ee94bdc2d61338b4568": {
+        id: "55d35ee94bdc2d61338b4568",
+        name: "AR-15 5.56x45 10.3 inch barrel",
+        shortName: "10.3",
+        iconLink: "https://assets.tarkov.dev/55d35ee94bdc2d61338b4568-icon.webp",
+        weight: 0.409,
+        types: ["mods"],
+        minLevelForFlea: 0,
+        avg24hPrice: 12000,
+        conflictingItems: [],
+        conflictingSlotIds: [],
+        properties: {
+          propertiesType: "ItemPropertiesBarrel",
+          ergonomics: -2,
+          recoilModifier: -0.052,
+          accuracyModifier: 0,
+        },
+        buyFromTrader: [],
+      },
+      "54527ac44bdc2d36668b4567": {
+        id: "54527ac44bdc2d36668b4567",
+        name: "5.56x45mm M855A1",
+        shortName: "M855A1",
+        iconLink: "https://assets.tarkov.dev/54527ac44bdc2d36668b4567-icon.webp",
+        weight: 0.012,
+        types: ["ammo"],
+        minLevelForFlea: 0,
+        avg24hPrice: 800,
+        conflictingItems: [],
+        conflictingSlotIds: [],
+        properties: { propertiesType: "ItemPropertiesAmmo", recoilModifier: 0.05 },
+        buyFromTrader: [],
       },
     },
   },
@@ -85,6 +123,26 @@ describe("fetchOgRowsForBuild", () => {
       priceRUB: 8000,
       minTraderLevel: 2,
     });
+  });
+
+  it("counts a barrel's modifiers, and only a cartridge's weight", async () => {
+    // The Builder's own rule (adaptMod): upstream preset stats leave cartridge recoil out.
+    const out = await fetchOgRowsForBuild({
+      weaponId: "w1",
+      modIds: ["55d35ee94bdc2d61338b4568", "54527ac44bdc2d36668b4567"],
+    });
+    expect(out.mods.map((m) => [m.id, m.weight, m.properties])).toEqual([
+      [
+        "55d35ee94bdc2d61338b4568",
+        0.409,
+        { ergonomics: -2, recoilModifier: -0.052, accuracyModifier: 0 },
+      ],
+      [
+        "54527ac44bdc2d36668b4567",
+        0.012,
+        { ergonomics: 0, recoilModifier: 0, accuracyModifier: 0 },
+      ],
+    ]);
   });
 
   it("skips mod ids that are not in the document instead of throwing", async () => {

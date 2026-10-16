@@ -190,6 +190,7 @@ export function BuilderPage({
                 attachments={builder.attachments}
                 onAttach={builder.handleAttach}
                 getAvailability={(id) => builder.availabilityById.get(id) ?? null}
+                getConflict={builder.getConflict}
                 orphaned={builder.orphaned}
                 modNames={builder.modNamesById}
                 onDismissOrphaned={builder.clearOrphaned}
@@ -205,7 +206,7 @@ export function BuilderPage({
         <OptimizeView
           weapon={adaptWeapon(builder.selectedWeapon)}
           slotTree={builder.tree.data}
-          modList={builder.modList}
+          parts={builder.parts}
           profile={profile}
           sync={sync}
           currentAttachments={builder.attachments}

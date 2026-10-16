@@ -6,6 +6,7 @@ import { OptimizeView } from "./optimize-view.js";
 import type { PlayerProfile, WeaponTree, BuildV6 } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
+import { tinyTree } from "../../../test/tiny-tree.js";
 
 afterEach(() => cleanup());
 
@@ -33,13 +34,10 @@ vi.mock("@tarkov/optimizer", () => ({
 }));
 
 const weapon = { id: "w1" } as unknown as BallisticWeapon;
-const slotTree: WeaponTree = {
-  weaponId: "w1",
-  slots: [
-    { path: "muzzle", name: "Muzzle", nameId: "muzzle", allowedItems: [] },
-    { path: "handguard", name: "Handguard", nameId: "handguard", allowedItems: [] },
-  ],
-} as unknown as WeaponTree;
+const slotTree: WeaponTree = tinyTree("w1", [
+  { nameId: "muzzle", name: "Muzzle", items: [] },
+  { nameId: "handguard", name: "Handguard", items: [] },
+]);
 const profile: PlayerProfile = {
   mode: "basic",
   traders: { prapor: 4, therapist: 3, skier: 3, peacekeeper: 2, mechanic: 3, ragman: 2, jaeger: 3 },
@@ -68,7 +66,7 @@ describe("OptimizeView", () => {
       <OptimizeView
         weapon={weapon}
         slotTree={slotTree}
-        modList={[]}
+        parts={[]}
         profile={profile}
         sync={sync}
         currentAttachments={{ muzzle: "m-old" }}
@@ -97,7 +95,7 @@ describe("OptimizeView", () => {
       <OptimizeView
         weapon={weapon}
         slotTree={slotTree}
-        modList={[]}
+        parts={[]}
         profile={profile}
         sync={sync}
         currentAttachments={{ muzzle: "m-old" }}
@@ -127,7 +125,7 @@ describe("OptimizeView", () => {
       <OptimizeView
         weapon={weapon}
         slotTree={slotTree}
-        modList={[]}
+        parts={[]}
         profile={profile}
         sync={sync}
         currentAttachments={{ muzzle: "m-old", handguard: "h-old" }}

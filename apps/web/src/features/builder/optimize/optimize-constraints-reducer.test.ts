@@ -119,7 +119,7 @@ describe("toOptimizerInput", () => {
         baseAccuracy: 0,
       },
       slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
-      modList: [],
+      parts: [],
       profile,
     });
     expect(out.objective).toBe("min-recoil");
@@ -141,7 +141,7 @@ describe("toOptimizerInput", () => {
         baseAccuracy: 0,
       },
       slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
-      modList: [],
+      parts: [],
       profile,
     });
     expect(out.constraints.budgetRub).toBeUndefined();

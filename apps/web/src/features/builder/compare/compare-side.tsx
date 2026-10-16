@@ -1,12 +1,14 @@
 import { useMemo, type ReactElement } from "react";
 import {
-  useModList,
+  usePartCatalog,
   useWeaponList,
   useWeaponTree,
+  attachedParts,
   itemAvailability,
+  partsById,
   CURRENT_BUILD_VERSION,
+  type AttachablePart,
   type BuildV6,
-  type ModListItem,
   type WeaponListItem,
   type PlayerProfile,
   type SlotDiffMap,
@@ -17,6 +19,7 @@ import { Card, CardContent, SectionTitle, WeaponSilhouette } from "@tarkov/ui";
 import { adaptMod, adaptWeapon } from "../../data-adapters/adapters.js";
 import { SlotTree } from "../slot-tree.js";
 import { OrphanedBanner } from "../orphaned-banner.js";
+import { conflictReasonFor } from "../conflict-reason.js";
 
 export interface CompareSideProps {
   /** Display label for this column (A = left, B = right). */
@@ -51,8 +54,14 @@ export function CompareSide({
   onBuildChange,
 }: CompareSideProps): ReactElement {
   const weapons = useWeaponList();
-  const mods = useModList();
+  const mods = usePartCatalog();
   const tree = useWeaponTree(build?.weaponId ?? "");
+  const byId = useMemo(() => partsById(mods.data ?? []), [mods.data]);
+  const attachments = build?.attachments;
+  const getConflict = useMemo(
+    () => (tree.data && attachments ? conflictReasonFor(tree.data, attachments, byId) : undefined),
+    [tree.data, attachments, byId],
+  );
 
   const weaponOptions = useMemo(() => {
     if (!weapons.data) return [];
@@ -188,6 +197,7 @@ export function CompareSide({
                   attachments={build.attachments}
                   onAttach={handleAttach}
                   getAvailability={getAvailability}
+                  getConflict={getConflict}
                   diff={diff ?? undefined}
                 />
               )}
@@ -210,12 +220,15 @@ export function CompareSide({
 export function computeSideSpec(
   build: BuildV6 | null,
   weapons: readonly WeaponListItem[] | undefined,
-  mods: readonly ModListItem[] | undefined,
+  parts: readonly AttachablePart[] | undefined,
 ): WeaponSpec | null {
-  if (!build || !weapons || !mods) return null;
+  if (!build || !weapons || !parts) return null;
   const weapon = weapons.find((w) => w.id === build.weaponId);
   if (!weapon) return null;
-  const attachedIds = new Set(Object.values(build.attachments));
-  const attached = mods.filter((m) => attachedIds.has(m.id));
-  return weaponSpec(adaptWeapon(weapon), attached.map(adaptMod));
+  // One entry per attached slot: a part fitted twice counts twice.
+  const { entries } = attachedParts(build.attachments, partsById(parts));
+  return weaponSpec(
+    adaptWeapon(weapon),
+    entries.map((e) => adaptMod(e.part)),
+  );
 }

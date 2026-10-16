@@ -71,7 +71,7 @@ export function upstreamFixtureBody(segment: string): string | null {
  *
  * Lets a spec state the row count it expects from the fixture instead of a magic number, and
  * without re-deriving it through the selector under test — the count comes from the raw
- * capture, the rows come from `fetchModList` + Zod + React.
+ * capture, the rows come from `fetchPartCatalog` + Zod + React.
  */
 export function fixtureItemCount(propertiesType: string): number {
   const items = capture("items").document.data.items as Record<

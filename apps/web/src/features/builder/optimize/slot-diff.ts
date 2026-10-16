@@ -1,4 +1,10 @@
-import type { ModListItem, WeaponTree } from "@tarkov/data";
+import {
+  adaptMod,
+  fleaPriceRub,
+  visibleSlots,
+  type AttachablePart,
+  type WeaponTree,
+} from "@tarkov/data";
 
 export interface ChangedRow {
   readonly slotId: string;
@@ -28,20 +34,16 @@ interface ModStats {
   readonly price: number;
 }
 
-function getFleaPrice(m: ModListItem): number {
-  const flea = (m.buyFor ?? []).find((b) => b.vendor.__typename === "FleaMarket");
-  return flea?.priceRUB ?? 0;
-}
-
-function lookupMod(id: string | undefined, modList: readonly ModListItem[]): ModStats {
+function lookupMod(id: string | undefined, parts: ReadonlyMap<string, AttachablePart>): ModStats {
   if (id === undefined) return { name: null, ergo: 0, recoil: 0, price: 0 };
-  const m = modList.find((x) => x.id === id);
+  const m = parts.get(id);
   if (m === undefined) return { name: id, ergo: 0, recoil: 0, price: 0 };
+  const stats = adaptMod(m);
   return {
     name: m.name,
-    ergo: m.properties.ergonomics,
-    recoil: m.properties.recoilModifier,
-    price: getFleaPrice(m),
+    ergo: stats.ergonomicsDelta,
+    recoil: stats.recoilModifier,
+    price: fleaPriceRub(m),
   };
 }
 
@@ -49,18 +51,24 @@ export function slotDiff(
   current: Readonly<Record<string, string>>,
   proposed: Readonly<Record<string, string>>,
   slotTree: WeaponTree,
-  modList: readonly ModListItem[],
+  parts: ReadonlyMap<string, AttachablePart>,
 ): readonly ChangedRow[] {
   const rows: ChangedRow[] = [];
   const walked = new Set<string>();
 
-  for (const slot of slotTree.slots) {
+  // Every slot either build shows, so a change deep under a barrel or handguard gets its real
+  // slot name rather than the path fallback below.
+  const seen = new Set<string>();
+  const shown = [...visibleSlots(slotTree, current), ...visibleSlots(slotTree, proposed)].filter(
+    (slot) => !seen.has(slot.path) && seen.add(slot.path),
+  );
+  for (const slot of shown) {
     const c = current[slot.path];
     const p = proposed[slot.path];
     walked.add(slot.path);
     if (c === p) continue;
-    const cm = lookupMod(c, modList);
-    const pm = lookupMod(p, modList);
+    const cm = lookupMod(c, parts);
+    const pm = lookupMod(p, parts);
     rows.push({
       slotId: slot.path,
       slotLabel: slot.name || slot.nameId || slot.path,
@@ -84,8 +92,8 @@ export function slotDiff(
     const c = current[key];
     const p = proposed[key];
     if (c === p) continue;
-    const cm = lookupMod(c, modList);
-    const pm = lookupMod(p, modList);
+    const cm = lookupMod(c, parts);
+    const pm = lookupMod(p, parts);
     rows.push({
       slotId: key,
       slotLabel: key.toUpperCase(),

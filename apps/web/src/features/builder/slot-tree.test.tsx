@@ -3,13 +3,8 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type {
-  AllowedItem,
-  ItemAvailability,
-  SlotCategory,
-  SlotNode,
-  WeaponTree,
-} from "@tarkov/data";
+import type { ItemAvailability, WeaponTree } from "@tarkov/data";
+import { tinyTree, type SlotSpec } from "../../test/tiny-tree.js";
 import { SlotTree } from "./slot-tree.js";
 
 afterEach(() => cleanup());
@@ -22,42 +17,32 @@ afterEach(() => cleanup());
 
 // ---------- Fixture builders ----------
 
-function item(id: string, name: string, children: readonly SlotNode[] = []): AllowedItem {
-  return { id, name, children };
-}
+const NAMES = {
+  "mod-dtk": "Zenit DTK-1 muzzle brake",
+  "mod-adapter": "SureFire muzzle adapter",
+  "mod-can": "Nightforce suppressor",
+  "mod-stock": "Magpul CTR carbine stock",
+};
 
-function slot(
-  path: string,
-  name: string,
-  allowedItems: readonly AllowedItem[],
-  extra?: { required?: boolean; allowedCategories?: readonly SlotCategory[] },
-): SlotNode {
-  return {
-    nameId: path.split("/").at(-1) ?? path,
-    path,
-    name,
-    required: extra?.required ?? false,
-    allowedItems,
-    allowedItemIds: new Set(allowedItems.map((i) => i.id)),
-    allowedCategories: extra?.allowedCategories ?? [],
-    children: [],
-  };
-}
+/** A muzzle adapter that itself has a sub-slot, so nesting has something real to reveal. */
+const MUZZLE: SlotSpec = {
+  nameId: "mod_muzzle",
+  name: "Muzzle",
+  items: [
+    "mod-dtk",
+    ["mod-adapter", [{ nameId: "mod_muzzle", name: "Suppressor mount", items: ["mod-can"] }]],
+  ],
+};
+const STOCK: SlotSpec = {
+  nameId: "mod_stock",
+  name: "Stock",
+  required: true,
+  items: ["mod-stock"],
+};
 
-/** A muzzle device that itself has a sub-slot, so nesting has something real to reveal. */
-const suppressorSubSlot = slot("mod_muzzle/mod_muzzle", "Suppressor mount", [
-  item("mod-can", "Nightforce suppressor"),
-]);
-
-const dtk = item("mod-dtk", "Zenit DTK-1 muzzle brake");
-const adapter = item("mod-adapter", "SureFire muzzle adapter", [suppressorSubSlot]);
-const stock = item("mod-stock", "Magpul CTR carbine stock");
-
-const MUZZLE = slot("mod_muzzle", "Muzzle", [dtk, adapter]);
-const STOCK = slot("mod_stock", "Stock", [stock], { required: true });
-
-function tree(slots: readonly SlotNode[]): WeaponTree {
-  return { weaponId: "w-m4a1", weaponName: "Colt M4A1", slots };
+/** Built through the real slot graph, so child rows come from lazy expansion as in the app. */
+function tree(slots: readonly SlotSpec[]): WeaponTree {
+  return { ...tinyTree("w-m4a1", slots, NAMES), weaponName: "Colt M4A1" };
 }
 
 const DEFAULT_TREE = tree([MUZZLE, STOCK]);
@@ -224,14 +209,65 @@ describe("SlotTree — nested slots", () => {
   });
 });
 
+describe("SlotTree — depth", () => {
+  it("shows a slot as deep as the attached parts go, with no level cap", () => {
+    // Five levels, each slot holding a part that has the next slot.
+    const chain = (depth: number): SlotSpec => ({
+      nameId: `mod_l${depth}`,
+      name: `Level ${depth}`,
+      items: depth === 5 ? [`part-${depth}`] : [[`part-${depth}`, [chain(depth + 1)]]],
+    });
+    const attachments: Record<string, string> = {};
+    let path = "";
+    for (let d = 1; d <= 4; d++) {
+      path = path ? `${path}/mod_l${d}` : `mod_l${d}`;
+      attachments[path] = `part-${d}`;
+    }
+    render(<SlotTree tree={tree([chain(1)])} attachments={attachments} onAttach={vi.fn()} />);
+    expect(screen.getByText("Level 5")).toBeInTheDocument();
+  });
+});
+
+describe("SlotTree — conflicts", () => {
+  const getConflict = (path: string, itemId: string) =>
+    path === "mod_muzzle" && itemId === "mod-adapter" ? "Conflicts with CTR" : null;
+
+  it("shows a conflicting option disabled, with the reason, and never attaches it", async () => {
+    const user = userEvent.setup();
+    const { onAttach } = renderTree({ getConflict });
+    await openSlot(user, "Muzzle");
+
+    const option = screen.getByRole("button", { name: /SureFire muzzle adapter/ });
+    expect(option).toBeDisabled();
+    expect(within(option).getByText("Conflicts with CTR")).toBeInTheDocument();
+    await user.click(option);
+    expect(onAttach).not.toHaveBeenCalled();
+
+    // Its neighbours stay choosable.
+    expect(screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ })).toBeEnabled();
+  });
+
+  it("never disables the option that is already attached", async () => {
+    const user = userEvent.setup();
+    renderTree({ getConflict, attachments: { mod_muzzle: "mod-adapter" } });
+    await openSlot(user, "Muzzle");
+    expect(
+      within(slotRegion("Muzzle")).getByRole("button", { name: /SureFire muzzle adapter/ }),
+    ).toBeEnabled();
+  });
+});
+
 describe("SlotTree — slots with no concrete options", () => {
   it("names the categories a slot accepts when it has no resolved items", () => {
-    const categorySlot = slot("mod_scope", "Scope", [], {
+    const categorySlot: SlotSpec = {
+      nameId: "mod_scope",
+      name: "Scope",
+      items: [],
       allowedCategories: [
         { id: "c-1", name: "Assault scope", normalizedName: "assault-scope" },
         { id: "c-2", name: "Reflex sight", normalizedName: "reflex-sight" },
       ],
-    });
+    };
     render(<SlotTree tree={tree([categorySlot])} attachments={{}} onAttach={vi.fn()} />);
 
     const region = slotRegion("Scope");
@@ -241,7 +277,7 @@ describe("SlotTree — slots with no concrete options", () => {
   });
 
   it("says so plainly when a slot resolves to neither items nor categories", () => {
-    const barrenSlot = slot("mod_mount", "Mount", []);
+    const barrenSlot: SlotSpec = { nameId: "mod_mount", name: "Mount", items: [] };
     render(<SlotTree tree={tree([barrenSlot])} attachments={{}} onAttach={vi.fn()} />);
 
     expect(

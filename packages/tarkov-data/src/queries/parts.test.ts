@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { fetchPartCatalog, isModLikePart, partsById, selectPartCatalog } from "./parts.js";
+import {
+  fetchPartCatalog,
+  isModLikePart,
+  parseAttachablePart,
+  partsById,
+  selectPartCatalog,
+} from "./parts.js";
 import { adaptMod } from "../ballistic-adapters.js";
 import { fixtureClient } from "../__fixtures__/client.js";
 import type { ItemsDocument } from "./documents.js";
@@ -112,5 +118,16 @@ describe("selectPartCatalog", () => {
       expect(part).not.toHaveProperty("craftsFor");
       expect(part).not.toHaveProperty("bartersFor");
     }
+  });
+});
+
+describe("parseAttachablePart", () => {
+  it("parses one part and refuses anything else", async () => {
+    const doc = await itemsDoc();
+    expect(parseAttachablePart(doc.items[BARREL_10_3], () => [])?.properties.propertiesType).toBe(
+      "ItemPropertiesBarrel",
+    );
+    expect(parseAttachablePart(doc.items["5447a9cd4bdc2dbd208b4567"], () => [])).toBeNull();
+    expect(parseAttachablePart(undefined, () => [])).toBeNull();
   });
 });

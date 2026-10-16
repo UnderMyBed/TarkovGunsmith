@@ -1,7 +1,9 @@
 import type { HydrateMod, HydrateWeapon } from "@tarkov/og";
 import type { AvailabilityMod } from "./og-availability.js";
 import {
+  adaptMod,
   createTarkovClient,
+  parseAttachablePart,
   resolveBuyFor,
   fetchTraders,
   fetchTasks,
@@ -96,24 +98,27 @@ export async function fetchOgRowsForBuild(
     },
   };
 
+  const resolveOffers = (item: unknown) => resolveBuyFor(item, traders, tasks);
   const mods: OgMod[] = [];
   for (const id of args.modIds) {
-    const raw = doc.items[id];
-    if (raw === null || raw === undefined || typeof raw !== "object") continue;
-    const record = raw as Record<string, unknown>;
-    const props = record.properties;
+    // Parsed through the same part schema and adapter the Builder uses, so a barrel, scope or
+    // magazine counts here exactly as it does on the page, and cylinder ammo adds weight but
+    // no stat modifiers. An id that is not a part (gone upstream) is left off the card.
+    const part = parseAttachablePart(doc.items[id], resolveOffers);
+    if (part === null) continue;
+    const stats = adaptMod(part);
 
     mods.push({
       id,
-      shortName: typeof record.shortName === "string" ? record.shortName : id,
-      weight: readNumber(record, "weight"),
+      shortName: part.shortName,
+      weight: part.weight,
       properties: {
-        ergonomics: readNumber(props, "ergonomics"),
-        recoilModifier: readNumber(props, "recoilModifier"),
-        accuracyModifier: readNumber(props, "accuracyModifier"),
+        ergonomics: stats.ergonomicsDelta,
+        recoilModifier: stats.recoilModifier,
+        accuracyModifier: stats.accuracyModifier,
       },
       // Flatten minTraderLevel up from the vendor, where availabilityPillText expects it.
-      buyFor: resolveBuyFor(raw, traders, tasks).map((entry) => ({
+      buyFor: (part.buyFor ?? []).map((entry) => ({
         vendor: { normalizedName: entry.vendor.normalizedName },
         priceRUB: entry.priceRUB ?? 0,
         minTraderLevel:
