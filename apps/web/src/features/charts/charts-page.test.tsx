@@ -3,14 +3,15 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { renderRoute } from "../test/render-route.js";
-import { createTestClient } from "../test/test-client.js";
+import { renderPage } from "../../test/render-page.js";
+import { ChartsPage } from "./charts-page.js";
+import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
-describe("/charts", () => {
+describe("charts page (parked, no route)", () => {
   it("shows the placeholder until an ammo is picked, then loads options", async () => {
-    await renderRoute("/charts");
+    await renderPage(<ChartsPage />);
 
     expect(screen.getByText("Pick an ammo to render the chart.")).toBeInTheDocument();
     const ammoSelect = await screen.findByLabelText("Ammo");
@@ -21,7 +22,7 @@ describe("/charts", () => {
 
   it("renders the chart section with its legend once an ammo is selected", async () => {
     const user = userEvent.setup();
-    await renderRoute("/charts");
+    await renderPage(<ChartsPage />);
 
     const ammoSelect = await screen.findByLabelText("Ammo");
     await waitFor(() => expect(ammoSelect).not.toBeDisabled());
@@ -36,7 +37,7 @@ describe("/charts", () => {
 
   it("stays mounted when shot cap and distance inputs change", async () => {
     const user = userEvent.setup();
-    await renderRoute("/charts");
+    await renderPage(<ChartsPage />);
 
     const ammoSelect = await screen.findByLabelText("Ammo");
     await waitFor(() => expect(ammoSelect).not.toBeDisabled());
@@ -57,7 +58,7 @@ describe("/charts", () => {
   });
 
   it("shows an error card when the items resource fails to load", async () => {
-    await renderRoute("/charts", { client: createTestClient({ errorResources: ["items"] }) });
+    await renderPage(<ChartsPage />, { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load data:/)).toBeInTheDocument();
   });
 });

@@ -7,7 +7,7 @@ import { renderRoute } from "../test/render-route.js";
 afterEach(() => cleanup());
 
 describe("/ (landing page)", () => {
-  it("renders the hero heading and the two primary CTA links", async () => {
+  it("renders the hero heading and the primary CTA and no simulator link", async () => {
     await renderRoute("/");
 
     expect(screen.getByText("KNOW THE NUMBERS.")).toBeInTheDocument();
@@ -15,8 +15,8 @@ describe("/ (landing page)", () => {
     const openBuilder = screen.getByRole("link", { name: "Open the Builder ▸" });
     expect(openBuilder).toHaveAttribute("href", "/builder");
 
-    const runSim = screen.getByRole("link", { name: "Run a simulation" });
-    expect(runSim).toHaveAttribute("href", "/sim");
+    expect(screen.queryByRole("link", { name: "Run a simulation" })).toBeNull();
+    expect(document.querySelector('a[href="/sim"]')).toBeNull();
   });
 
   it("resolves the compare and optimizer-promo links to their target routes", async () => {
