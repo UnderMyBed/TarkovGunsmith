@@ -4,7 +4,7 @@ import { Build, PlayerProfile } from "./build-schema.js";
 /**
  * Pair schema v1 — two build snapshots + optional per-side profile snapshots +
  * optional user label. Embeds full `Build`s (not references) so a pair
- * survives the original single builds' 30-day TTL.
+ * stays self-contained if a build it was made from is ever gone.
  */
 export const BuildPairV1 = z.object({
   v: z.literal(1),

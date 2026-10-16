@@ -1,4 +1,5 @@
 import { BuildPair } from "@tarkov/data/schemas";
+import { getPermanent, putPermanent } from "./permanent.js";
 import { newBuildId, BUILD_ID_REGEX } from "./id.js";
 import {
   checkRateLimit,
@@ -48,13 +49,10 @@ export async function handlePostPair(request: Request, env: Env): Promise<Respon
   if (!rate.allowed) return tooManyRequestsResponse();
 
   const id = newBuildId();
-  const ttl = Number(env.BUILD_TTL_SECONDS);
   // Re-serialize the *parsed* value, not the raw `text`, so a save always round-trips
   // through the schema (e.g. Zod's `.default()`s on `PlayerProfile.level` are applied),
   // matching how handlePost stores `validation.data` for builds.
-  await env.BUILDS.put(`${PAIR_PREFIX}${id}`, JSON.stringify(validation.data), {
-    expirationTtl: ttl,
-  });
+  await putPermanent(env.BUILDS, `${PAIR_PREFIX}${id}`, JSON.stringify(validation.data));
   await recordAdmission(env.BUILDS, ip, rate.count);
 
   const url = pairUrl(new URL(request.url), id);
@@ -64,11 +62,15 @@ export async function handlePostPair(request: Request, env: Env): Promise<Respon
   });
 }
 
-export async function handleGetPair(id: string, env: Env): Promise<Response> {
+export async function handleGetPair(
+  id: string,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> {
   if (!BUILD_ID_REGEX.test(id)) {
     return new Response("Invalid id", { status: 400 });
   }
-  const value = await env.BUILDS.get(`${PAIR_PREFIX}${id}`);
+  const value = await getPermanent(env.BUILDS, ctx, `${PAIR_PREFIX}${id}`);
   if (!value) return new Response("Not Found", { status: 404 });
   return new Response(value, {
     status: 200,
@@ -80,6 +82,8 @@ export async function handleForkPair(id: string, request: Request, env: Env): Pr
   if (!BUILD_ID_REGEX.test(id)) {
     return new Response("Invalid id", { status: 400 });
   }
+  // Plain read, no legacy upgrade: a fork rejected with 429 must cost reads only (see
+  // rate-limit.ts). The copy written below is stamped anyway.
   const source = await env.BUILDS.get(`${PAIR_PREFIX}${id}`);
   if (!source) return new Response("Not Found", { status: 404 });
 
@@ -94,8 +98,7 @@ export async function handleForkPair(id: string, request: Request, env: Env): Pr
   if (!rate.allowed) return tooManyRequestsResponse();
 
   const newId = newBuildId();
-  const ttl = Number(env.BUILD_TTL_SECONDS);
-  await env.BUILDS.put(`${PAIR_PREFIX}${newId}`, source, { expirationTtl: ttl });
+  await putPermanent(env.BUILDS, `${PAIR_PREFIX}${newId}`, source);
   await recordAdmission(env.BUILDS, ip, rate.count);
 
   const url = pairUrl(new URL(request.url), newId);

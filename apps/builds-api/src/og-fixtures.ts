@@ -4,6 +4,8 @@
 // those captures to the OG Pages Functions (apps/web/e2e/upstream-fixture-server.ts); an id
 // the captures don't carry silently drops out of the card — and a missing WEAPON id throws,
 // which shows up as the fallback PNG rather than as a useful failure.
+import { putPermanent } from "./permanent.js";
+
 const SAMPLE_BUILD = {
   version: 6 as const,
   weaponId: "5447a9cd4bdc2dbd208b4567", // Colt M4A1
@@ -47,14 +49,15 @@ export async function maybeSeedOgFixtures(env: SeedEnv): Promise<void> {
     const key = `b:${env.OG_FIXTURE_BUILD_ID}`;
     const existing = await env.BUILDS.get(key);
     if (!existing) {
-      await env.BUILDS.put(key, JSON.stringify(SAMPLE_BUILD));
+      await putPermanent(env.BUILDS, key, JSON.stringify(SAMPLE_BUILD));
     }
   }
   if (env.OG_FIXTURE_PAIR_ID) {
     const key = `p:${env.OG_FIXTURE_PAIR_ID}`;
     const existing = await env.BUILDS.get(key);
     if (!existing) {
-      await env.BUILDS.put(
+      await putPermanent(
+        env.BUILDS,
         key,
         JSON.stringify({
           v: 1,
