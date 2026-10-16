@@ -101,6 +101,7 @@ const AVAILABLE_TRADER: ItemAvailability = {
   traderNormalizedName: "prapor",
   minLevel: 1,
   priceRUB: 3000,
+  preset: null,
 };
 const AVAILABLE_FLEA: ItemAvailability = { available: true, kind: "flea", priceRUB: 4500 };
 
@@ -264,6 +265,22 @@ describe("SlotTree — availability", () => {
     expect(within(option).getByText("LL1")).toBeInTheDocument();
   });
 
+  it("labels an option reachable by a trader barter with the level and BARTER", () => {
+    renderTree({
+      getAvailability: () => ({
+        available: true,
+        kind: "barter",
+        traderNormalizedName: "mechanic",
+        minLevel: 1,
+        priceRUB: 11406,
+        barterId: "6ad1e5fdef48f022220a3f0c3",
+        preset: null,
+      }),
+    });
+    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
+    expect(within(option).getByText("LL1 BARTER")).toBeInTheDocument();
+  });
+
   it("labels an option reachable only on the flea market as FLEA", () => {
     renderTree({ getAvailability: () => AVAILABLE_FLEA });
     const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
@@ -289,8 +306,22 @@ describe("SlotTree — availability", () => {
         reason: "trader-ll-required",
         traderNormalizedName: "mechanic",
         minLevel: 2,
+        payment: "cash",
+        preset: null,
       },
       "mechanic LL2",
+    ],
+    [
+      "a trader loyalty level on a barter",
+      {
+        available: false,
+        reason: "trader-ll-required",
+        traderNormalizedName: "peacekeeper",
+        minLevel: 2,
+        payment: "barter",
+        preset: null,
+      },
+      "peacekeeper LL2 barter",
     ],
     [
       "an unfinished quest",
@@ -299,6 +330,8 @@ describe("SlotTree — availability", () => {
         reason: "quest-required",
         questNormalizedName: "gunsmith-master-part-1",
         traderNormalizedName: "mechanic",
+        payment: "cash",
+        preset: null,
       },
       "Quest: gunsmith-master-part-1",
     ],
@@ -308,6 +341,17 @@ describe("SlotTree — availability", () => {
       "Flea level 20",
     ],
     ["no flea access", { available: false, reason: "flea-locked" }, "Flea only"],
+    [
+      "a trader the profile does not track",
+      {
+        available: false,
+        reason: "untracked-trader",
+        traderNormalizedName: "ref",
+        minLevel: 3,
+        payment: "barter",
+      },
+      "ref LL3 (not in profile)",
+    ],
     ["nothing selling it", { available: false, reason: "no-sources" }, "No sources"],
   ] as const satisfies readonly (readonly [string, ItemAvailability, string])[])(
     "marks an option LOCKED and names the blocker when it is gated by %s",

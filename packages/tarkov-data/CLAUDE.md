@@ -22,7 +22,9 @@ That drives every convention below:
 - **Fixtures are trimmed samples of the real document** (`__fixtures__/items-sample.json`, `tasks-sample.json`, `traders-sample.json`), driven through `__fixtures__/client.ts`'s `fixtureClient()` so tests exercise the real translation merge. `structuredClone` per call, because `mergeTranslations` rewrites in place.
 - **Fixture values must be able to occur upstream.** See the warning below — this is not a style preference.
 - **Zod schemas are the runtime contract.** Cheaper to evolve than generated types.
-- **Joins happen here, not upstream.** The JSON API returns bare ids where GraphQL embedded objects: armor `material` joins to `armorMaterials`, task/offer `trader` joins to the traders document, and `buyFor` is reconstructed from `buyFromTrader` + `minLevelForFlea` in `queries/shared/buy-for.ts`.
+- **Joins happen here, not upstream.** The JSON API returns bare ids where GraphQL embedded objects: armor `material` joins to `armorMaterials`, task/offer `trader` joins to the traders document, and `buyFor` is reconstructed in `queries/shared/buy-for.ts`. `createOfferResolver` (pure, over the translated documents) builds an item's offers from its own `buyFromTrader`, its `/barters` entries, the cash offers and barters of every preset whose `properties.baseItem` is the item (tagged `preset`), and its flea entry (`minLevelForFlea`). `fetchOfferResolver(client)` is its async wrapper; `resolveBuyFor` is the cash + flea subset for single-item callers.
+- **Barters are an array, with fractional counts.** `/barters` is `data: [...]`, not an id-keyed map, and Ref's GP-coin `count` arrives as e.g. `155.1`. A barter's `priceRUB` comes from `barterCostRUB`, a placeholder over the flea read that the single price model (#218) replaces; it is `null` with a reason when a required item has no flea price.
+- **Offers from traders the profile doesn't track stay visible.** Offer resolution joins against every trader (`fetchTraderDirectory`), and `itemAvailability` reports a Ref- or Fence-only item as `untracked-trader` instead of dropping the offer.
 - **Non-hook tests stay React-free.** The vitest env defaults to `node`; tests stub the
   client, not `fetch`.
 - **Hook tests opt into jsdom per-file.** `hooks/use*.test.ts` files carry a
@@ -48,7 +50,7 @@ A 2026-08 audit found the recoil fraction being consumed as a percent, making ev
 
 - `build-schema.ts` / `build-migrations.ts` — versioned build schema and the vN→vN+1 chain. `PlayerProfile` is embedded in saved builds as `profileSnapshot`, so **changing it is a persisted schema change** requiring a new version and migration. Builds in the wild must keep loading.
 - `pair-schema.ts` — build-comparison pairs.
-- `item-availability.ts` — trader-LL / quest / flea gating from a `PlayerProfile`.
+- `item-availability.ts` — trader-LL / quest / flea gating from a `PlayerProfile`, over cash offers, barters and preset offers alike.
 - `slot-diff.ts`, `stat-delta.ts` — build comparison.
 - `buildsApi.ts` / `pairsApi.ts` — clients for the `builds-api` Worker.
 - `tarkovtracker/` — external progression import.

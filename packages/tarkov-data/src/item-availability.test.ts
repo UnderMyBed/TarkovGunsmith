@@ -4,6 +4,9 @@ import type { ModListItem } from "./queries/modList.js";
 import type { PlayerProfile } from "./build-schema.js";
 import { fetchModList } from "./queries/modList.js";
 import { fixtureClient } from "./__fixtures__/client.js";
+import { fetchWeaponList } from "./queries/weaponList.js";
+import { fetchOfferResolver } from "./queries/barters.js";
+import type { ItemsDocument } from "./queries/documents.js";
 
 const baseProfile: PlayerProfile = {
   mode: "basic",
@@ -196,12 +199,12 @@ describe("itemAvailability", () => {
 });
 
 describe("itemAvailability — trader-offer edge cases", () => {
-  it("skips a fence/unknown-trader offer and defaults a missing minTraderLevel to 1", () => {
+  it("reports a fence/unknown-trader offer as untracked and defaults a missing minTraderLevel to 1", () => {
     // Two branches in one: `minTraderLevel ?? 1` (computed before the trader-key check) and
     // `!isTraderKey(traderName)` both need a non-gated trader like "fence". With no other
-    // offer on the item, this also drives the function all the way to the final
-    // `no-sources` fallback — every accumulator (satisfied/unmetTrader/unmetQuest/
-    // unmetFleaLevel) stays empty and `sawFleaPath` never flips true.
+    // offer on the item, every other accumulator stays empty and `sawFleaPath` never flips
+    // true, so the offer surfaces as `untracked-trader` rather than vanishing into
+    // `no-sources` — the profile has no level for Fence or Ref, but the offer is real.
     const result = itemAvailability(
       mod({
         buyFor: [
@@ -220,8 +223,13 @@ describe("itemAvailability — trader-offer edge cases", () => {
       }),
       baseProfile,
     );
-    expect(result.available).toBe(false);
-    if (!result.available) expect(result.reason).toBe("no-sources");
+    expect(result).toEqual({
+      available: false,
+      reason: "untracked-trader",
+      traderNormalizedName: "fence",
+      minLevel: 1,
+      payment: "cash",
+    });
   });
 
   it("treats a missing completedQuests list as no completions, even in advanced mode", () => {
@@ -458,5 +466,198 @@ describe("flea level gate, composed over the real document shape", () => {
     const atGate = itemAvailability(fleaOnly, { ...baseProfile, flea: true, level: gate });
     expect(atGate.available).toBe(true);
     if (atGate.available) expect(atGate.kind).toBe("flea");
+  });
+});
+
+describe("itemAvailability — barters and preset offers", () => {
+  function barterOffer(
+    traderName: string,
+    minLevel: number,
+    priceRUB: number | null,
+    barterId = "b1",
+  ): ModListItem["buyFor"][number] {
+    return {
+      priceRUB,
+      currency: null,
+      vendor: {
+        __typename: "TraderBarter",
+        normalizedName: traderName,
+        minTraderLevel: minLevel,
+        taskUnlock: null,
+        trader: { normalizedName: traderName },
+        barterId,
+        offeredCount: 1,
+        requiredItems: [],
+        costUnavailableReason: priceRUB === null ? "GP coin has no flea price" : null,
+      },
+    };
+  }
+
+  it("satisfies an item through a barter and reports it as one", () => {
+    const result = itemAvailability(
+      mod({ buyFor: [traderOffer("peacekeeper", 2, 6878), barterOffer("mechanic", 1, 11406)] }),
+      baseProfile,
+    );
+    expect(result).toEqual({
+      available: true,
+      kind: "barter",
+      traderNormalizedName: "mechanic",
+      minLevel: 1,
+      priceRUB: 11406,
+      barterId: "b1",
+      preset: null,
+    });
+  });
+
+  it("prefers a priced cash offer over a barter whose cost is unknown", () => {
+    const result = itemAvailability(
+      mod({ buyFor: [barterOffer("prapor", 1, null), traderOffer("prapor", 1, 50_000)] }),
+      baseProfile,
+    );
+    expect(result).toMatchObject({ available: true, kind: "trader", priceRUB: 50_000 });
+  });
+
+  it("reports the trader gate the profile is fewest levels short of, not the lowest level", () => {
+    const profile = { ...baseProfile, traders: { ...baseProfile.traders, mechanic: 3 } };
+    const result = itemAvailability(
+      mod({ buyFor: [traderOffer("prapor", 3), traderOffer("mechanic", 4)] }),
+      profile,
+    );
+    expect(result).toMatchObject({
+      reason: "trader-ll-required",
+      traderNormalizedName: "mechanic",
+      minLevel: 4,
+    });
+  });
+
+  it("names cash before barter when two gates are equally close", () => {
+    const result = itemAvailability(
+      mod({ buyFor: [barterOffer("skier", 2, 9000), traderOffer("jaeger", 2)] }),
+      baseProfile,
+    );
+    expect(result).toEqual({
+      available: false,
+      reason: "trader-ll-required",
+      traderNormalizedName: "jaeger",
+      minLevel: 2,
+      payment: "cash",
+      preset: null,
+    });
+  });
+
+  it("ranks an untracked trader below flea-locked", () => {
+    const result = itemAvailability(
+      mod({ buyFor: [barterOffer("ref", 3, null), fleaOffer()] }),
+      baseProfile,
+    );
+    expect(result).toEqual({ available: false, reason: "flea-locked" });
+  });
+});
+
+describe("itemAvailability — captured documents", () => {
+  const ll = (n: number): PlayerProfile => ({
+    ...baseProfile,
+    traders: {
+      prapor: n,
+      therapist: n,
+      skier: n,
+      peacekeeper: n,
+      mechanic: n,
+      ragman: n,
+      jaeger: n,
+    },
+  });
+
+  async function availabilityOf(id: string, profile: PlayerProfile) {
+    const client = fixtureClient();
+    const [doc, resolve] = await Promise.all([
+      client.fetchResource<ItemsDocument>("items"),
+      fetchOfferResolver(client),
+    ]);
+    const raw = doc.items[id] as { types: string[] };
+    return itemAvailability({ types: raw.types, buyFor: resolve(raw) }, profile);
+  }
+
+  it("makes the PM reachable at LL1 through its default preset", async () => {
+    const weapons = await fetchWeaponList(fixtureClient());
+    const pm = weapons.find((w) => w.id === "5448bd6b4bdc2dfc2f8b4569")!;
+    expect(itemAvailability(pm, ll(1))).toEqual({
+      available: true,
+      kind: "trader",
+      traderNormalizedName: "prapor",
+      minLevel: 1,
+      priceRUB: 12631,
+      preset: {
+        id: "58414967245977598f1ad391",
+        normalizedName: "makarov-pm-9x18pm-pistol-default",
+      },
+    });
+  });
+
+  it("makes the M4A1 reachable at LL2 through the cheapest preset barter", async () => {
+    const weapons = await fetchWeaponList(fixtureClient());
+    const m4 = weapons.find((w) => w.id === "5447a9cd4bdc2dbd208b4567")!;
+    expect(itemAvailability(m4, ll(2))).toEqual({
+      available: true,
+      kind: "barter",
+      traderNormalizedName: "peacekeeper",
+      minLevel: 2,
+      priceRUB: 75882,
+      barterId: "6ad1e61cef48f022220a4ec81",
+      preset: {
+        id: "5af08cf886f774223c269184",
+        normalizedName: "colt-m4a1-556x45-assault-rifle-carbine",
+      },
+    });
+    // At LL1 the nearest gate is that same preset barter, one level away — not the bare
+    // receiver's Mechanic LL3.
+    expect(itemAvailability(m4, ll(1))).toMatchObject({
+      available: false,
+      reason: "trader-ll-required",
+      traderNormalizedName: "peacekeeper",
+      minLevel: 2,
+      payment: "barter",
+      preset: { id: "5af08cf886f774223c269184" },
+    });
+  });
+
+  it("makes a mod reachable at LL1 through a barter when its cash offer needs LL2", async () => {
+    const mods = await fetchModList(fixtureClient());
+    const latch = mods.find((m) => m.id === "56ea7165d2720b6e518b4583")!;
+    expect(itemAvailability(latch, ll(1))).toMatchObject({
+      available: true,
+      kind: "barter",
+      traderNormalizedName: "mechanic",
+      minLevel: 1,
+      priceRUB: 11406,
+    });
+  });
+
+  it("gates a barter-only scope on its barter's trader level", async () => {
+    // ELCAN SpecterDR (FDE): no cash offer anywhere; Mechanic and Peacekeeper barter it at LL2.
+    expect(await availabilityOf("57aca93d2459771f2c7e26db", ll(1))).toMatchObject({
+      available: false,
+      reason: "trader-ll-required",
+      minLevel: 2,
+      payment: "barter",
+    });
+    expect(await availabilityOf("57aca93d2459771f2c7e26db", ll(2))).toMatchObject({
+      available: true,
+      kind: "barter",
+      traderNormalizedName: "peacekeeper",
+      priceRUB: 38878,
+    });
+  });
+
+  it("reports a Ref-only mod as untracked instead of no-sources", async () => {
+    const mods = await fetchModList(fixtureClient());
+    const ravage = mods.find((m) => m.id === "6984b82c5aab442620032fe8")!;
+    expect(itemAvailability(ravage, ll(4))).toEqual({
+      available: false,
+      reason: "untracked-trader",
+      traderNormalizedName: "ref",
+      minLevel: 3,
+      payment: "barter",
+    });
   });
 });

@@ -31,3 +31,9 @@ export interface ItemsDocument {
 export interface TasksDocument {
   tasks: Record<string, unknown>;
 }
+
+/**
+ * The upstream barters document. Unlike items/tasks, `data` is an array, not an id-keyed map.
+ * Records are validated by `parseBarters` in `barters.ts`.
+ */
+export type BartersDocument = unknown[];

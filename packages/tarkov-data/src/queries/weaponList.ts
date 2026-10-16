@@ -1,10 +1,8 @@
 import { z } from "zod";
 import type { TarkovJsonClient } from "../client.js";
 import type { ItemsDocument } from "./documents.js";
-import { resolveBuyFor } from "./shared/buy-for.js";
-import { fetchTraders } from "./traders.js";
-import { fetchTasks } from "./tasks.js";
 import { buyForEntrySchema } from "./shared/buy-for.js";
+import { fetchOfferResolver } from "./barters.js";
 
 const weaponPropertiesSchema = z.object({
   propertiesType: z.literal("ItemPropertiesWeapon"),
@@ -33,29 +31,50 @@ export const weaponListSchema = z.object({
 export type WeaponListItem = z.infer<typeof weaponListItemSchema>;
 
 /**
- * Fetch the full list of weapons (`items(type: gun)`). Same filter pattern as
- * fetchAmmoList — outer envelope strict, items safe-parsed and dropped if they
- * don't match the strict per-item schema.
+ * Whether an `ItemPropertiesWeapon` item belongs in the Builder at all.
+ *
+ * Upstream types the SP-81 signal pistol and every RSP-30/ROP-30 signal cartridge as
+ * weapons. They are special-equipment items — `types` carries `"specialSlot"`, the slot
+ * they occupy instead of a weapon slot — and have nothing to build. On the 2026-10-16
+ * document that flag selects exactly those 8 of 172 weapons.
+ */
+export function isBuildableWeapon(item: { types: readonly string[] }): boolean {
+  return !item.types.includes("specialSlot");
+}
+
+/**
+ * Fetch the list of buildable weapons. Same filter pattern as fetchAmmoList — outer envelope
+ * strict, items safe-parsed and dropped if they don't match the strict per-item schema —
+ * then special-slot items dropped by `isBuildableWeapon`.
+ *
+ * `buyFor` comes from `createOfferResolver`, so it includes the weapon's presets' cash offers
+ * and barters as well as its own: traders mostly sell weapons as presets, and the bare
+ * receiver's offers alone left all but 7 weapons unreachable at LL1.
  */
 export async function fetchWeaponList(client: TarkovJsonClient): Promise<WeaponListItem[]> {
-  const [doc, traders, tasks] = await Promise.all([
+  const [doc, resolveOffers] = await Promise.all([
     client.fetchResource<ItemsDocument>("items"),
-    fetchTraders(client),
-    fetchTasks(client),
+    fetchOfferResolver(client),
   ]);
 
   const all = Object.values(doc.items);
   const out: WeaponListItem[] = [];
+  let special = 0;
   for (const item of all) {
     const parsed = weaponListItemSchema.safeParse({
       ...(item as object),
-      buyFor: resolveBuyFor(item, traders, tasks),
+      buyFor: resolveOffers(item),
     });
-    if (parsed.success) out.push(parsed.data);
+    if (!parsed.success) continue;
+    if (!isBuildableWeapon(parsed.data)) {
+      special += 1;
+      continue;
+    }
+    out.push(parsed.data);
   }
   if (out.length < all.length && typeof console !== "undefined") {
     console.debug(
-      `[fetchWeaponList] filtered ${all.length - out.length} non-weapon items (kept ${out.length}/${all.length})`,
+      `[fetchWeaponList] filtered ${all.length - out.length - special} non-weapon items and ${special} special-slot items (kept ${out.length}/${all.length})`,
     );
   }
   return out;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fetchWeaponList } from "./weaponList.js";
+import { fetchWeaponList, isBuildableWeapon } from "./weaponList.js";
 import { fixtureClient } from "../__fixtures__/client.js";
 import type { TarkovJsonClient } from "../client.js";
 
@@ -43,5 +43,21 @@ describe("fetchWeaponList", () => {
     };
     const list = await fetchWeaponList(onlyWeaponsClient);
     expect(list.length).toBe(onlyWeapons.length);
+  });
+});
+
+describe("fetchWeaponList — special-slot items", () => {
+  it("drops the SP-81 signal pistol and RSP-30 cartridges, which upstream types as weapons", async () => {
+    const ids = (await fetchWeaponList(fixtureClient())).map((w) => w.id);
+    expect(ids).not.toContain("620109578d82e67e7911abf2"); // ZiD SP-81 26x75 signal pistol
+    expect(ids).not.toContain("62178c4d4ecf221597654e3d"); // RSP-30 reactive signal cartridge (Red)
+    expect(ids).toEqual(
+      expect.arrayContaining(["5447a9cd4bdc2dbd208b4567", "5448bd6b4bdc2dfc2f8b4569"]),
+    );
+  });
+
+  it("decides buildability by the specialSlot type flag", () => {
+    expect(isBuildableWeapon({ types: ["gun", "noFlea", "specialSlot"] })).toBe(false);
+    expect(isBuildableWeapon({ types: ["gun", "wearable"] })).toBe(true);
   });
 });

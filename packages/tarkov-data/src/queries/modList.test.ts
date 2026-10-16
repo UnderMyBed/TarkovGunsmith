@@ -33,7 +33,7 @@ describe("fetchModList", () => {
     expect(withOffers.length).toBeGreaterThan(0);
     for (const mod of withOffers) {
       for (const entry of mod.buyFor ?? []) {
-        expect(["TraderOffer", "FleaMarket"]).toContain(entry.vendor.__typename);
+        expect(["TraderOffer", "TraderBarter", "FleaMarket"]).toContain(entry.vendor.__typename);
         expect(entry.vendor.normalizedName).not.toBe("");
       }
     }
@@ -43,10 +43,10 @@ describe("fetchModList", () => {
     // Regression guard for a dead code path that shipped in the production bundle: the
     // query used to declare nullable `craftsFor`/`bartersFor` and hardcode both to `null`,
     // so the Builder's CRAFT / BARTER pills — gated on `.length > 0` — could never render
-    // for any item, under any data. Crafting and barter sourcing live in the upstream
-    // `/crafts` and `/barters` resources, which nothing in this package fetches. Until one
-    // of them is wired, a mod carries no such field at all, so no consumer can derive a
-    // signal the data cannot support. Zod strips unknown keys, so this also holds if an
+    // for any item, under any data. Barters now arrive inside `buyFor` as `TraderBarter`
+    // entries; crafting lives in the upstream `/crafts` resource, which nothing in this
+    // package fetches. A mod carries no separate field for either, so no consumer can derive
+    // a signal the data cannot support. Zod strips unknown keys, so this also holds if an
     // upstream item document starts carrying them.
     const list = await fetchModList(fixtureClient());
     expect(list.length).toBeGreaterThan(0);

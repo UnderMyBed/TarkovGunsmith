@@ -54,9 +54,9 @@ const PROFILE_STORAGE_KEY = "tg:player-profile";
  *
  * `/builder`'s weapon picker lists only weapons available on the player's profile
  * (`useBuilderState.ts:99`), and on `DEFAULT_PROFILE` — level 1, every trader LL1, no flea —
- * neither captured weapon is reachable: the M4A1 needs Mechanic LL3 and the PM is flea-only.
- * A fresh profile would therefore leave the picker empty and every Builder spec asserting
- * nothing.
+ * only the PM is reachable (through its default preset, Prapor LL1); the M4A1's cheapest
+ * gate is a Peacekeeper LL2 preset barter. A fresh profile would therefore leave the Builder
+ * specs on the wrong weapon.
  *
  * A progressed profile also puts the specs on the weapon the captures were built around: the
  * M4A1 resolves to a 46-node slot tree, which is what the slot-tree and optimizer specs need
