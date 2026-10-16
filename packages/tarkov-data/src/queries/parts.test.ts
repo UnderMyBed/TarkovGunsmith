@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   fetchPartCatalog,
   isModLikePart,
@@ -134,5 +134,14 @@ describe("parseAttachablePart", () => {
     );
     expect(parseAttachablePart(doc.items["5447a9cd4bdc2dbd208b4567"], () => [])).toBeNull();
     expect(parseAttachablePart(undefined, () => [])).toBeNull();
+  });
+
+  it("drops a part that fails its schema, naming it", async () => {
+    const doc = await itemsDoc();
+    const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
+    const broken = { ...(doc.items[BARREL_10_3] as object), conflictingSlotIds: undefined };
+    expect(parseAttachablePart(broken, () => [])).toBeNull();
+    expect(debug).toHaveBeenCalledWith(`[parseAttachablePart] dropped ${BARREL_10_3}`);
+    debug.mockRestore();
   });
 });

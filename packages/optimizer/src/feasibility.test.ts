@@ -48,6 +48,15 @@ describe("slotCandidates", () => {
     expect(candidates).toHaveLength(3);
   });
 
+  it("skips an allowed id the part catalog does not hold", () => {
+    const muzzleSlot = SMALL_TREE.slots[0]!;
+    const withoutBrake = partsById(SMALL_MODS.filter((m) => m.id !== "muzzle_brake"));
+    const ids = slotCandidates(muzzleSlot, withoutBrake, fleaOnProfile, new Map()).map((c) =>
+      c ? c.id : null,
+    );
+    expect(ids).toEqual(["muzzle_silencer", null]);
+  });
+
   it("returns the pinned item only when slot is pinned", () => {
     const muzzleSlot = SMALL_TREE.slots[0]!;
     const pin = new Map([["muzzle", "muzzle_brake"]]);

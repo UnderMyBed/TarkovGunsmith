@@ -48,11 +48,12 @@ export function adaptWeapon(item: WeaponListItem): BallisticWeapon {
  *
  * Ammo (a cartridge in a revolver `camora_*` slot) contributes its weight and
  * nothing else. That is a rule for the type, not a default for a missing
- * field: upstream preset stats exclude cartridge recoil, so the assembled
- * weapon's ergonomics, recoil and accuracy are unaffected by what is chambered.
+ * field: upstream's magazine-loaded presets exclude cartridge recoil (preset
+ * 5a43a85186f7746c914b947a, pinned in preset-oracle.test.ts), and no live
+ * preset loads a cylinder, so cylinder rounds follow the same rule.
  *
  * @example
- *   const mods = attachedParts.map(adaptMod);
+ *   const mods = attachedParts(tree, attachments, byId).entries.map((e) => adaptMod(e.part));
  */
 export function adaptMod(part: AttachablePart): BallisticMod {
   const p = part.properties;

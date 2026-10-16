@@ -107,9 +107,11 @@ describe("buildSlotGraph", () => {
                 },
               },
               { nameId: "slot2" },
+              null,
             ],
           },
         },
+        untyped: { properties: { slots: [{ nameId: "s" }] } },
         named: { name: "Named Item", properties: { propertiesType: "ItemPropertiesWeaponMod" } },
         unnamed: { properties: { propertiesType: "ItemPropertiesWeaponMod" } },
       },
@@ -129,6 +131,30 @@ describe("buildSlotGraph", () => {
     expect(first?.allowedCategories.map((c) => c.id)).toEqual(["cat1", "inline"]);
     expect(second?.name).toBe("slot2");
     expect(second?.allowedItems).toEqual([]);
+    expect(expandSlots(graph, "owner", "")[2]?.nameId).toBe("");
+    expect(graph.owners.untyped?.kind).toBe("");
+  });
+
+  it("names an option by its id when the graph carries no name for it", () => {
+    const graph = {
+      owners: {
+        w: {
+          kind: "ItemPropertiesWeapon",
+          slots: [
+            {
+              id: "s",
+              nameId: "s",
+              name: "S",
+              required: false,
+              allowedItemIds: ["z"],
+              allowedCategories: [],
+            },
+          ],
+        },
+      },
+      itemNames: {},
+    };
+    expect(expandSlots(graph, "w", "")[0]?.allowedItems).toEqual([{ id: "z", name: "z" }]);
   });
 });
 

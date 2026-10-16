@@ -127,7 +127,7 @@ describe("branchAndBound", () => {
     // alt branch produces a leaf and sets best, the DFS tries item A and
     // calls lowerBoundForRemaining, which hits `candidates.length === 0`
     // and returns 0 for that sub-slot.
-    const modList = [
+    const parts = [
       // B sorts first (lower recoilModifier), reaches a leaf, sets best.
       // Then A is tried — its pruning check calls lowerBoundForRemaining
       // for the sub-slot, hitting the empty-candidates fallback.
@@ -140,7 +140,7 @@ describe("branchAndBound", () => {
     const slots = tree.slots;
     const best = branchAndBound(
       makeState({
-        parts: partsById(modList),
+        parts: partsById(parts),
         graph: tree.graph,
         pinnedSlots: new Map([["top/sub", "nonexistent"]]),
       }),
@@ -156,7 +156,7 @@ describe("branchAndBound", () => {
     // Pin muzzle to a pistolgrip — the item exists in the catalog but not in
     // the muzzle slot's allowedItemIds, so `.find()` returns undefined and
     // the `?? []` fallback path is taken for subSlots.
-    const extendedModList = [
+    const extendedParts = [
       ...SMALL_MODS,
       {
         id: "rogue_item",
@@ -189,7 +189,7 @@ describe("branchAndBound", () => {
     ];
     const best = branchAndBound(
       makeState({
-        parts: partsById(extendedModList),
+        parts: partsById(extendedParts),
         pinnedSlots: new Map([["muzzle", "rogue_item"]]),
       }),
       SMALL_TREE.slots,
@@ -228,7 +228,7 @@ describe("branchAndBound", () => {
     // even after Bc1's leaf sets best. Both Bc1+Cc and Bc2+Cc reach leaves
     // with identical scores — priced equally, so the tie resolves via
     // stableKey (Bc1 < Bc2 lex).
-    const modList = [
+    const parts = [
       tieMod("B_premium", -20, 0, 0.1, 99999),
       tieMod("Bc1", -10, 0, 0.1, 100),
       tieMod("Bc2", -10, 0, 0.1, 100),
@@ -262,7 +262,7 @@ describe("branchAndBound", () => {
         children: [],
       },
     ] as never[];
-    const best = branchAndBound(makeState({ parts: partsById(modList), budgetRub: 500 }), slots);
+    const best = branchAndBound(makeState({ parts: partsById(parts), budgetRub: 500 }), slots);
     expect(best).not.toBeNull();
     // Bc1 < Bc2 by stableKey — ties resolve to Bc1.
     expect(best!.attachments).toEqual({ B: "Bc1", C: "Cc" });

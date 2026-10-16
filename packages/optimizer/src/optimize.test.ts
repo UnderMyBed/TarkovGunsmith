@@ -221,7 +221,7 @@ describe("optimize — tiebreak", () => {
   it("deterministically picks the cheaper build when two builds score equal", () => {
     // Two muzzles with identical recoil/ergo/weight stats but different prices.
     // The optimizer should pick the cheaper one by tie-breaking.
-    const modListForTie = [
+    const partsForTie = [
       ...SMALL_MODS.filter((m) => !m.id.startsWith("muzzle")),
       makeTieMod("muzzle_a", "A", -12, 2, 0.3, 1000),
       makeTieMod("muzzle_b", "B", -12, 2, 0.3, 2000),
@@ -244,7 +244,7 @@ describe("optimize — tiebreak", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
       slotTree: treeForTie,
-      parts: modListForTie,
+      parts: partsForTie,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "min-recoil",
     });

@@ -21,9 +21,10 @@ const partPropertiesSchema = z.discriminatedUnion("propertiesType", [
   z.object({ propertiesType: z.literal("ItemPropertiesScope"), ...modifiers }),
   z.object({ propertiesType: z.literal("ItemPropertiesMagazine"), ...modifiers }),
   // Cartridges sit in revolver cylinder (`camora_*`) slots. Upstream ammo does carry a
-  // `recoilModifier`, but it is a property of firing the round, not of the assembled weapon:
-  // upstream's own preset recoil leaves it out (a 0.07-modifier cartridge preset reads 67, not
-  // 74.5). So the ammo variant deliberately exposes no stat modifiers at all — see `adaptMod`.
+  // `recoilModifier`, but upstream's preset recoil leaves it out: the magazine-loaded AKS-74UN
+  // preset 5a43a85186f7746c914b947a carries a 0.07-modifier round and reads 67, where counting
+  // the round would give 74.5 (preset-oracle.test.ts). No live preset loads a cylinder, so this
+  // is the nearest evidence. The ammo variant therefore exposes no stat modifiers — see `adaptMod`.
   z.object({ propertiesType: z.literal("ItemPropertiesAmmo") }),
 ]);
 
@@ -81,11 +82,9 @@ export function parseAttachablePart(
     buyFor: resolveOffers(item),
   });
   if (parsed.success) return parsed.data;
-  if (typeof console !== "undefined") {
-    // A slot-attachable item failing its schema means a picker silently loses an option; say
-    // which one, so `verify:upstream` and the browser console both name it.
-    console.debug(`[parseAttachablePart] dropped ${String((item as { id?: unknown }).id)}`);
-  }
+  // A slot-attachable item failing its schema means a picker silently loses an option; say
+  // which one, so `verify:upstream` and the browser console both name it.
+  console.debug(`[parseAttachablePart] dropped ${String((item as { id?: unknown }).id)}`);
   return null;
 }
 

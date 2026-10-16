@@ -18,14 +18,16 @@ They share one cause. Every fixture in the affected packages carries **invented 
 
 Every production fetcher was run against the live document and compared against the raw upstream type counts.
 
-| Fetcher           | Kept  | Upstream of that type           | Rate                    |
-| ----------------- | ----- | ------------------------------- | ----------------------- |
-| `fetchAmmoList`   | 200   | 200 `ItemPropertiesAmmo`        | 100%                    |
-| `fetchArmorList`  | 47    | 47 `ItemPropertiesArmor`        | 100%                    |
-| `fetchWeaponList` | 171   | 171 `ItemPropertiesWeapon`      | 100%                    |
-| `fetchModList`    | 1,638 | 1,638 `ItemPropertiesWeaponMod` | 100%                    |
-| `fetchTraders`    | 7     | 7 profile traders               | 100%                    |
-| `fetchTasks`      | 517   | —                               | all trader ids resolved |
+| Fetcher             | Kept  | Upstream of that type                       | Rate                    |
+| ------------------- | ----- | ------------------------------------------- | ----------------------- |
+| `fetchAmmoList`     | 200   | 200 `ItemPropertiesAmmo`                    | 100%                    |
+| `fetchArmorList`    | 47    | 47 `ItemPropertiesArmor`                    | 100%                    |
+| `fetchWeaponList`   | 171   | 171 `ItemPropertiesWeapon`                  | 100%                    |
+| `fetchPartCatalog`¹ | 2,507 | 2,507 across the five slot-attachable types | 100%                    |
+| `fetchTraders`      | 7     | 7 profile traders                           | 100%                    |
+| `fetchTasks`        | 517   | —                                           | all trader ids resolved |
+
+¹ Re-run 2026-10-16 against a 5,480-item document, when the part catalog replaced the `ItemPropertiesWeaponMod`-only list (#213): 1,656 weapon mods, 196 barrels, 231 scopes, 224 magazines and 200 cartridges. The other rows are from the 2026-08-18 audit.
 
 Zero items of a targeted type are dropped by `safeParse`. Checked separately: **no required field is null or absent on any item** of any consumed type — the Zod schemas are safe against the current document.
 
@@ -87,7 +89,7 @@ The fixtures use invented percent-scale values that never occur upstream. `adapt
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `apps/web/.../adapters.ts` `adaptMod`        | Root cause. Feeds Builder, `/calc`, compare.                                                   |
 | `packages/og/src/hydrate.ts`                 | Same mapping — OG share cards show wrong recoil.                                               |
-| `packages/optimizer/.../branch-and-bound.ts` | Same mapping in `adaptModListItem`.                                                            |
+| `packages/optimizer/.../branch-and-bound.ts` | Same mapping, inline.                                                                          |
 | `packages/optimizer/src/bounds.ts`           | `baseRecoil * (sumPercent / 100)` — same error in the search bound.                            |
 | `apps/web/src/routes/data.tsx`               | Column literally labelled **"Recoil %"** renders the raw fraction, so `-0.21` reads as −0.21%. |
 
