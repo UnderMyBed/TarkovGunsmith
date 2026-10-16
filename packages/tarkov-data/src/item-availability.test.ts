@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { itemAvailability } from "./item-availability.js";
 import type { ModListItem } from "./queries/modList.js";
 import type { PlayerProfile } from "./build-schema.js";
+import type { BuyForEntry } from "./queries/shared/buy-for.js";
 import { fetchModList } from "./queries/modList.js";
 import { fixtureClient } from "./__fixtures__/client.js";
 import { fetchWeaponList } from "./queries/weaponList.js";
@@ -30,7 +31,7 @@ function traderOffer(
   minLevel: number,
   priceRUB: number | null = 1000,
   taskUnlockName: string | null = null,
-): ModListItem["buyFor"][number] {
+): BuyForEntry {
   return {
     priceRUB,
     currency: "RUB",
@@ -47,7 +48,7 @@ function traderOffer(
 function fleaOffer(
   priceRUB: number | null = 2000,
   minPlayerLevel: number | null = 15,
-): ModListItem["buyFor"][number] {
+): BuyForEntry {
   return {
     priceRUB,
     currency: "RUB",
@@ -475,7 +476,7 @@ describe("itemAvailability — barters and preset offers", () => {
     minLevel: number,
     priceRUB: number | null,
     barterId = "b1",
-  ): ModListItem["buyFor"][number] {
+  ): BuyForEntry {
     return {
       priceRUB,
       currency: null,
@@ -545,6 +546,60 @@ describe("itemAvailability — barters and preset offers", () => {
     });
   });
 
+  it("breaks an equal-distance tie by price, then trader, then offer id — never by order", () => {
+    const cheap = barterOffer("peacekeeper", 2, 75882, "b-pk");
+    const dear = barterOffer("mechanic", 2, 169988, "b-mech");
+    const unpriced = barterOffer("jaeger", 2, null, "b-jg");
+    for (const buyFor of [
+      [dear, unpriced, cheap],
+      [cheap, dear, unpriced],
+      [unpriced, cheap, dear],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), baseProfile)).toMatchObject({
+        reason: "trader-ll-required",
+        traderNormalizedName: "peacekeeper",
+      });
+    }
+    // Same price: trader name decides.
+    const a = barterOffer("skier", 2, 1000, "b2");
+    const b = barterOffer("skier", 2, 1000, "b1");
+    const c = barterOffer("mechanic", 2, 1000, "b3");
+    for (const buyFor of [
+      [a, b, c],
+      [c, b, a],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), baseProfile)).toMatchObject({
+        traderNormalizedName: "mechanic",
+      });
+    }
+  });
+
+  it("falls back to the offer id when price and trader tie", () => {
+    const viaPreset = (id: string) => ({
+      ...traderOffer("skier", 2, 1000),
+      preset: { id, normalizedName: `preset-${id}` },
+    });
+    for (const buyFor of [
+      [viaPreset("p2"), viaPreset("p1")],
+      [viaPreset("p1"), viaPreset("p2")],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), baseProfile)).toMatchObject({
+        preset: { id: "p1" },
+      });
+    }
+  });
+
+  it("throws on a vendor kind it does not know rather than ignoring the offer", () => {
+    const bogus = {
+      priceRUB: 1,
+      currency: null,
+      vendor: { __typename: "Craft", normalizedName: "x" },
+    } as unknown as BuyForEntry;
+    expect(() => itemAvailability(mod({ buyFor: [bogus] }), baseProfile)).toThrow(
+      /unhandled vendor/,
+    );
+  });
+
   it("ranks an untracked trader below flea-locked", () => {
     const result = itemAvailability(
       mod({ buyFor: [barterOffer("ref", 3, null), fleaOffer()] }),
@@ -609,8 +664,9 @@ describe("itemAvailability — captured documents", () => {
         normalizedName: "colt-m4a1-556x45-assault-rifle-carbine",
       },
     });
-    // At LL1 the nearest gate is that same preset barter, one level away — not the bare
-    // receiver's Mechanic LL3.
+    // At LL1 two preset barters are one level away: Peacekeeper's Carbine (75882) and
+    // Mechanic's SOPMOD II (2 × 84994). The cheaper one is named — not whichever the
+    // document lists first, and not the bare receiver's Mechanic LL3.
     expect(itemAvailability(m4, ll(1))).toMatchObject({
       available: false,
       reason: "trader-ll-required",

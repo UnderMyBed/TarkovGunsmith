@@ -101,7 +101,8 @@ function isFleaBlacklisted(item: AvailabilityInput): boolean {
  * order:
  *
  *   1. a trader-LL gate — the one the profile is fewest levels short of, then the lowest
- *      level, then cash before barter;
+ *      level, then cash before barter, then the cheapest known price (nulls last), then
+ *      trader name, then offer id, so the pick never depends on document order;
  *   2. a quest;
  *   3. the lowest flea player-level gate;
  *   4. flea-locked;
@@ -141,6 +142,9 @@ export function itemAvailability(
     minLevel: number;
     payment: TraderPayment;
     preset: OfferPreset | null;
+    /** Tie-break only: the offer's price, and a stable id for it. */
+    priceRUB: number | null;
+    offerKey: string;
   };
   const satisfied: Array<SatTrader | SatBarter | SatFlea> = [];
   const unmetTrader: Array<Unmet & { shortBy: number }> = [];
@@ -158,9 +162,16 @@ export function itemAvailability(
         const minLevel = vendor.minTraderLevel ?? 1;
         const payment: TraderPayment = vendor.__typename === "TraderBarter" ? "barter" : "cash";
         const preset = offer.preset ?? null;
+        // Cash offers carry no upstream id; trader + preset identifies one well enough to
+        // make the ordering total.
+        const offerKey =
+          vendor.__typename === "TraderBarter"
+            ? vendor.barterId
+            : `cash:${traderName}:${preset?.id ?? "own"}`;
+        const tie = { priceRUB: offer.priceRUB, offerKey };
 
         if (!isTraderKey(traderName)) {
-          untracked.push({ traderNormalizedName: traderName, minLevel, payment, preset });
+          untracked.push({ traderNormalizedName: traderName, minLevel, payment, preset, ...tie });
           continue;
         }
 
@@ -171,6 +182,7 @@ export function itemAvailability(
             minLevel,
             payment,
             preset,
+            ...tie,
             shortBy: minLevel - profileLevel,
           });
           continue;
@@ -186,6 +198,7 @@ export function itemAvailability(
               minLevel,
               payment,
               preset,
+              ...tie,
             });
             continue;
           }
@@ -223,6 +236,10 @@ export function itemAvailability(
         satisfied.push({ kind: "flea", priceRUB: offer.priceRUB });
         break;
       }
+      default: {
+        const unhandled: never = vendor;
+        throw new Error(`itemAvailability: unhandled vendor ${JSON.stringify(unhandled)}`);
+      }
     }
   }
 
@@ -241,9 +258,17 @@ export function itemAvailability(
   // Nothing satisfied — pick most-accessible unmet requirement.
   const cashFirst = (a: Unmet, b: Unmet): number =>
     a.payment === b.payment ? 0 : a.payment === "cash" ? -1 : 1;
+  // Final keys make the pick independent of document order: cheapest known price (nulls
+  // last, as in the `satisfied` sort), then trader name, then the offer's own id.
+  const stable = (a: Unmet, b: Unmet): number =>
+    (a.priceRUB ?? Number.POSITIVE_INFINITY) - (b.priceRUB ?? Number.POSITIVE_INFINITY) ||
+    a.traderNormalizedName.localeCompare(b.traderNormalizedName) ||
+    a.offerKey.localeCompare(b.offerKey);
 
   if (unmetTrader.length > 0) {
-    unmetTrader.sort((a, b) => a.shortBy - b.shortBy || a.minLevel - b.minLevel || cashFirst(a, b));
+    unmetTrader.sort(
+      (a, b) => a.shortBy - b.shortBy || a.minLevel - b.minLevel || cashFirst(a, b) || stable(a, b),
+    );
     const { traderNormalizedName, minLevel, payment, preset } = unmetTrader[0]!;
     return {
       available: false,
@@ -255,7 +280,7 @@ export function itemAvailability(
     };
   }
   if (unmetQuest.length > 0) {
-    unmetQuest.sort(cashFirst);
+    unmetQuest.sort((a, b) => cashFirst(a, b) || stable(a, b));
     const { questNormalizedName, traderNormalizedName, payment, preset } = unmetQuest[0]!;
     return {
       available: false,
@@ -280,7 +305,7 @@ export function itemAvailability(
     return { available: false, reason: "flea-locked" };
   }
   if (untracked.length > 0) {
-    untracked.sort((a, b) => a.minLevel - b.minLevel || cashFirst(a, b));
+    untracked.sort((a, b) => a.minLevel - b.minLevel || cashFirst(a, b) || stable(a, b));
     const { traderNormalizedName, minLevel, payment } = untracked[0]!;
     return {
       available: false,

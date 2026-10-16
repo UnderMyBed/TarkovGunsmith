@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { branchAndBound, type BnbState } from "./branch-and-bound.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
-import type { PlayerProfile } from "@tarkov/data";
+import type { ModListItem, PlayerProfile } from "@tarkov/data";
 
 const flea: PlayerProfile = {
   mode: "basic",
@@ -312,3 +312,52 @@ function makeVeryWideState(): { state: BnbState; slots: never[] } {
     slots: slots as never[],
   };
 }
+
+describe("branchAndBound — unpriced but obtainable candidates", () => {
+  // The brake is obtainable only through a Prapor LL1 barter whose ingredient has no flea
+  // price, so itemAvailability says available with priceRUB null.
+  const unpricedBrake: ModListItem = {
+    ...SMALL_MODS[0]!,
+    buyFor: [
+      {
+        priceRUB: null,
+        currency: null,
+        vendor: {
+          __typename: "TraderBarter",
+          normalizedName: "prapor",
+          minTraderLevel: 1,
+          taskUnlock: null,
+          trader: { normalizedName: "prapor" },
+          barterId: "b-brake",
+          offeredCount: 1,
+          requiredItems: [{ itemId: "gp-coin", count: 6.25, attributes: {} }],
+          costUnavailableReason: "GP coin has no flea price",
+        },
+      },
+    ],
+  };
+  const mods = [unpricedBrake, ...SMALL_MODS.slice(1)];
+
+  it("does not treat an unpriced candidate as free under a budget", () => {
+    const best = branchAndBound(makeState({ modList: mods, budgetRub: 5000 }), SMALL_TREE.slots);
+    expect(best).not.toBeNull();
+    expect(best!.attachments.muzzle).not.toBe("muzzle_brake");
+  });
+
+  it("still considers it when no budget is set", () => {
+    const best = branchAndBound(makeState({ modList: mods }), SMALL_TREE.slots);
+    expect(best!.attachments.muzzle).toBe("muzzle_brake");
+  });
+
+  it("still honours a pin on it under a budget", () => {
+    const best = branchAndBound(
+      makeState({
+        modList: mods,
+        budgetRub: 5000,
+        pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
+      }),
+      SMALL_TREE.slots,
+    );
+    expect(best!.attachments.muzzle).toBe("muzzle_brake");
+  });
+});

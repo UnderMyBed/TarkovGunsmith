@@ -45,7 +45,7 @@ describe("parseBarters", () => {
     expect(debug).toHaveBeenCalledWith(expect.stringContaining("dropped 2 malformed barters"));
   });
 
-  it("returns no barters for a non-array document instead of throwing", () => {
-    expect(parseBarters({} as unknown as unknown[])).toEqual([]);
+  it("throws on a document that is not an array rather than reporting no barters", () => {
+    expect(() => parseBarters({} as unknown as unknown[])).toThrow(/expected an array/);
   });
 });

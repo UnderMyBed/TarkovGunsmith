@@ -40,11 +40,16 @@ export type BarterItem = z.infer<typeof barterItemSchema>;
  * Validate the barters document. Pure — no fetch — so a build-time snapshot can call it on a
  * document it already holds.
  *
- * Reject, don't throw: a record that fails the schema is dropped and counted at
- * `console.debug`, so one upstream variant cannot take every barter with it.
+ * A record that fails the schema is dropped and counted at `console.debug`, so one upstream
+ * variant cannot take every barter with it. A document that is not an array throws.
  */
 export function parseBarters(doc: BartersDocument): Barter[] {
-  const raw: unknown[] = Array.isArray(doc) ? doc : [];
+  // A document that is not an array means upstream moved the whole resource. Reading that as
+  // "no barters" would quietly turn every barter-only item unobtainable, so it throws.
+  if (!Array.isArray(doc)) {
+    throw new Error(`parseBarters: expected an array of barters, got ${typeof doc}`);
+  }
+  const raw: unknown[] = doc;
   const out: Barter[] = [];
   for (const record of raw) {
     const parsed = barterSchema.safeParse(record);
