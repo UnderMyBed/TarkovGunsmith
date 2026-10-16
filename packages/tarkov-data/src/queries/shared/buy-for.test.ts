@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { buyForEntrySchema, resolveBuyFor } from "./buy-for.js";
+import {
+  barterCostRUB,
+  buyForEntrySchema,
+  createOfferResolver,
+  fleaPriceRUB,
+  resolveBuyFor,
+  type BarterCostItem,
+} from "./buy-for.js";
+import { fetchOfferResolver } from "../barters.js";
+import { fetchTraders } from "../traders.js";
+import { fetchTasks } from "../tasks.js";
+import type { ItemsDocument } from "../documents.js";
+import { fixtureClient } from "../../__fixtures__/client.js";
 
 describe("buyForEntrySchema", () => {
   it("parses a trader offer", () => {
@@ -210,5 +222,235 @@ describe("resolveBuyFor — defensive edge cases", () => {
     );
     const flea = entries.find((e) => e.vendor.__typename === "FleaMarket");
     expect(flea?.priceRUB).toBe(777);
+  });
+});
+
+describe("fleaPriceRUB", () => {
+  it("prefers avg24hPrice, falls back to lastLowPrice, and is null when neither exists", () => {
+    expect(fleaPriceRUB({ avg24hPrice: 19126, lastLowPrice: 13555 })).toBe(19126);
+    expect(fleaPriceRUB({ lastLowPrice: 13555 })).toBe(13555);
+    expect(fleaPriceRUB({})).toBeNull();
+    expect(fleaPriceRUB(null)).toBeNull();
+  });
+});
+
+describe("barterCostRUB", () => {
+  const prices: Record<string, BarterCostItem> = {
+    cpu: { name: "PC CPU", fleaPriceRUB: 19126 },
+    fan: { name: "CPU fan", fleaPriceRUB: 18504 },
+    gp: { name: "GP coin", fleaPriceRUB: null },
+  };
+  const lookup = (id: string) => prices[id];
+  const line = (item: string, count: number) => ({ item, count, attributes: {} });
+
+  it("sums count × flea price over the required items", () => {
+    // The live M4A1 Carbine preset barter: 3 PC CPU + 1 CPU fan.
+    const cost = barterCostRUB(
+      { requiredItems: [line("cpu", 3), line("fan", 1)], offeredItem: line("m4", 1) },
+      lookup,
+    );
+    expect(cost).toEqual({ priceRUB: 3 * 19126 + 18504, reason: null });
+  });
+
+  it("prices per unit received when a barter hands over a stack", () => {
+    const cost = barterCostRUB(
+      { requiredItems: [line("fan", 1)], offeredItem: line("ammo", 20) },
+      lookup,
+    );
+    expect(cost).toEqual({ priceRUB: Math.round(18504 / 20), reason: null });
+  });
+
+  it("is null with a named reason when a required item has no flea price", () => {
+    const cost = barterCostRUB(
+      { requiredItems: [line("cpu", 1), line("gp", 6.25)], offeredItem: line("stock", 1) },
+      lookup,
+    );
+    expect(cost).toEqual({ priceRUB: null, reason: "GP coin has no flea price" });
+  });
+
+  it("is null with a reason when a required item is not in the items document", () => {
+    const cost = barterCostRUB(
+      { requiredItems: [line("ghost", 1)], offeredItem: line("stock", 1) },
+      lookup,
+    );
+    expect(cost.priceRUB).toBeNull();
+    expect(cost.reason).toBe("required item ghost is not in the items document");
+  });
+});
+
+describe("createOfferResolver (captured documents)", () => {
+  const PM = "5448bd6b4bdc2dfc2f8b4569";
+  const M4A1 = "5447a9cd4bdc2dbd208b4567";
+  const RAVAGE = "6984b82c5aab442620032fe8";
+
+  async function setup() {
+    const client = fixtureClient();
+    const [doc, resolve] = await Promise.all([
+      client.fetchResource<ItemsDocument>("items"),
+      fetchOfferResolver(client),
+    ]);
+    return { items: doc.items, resolve };
+  }
+
+  it("gives a bare receiver its presets' cash offers and barters, tagged with the preset", async () => {
+    const { items, resolve } = await setup();
+    const offers = resolve(items[PM]);
+    // The bare PM has no trader offer of its own; Prapor sells it as the default preset.
+    expect(offers).toContainEqual({
+      priceRUB: 12631,
+      currency: "RUB",
+      vendor: {
+        __typename: "TraderOffer",
+        normalizedName: "prapor",
+        minTraderLevel: 1,
+        taskUnlock: null,
+        trader: { normalizedName: "prapor" },
+      },
+      preset: {
+        id: "58414967245977598f1ad391",
+        normalizedName: "makarov-pm-9x18pm-pistol-default",
+      },
+    });
+    const barter = offers.find((o) => o.vendor.__typename === "TraderBarter");
+    expect(barter).toMatchObject({
+      priceRUB: 18944,
+      currency: null,
+      vendor: { barterId: "6ad1e5d8ef48f022220a28931", minTraderLevel: 1, offeredCount: 1 },
+      preset: { id: "58414967245977598f1ad391" },
+    });
+    // Its own flea entry survives; the preset's flea listing is not added.
+    expect(offers.filter((o) => o.vendor.__typename === "FleaMarket")).toHaveLength(1);
+  });
+
+  it("values a preset barter from its required items' flea prices", async () => {
+    const { items, resolve } = await setup();
+    const carbine = resolve(items[M4A1]).find(
+      (o) =>
+        o.vendor.__typename === "TraderBarter" && o.vendor.barterId === "6ad1e61cef48f022220a4ec81",
+    );
+    expect(carbine).toMatchObject({
+      priceRUB: 3 * 19126 + 18504,
+      vendor: { normalizedName: "peacekeeper", minTraderLevel: 2, costUnavailableReason: null },
+      preset: { id: "5af08cf886f774223c269184" },
+    });
+  });
+
+  it("keeps a barter from a trader outside the profile, with an unpriced cost and its reason", async () => {
+    const { items, resolve } = await setup();
+    expect(resolve(items[RAVAGE])).toEqual([
+      {
+        priceRUB: null,
+        currency: null,
+        vendor: {
+          __typename: "TraderBarter",
+          normalizedName: "ref",
+          minTraderLevel: 3,
+          taskUnlock: null,
+          trader: { normalizedName: "ref" },
+          barterId: "6ad1e5efef48f022220a37e63",
+          offeredCount: 1,
+          requiredItems: [{ itemId: "5d235b4d86f7742e017bc88a", count: 6.25, attributes: {} }],
+          costUnavailableReason: "GP coin has no flea price",
+        },
+      },
+    ]);
+  });
+
+  it("leaves resolveBuyFor at cash + flea only", async () => {
+    const { items } = await setup();
+    const client = fixtureClient();
+    const [traders, tasks] = await Promise.all([fetchTraders(client), fetchTasks(client)]);
+    const types = resolveBuyFor(items[PM], traders, tasks).map((o) => o.vendor.__typename);
+    expect(types).toEqual(["FleaMarket"]);
+  });
+
+  it("returns [] for a non-object item", async () => {
+    const { resolve } = await setup();
+    expect(resolve(null)).toEqual([]);
+    expect(resolve("x")).toEqual([]);
+  });
+
+  it("drops a barter whose trader id resolves to nothing", () => {
+    const resolve = createOfferResolver({
+      items: { a: { id: "a", types: ["noFlea"] } },
+      traders: [],
+      tasks: [],
+      barters: [
+        {
+          id: "b",
+          trader: "unknown",
+          taskUnlock: null,
+          minTraderLevel: 1,
+          requiredItems: [],
+          offeredItem: { item: "a", count: 1, attributes: {} },
+        },
+      ],
+    });
+    expect(resolve({ id: "a", types: ["noFlea"] })).toEqual([]);
+  });
+});
+
+describe("createOfferResolver — malformed records", () => {
+  // The resolver reads unvalidated upstream documents (and, under #211, a snapshot built from
+  // them). A malformed record must neither throw nor invent an offer.
+  const traders = [{ id: "tr-mech", normalizedName: "mechanic" }];
+  const barter = (id: string, offered: string, required: string) => ({
+    id,
+    trader: "tr-mech",
+    taskUnlock: null,
+    minTraderLevel: 2,
+    requiredItems: [{ item: required, count: 2, attributes: {} }],
+    offeredItem: { item: offered, count: 1, attributes: {} },
+  });
+
+  it("skips non-object items and presets without a usable baseItem or name", () => {
+    const resolve = createOfferResolver({
+      items: {
+        gun: { id: "gun", types: ["gun", "noFlea"] },
+        hole: null,
+        "preset-no-base": {
+          id: "preset-no-base",
+          normalizedName: "gun-default",
+          properties: { propertiesType: "ItemPropertiesPreset", baseItem: null },
+        },
+        "preset-no-name": {
+          id: "preset-no-name",
+          properties: { propertiesType: "ItemPropertiesPreset", baseItem: "gun" },
+        },
+      },
+      traders,
+      tasks: [],
+      barters: [barter("b1", "preset-no-name", "gun")],
+    });
+    expect(resolve({ id: "gun", types: ["gun", "noFlea"] })).toEqual([]);
+  });
+
+  it("names a barter ingredient by id when its record carries no name", () => {
+    const resolve = createOfferResolver({
+      items: {
+        stock: { id: "stock", types: ["mods", "noFlea"] },
+        bolts: { id: "bolts", types: ["barter"] },
+      },
+      traders,
+      tasks: [],
+      barters: [barter("b2", "stock", "bolts")],
+    });
+    const [entry] = resolve({ id: "stock", types: ["mods", "noFlea"] });
+    expect(entry?.priceRUB).toBeNull();
+    expect(entry?.vendor).toMatchObject({ costUnavailableReason: "bolts has no flea price" });
+  });
+
+  it("resolves only an item's own cash and flea offers when it carries no id", () => {
+    const resolve = createOfferResolver({
+      items: {},
+      traders,
+      tasks: [],
+      barters: [],
+    });
+    const entries = resolve({
+      types: ["mods"],
+      buyFromTrader: [{ trader: "tr-mech", priceRUB: 5000, currency: "RUB", minTraderLevel: 1 }],
+    });
+    expect(entries.map((e) => e.vendor.__typename)).toEqual(["TraderOffer", "FleaMarket"]);
   });
 });

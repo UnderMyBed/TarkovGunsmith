@@ -1,0 +1,158 @@
+{
+  "document": {
+    "data": [
+      {
+        "id": "6ad1e5d8ef48f022220a28931",
+        "trader": "54cb50c76803fa8b248b4571",
+        "taskUnlock": null,
+        "requiredItems": [
+          {
+            "item": "57347c77245977448d35f6e2",
+            "count": 1,
+            "attributes": {}
+          }
+        ],
+        "restockAmount": 45000,
+        "buyLimit": 5,
+        "minTraderLevel": 1,
+        "offeredItem": {
+          "item": "58414967245977598f1ad391",
+          "count": 1,
+          "attributes": {}
+        }
+      },
+      {
+        "id": "6ad1e61cef48f022220a4ec81",
+        "trader": "5935c25fb3acc3127c3d8cd9",
+        "taskUnlock": null,
+        "requiredItems": [
+          {
+            "item": "573477e124597737dd42e191",
+            "count": 3,
+            "attributes": {}
+          },
+          {
+            "item": "5734779624597737e04bf329",
+            "count": 1,
+            "attributes": {}
+          }
+        ],
+        "restockAmount": 40000,
+        "buyLimit": 1,
+        "minTraderLevel": 2,
+        "offeredItem": {
+          "item": "5af08cf886f774223c269184",
+          "count": 1,
+          "attributes": {}
+        }
+      },
+      {
+        "id": "6ad1e5f6ef48f022220a3b601",
+        "trader": "5a7c2eca46aef81a7ca2145d",
+        "taskUnlock": null,
+        "requiredItems": [
+          {
+            "item": "5c1267ee86f77416ec610f72",
+            "count": 2,
+            "attributes": {}
+          }
+        ],
+        "restockAmount": 50000,
+        "buyLimit": 2,
+        "minTraderLevel": 2,
+        "offeredItem": {
+          "item": "5a8ae73886f7747b2e6e1416",
+          "count": 1,
+          "attributes": {}
+        }
+      },
+      {
+        "id": "6ad1e5fdef48f022220a3f0c3",
+        "trader": "5a7c2eca46aef81a7ca2145d",
+        "taskUnlock": null,
+        "requiredItems": [
+          {
+            "item": "573476f124597737e04bf328",
+            "count": 1,
+            "attributes": {}
+          }
+        ],
+        "restockAmount": 50000,
+        "buyLimit": 3,
+        "minTraderLevel": 1,
+        "offeredItem": {
+          "item": "56ea7165d2720b6e518b4583",
+          "count": 1,
+          "attributes": {}
+        }
+      },
+      {
+        "id": "6ad1e600ef48f022220a411b3",
+        "trader": "5a7c2eca46aef81a7ca2145d",
+        "taskUnlock": null,
+        "requiredItems": [
+          {
+            "item": "590c392f86f77444754deb29",
+            "count": 2,
+            "attributes": {}
+          },
+          {
+            "item": "5d4042a986f7743185265463",
+            "count": 1,
+            "attributes": {}
+          }
+        ],
+        "restockAmount": 50000,
+        "buyLimit": 1,
+        "minTraderLevel": 2,
+        "offeredItem": {
+          "item": "57aca93d2459771f2c7e26db",
+          "count": 1,
+          "attributes": {}
+        }
+      },
+      {
+        "id": "6ad1e61bef48f022220a4e3d3",
+        "trader": "5935c25fb3acc3127c3d8cd9",
+        "taskUnlock": null,
+        "requiredItems": [
+          {
+            "item": "5c07df7f0db834001b73588a",
+            "count": 1,
+            "attributes": {}
+          }
+        ],
+        "restockAmount": 40000,
+        "buyLimit": 2,
+        "minTraderLevel": 2,
+        "offeredItem": {
+          "item": "57aca93d2459771f2c7e26db",
+          "count": 1,
+          "attributes": {}
+        }
+      },
+      {
+        "id": "6ad1e5efef48f022220a37e63",
+        "trader": "6617beeaa9cfa777ca915b7c",
+        "taskUnlock": null,
+        "requiredItems": [
+          {
+            "item": "5d235b4d86f7742e017bc88a",
+            "count": 6.25,
+            "attributes": {}
+          }
+        ],
+        "restockAmount": 35000,
+        "buyLimit": 2,
+        "minTraderLevel": 3,
+        "offeredItem": {
+          "item": "6984b82c5aab442620032fe8",
+          "count": 1,
+          "attributes": {}
+        }
+      }
+    ],
+    "translations": []
+  },
+  "lang": {}
+}

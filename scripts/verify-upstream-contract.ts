@@ -41,6 +41,7 @@ import { fetchAmmoList } from "../packages/tarkov-data/src/queries/ammoList.js";
 import { fetchArmorList } from "../packages/tarkov-data/src/queries/armorList.js";
 import { fetchModList } from "../packages/tarkov-data/src/queries/modList.js";
 import { fetchWeaponList } from "../packages/tarkov-data/src/queries/weaponList.js";
+import { fetchBarters } from "../packages/tarkov-data/src/queries/barters.js";
 
 const API_BASE = "https://json.tarkov.dev/regular/";
 const ITEMS_URL = `${API_BASE}items`;
@@ -264,13 +265,16 @@ async function main(): Promise<void> {
  */
 async function checkSelectorsAcceptLiveDocument(): Promise<void> {
   const client = createTarkovClient(API_BASE);
-  const minimums = { weapons: 50, mods: 500, ammo: 50, armor: 20 } as const;
+  const minimums = { weapons: 50, mods: 500, ammo: 50, armor: 20, barters: 300 } as const;
 
-  const [weapons, mods, ammo, armor] = await Promise.all([
+  const [weapons, mods, ammo, armor, barters] = await Promise.all([
     fetchWeaponList(client),
     fetchModList(client),
     fetchAmmoList(client),
     fetchArmorList(client),
+    // Barters are offers, not a picker: a schema break here silently turns every barter-only
+    // mod and every preset-barter weapon back into "unobtainable".
+    fetchBarters(client),
   ]);
 
   const counts = {
@@ -278,6 +282,7 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
     mods: mods.length,
     ammo: ammo.length,
     armor: armor.length,
+    barters: barters.length,
   };
 
   for (const [name, minimum] of Object.entries(minimums)) {
@@ -290,7 +295,7 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
     );
   }
   notes.push(
-    `selectors parsed: ${counts.weapons} weapons, ${counts.mods} mods, ${counts.ammo} ammo, ${counts.armor} armor`,
+    `selectors parsed: ${counts.weapons} weapons, ${counts.mods} mods, ${counts.ammo} ammo, ${counts.armor} armor, ${counts.barters} barters`,
   );
 }
 

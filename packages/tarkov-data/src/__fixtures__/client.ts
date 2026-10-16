@@ -3,11 +3,13 @@ import type { TarkovJsonClient } from "../client.js";
 import itemsFixture from "./items-sample.json" with { type: "json" };
 import tasksFixture from "./tasks-sample.json" with { type: "json" };
 import tradersFixture from "./traders-sample.json" with { type: "json" };
+import bartersFixture from "./barters-sample.json" with { type: "json" };
 
 const FIXTURES: Record<string, { document: unknown; lang: Record<string, string> }> = {
   items: itemsFixture,
   tasks: tasksFixture,
   traders: tradersFixture,
+  barters: bartersFixture,
 };
 
 /**

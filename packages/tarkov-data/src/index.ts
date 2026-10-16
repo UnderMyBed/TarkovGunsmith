@@ -1,7 +1,22 @@
 // Client
 export { createTarkovClient, TarkovApiError } from "./client.js";
-export { resolveBuyFor } from "./queries/shared/buy-for.js";
-export type { BuyForEntry, Vendor, BuyForTrader, BuyForTask } from "./queries/shared/buy-for.js";
+export {
+  resolveBuyFor,
+  createOfferResolver,
+  barterCostRUB,
+  fleaPriceRUB,
+} from "./queries/shared/buy-for.js";
+export type {
+  BuyForEntry,
+  Vendor,
+  BuyForTrader,
+  BuyForTask,
+  OfferPreset,
+  OfferResolver,
+  OfferSources,
+  BarterCost,
+  BarterCostItem,
+} from "./queries/shared/buy-for.js";
 export type { TarkovJsonClient } from "./client.js";
 export { mergeTranslations } from "./translations.js";
 export type { TranslatedDocument } from "./translations.js";
@@ -17,7 +32,9 @@ export { armorListSchema, fetchArmorList } from "./queries/armorList.js";
 export type { ArmorListItem } from "./queries/armorList.js";
 export { weaponSchema, fetchWeapon } from "./queries/weapon.js";
 export type { Weapon } from "./queries/weapon.js";
-export { weaponListSchema, fetchWeaponList } from "./queries/weaponList.js";
+export { weaponListSchema, fetchWeaponList, isBuildableWeapon } from "./queries/weaponList.js";
+export { barterSchema, parseBarters, fetchBarters, fetchOfferResolver } from "./queries/barters.js";
+export type { Barter, BarterItem } from "./queries/barters.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
 export { modListSchema, fetchModList } from "./queries/modList.js";
 export type { ModListItem, ModListBuyFor, ModListVendor } from "./queries/modList.js";
@@ -89,9 +106,9 @@ export type { SlotNodeForMigration } from "./build-migrations.js";
 
 // Progression gating
 export { itemAvailability } from "./item-availability.js";
-export type { ItemAvailability } from "./item-availability.js";
+export type { ItemAvailability, TraderPayment } from "./item-availability.js";
 export { MARQUEE_QUEST_NORMALIZED_NAMES } from "./marquee-quests.js";
-export { fetchTraders, tradersSchema } from "./queries/traders.js";
+export { fetchTraders, fetchTraderDirectory, tradersSchema } from "./queries/traders.js";
 export type { TraderListItem } from "./queries/traders.js";
 export { fetchTasks, tasksSchema } from "./queries/tasks.js";
 export type { TaskListItem } from "./queries/tasks.js";

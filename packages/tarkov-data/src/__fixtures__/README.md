@@ -1,7 +1,8 @@
 # Upstream fixtures
 
-Trimmed captures of `json.tarkov.dev/regular/{items,tasks,traders}` and their `_en` siblings,
-taken 2026-08-18. Each `*-sample.json` is `{ document, lang }` — `document` is the raw upstream
+Trimmed captures of `json.tarkov.dev/regular/{items,tasks,traders,barters}` and their `_en`
+siblings, taken 2026-08-18. `barters-sample.json`, and the presets, signal items and barter
+ingredients added to `items-sample.json` alongside it, were captured 2026-10-16. Each `*-sample.json` is `{ document, lang }` — `document` is the raw upstream
 envelope (`{ data, translations }`), `lang` is the subset of the `_en` map those records need.
 
 They exist so the suite does not depend on upstream being reachable. The GraphQL API this project
@@ -15,7 +16,15 @@ e2e spec — `apps/web/e2e/upstream.ts` documents which content the specs depend
 
 `items-sample.json` deliberately includes item types the selectors must _reject_ as well as ones
 they must accept — a grenade, a helmet, a magazine and a scope alongside ammo, armor, weapons and
-weapon mods — so a selector that is too permissive fails rather than passing quietly.
+weapon mods — so a selector that is too permissive fails rather than passing quietly. The SP-81
+signal pistol and an RSP-30 cartridge are `ItemPropertiesWeapon` items the weapon list must
+reject.
+
+`barters-sample.json` carries the barters behind the offer-resolution tests: the PM default
+preset (Prapor LL1), two M4A1 preset barters (Peacekeeper and Mechanic LL2), a mod barter that
+undercuts its cash gate (Badger latch, Mechanic LL1), a barter-only scope (ELCAN FDE) and a Ref
+GP-coin barter. Every item those barters require is in `items-sample.json` with its flea price,
+except GP coin, which has none upstream.
 
 **Refresh** by re-capturing from `json.tarkov.dev` when upstream shapes change, keeping the
 accept/reject mix above intact. `scripts/verify-upstream-contract.ts` checks these fixtures

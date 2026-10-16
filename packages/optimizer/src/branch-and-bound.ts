@@ -1,7 +1,7 @@
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { weaponSpec } from "@tarkov/ballistics";
 import type { ModListItem, PlayerProfile, SlotNode } from "@tarkov/data";
-import { adaptMod } from "@tarkov/data";
+import { adaptMod, itemAvailability } from "@tarkov/data";
 import { cheapestPrice, slotCandidates } from "./feasibility.js";
 import { lowerBoundForRemaining } from "./bounds.js";
 import { score } from "./objective.js";
@@ -106,8 +106,21 @@ function dfs(
     let additionalPrice = 0;
     if (candidate !== null) {
       const priceOrNull = cheapestPrice(candidate, state.profile);
-      if (priceOrNull !== null) additionalPrice = priceOrNull;
-      // else: pinned unavailable item — proceed at price 0.
+      if (priceOrNull !== null) {
+        additionalPrice = priceOrNull;
+      } else if (
+        state.budgetRub !== undefined &&
+        state.pinnedSlots.get(slot.path) !== candidate.id &&
+        itemAvailability(candidate, state.profile).available
+      ) {
+        // Any obtainable candidate whose price is unknown: a flea entry with neither
+        // avg24hPrice nor lastLowPrice, or a barter whose ingredient has no flea price. Its
+        // cost is unknown, not zero, so the solver cannot show it fits a budget. (Unpriced
+        // flea entries used to be billed at 0 here.) A pin is the user's explicit choice and
+        // still goes through, as a pinned unavailable item does.
+        continue;
+      }
+      // else: pinned unavailable item, or no budget to respect — proceed at price 0.
     }
     const newPrice = runningPrice + additionalPrice;
     if (state.budgetRub !== undefined && newPrice > state.budgetRub) continue;

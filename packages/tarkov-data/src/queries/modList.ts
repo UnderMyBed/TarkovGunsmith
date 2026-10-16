@@ -1,9 +1,7 @@
 import { z } from "zod";
 import type { TarkovJsonClient } from "../client.js";
 import type { ItemsDocument } from "./documents.js";
-import { resolveBuyFor } from "./shared/buy-for.js";
-import { fetchTraders } from "./traders.js";
-import { fetchTasks } from "./tasks.js";
+import { fetchOfferResolver } from "./barters.js";
 import { buyForEntrySchema } from "./shared/buy-for.js";
 
 const modPropertiesSchema = z.object({
@@ -41,24 +39,20 @@ export type { BuyForEntry as ModListBuyFor, Vendor as ModListVendor } from "./sh
  */
 export async function fetchModList(client: TarkovJsonClient): Promise<ModListItem[]> {
   // All three come from the client cache, so this is one network round trip in practice.
-  const [doc, traders, tasks] = await Promise.all([
+  const [doc, resolveOffers] = await Promise.all([
     client.fetchResource<ItemsDocument>("items"),
-    fetchTraders(client),
-    fetchTasks(client),
+    fetchOfferResolver(client),
   ]);
 
   const all = Object.values(doc.items);
   const out: ModListItem[] = [];
   for (const item of all) {
-    // `buyFor` is the only acquisition path this query resolves. Crafting and barter
-    // sourcing live in the upstream `/crafts` and `/barters` resources, which nothing in
-    // this package fetches — see docs/adr/0002-json-api-migration.md
-    // §"deferred". A mod item therefore carries no craft/barter fields at all rather than
-    // always-empty ones, so a consumer can't derive a "this is craftable" signal that the
-    // data cannot support.
+    // `buyFor` carries cash, barter and flea offers (`createOfferResolver`). Crafting lives
+    // in the upstream `/crafts` resource, which nothing in this package fetches, so a mod
+    // carries no craft field at all rather than an always-empty one.
     const candidate = {
       ...(item as object),
-      buyFor: resolveBuyFor(item, traders, tasks),
+      buyFor: resolveOffers(item),
     };
     const parsed = modListItemSchema.safeParse(candidate);
     if (parsed.success) out.push(parsed.data);

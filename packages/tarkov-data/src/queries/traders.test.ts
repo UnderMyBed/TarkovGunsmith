@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { fetchTraders } from "./traders.js";
+import { fetchTraderDirectory, fetchTraders } from "./traders.js";
+import type { TarkovJsonClient } from "../client.js";
 import { fixtureClient } from "../__fixtures__/client.js";
 
 describe("fetchTraders", () => {
@@ -30,5 +31,25 @@ describe("fetchTraders", () => {
         "jaeger",
       ]).toContain(t.normalizedName);
     }
+  });
+});
+
+describe("fetchTraderDirectory", () => {
+  it("keeps the traders the profile does not track, such as Ref and Fence", async () => {
+    const names = (await fetchTraderDirectory(fixtureClient())).map((t) => t.normalizedName);
+    expect(names).toEqual(expect.arrayContaining(["prapor", "jaeger", "ref", "fence"]));
+  });
+
+  it("drops a record that fails the trader schema instead of failing the document", async () => {
+    const base = fixtureClient();
+    const client: TarkovJsonClient = {
+      fetchResource: async <T>(resource: string): Promise<T> => {
+        const doc = await base.fetchResource<Record<string, unknown>>(resource);
+        return { ...doc, broken: { id: "broken", normalizedName: 7 } } as T;
+      },
+    };
+    const traders = await fetchTraderDirectory(client);
+    expect(traders.map((t) => t.id)).not.toContain("broken");
+    expect(traders.map((t) => t.normalizedName)).toContain("ref");
   });
 });

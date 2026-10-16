@@ -1,6 +1,6 @@
 import type { APIRequestContext, Page, ConsoleMessage } from "@playwright/test";
 import { test, expect } from "./upstream.js";
-import { fixtureItemCount } from "./upstream-fixtures.js";
+import { fixtureBuildableWeaponCount } from "./upstream-fixtures.js";
 import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with { type: "json" };
 
 /**
@@ -10,8 +10,11 @@ import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with 
  * that the real `<link>` in `index.html` resolves.
  */
 
-/** Placeholder option + one per weapon in the capture. `<option value="">Select weapon…</option>`. */
-const WEAPON_OPTION_COUNT = fixtureItemCount("ItemPropertiesWeapon") + 1;
+/**
+ * Placeholder option + one per buildable weapon in the capture (signal pistols and cartridges
+ * are excluded). `<option value="">Select weapon…</option>`.
+ */
+const WEAPON_OPTION_COUNT = fixtureBuildableWeaponCount() + 1;
 
 /** Every routed page we ship today. Keep in sync with __root.tsx nav. */
 const ROUTES: ReadonlyArray<{
@@ -244,6 +247,9 @@ test.describe("smoke — compare interaction", () => {
     await expect
       .poll(async () => await leftPicker.locator("option").count(), { timeout: 15_000 })
       .toBe(WEAPON_OPTION_COUNT);
+    // The capture carries the SP-81 signal pistol and an RSP-30 cartridge; neither is a
+    // buildable weapon, so neither may reach a picker.
+    await expect(leftPicker.locator("option", { hasText: /signal/i })).toHaveCount(0);
 
     // Grab two distinct real-weapon values (index 0 is the placeholder).
     const leftValue = await leftPicker.locator("option").nth(1).getAttribute("value");
