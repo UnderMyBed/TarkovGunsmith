@@ -30,7 +30,7 @@ Full local-dev workflow (full stack in one terminal, seed-build helper, troubles
 
 ## Deploy
 
-Deploys to Cloudflare Workers when a release-please PR is merged (feature PR merges to `main` stage without deploying) via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://tarkov-gunsmith-builds-api.<your-subdomain>.workers.dev`.
+Deploys to Cloudflare Workers when a release-please PR is merged (feature PR merges to `main` stage without deploying) via [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml). Production URL: `https://api.tarkovgunsmith.undermybed.dev` (custom domain; `workers_dev` is off).
 
 ### One-time KV setup (before first deploy)
 
@@ -59,7 +59,7 @@ Full setup runbook: [`docs/operations/cloudflare-deploys.md`](../../docs/operati
 - Stored values are the _parsed and re-serialized_ schema output (`JSON.stringify(validation.data)`), not the raw request bytes — this materializes any Zod `.default()`s (e.g. `PlayerProfile.level`) the same way a load-then-resave would, and matches what a GET's own `Build.safeParse`/`BuildPair.safeParse` on the way out will produce.
 - `MAX_BODY_BYTES = 32 KB` — anyone posting bigger is doing something weird; reject early, before parsing or validation.
 - `b:` and `p:` keys never expire: they are written through `putPermanent` (`src/permanent.ts`) with no `expirationTtl` and `{ permanent: true }` KV metadata. Only rate-limit counters carry a TTL. Keys written under the old 30-day TTL are upgraded lazily as a best-effort backstop: `getPermanent` reads with metadata and, when the stamp is missing, re-puts the value without a TTL under `ctx.waitUntil` (deduped per isolate and, via the Cache API, per colo; a failure never fails the read; the fork source read does not upgrade). Legacy keys never read keep their original expiry.
-- Bulk upgrade runbook (operator, needs prod auth, stay under the 1,000 writes/day cap): `wrangler kv key list --binding BUILDS --remote` — keys with an `expiration` field are legacy. For each, `wrangler kv key get <key> --binding BUILDS --remote`, then `wrangler kv key put <key> <value> --binding BUILDS --remote --metadata '{"permanent":true}'` with no `--expiration`/`--ttl`. Already-expired keys are unrecoverable.
+- Bulk upgrade runbook (operator, needs prod auth, stay under the 1,000 writes/day cap): `wrangler kv key list --binding BUILDS --remote` — keys with an `expiration` field are legacy. For each, save the value to a file with `wrangler kv key get <key> --binding BUILDS --remote > value.json`, then `wrangler kv key put <key> --path value.json --binding BUILDS --remote --metadata '{"permanent":true}'` with no `--expiration`/`--ttl` (passing the JSON inline risks shell-quoting corruption). Already-expired keys are unrecoverable.
 - Rate limiting (`src/rate-limit.ts`) is a per-IP-per-UTC-day KV counter, not Cloudflare's native Rate Limiting binding — the binding's `period` is capped at 10 or 60 seconds, which can't express a daily budget, and this project is a hard $0/mo commitment with no confirmed free-plan availability for that binding. The counter is deliberately structured so a flood of _rejected_ requests costs reads only, never writes — see the module comment for the full reasoning.
 - 100% coverage on logic files; `index.ts` covered by the fetch tests end-to-end. `apps/builds-api` overall has no coverage _measurement_ (see `vitest.config.ts`) but its tests all run in CI via `vitest run`.
 
