@@ -5,7 +5,6 @@ import {
   OPTIMIZER_CHANGED_SLOTS,
   STRONGEST_OPTIMIZED_RECOIL_CELL,
 } from "./upstream.js";
-import { fixtureItemCount } from "./upstream-fixtures.js";
 
 /**
  * Guards the recoil unit contract end-to-end against the captured upstream document.
@@ -14,8 +13,7 @@ import { fixtureItemCount } from "./upstream-fixtures.js";
  * as a percent and divided by 100, so every recoil number was 100x too small —
  * mods appeared to do nothing. See docs/operations/data-api-audit.md §B.
  *
- * Both tests below fail against the pre-fix code: the /data column rendered raw
- * fractions under a "%" header, and the Builder's delta badge was suppressed
+ * The Builder test below fails against the pre-fix code: the delta badge was suppressed
  * entirely because a real -49.5% build computed as -0.495%, under
  * `formatPercent`'s 0.5% floor.
  *
@@ -42,36 +40,6 @@ async function pickFirstWeapon(page: Page): Promise<string | null> {
 }
 
 test.describe("recoil is expressed as a percentage", () => {
-  test("/data Modules renders Recoil % on a percent scale, not raw fractions", async ({ page }) => {
-    // One row per `ItemPropertiesWeaponMod` item in the capture. Counted from the raw JSON
-    // rather than through `fetchModList`, so the selector + Zod schema + render path are
-    // still being asserted rather than restated.
-    const expectedRows = fixtureItemCount("ItemPropertiesWeaponMod");
-    expect(
-      expectedRows,
-      "the items capture must carry a real spread of weapon mods, or everything below passes on an empty table",
-    ).toBeGreaterThan(20);
-
-    await page.goto("/data", { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "MODULES", exact: true }).click();
-
-    const rows = page.locator("table tbody tr");
-    await expect.poll(async () => await rows.count(), { timeout: 20_000 }).toBe(expectedRows);
-
-    // Column order: Name, Ergo Δ, Recoil %, Accuracy %, Weight.
-    const recoilCells = await rows.locator("td:nth-child(3)").allTextContents();
-    const values = recoilCells.map((t) => Number.parseFloat(t)).filter((n) => Number.isFinite(n));
-    expect(values.length).toBe(expectedRows);
-
-    // Mods in the capture bottom out at -0.24 as a fraction, i.e. -24 as a percent. If the
-    // raw fraction leaked through, nothing here could clear -1.
-    const strongest = Math.min(...values);
-    expect(strongest).toBeLessThanOrEqual(-15);
-    // And the scale must be plausible — a second, undetected 100x would show up
-    // here as values past -100%.
-    expect(strongest).toBeGreaterThan(-100);
-  });
-
   test("Builder shows a non-blank recoil delta once mods are attached", async ({ page }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     const picked = await pickFirstWeapon(page);

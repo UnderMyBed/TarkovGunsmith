@@ -29,7 +29,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "jsonpath-plus": "^10.3.0",
+    "jsonpath-plus": "^11.2.1",
     "zod": "^4.4.3"
   },
   "peerDependencies": {

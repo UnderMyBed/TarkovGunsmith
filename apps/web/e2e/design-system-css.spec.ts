@@ -61,12 +61,15 @@ test.describe("design system — styles reach the browser", () => {
   test("a keyboard-focused Input suppresses the UA outline AND paints its own ring", async ({
     page,
   }) => {
-    await page.goto("/calc", { waitUntil: "networkidle" });
-    const distance = page.getByLabel("Distance (m)");
-    await expect(distance).toBeVisible({ timeout: 15_000 });
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    // The profile editor's PMC level field is an <Input> on a live page, inside the
+    // "Edit profile" disclosure.
+    await page.getByText("Edit profile", { exact: false }).click();
+    const level = page.getByLabel("PMC level");
+    await expect(level).toBeVisible({ timeout: 15_000 });
 
-    await focusByKeyboard(page, distance);
-    const { outlineStyle, boxShadow } = await focusStyles(distance);
+    await focusByKeyboard(page, level);
+    const { outlineStyle, boxShadow } = await focusStyles(level);
 
     expect(outlineStyle, "focus-visible:outline-none did not apply").toBe("none");
     expect(boxShadow, "the focus ring that replaces the UA outline paints nothing").not.toBe(

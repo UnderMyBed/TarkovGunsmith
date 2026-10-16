@@ -3,14 +3,15 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { renderRoute } from "../test/render-route.js";
-import { createTestClient } from "../test/test-client.js";
+import { renderPage } from "../../test/render-page.js";
+import { MatrixPage } from "./matrix-page.js";
+import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
-describe("/matrix", () => {
+describe("matrix page (parked, no route)", () => {
   it("renders a full ammo x armor grid once both lists load", async () => {
-    await renderRoute("/matrix");
+    await renderPage(<MatrixPage />);
 
     // "2 ammo × 2 armor = 4 cells" once the fixture's two ammo + two armor land.
     await waitFor(() => expect(screen.getByText("2 ammo × 2 armor = 4 cells")).toBeInTheDocument());
@@ -31,7 +32,7 @@ describe("/matrix", () => {
 
   it("filters ammo rows by name via the search input", async () => {
     const user = userEvent.setup();
-    await renderRoute("/matrix");
+    await renderPage(<MatrixPage />);
     await waitFor(() => expect(screen.getByText("2 ammo × 2 armor = 4 cells")).toBeInTheDocument());
 
     const search = screen.getByLabelText("Filter ammo by name or caliber");
@@ -44,7 +45,7 @@ describe("/matrix", () => {
   });
 
   it("caps ammo rows via the top-N input, keeping the highest-penetration ammo first", async () => {
-    await renderRoute("/matrix");
+    await renderPage(<MatrixPage />);
     await waitFor(() => expect(screen.getByText("2 ammo × 2 armor = 4 cells")).toBeInTheDocument());
 
     const topN = screen.getByLabelText("Show top N (by penetration)");
@@ -61,7 +62,7 @@ describe("/matrix", () => {
   });
 
   it("shows an error card when the items resource fails to load", async () => {
-    await renderRoute("/matrix", { client: createTestClient({ errorResources: ["items"] }) });
+    await renderPage(<MatrixPage />, { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load data:/)).toBeInTheDocument();
   });
 });

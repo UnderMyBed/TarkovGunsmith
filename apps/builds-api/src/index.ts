@@ -1,6 +1,7 @@
 import { Build } from "@tarkov/data/schemas";
 import { newBuildId, BUILD_ID_REGEX } from "./id.js";
 import { maybeSeedOgFixtures } from "./og-fixtures.js";
+import { getPermanent, putPermanent } from "./permanent.js";
 import { handlePostPair, handleGetPair, handleForkPair } from "./pairs.js";
 import {
   checkRateLimit,
@@ -49,8 +50,7 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
   if (!rate.allowed) return tooManyRequestsResponse();
 
   const id = newBuildId();
-  const ttl = Number(env.BUILD_TTL_SECONDS);
-  await env.BUILDS.put(`b:${id}`, JSON.stringify(validation.data), { expirationTtl: ttl });
+  await putPermanent(env.BUILDS, `b:${id}`, JSON.stringify(validation.data));
   await recordAdmission(env.BUILDS, ip, rate.count);
 
   const requestUrl = new URL(request.url);
@@ -61,11 +61,11 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
   });
 }
 
-async function handleGet(id: string, env: Env): Promise<Response> {
+async function handleGet(id: string, env: Env, ctx: ExecutionContext): Promise<Response> {
   if (!BUILD_ID_REGEX.test(id)) {
     return new Response("Invalid id", { status: 400 });
   }
-  const value = await env.BUILDS.get(`b:${id}`);
+  const value = await getPermanent(env.BUILDS, ctx, `b:${id}`);
   if (!value) return new Response("Not Found", { status: 404 });
   return new Response(value, {
     status: 200,
@@ -91,7 +91,7 @@ export default {
 
     const buildMatch = /^\/builds\/([^/]+)$/.exec(path);
     if (buildMatch && request.method === "GET") {
-      return handleGet(buildMatch[1] ?? "", env);
+      return handleGet(buildMatch[1] ?? "", env, ctx);
     }
 
     if (path === "/pairs") {
@@ -106,7 +106,7 @@ export default {
 
     const pairMatch = /^\/pairs\/([^/]+)$/.exec(path);
     if (pairMatch && request.method === "GET") {
-      return handleGetPair(pairMatch[1] ?? "", env);
+      return handleGetPair(pairMatch[1] ?? "", env, ctx);
     }
 
     return new Response("Not Found", { status: 404 });

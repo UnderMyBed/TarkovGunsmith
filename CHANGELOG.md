@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.17.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.16.2...v1.17.0) (2026-10-16)
+
+
+### Features
+
+* **web:** make the site Builder-only; park every other feature ([#234](https://github.com/UnderMyBed/TarkovGunsmith/issues/234)) ([bcedf8f](https://github.com/UnderMyBed/TarkovGunsmith/commit/bcedf8f2bdc250e2561f2296495ffea0d31068c4))
+
+
+### Bug Fixes
+
+* **builds-api:** stop expiring shared builds and pairs ([#233](https://github.com/UnderMyBed/TarkovGunsmith/issues/233)) ([a3b9938](https://github.com/UnderMyBed/TarkovGunsmith/commit/a3b9938cad9b6f1920605e69cfdd076fee72ccdc))
+* **deps:** override vulnerable transitive packages to patched versions ([#231](https://github.com/UnderMyBed/TarkovGunsmith/issues/231)) ([48e0c7d](https://github.com/UnderMyBed/TarkovGunsmith/commit/48e0c7d9a42aec9cac0b5da2f161fd4049c9775f))
+* **web:** let the analytics beacon load and cache hashed assets for good ([#232](https://github.com/UnderMyBed/TarkovGunsmith/issues/232)) ([9fb1c5d](https://github.com/UnderMyBed/TarkovGunsmith/commit/9fb1c5d4edc9907d6712be410cfd4a4d0f7dc48e)), closes [#209](https://github.com/UnderMyBed/TarkovGunsmith/issues/209)
+
 ## [1.16.2](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.16.1...v1.16.2) (2026-10-16)
 
 
