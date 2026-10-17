@@ -388,6 +388,17 @@ describe("buildBuilderSnapshot on drift", () => {
     expect(snapshot.weapons.find((w) => w.id === M4A1)!.defaultAmmo).toBeNull();
   });
 
+  it("fails on a default ammo with no properties that is not ammo", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    // A real part, emptied: no properties, and `types` without "ammo".
+    items[BARREL_10_3]!.properties = null;
+    (items[M4A1]!.properties as Record<string, unknown>).defaultAmmo = BARREL_10_3;
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toContain(
+      `items/${M4A1} (ItemPropertiesWeapon): defaultAmmo ${BARREL_10_3} has no properties and is not ammo`,
+    );
+  });
+
   it("fails on names that are still translation keys", async () => {
     // What a release built while `items_en` failed would see: the merge left every key.
     const input = await docs();

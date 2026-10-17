@@ -122,9 +122,19 @@ function resolveDefaultAmmo(
   ammoId: string,
 ): SnapshotDefaultAmmo | null | string {
   const raw = items[ammoId] as
-    { shortName?: unknown; properties?: { initialSpeed?: unknown } | null } | undefined;
+    | {
+        shortName?: unknown;
+        types?: unknown;
+        properties?: { initialSpeed?: unknown } | null;
+      }
+    | undefined;
   if (raw === undefined) return `defaultAmmo ${ammoId} is not in the items document`;
-  if (raw.properties === null) return null;
+  // Ammo either way: typed as ammo with no properties (the RShG-2's rocket), which has no
+  // speed to show, or an ItemPropertiesAmmo record. Anything else is drift.
+  if (raw.properties === null) {
+    const isAmmo = Array.isArray(raw.types) && raw.types.includes("ammo");
+    return isAmmo ? null : `defaultAmmo ${ammoId} has no properties and is not ammo`;
+  }
   if (propertiesTypeOf(raw) !== "ItemPropertiesAmmo") {
     return `defaultAmmo ${ammoId} is ${String(propertiesTypeOf(raw))}, not ammo`;
   }
