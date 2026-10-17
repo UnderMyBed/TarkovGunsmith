@@ -123,3 +123,109 @@ describe("compare save — issue #163", () => {
     expect(screen.getByRole("button", { name: "Save as new" })).toBeInTheDocument();
   });
 });
+
+/**
+ * A progression handoff from the Builder (#258) puts the viewer's profile on both sides.
+ * Saving publishes it only when the user opts in, as a Builder share does.
+ */
+describe("compare handoff profile, and saving it", () => {
+  // The route fixtures' one weapon (`src/test/fixtures.ts`).
+  const M4A1 = "w-m4a1";
+  const PROFILE = {
+    mode: "basic",
+    traders: {
+      prapor: 4,
+      therapist: 4,
+      skier: 4,
+      peacekeeper: 4,
+      mechanic: 4,
+      ragman: 4,
+      jaeger: 4,
+    },
+    flea: true,
+    level: 40,
+  };
+
+  function handOff(profile: string | null) {
+    sessionStorage.setItem(
+      "compare:leftPrefill",
+      JSON.stringify({
+        version: 6,
+        weaponId: M4A1,
+        attachments: {},
+        orphaned: [],
+        createdAt: "2026-10-16T00:00:00.000Z",
+      }),
+    );
+    sessionStorage.setItem("compare:mode", "clone-both");
+    if (profile !== null) sessionStorage.setItem("compare:profile", profile);
+  }
+
+  afterEach(() => sessionStorage.clear());
+
+  /** The pair the last POST sent. */
+  function postedPair(fetchMock: ReturnType<typeof stubPairsFetch>): Record<string, unknown> {
+    const post = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST").at(-1);
+    const body = post?.[1]?.body;
+    if (typeof body !== "string") throw new Error("no JSON POST body was sent");
+    return JSON.parse(body) as Record<string, unknown>;
+  }
+
+  it("gates both sides under the handed-off profile", async () => {
+    stubPairsFetch(() => new Promise<Response>(() => {}));
+    handOff(JSON.stringify(PROFILE));
+    await renderRoute("/builder/compare");
+    expect(await screen.findAllByText("REACHABLE")).toHaveLength(2);
+  });
+
+  it("keeps a handoff with no profile, as one written before the key existed, theorycraft", async () => {
+    stubPairsFetch(() => new Promise<Response>(() => {}));
+    handOff(null);
+    await renderRoute("/builder/compare");
+    await waitFor(() => expect(screen.getAllByText(/^₽/)).toHaveLength(2));
+    expect(screen.queryByText("REACHABLE")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Embed the progression snapshots in the shared URL"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("drops a handoff whose profile does not parse", async () => {
+    stubPairsFetch(() => new Promise<Response>(() => {}));
+    handOff(JSON.stringify({ mode: "basic" }));
+    await renderRoute("/builder/compare");
+    expect(await screen.findAllByText("empty")).toHaveLength(2);
+    expect(sessionStorage.getItem("compare:profile")).toBeNull();
+  });
+
+  it("saves no profile unless the user opts in", async () => {
+    const fetchMock = stubPairsFetch(() =>
+      Promise.resolve(jsonResponse({ id: NEW_ID, url: `/builder/compare/${NEW_ID}` }, 201)),
+    );
+    handOff(JSON.stringify(PROFILE));
+    await renderRoute("/builder/compare");
+    const optIn = await screen.findByLabelText("Embed the progression snapshots in the shared URL");
+    expect(optIn).not.toBeChecked();
+    await clickSave();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const pair = postedPair(fetchMock);
+    expect(pair).not.toHaveProperty("leftProfile");
+    expect(pair).not.toHaveProperty("rightProfile");
+  });
+
+  it("saves both sides' profiles once the user opts in", async () => {
+    const fetchMock = stubPairsFetch(() =>
+      Promise.resolve(jsonResponse({ id: NEW_ID, url: `/builder/compare/${NEW_ID}` }, 201)),
+    );
+    handOff(JSON.stringify(PROFILE));
+    await renderRoute("/builder/compare");
+    const optIn = await screen.findByLabelText("Embed the progression snapshots in the shared URL");
+    await userEvent.setup().click(optIn);
+    await clickSave();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const pair = postedPair(fetchMock);
+    expect(pair.leftProfile).toEqual(PROFILE);
+    expect(pair.rightProfile).toEqual(PROFILE);
+  });
+});

@@ -2,33 +2,49 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { createTestBuilderData } from "../../../test/test-builder-data.js";
 import { createTestClient } from "../../../test/test-client.js";
 import * as TarkovData from "@tarkov/data";
-import type { BuildV6 } from "@tarkov/data";
+import {
+  DEFAULT_PROFILE,
+  type BuildV6,
+  type BuyForEntry,
+  type PlayerProfile,
+  type PricedPreset,
+} from "@tarkov/data";
 import { CompareWorkspace } from "./compare-workspace.js";
 
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
+  weaponsQuery = idleQuery;
+  presetsQuery = idleQuery;
+  pricesQuery = idleQuery;
+  savePair.mockReset();
 });
 
 // CompareWorkspace and its children (CompareSide) pull weapon/mod/tree query hooks and
 // pair mutations from @tarkov/data. None of those are relevant to the sessionStorage
 // prefill behaviour under test, so they're stubbed to inert query/mutation shapes; every
 // type and pure function (CURRENT_PAIR_VERSION, slotDiff, ...) comes from the real module.
+// The re-seed tests below set the weapons, presets and prices; every other test leaves them idle.
+const idleQuery = { data: undefined, isLoading: false, error: null };
+let weaponsQuery: { data: unknown; isLoading: boolean; error: Error | null } = idleQuery;
+let presetsQuery: { data: unknown; isLoading: boolean; error: Error | null } = idleQuery;
+let pricesQuery: { data: unknown; isLoading: boolean; error: Error | null } = idleQuery;
+const savePair = vi.fn();
 vi.mock("@tarkov/data", async () => {
   const actual = await vi.importActual<typeof TarkovData>("@tarkov/data");
-  const idleQuery = { data: undefined, isLoading: false, error: null };
   return {
     ...actual,
-    useWeaponList: () => idleQuery,
+    useWeaponList: () => weaponsQuery,
     usePartCatalog: () => idleQuery,
-    useWeaponPresets: () => idleQuery,
-    useLivePrices: () => idleQuery,
+    useWeaponPresets: () => presetsQuery,
+    useLivePrices: () => pricesQuery,
     useWeaponTree: () => idleQuery,
     useTasks: () => idleQuery,
-    useSavePair: () => ({ mutate: vi.fn(), isPending: false, error: null }),
+    useSavePair: () => ({ mutate: savePair, isPending: false, error: null }),
     useForkPair: () => ({ mutate: vi.fn(), isPending: false, error: null }),
     useBuilderData: () => mockBuilderData,
   };
@@ -174,5 +190,123 @@ describe("CompareWorkspace sessionStorage prefill", () => {
     // /builder/compare/$pairId visit set them (or didn't).
     expect(sessionStorage.getItem("compare:leftPrefill")).not.toBeNull();
     expect(sessionStorage.getItem("compare:mode")).not.toBeNull();
+  });
+});
+
+// Before live prices arrive the flea preset counts as buyable at an unknown price and sorts
+// ahead of the Prapor one by short name; once they arrive the Prapor preset is the cheaper.
+// (The same fixture `useBuilderState.test.tsx` seeds the Builder with.)
+const WEAPON = "w-m4a1";
+function trader(name: string, minTraderLevel: number, priceRUB: number | null): BuyForEntry {
+  return {
+    priceRUB,
+    currency: "RUB",
+    vendor: {
+      __typename: "TraderOffer",
+      normalizedName: name,
+      minTraderLevel,
+      taskUnlock: null,
+      trader: { normalizedName: name },
+    },
+  };
+}
+function flea(priceRUB: number | null): BuyForEntry {
+  return {
+    priceRUB,
+    currency: "RUB",
+    vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 0 },
+  };
+}
+function preset(
+  id: string,
+  isDefault: boolean,
+  attachments: Record<string, string>,
+  buyFor: BuyForEntry[],
+): PricedPreset {
+  return { id, name: id, shortName: id, weaponId: WEAPON, isDefault, attachments, buyFor };
+}
+const DEFAULT_ATTACHMENTS = { mod_muzzle: "mod-muzzle", mod_stock: "mod-stock" };
+const FLEA_ATTACHMENTS = { mod_stock: "mod-stock" };
+const PRAPOR_ATTACHMENTS = { mod_muzzle: "mod-muzzle" };
+const presetsWith = (fleaPrice: number | null, praporPrice: number | null) => ({
+  [WEAPON]: [
+    preset("default", true, DEFAULT_ATTACHMENTS, [trader("mechanic", 2, 40_000)]),
+    preset("flea", false, FLEA_ATTACHMENTS, [flea(fleaPrice)]),
+    preset("prapor", false, PRAPOR_ATTACHMENTS, [trader("prapor", 1, praporPrice)]),
+  ],
+});
+const UNPRICED = presetsWith(null, null);
+const PRICED = presetsWith(90_000, 50_000);
+const PRICES_READY = { data: { asOf: "2026-10-17T00:00:00.000Z" }, isLoading: false, error: null };
+const FLEA_PROFILE: PlayerProfile = { ...DEFAULT_PROFILE, flea: true, level: 20 };
+
+describe("CompareWorkspace seeding before live prices arrive", () => {
+  beforeEach(() => {
+    weaponsQuery = { data: [{ id: WEAPON, name: "M4A1" }], isLoading: false, error: null };
+    presetsQuery = { data: UNPRICED, isLoading: false, error: null };
+  });
+
+  /** A handoff that leaves side B empty, under `profile` when one is given. */
+  function handOff(profile: PlayerProfile | undefined) {
+    sessionStorage.setItem("compare:leftPrefill", JSON.stringify(leftBuild));
+    sessionStorage.setItem("compare:mode", "empty-right");
+    if (profile) sessionStorage.setItem("compare:profile", JSON.stringify(profile));
+  }
+
+  /** Side B's build as the next save would send it. */
+  async function savedRight(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole("button", { name: "Save comparison" }));
+    const pair = savePair.mock.calls.at(-1)?.[0] as { right: BuildV6 | null };
+    return pair.right;
+  }
+
+  it("redoes a side's progression seed once prices arrive", async () => {
+    const user = userEvent.setup();
+    handOff(FLEA_PROFILE);
+    const { rerender } = render(<CompareWorkspace />);
+    await user.selectOptions(
+      screen.getByLabelText("Weapon", { selector: "#compare-weapon-B" }),
+      WEAPON,
+    );
+    expect((await savedRight(user))?.attachments).toEqual(FLEA_ATTACHMENTS);
+
+    presetsQuery = { data: PRICED, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender(<CompareWorkspace />);
+    expect((await savedRight(user))?.attachments).toEqual(PRAPOR_ATTACHMENTS);
+  });
+
+  it("never redoes a seed the user has edited since", async () => {
+    const user = userEvent.setup();
+    handOff(FLEA_PROFILE);
+    const { rerender } = render(<CompareWorkspace />);
+    await user.selectOptions(
+      screen.getByLabelText("Weapon", { selector: "#compare-weapon-B" }),
+      WEAPON,
+    );
+    // Swapping the sides is an edit to both.
+    await user.click(screen.getByRole("button", { name: "Swap L↔R" }));
+    await user.click(screen.getByRole("button", { name: "Swap L↔R" }));
+
+    presetsQuery = { data: PRICED, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender(<CompareWorkspace />);
+    expect((await savedRight(user))?.attachments).toEqual(FLEA_ATTACHMENTS);
+  });
+
+  it("does not wait for prices on a side with no profile, whose seed reads none", async () => {
+    const user = userEvent.setup();
+    handOff(undefined);
+    const { rerender } = render(<CompareWorkspace />);
+    await user.selectOptions(
+      screen.getByLabelText("Weapon", { selector: "#compare-weapon-B" }),
+      WEAPON,
+    );
+    expect((await savedRight(user))?.attachments).toEqual(DEFAULT_ATTACHMENTS);
+
+    presetsQuery = { data: PRICED, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender(<CompareWorkspace />);
+    expect((await savedRight(user))?.attachments).toEqual(DEFAULT_ATTACHMENTS);
   });
 });

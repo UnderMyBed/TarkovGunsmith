@@ -63,6 +63,26 @@ describe("compareDraftReducer", () => {
     expect(next.right).not.toBe(next.left);
   });
 
+  it("CLONE carries the source side's profile with its build, both ways", () => {
+    const state = { ...initialDraft, left: build, leftProfile: profile, right: null };
+    const right = compareDraftReducer(state, { type: "CLONE", from: "left" });
+    expect(right.rightProfile).toEqual(profile);
+
+    // A clone from a profile-less side leaves the target profile-less too.
+    const back = compareDraftReducer(
+      { ...initialDraft, left: build, leftProfile: profile, right: build },
+      { type: "CLONE", from: "right" },
+    );
+    expect(back.leftProfile).toBeUndefined();
+  });
+
+  it("starts with profiles kept out of a save, and SET_EMBED_PROFILES opts in as an edit", () => {
+    expect(initialDraft.embedProfiles).toBe(false);
+    const next = compareDraftReducer(initialDraft, { type: "SET_EMBED_PROFILES", embed: true });
+    expect(next.embedProfiles).toBe(true);
+    expect(next.dirty).toBe(true);
+  });
+
   it("CLONE from:left is a no-op when left is null", () => {
     const next = compareDraftReducer(initialDraft, { type: "CLONE", from: "left" });
     expect(next).toBe(initialDraft);
