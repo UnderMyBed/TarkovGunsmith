@@ -564,6 +564,31 @@ describe("optimize — why no build exists", () => {
     expect(run({ parts: listedOnBrake, pins })).toEqual(clash);
   });
 
+  // #266 review (b, p2): the pinned part is the only filler of a required slot, and nobody
+  // sells it; dropping every pin also dropped the part, which read as an empty required slot.
+  it("names a pin clash when a pinned part nobody sells is the only filler of a required slot", () => {
+    const slotTree = tree([
+      { nameId: "stock", required: true, items: ["s"] },
+      { nameId: "muzzle", items: ["m1", "m2"] },
+    ]);
+    const parts = [
+      part("s", { price: "unsold" }),
+      part("m1", { price: 100, conflicts: ["s"] }),
+      part("m2", { price: 100 }),
+    ];
+    expect(run({ slotTree, parts, pins: { stock: "s", muzzle: "m1" } })).toEqual({
+      ok: false,
+      reason: "pin-conflict",
+      paths: ["muzzle", "stock"],
+      message:
+        "No complete build keeps every pin. The pins that clash: m1, s. Unpin one and run it again.",
+    });
+    // Unpinning the muzzle is enough.
+    expect(ok(run({ slotTree, parts, pins: { stock: "s" } })).build.attachments).toEqual({
+      stock: "s",
+    });
+  });
+
   it("names every pin when no two clash with each other directly", () => {
     const gripRequired = tree([
       { nameId: "muzzle", items: ["muzzle_brake", "muzzle_silencer"] },

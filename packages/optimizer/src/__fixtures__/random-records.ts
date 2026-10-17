@@ -317,6 +317,7 @@ export function compareJudged(a: Judged, b: Judged): number {
 
 export interface Relax {
   readonly budget?: boolean;
+  /** Ignore every pin, but keep the pinned parts to be had, as a pin makes them. */
   readonly pins?: boolean;
   readonly conflicts?: boolean;
   /** Pins, by path, to ignore. */
@@ -367,8 +368,10 @@ export function judge(
   }
   // Copies a path supplies are spent in list order: the ones the profile cannot buy unpinned
   // must take them, so the pinned copies, which can go unsupplied, come last.
+  const pinnedIds = new Set(input.constraints.pinnedSlots.values());
   const unbuyablePin = (p: (typeof resolved.placed)[number]) =>
-    kept.has(p.path) && !itemAvailability(p.part, gate).available;
+    (kept.has(p.path) || (relax.pins === true && pinnedIds.has(p.itemId))) &&
+    !itemAvailability(p.part, gate).available;
   const placed = [
     ...resolved.placed.filter((p) => !unbuyablePin(p)).map((p) => p.part),
     ...resolved.placed.filter(unbuyablePin).map((p) => ({ ...p.part, buyFor: [UNPRICED_OFFER] })),

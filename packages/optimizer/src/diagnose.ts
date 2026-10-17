@@ -54,7 +54,8 @@ export function cheapestBuild(
  *
  * 1. the budget — a complete build exists without it. The message names the cheapest, or,
  *    when no build that keeps the pins has a known price, {@link unknownPriceVerdict}'s cause;
- * 2. the pins — a complete build exists without them (and the budget);
+ * 2. the pins — a complete build exists without them (and the budget), the pinned parts still
+ *    to be had;
  * 3. a required slot — even ignoring conflicts, nothing obtainable fills it on any path;
  * 4. scarce copies — every required slot has a part, but parts that come only with the gun
  *    are needed more often than any way to buy it supplies them;
@@ -88,7 +89,15 @@ export function diagnose(
     }
     return unknownPriceVerdict(problem, tree, catalog, deadline);
   }
-  const bare = { ...problem, budget: undefined, pins: noPins };
+  // Without its pin, a pinned part the profile cannot buy would leave the problem, and a pin
+  // that only clashes with another would read as a slot nothing fills. The user has the part
+  // in mind, so it stays to be had: the question is whether the pins can all hold together.
+  const parts = new Map(problem.parts);
+  for (const id of problem.pins.values()) {
+    const part = id === null ? undefined : parts.get(id);
+    if (part !== undefined && !part.available) parts.set(id!, { ...part, available: true });
+  }
+  const bare = { ...problem, budget: undefined, pins: noPins, parts };
   if (problem.pins.size > 0 && solve(bare, tree, catalog, deadline) !== null) {
     const paths = clashingPins(problem);
     const names = paths.map((path) => {
