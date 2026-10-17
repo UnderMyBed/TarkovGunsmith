@@ -86,13 +86,11 @@ test.describe("phone width", () => {
       "false",
     );
 
-    // KNOWN OVERFLOW, issue #265: once a weapon is picked, the preset chips, the build
-    // header's toolbar and the slot rows run past a 390 px screen. This asserts the bug, so the
-    // fix that closes #265 fails here: flip it to `toBeLessThanOrEqual(PHONE_WIDTH)`.
-    expect(
-      await contentWidth(page),
-      "#265 looks fixed: assert the Builder fits the screen",
-    ).toBeGreaterThan(PHONE_WIDTH);
+    // Once a weapon is picked, the preset chips, the build header's toolbar and the slot rows
+    // must still fit a 390 px screen (issue #265).
+    expect(await contentWidth(page), "the Builder scrolls sideways").toBeLessThanOrEqual(
+      PHONE_WIDTH,
+    );
     expect(errors, `Console errors on the Builder:\n${errors.join("\n")}`).toEqual([]);
   });
 });
