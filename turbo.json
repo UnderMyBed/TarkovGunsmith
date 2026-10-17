@@ -14,7 +14,7 @@
     },
     "@tarkov/web#build": {
       "dependsOn": ["^build"],
-      "env": ["TARKOV_SNAPSHOT_SOURCE"],
+      "env": ["TARKOV_SNAPSHOT_SOURCE", "VITE_FARO_URL"],
       "inputs": ["$TURBO_DEFAULT$", "../../packages/tarkov-data/src/__fixtures__/*-sample.json"],
       "outputs": ["dist/**", "public/data/**"]
     },
@@ -48,7 +48,10 @@
         "../../.nvmrc",
         "../../package.json",
         "../../pnpm-workspace.yaml",
-        "../../turbo.json"
+        "../../turbo.json",
+        "../../infra/grafana/**",
+        "../../apps/web/public/_headers",
+        "../../apps/web/src/observability/faro-guard.ts"
       ],
       "outputs": ["coverage/**"]
     },
@@ -61,7 +64,10 @@
         "../../.nvmrc",
         "../../package.json",
         "../../pnpm-workspace.yaml",
-        "../../turbo.json"
+        "../../turbo.json",
+        "../../infra/grafana/**",
+        "../../apps/web/public/_headers",
+        "../../apps/web/src/observability/faro-guard.ts"
       ],
       "outputs": ["coverage/**"]
     }

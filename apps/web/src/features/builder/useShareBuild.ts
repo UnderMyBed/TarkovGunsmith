@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSaveBuild, ORPHANED_CAP, type BuildV6 } from "@tarkov/data";
+import { track } from "../../observability/track.js";
 
 /** Why a build cannot be shared as it stands, or `null` when it can. */
 export function shareBlockedReason(build: Pick<BuildV6, "orphaned">): string | null {
@@ -40,6 +41,7 @@ export function useShareBuild(args: UseShareBuildArgs): UseShareBuildResult {
       { ...args.build, createdAt: new Date().toISOString() },
       {
         onSuccess: (result) => {
+          track("build_shared");
           // Build the shareable URL from the SPA origin so it points at the /builder/$id
           // loader route, not the Worker's JSON endpoint.
           const shareableUrl = `${window.location.origin}/builder/${result.id}`;

@@ -7,11 +7,16 @@ How CI auto-deploys the Workers and the SPA, what the API token needs to be allo
 `.github/workflows/deploy.yml` runs on a push to `main` whose head commit starts with
 `chore(main): release`, and on `workflow_dispatch`:
 
-| Job          | Deploys                            | Wrangler invocation                                               |
-| ------------ | ---------------------------------- | ----------------------------------------------------------------- |
-| `builds-api` | `apps/builds-api` Worker (uses KV) | `wrangler deploy` (from `apps/builds-api/`)                       |
-| `pages`      | `apps/web` (Vite build output)     | `wrangler pages deploy ./dist --project-name=tarkov-gunsmith-web` |
-| `smoke`      | nothing — verifies the other two   | `curl` against the live hostnames                                 |
+| Job          | Deploys                            | Wrangler invocation                                                    |
+| ------------ | ---------------------------------- | ---------------------------------------------------------------------- |
+| `grafana`    | `infra/grafana/` to Grafana Cloud  | none — calls `grafana.yml`; see [observability.md](./observability.md) |
+| `builds-api` | `apps/builds-api` Worker (uses KV) | `wrangler deploy` (from `apps/builds-api/`)                            |
+| `pages`      | `apps/web` (Vite build output)     | `wrangler pages deploy ./dist --project-name=tarkov-gunsmith-web`      |
+| `smoke`      | nothing — verifies the other two   | `curl` against the live hostnames                                      |
+
+`pages` needs `grafana` and builds the SPA with the Faro collector URL that job outputs, so a
+failed Grafana apply holds the release; [`observability.md`](./observability.md#release-blocked-on-the-grafana-apply)
+covers recovery. Its four `GRAFANA_*` secrets are listed there.
 
 `smoke` runs after both deploys and fails the workflow if production is not actually serving.
 Its load-bearing probe is `POST /api/builds` with an invalid body, which must return **400**:

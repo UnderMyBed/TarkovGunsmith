@@ -19,6 +19,7 @@ import {
   Skeleton,
 } from "@tarkov/ui";
 import { BuilderPage } from "../features/builder/builder-page.js";
+import { useTrackOnce } from "../observability/track-hooks.js";
 import { GameDataErrorCard } from "../features/builder/game-data-error.js";
 import {
   clearDraft,
@@ -53,6 +54,7 @@ function SharedBuildPage({ id }: { id: string }) {
     [query.data, snapshot.data],
   );
   const [generation, setGeneration] = useState(0);
+  useTrackOnce(build !== null, "build_loaded", { source: "link" });
 
   if (query.isLoading || snapshot.isLoading) {
     return (

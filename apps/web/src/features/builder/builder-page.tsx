@@ -11,6 +11,7 @@ import {
 } from "@tarkov/data";
 import { Button } from "@tarkov/ui";
 import { useWorkbenchChrome } from "../../site-chrome.js";
+import { withModeTracking } from "../../observability/track-hooks.js";
 import { adaptWeapon } from "../data-adapters/adapters.js";
 import { BuildPanel } from "./build-panel.js";
 import { writeDraft, type DraftBuild } from "./build-draft.js";
@@ -85,7 +86,9 @@ export function BuilderPage({
   const navigate = useNavigate();
   useWorkbenchChrome();
 
-  const progression = useProgression();
+  // Every mode change this tab makes goes through these setters, so each sends mode_changed;
+  // a change mirrored from another tab does not.
+  const progression = withModeTracking(useProgression());
   const { profile, setProfile, mode } = progression;
   const tasks = useTasks();
   const sync = useTarkovTrackerSync({
