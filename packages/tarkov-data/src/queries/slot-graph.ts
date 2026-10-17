@@ -39,17 +39,27 @@ export interface SlotOwner {
   readonly slots: readonly SlotDef[];
 }
 
-/** Every slot-owning item's slots, keyed by owner id, plus display names for allowed items. */
+/**
+ * Every slot-owning item's slots, keyed by owner id, plus display names for allowed items.
+ * `itemShortNames` feeds {@link SlotNode.label} only; neither name map is serialized.
+ */
 export interface SlotGraph {
   readonly owners: Readonly<Record<string, SlotOwner>>;
   readonly itemNames: Readonly<Record<string, string>>;
+  readonly itemShortNames: Readonly<Record<string, string>>;
 }
 
 /** A slot placed at a concrete path in one build. */
 export interface SlotNode {
   readonly id: string;
   readonly nameId: string;
+  /** Upstream's translated slot name. Siblings can share it (two "Ch. Handle" on the M4A1). */
   readonly name: string;
+  /**
+   * The name to show: unique among the slots of one owner. Display only — never a key. See
+   * {@link slotLabels} for the rule.
+   */
+  readonly label: string;
   /** `/`-joined `nameId` chain from the weapon. The key a build's `attachments` map uses. */
   readonly path: string;
   readonly required: boolean;
@@ -84,8 +94,8 @@ function asCategory(raw: unknown): SlotCategory | null {
   return { id, name, normalizedName };
 }
 
-function itemName(raw: unknown, fallback: string): string {
-  const name = (raw as { name?: unknown } | null)?.name;
+function itemName(raw: unknown, fallback: string, field: "name" | "shortName" = "name"): string {
+  const name = (raw as Record<string, unknown> | null)?.[field];
   return typeof name === "string" ? name : fallback;
 }
 
@@ -100,6 +110,7 @@ export function buildSlotGraph(doc: ItemsDocument): SlotGraph {
   const categories = doc.itemCategories ?? {};
   const owners: Record<string, SlotOwner> = {};
   const itemNames: Record<string, string> = {};
+  const itemShortNames: Record<string, string> = {};
 
   for (const [ownerId, raw] of Object.entries(doc.items)) {
     const properties = (
@@ -119,6 +130,7 @@ export function buildSlotGraph(doc: ItemsDocument): SlotGraph {
         if (found === null || typeof found !== "object") continue;
         allowedItemIds.push(id);
         itemNames[id] ??= itemName(found, id);
+        itemShortNames[id] ??= itemName(found, itemNames[id], "shortName");
       }
 
       // Kept as working, inert future-proofing: every slot in the live document carries an
@@ -148,11 +160,51 @@ export function buildSlotGraph(doc: ItemsDocument): SlotGraph {
       slots,
     };
   }
-  return { owners, itemNames };
+  return { owners, itemNames, itemShortNames };
+}
+
+/**
+ * Display labels for one owner's slots, in the same order. Upstream reuses slot names among
+ * siblings (`mod_mount_000..003` are all "Mount"; the M4A1's `mod_charge_001`, which only takes
+ * the B.A.D. lever, is a second "Ch. Handle"), so a name alone cannot tell two rows apart:
+ *
+ * 1. A name no sibling shares is the label as-is.
+ * 2. A shared name on a slot with exactly one allowed item is qualified by that item's short
+ *    name: "Ch. Handle (B.A.D.)".
+ * 3. Whatever still repeats is numbered in upstream order, every member: "Mount 1", "Mount 2".
+ */
+export function slotLabels(
+  slots: readonly Pick<SlotDef, "name" | "allowedItemIds">[],
+  shortName: (itemId: string) => string,
+): string[] {
+  return labelled(slots, shortName).map(({ label }) => label);
+}
+
+function labelled<T extends Pick<SlotDef, "name" | "allowedItemIds">>(
+  slots: readonly T[],
+  shortName: (itemId: string) => string,
+): { slot: T; label: string }[] {
+  // Siblings number a few dozen at most, so counting by scan is cheap.
+  const qualified = slots.map((slot) => {
+    const [only, ...rest] = slot.allowedItemIds;
+    const shared = slots.filter((s) => s.name === slot.name).length > 1;
+    const label =
+      shared && only !== undefined && rest.length === 0
+        ? `${slot.name} (${shortName(only)})`
+        : slot.name;
+    return { slot, label };
+  });
+  return qualified.map(({ slot, label }, i) => {
+    const same = qualified.filter((q) => q.label === label);
+    if (same.length < 2) return { slot, label };
+    const ordinal = qualified.slice(0, i + 1).filter((q) => q.label === label).length;
+    return { slot, label: `${label} ${ordinal}` };
+  });
 }
 
 interface PreparedSlot {
   readonly def: SlotDef;
+  readonly label: string;
   readonly allowedItems: SlotNode["allowedItems"];
   readonly allowedItemIds: ReadonlySet<string>;
 }
@@ -169,12 +221,15 @@ function preparedSlots(graph: SlotGraph, ownerId: string): readonly PreparedSlot
   }
   const cached = byOwner.get(ownerId);
   if (cached !== undefined) return cached;
-  const owner = graph.owners[ownerId];
-  const out: PreparedSlot[] = (owner?.slots ?? []).map((def) => ({
-    def,
-    allowedItems: def.allowedItemIds.map((id) => ({ id, name: graph.itemNames[id] ?? id })),
-    allowedItemIds: new Set(def.allowedItemIds),
-  }));
+  const defs = graph.owners[ownerId]?.slots ?? [];
+  const out: PreparedSlot[] = labelled(defs, (id) => graph.itemShortNames[id] ?? id).map(
+    ({ slot: def, label }) => ({
+      def,
+      label,
+      allowedItems: def.allowedItemIds.map((id) => ({ id, name: graph.itemNames[id] ?? id })),
+      allowedItemIds: new Set(def.allowedItemIds),
+    }),
+  );
   byOwner.set(ownerId, out);
   return out;
 }
@@ -187,10 +242,11 @@ function preparedSlots(graph: SlotGraph, ownerId: string): readonly PreparedSlot
  * must not change. An owner with no slots expands to `[]`.
  */
 export function expandSlots(graph: SlotGraph, ownerId: string, parentPath: string): SlotNode[] {
-  return preparedSlots(graph, ownerId).map(({ def, allowedItems, allowedItemIds }) => ({
+  return preparedSlots(graph, ownerId).map(({ def, label, allowedItems, allowedItemIds }) => ({
     id: def.id,
     nameId: def.nameId,
     name: def.name,
+    label,
     path: parentPath ? `${parentPath}/${def.nameId}` : def.nameId,
     required: def.required,
     allowedItems,

@@ -66,7 +66,7 @@ export function OptimizeConstraintsForm({ state, dispatch, slotTree }: Props): R
                   checked={state.pinnedSlots.has(slot.path)}
                   onChange={() => dispatch({ type: "TOGGLE_PIN", slotPath: slot.path })}
                 />
-                <span className="uppercase tracking-wider">{slot.name || slot.nameId}</span>
+                <span className="uppercase tracking-wider">{slot.label || slot.nameId}</span>
               </label>
               <span className="text-[var(--color-muted-foreground)]">
                 {state.pinnedSlots.has(slot.path)

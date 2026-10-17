@@ -1,9 +1,10 @@
-import type { WeaponListItem } from "@tarkov/data";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
+import { formatRequirement } from "./slot-tree.js";
+import type { WeaponOption } from "./useBuilderState.js";
 
 export interface WeaponPanelProps {
   isLoading: boolean;
-  weaponOptions: readonly WeaponListItem[];
+  weaponOptions: readonly WeaponOption[];
   weaponId: string;
   onWeaponChange: (weaponId: string) => void;
   showAllWeapons: boolean;
@@ -45,6 +46,7 @@ export function WeaponPanel({
   onEmbedProfileOnSaveChange,
   dataAsOf,
 }: WeaponPanelProps) {
+  const availableCount = weaponOptions.filter((w) => w.lockedBy === null).length;
   return (
     <Card>
       <CardHeader>
@@ -52,7 +54,7 @@ export function WeaponPanel({
         <CardDescription>
           {isLoading
             ? "Loading…"
-            : `${weaponOptions.length} weapons ${showAllWeapons ? "(all)" : "available on your profile"}`}
+            : `${availableCount} weapons ${showAllWeapons ? "(all)" : "available on your profile"}`}
         </CardDescription>
         {dataAsOf !== null && (
           <p className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
@@ -70,7 +72,9 @@ export function WeaponPanel({
           <option value="">{isLoading ? "Loading…" : "Select weapon…"}</option>
           {weaponOptions.map((w) => (
             <option key={w.id} value={w.id}>
-              {w.name}
+              {w.lockedBy === null
+                ? w.name
+                : `${w.name} — LOCKED · ${formatRequirement(w.lockedBy)}`}
             </option>
           ))}
         </select>

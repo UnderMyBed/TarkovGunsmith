@@ -4,6 +4,7 @@ import {
   expandSlots,
   selectWeaponTree,
   slotAtPath,
+  slotLabels,
   visibleSlots,
 } from "./slot-graph.js";
 import { fixtureClient } from "../__fixtures__/client.js";
@@ -20,6 +21,7 @@ const DD_MK12_GAS_BLOCK = "56eabcd4d2720b66698b4574";
 const ELCAN = "57ac965c24597706be5f975c";
 const HAMR = "544a3a774bdc2d3a388b4567";
 const AMMO = "54527a984bdc2d4e668b4567";
+const BAD_LEVER = "675307301f7c19a9780f2668";
 
 /** A realistic M4A1 build, all real fixture items, three levels deep under the barrel. */
 const M4A1_BUILD = {
@@ -162,6 +164,7 @@ describe("buildSlotGraph", () => {
         },
       },
       itemNames: {},
+      itemShortNames: {},
     };
     expect(expandSlots(graph, "w", "")[0]?.allowedItems).toEqual([{ id: "z", name: "z" }]);
   });
@@ -219,5 +222,78 @@ describe("expanding from attached items", () => {
     expect(slotAtPath(tree, {}, "mod_reciever/mod_barrel")).toBeNull();
     expect(slotAtPath(tree, M4A1_BUILD, "mod_nope")).toBeNull();
     expect(slotAtPath(tree, M4A1_BUILD, "mod_reciever/mod_nope")).toBeNull();
+  });
+});
+
+describe("slot labels", () => {
+  const short = (id: string) => `short-${id}`;
+  const slot = (name: string, ...allowedItemIds: string[]) => ({ name, allowedItemIds });
+
+  it("leaves a name no sibling shares as it is, even on a single-item slot", () => {
+    expect(slotLabels([slot("Muzzle", "a", "b"), slot("Magazine", "m")], short)).toEqual([
+      "Muzzle",
+      "Magazine",
+    ]);
+  });
+
+  it("qualifies a repeated name on a single-item slot with that item's short name", () => {
+    expect(slotLabels([slot("Ch. Handle", "a", "b"), slot("Ch. Handle", "bad")], short)).toEqual([
+      "Ch. Handle",
+      "Ch. Handle (short-bad)",
+    ]);
+  });
+
+  it("numbers every member of a name that still repeats, in upstream order", () => {
+    expect(
+      slotLabels(
+        [slot("Mount", "a", "b"), slot("Tactical", "t"), slot("Mount", "c", "d"), slot("Mount")],
+        short,
+      ),
+    ).toEqual(["Mount 1", "Tactical", "Mount 2", "Mount 3"]);
+  });
+
+  it("numbers single-item slots whose qualified labels still collide", () => {
+    expect(slotLabels([slot("Stock", "s"), slot("Stock", "s")], short)).toEqual([
+      "Stock (short-s) 1",
+      "Stock (short-s) 2",
+    ]);
+  });
+
+  it("labels the M4A1's second charging-handle slot by its lever, from the snapshot", async () => {
+    const tree = await fixtureWeaponTree(fixtureClient(), M4A1);
+    expect(tree.slots.map((s) => [s.path, s.name, s.label])).toEqual([
+      ["mod_pistol_grip", "Pistol Grip", "Pistol Grip"],
+      ["mod_magazine", "Magazine", "Magazine"],
+      ["mod_reciever", "Receiver", "Receiver"],
+      ["mod_stock", "Stock", "Stock"],
+      ["mod_charge", "Ch. Handle", "Ch. Handle"],
+      ["mod_charge_001", "Ch. Handle", "Ch. Handle (B.A.D.)"],
+    ]);
+    // The label is display-only: the path a saved build keys on is untouched.
+    expect(slotAtPath(tree, {}, "mod_charge_001")?.allowedItemIds).toEqual(new Set([BAD_LEVER]));
+  });
+
+  it("falls back to the item id when the graph has no short name for it", () => {
+    const def = (id: string) => ({
+      id,
+      nameId: id,
+      name: "Mount",
+      required: false,
+      allowedItemIds: ["z"],
+      allowedCategories: [],
+    });
+    const graph = {
+      owners: { w: { kind: "ItemPropertiesWeapon", slots: [def("a"), def("b")] } },
+      itemNames: {},
+      itemShortNames: {},
+    };
+    expect(expandSlots(graph, "w", "").map((s) => s.label)).toEqual(["Mount (z) 1", "Mount (z) 2"]);
+  });
+
+  it("labels the same way from the raw items document", async () => {
+    const doc = await fixtureClient().fetchResource<ItemsDocument>("items");
+    const tree = selectWeaponTree(doc, M4A1);
+    expect(tree.slots.map((s) => s.label)).toContain("Ch. Handle (B.A.D.)");
+    expect(tree.graph.itemShortNames[BAD_LEVER]).toBe("B.A.D.");
   });
 });

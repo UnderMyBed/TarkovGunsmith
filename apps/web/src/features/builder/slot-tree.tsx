@@ -192,7 +192,7 @@ function SlotRow({
             ▸
           </span>
           <span className="font-mono text-11 tracking-15 uppercase text-[var(--color-muted-foreground)] min-w-[140px]">
-            {slot.name}
+            {slot.label}
           </span>
           <span className="flex-1 text-sm truncate">
             {selectedItem ? (

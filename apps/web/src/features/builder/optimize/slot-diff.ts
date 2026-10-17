@@ -85,7 +85,7 @@ export function slotDiff(
     const pm = lookupMod(p, parts);
     rows.push({
       slotId: slot.path,
-      slotLabel: slot.name || slot.nameId || slot.path,
+      slotLabel: slot.label || slot.nameId || slot.path,
       currentName: cm.name,
       proposedName: pm.name,
       currentErgo: cm.ergo,
