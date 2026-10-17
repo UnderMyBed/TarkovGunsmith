@@ -366,6 +366,29 @@ test.describe("builder optimize mode", () => {
     );
   });
 
+  test("every change has a row to untick, even under a part the proposal replaces", async ({
+    page,
+  }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    await pickWeapon(page);
+    await choosePreset(page, /Carbine/);
+    await expectPreset(page, /Carbine/);
+
+    // The proposal swaps the handguard and fits a foregrip under the new lower handguard. Both
+    // handguards have a lower-handguard slot at the same path; only the new one's takes the new
+    // lower handguard, so its foregrip shows only if the tree reads each build's own slot.
+    await openOptimizer(page);
+    await page.getByRole("button", { name: "Run", exact: true }).click();
+    await expect(proposal(page)).toContainText(
+      `${OPTIMIZER_CARBINE_CHANGED_SLOTS} of ${OPTIMIZER_CARBINE_CHANGED_SLOTS} ticked`,
+      { timeout: 15_000 },
+    );
+    await expect(changedRows(page)).toHaveCount(OPTIMIZER_CARBINE_CHANGED_SLOTS);
+    await expect(
+      slotRow(page, "mod_reciever/mod_handguard/mod_handguard/mod_foregrip"),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
   test("Discard drops the proposal and returns to the editor without changing the build", async ({
     page,
   }) => {

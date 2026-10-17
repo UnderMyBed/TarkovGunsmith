@@ -7,7 +7,7 @@ import type { ItemAvailability, SlotDiffMap, WeaponTree } from "@tarkov/data";
 import { tinyTree, type SlotSpec } from "../../test/tiny-tree.js";
 import { SlotInspector } from "./slot-inspector.js";
 import { useSlotSelection } from "./slot-selection.js";
-import { SlotTree } from "./slot-tree.js";
+import { SlotTree, type SlotDiffSide, type SlotTreeDiffProps } from "./slot-tree.js";
 
 afterEach(() => cleanup());
 
@@ -50,7 +50,9 @@ interface HarnessProps {
   onAttach?: (path: string, itemId: string | null) => void;
   getAvailability?: (itemId: string) => ItemAvailability | null;
   getFittedConflict?: (path: string) => string | null;
-  diff?: SlotDiffMap;
+  /** Compare's diff and the side this tree shows; they travel together. */
+  compare?: { diff: SlotDiffMap; side: SlotDiffSide };
+  opensSheet?: boolean;
 }
 
 /** The tree and the inspector wired through one selection, as the Builder wires them. */
@@ -60,10 +62,12 @@ function Workbench({
   onAttach = vi.fn(),
   getAvailability,
   getFittedConflict,
-  diff,
+  compare,
+  opensSheet,
 }: HarnessProps) {
   const selection = useSlotSelection(t, attachments);
   const slot = selection.selected?.slot;
+  const diffProps: SlotTreeDiffProps = compare ?? {};
   return (
     <>
       <SlotTree
@@ -71,7 +75,8 @@ function Workbench({
         attachments={attachments}
         getAvailability={getAvailability}
         getFittedConflict={getFittedConflict}
-        diff={diff}
+        {...diffProps}
+        opensSheet={opensSheet}
       />
       {slot && (
         <SlotInspector
@@ -100,6 +105,15 @@ function rows(): HTMLElement[] {
 }
 
 describe("SlotTree — rows", () => {
+  it("ends each row in a chevron only where a row opens the phone's sheet", () => {
+    render(<Workbench />);
+    // The Builder on a desktop, and Compare at any width: the inspector is beside the tree.
+    for (const r of rows()) expect(r.querySelector("svg")).toBeNull();
+    cleanup();
+    render(<Workbench opensSheet />);
+    for (const r of rows()) expect(r.querySelector("svg")).not.toBeNull();
+  });
+
   it("says the weapon has no mod slots rather than rendering an empty shell", () => {
     render(<Workbench tree={tree([])} />);
     expect(screen.getByText("This weapon has no mod slots.")).toBeInTheDocument();
@@ -248,20 +262,38 @@ describe("SlotTree — selection", () => {
     render(
       <Workbench
         attachments={{ mod_muzzle: "mod-dtk" }}
-        diff={
-          new Map([
-            ["mod_muzzle", "differs"],
-            ["mod_stock", "left-only"],
-          ])
-        }
+        compare={{ diff: new Map([["mod_muzzle", "differs"]]), side: "left" }}
       />,
     );
     expect(row("Muzzle")).toHaveAttribute("data-diff", "differs");
     expect(row("Muzzle")).toHaveAccessibleName(/differs from the other build/);
-    expect(row("Stock")).toHaveAttribute("data-diff", "left-only");
     await user.click(row("Stock"));
     expect(row("Stock")).toHaveAttribute("aria-selected", "true");
   });
+
+  // `slotDiff`: left-only is a part in build A and none in build B, right-only the reverse.
+  // Both sides get the same map, so the note depends on which side the tree shows.
+  it.each([
+    { status: "left-only", filled: "left", empty: "right" },
+    { status: "right-only", filled: "right", empty: "left" },
+  ] as const)(
+    "names a $status slot as filled only on the $filled side, filled elsewhere on the $empty",
+    ({ status, filled, empty }) => {
+      const diff: SlotDiffMap = new Map([["mod_muzzle", status]]);
+      const { unmount } = render(
+        <Workbench attachments={{ mod_muzzle: "mod-dtk" }} compare={{ diff, side: filled }} />,
+      );
+      expect(row("Muzzle")).toHaveAttribute("data-diff", status);
+      expect(row("Muzzle")).toHaveAccessibleName(
+        "Muzzle: Zenit DTK-1 muzzle brake, filled only in this build",
+      );
+      unmount();
+
+      render(<Workbench attachments={{}} compare={{ diff, side: empty }} />);
+      expect(row("Muzzle")).toHaveAttribute("data-diff", status);
+      expect(row("Muzzle")).toHaveAccessibleName("Muzzle: empty, filled in the other build");
+    },
+  );
 });
 
 describe("SlotTree — keyboard", () => {

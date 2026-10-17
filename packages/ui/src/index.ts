@@ -23,12 +23,13 @@ export { Stamp } from "./components/stamp.js";
 export type { StampProps } from "./components/stamp.js";
 export { SectionTitle } from "./components/section-title.js";
 export type { SectionTitleProps } from "./components/section-title.js";
-export { Dialog, DialogPanel, DialogTitle, DialogBody } from "./components/dialog.js";
+export { Dialog, DialogPanel, DialogTitle, DialogBody, SheetPanel } from "./components/dialog.js";
 export type {
   DialogProps,
   DialogPanelProps,
   DialogTitleProps,
   DialogBodyProps,
+  SheetPanelProps,
 } from "./components/dialog.js";
 export { Skeleton } from "./components/skeleton.js";
 export type { SkeletonProps } from "./components/skeleton.js";
