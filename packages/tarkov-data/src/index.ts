@@ -46,6 +46,14 @@ export type { AttachablePart, AttachablePartType, ModLikePart } from "./queries/
 export { attachedParts, mountedAttachments, withAttachment } from "./attached-parts.js";
 export { conflictsWith } from "./conflicts.js";
 export type { Conflict, ConflictContext, ConflictFields } from "./conflicts.js";
+export { resolveBuild } from "./build-core/resolve.js";
+export type {
+  BuildConflict,
+  OrphanReason,
+  OrphanedAttachment,
+  PlacedPart,
+  ResolvedBuild,
+} from "./build-core/resolve.js";
 export type { AttachedParts, AttachedPartEntry, KnownItems } from "./attached-parts.js";
 
 // Build schema
