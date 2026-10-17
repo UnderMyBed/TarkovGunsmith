@@ -88,19 +88,21 @@ function Cell({
   return (
     <div
       data-testid={testId}
-      className="flex min-w-0 flex-[1_1_150px] flex-col gap-1 border-b border-r border-[var(--color-border)] px-4 py-3 sm:px-6"
+      className="flex min-w-0 flex-[1_1_150px] flex-col gap-1 border-b border-r border-[var(--color-border)] px-3 py-2.5 sm:px-6 sm:py-3"
     >
       <dt className="text-12 font-medium text-[var(--color-muted-foreground)]">{label}</dt>
       <dd
         title={title}
-        className="font-mono text-[28px] font-medium leading-tight tabular-nums text-[var(--color-foreground)]"
+        className="break-words font-mono text-20 font-medium leading-tight tabular-nums text-[var(--color-foreground)] sm:text-[28px]"
       >
         {value}
         {unit !== undefined && (
           <span className="text-13 text-[var(--color-muted-foreground)]"> {unit}</span>
         )}
       </dd>
-      {sub !== undefined && <dd className="text-12 text-[var(--color-muted-foreground)]">{sub}</dd>}
+      {sub !== undefined && (
+        <dd className="break-words text-12 text-[var(--color-muted-foreground)]">{sub}</dd>
+      )}
     </div>
   );
 }
@@ -131,7 +133,8 @@ function AgainstCurrent({ was, delta, dir }: { was: string; delta: string; dir: 
 
 /**
  * The workbench's stat strip: the six figures a build is judged by, each with its stock value and
- * a delta coloured, and named, better or worse. The Optimize action sits at its end.
+ * a delta coloured, and named, better or worse. The Optimize action sits at its end. On a phone
+ * the figures form a 3×2 grid, and Optimize is the bottom bar's (`phone-action-bar.tsx`).
  *
  * Ergonomics is the figure the game uses, floored at 0 (`ergonomics.ts`), and its delta compares
  * floored values. Accuracy has no stock: the bare receiver's MOA has no barrel in it, so every
@@ -164,7 +167,8 @@ export function StatStrip({
         </Button>
       </div>
     ) : status !== undefined ? (
-      <div className="flex flex-[0_0_auto] flex-col justify-center gap-1 px-4 py-3 text-12 sm:px-6">
+      // On a phone the status takes a full-width row under the 3×2 grid.
+      <div className="flex min-w-0 flex-[0_0_auto] flex-col justify-center gap-1 px-4 py-3 text-12 max-sm:flex-[1_1_100%] sm:px-6">
         {status}
       </div>
     ) : null;
@@ -193,7 +197,7 @@ export function StatStrip({
       aria-label="Build stats"
       className="flex flex-wrap items-stretch border-b border-[var(--color-border)] bg-[var(--color-muted)]"
     >
-      <dl className="-mb-px flex min-w-0 flex-[1_1_640px] flex-wrap">
+      <dl className="-mb-px flex min-w-0 flex-[1_1_640px] flex-wrap max-sm:grid max-sm:grid-cols-3">
         <Cell
           label="Ergonomics"
           value={oneDecimal(ergo)}
@@ -294,7 +298,7 @@ function ProposalStrip({
       aria-label="Build stats, proposed"
       className="flex flex-wrap items-stretch border-b border-[var(--color-border)] bg-[var(--color-muted)]"
     >
-      <dl className="-mb-px flex min-w-0 flex-[1_1_640px] flex-wrap">
+      <dl className="-mb-px flex min-w-0 flex-[1_1_640px] flex-wrap max-sm:grid max-sm:grid-cols-3">
         <Cell
           label="Ergonomics"
           value={oneDecimal(ergo)}

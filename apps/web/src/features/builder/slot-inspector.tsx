@@ -44,6 +44,10 @@ export interface SlotInspectorProps {
   onEscape?: (() => void) | undefined;
   /** The element's `id`: `useSlotSelection`'s `inspectorId`, which Enter in the tree focuses. */
   id?: string | undefined;
+  /** Given, a Close button heads the inspector: the phone's bottom sheet (`slot-sheet.tsx`). */
+  onClose?: (() => void) | undefined;
+  /** Merged over the inspector's own panel classes. */
+  className?: string | undefined;
 }
 
 interface OptionRow {
@@ -92,6 +96,8 @@ export function SlotInspector({
   pricesReady,
   onEscape,
   id,
+  onClose,
+  className,
 }: SlotInspectorProps) {
   const questName = useQuestName();
   const searchId = useId();
@@ -165,21 +171,39 @@ export function SlotInspector({
       aria-label={`${slot.label} options`}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="@container min-w-0 rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] outline-none"
+      className={cn(
+        "@container min-w-0 rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] outline-none",
+        className,
+      )}
     >
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--color-border)] px-4 py-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="text-20 font-bold leading-tight">
-            {slot.label}{" "}
-            <span className="text-12 font-medium text-[var(--color-muted-foreground)]">
-              {slot.required ? "required · " : ""}
-              <span className="font-mono tabular-nums">{count}</span>{" "}
-              {count === 1 ? "option" : "options"}
-            </span>
-          </h2>
-          <p className="text-13 text-[var(--color-muted-foreground)]">
-            {fitted ? `Fitted: ${fitted.name}` : "Nothing fitted"}
-          </p>
+        <div className={cn("flex min-w-0 gap-3", onClose && "w-full items-start justify-between")}>
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 className="text-20 font-bold leading-tight">
+              {slot.label}{" "}
+              <span className="text-12 font-medium text-[var(--color-muted-foreground)]">
+                {slot.required ? "required · " : ""}
+                <span className="font-mono tabular-nums">{count}</span>{" "}
+                {count === 1 ? "option" : "options"}
+              </span>
+            </h2>
+            <p className="text-13 text-[var(--color-muted-foreground)]">
+              {fitted ? `Fitted: ${fitted.name}` : "Nothing fitted"}
+            </p>
+          </div>
+          {onClose && (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              aria-label="Close"
+              onClick={onClose}
+            >
+              <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" />
+              </svg>
+            </Button>
+          )}
         </div>
         <div className="flex flex-wrap items-end gap-2">
           {count > 0 && (

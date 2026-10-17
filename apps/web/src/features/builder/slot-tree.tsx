@@ -225,7 +225,10 @@ function SlotRow({
       onFocus={onFocus}
       onKeyDown={onKeyDown}
       className={cn(
-        "grid min-h-11 cursor-pointer grid-cols-[minmax(84px,112px)_minmax(0,1fr)_auto] items-center gap-x-2.5 border-l-2 border-transparent py-1.5 pr-4 transition-colors sm:gap-x-3",
+        "grid cursor-pointer items-center border-l-2 border-transparent py-1.5 pr-4 transition-colors",
+        // Phone: a 52 px row, the slot over its part, then the pill and a chevron to the sheet.
+        "max-sm:min-h-[52px] max-sm:grid-cols-[minmax(0,1fr)_auto_auto] max-sm:gap-x-2.5 max-sm:gap-y-0.5 max-sm:[grid-template-areas:'label_pill_chevron''part_pill_chevron']",
+        "sm:min-h-11 sm:grid-cols-[minmax(84px,112px)_minmax(0,1fr)_auto] sm:gap-x-3 sm:[grid-template-areas:'label_part_pill']",
         "data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-[var(--color-primary)]",
         selected ? "bg-[var(--color-selected)]" : "hover:bg-[var(--color-muted)]",
         focusRing,
@@ -236,7 +239,7 @@ function SlotRow({
       <span
         title={slot.label}
         className={cn(
-          "truncate text-12",
+          "truncate text-12 [grid-area:label]",
           selected
             ? "font-bold text-[var(--color-primary-text)]"
             : "font-medium text-[var(--color-muted-foreground)]",
@@ -245,20 +248,23 @@ function SlotRow({
         <span data-slot-label>{slot.label}</span>
         {slot.required && <span aria-hidden> *</span>}
       </span>
-      <span className="min-w-0 text-13 leading-snug">
+      <span className="min-w-0 text-13 leading-snug [grid-area:part] max-sm:text-sm">
         {fitted ? (
           <>
-            <span data-fitted-part className="text-[var(--color-foreground)]">
+            <span
+              data-fitted-part
+              className="text-[var(--color-foreground)] max-sm:block max-sm:truncate"
+            >
               {fitted.name}
             </span>
             {fittedConflict !== null && (
-              <span className="block text-11 text-[var(--color-destructive)]">
+              <span className="block text-11 text-[var(--color-destructive)] max-sm:truncate">
                 {fittedConflict}
               </span>
             )}
           </>
         ) : (
-          <span className="text-[var(--color-faint)]">
+          <span className="text-[var(--color-faint)] max-sm:block max-sm:truncate">
             empty
             {slot.required && (
               <span className="ml-2 text-11 text-[var(--color-destructive)]">Required</span>
@@ -266,9 +272,19 @@ function SlotRow({
           </span>
         )}
       </span>
-      <span className="justify-self-end">
+      <span className="justify-self-end [grid-area:pill]">
         {fitted && <AvailabilityPill availability={availability} />}
       </span>
+      <svg
+        aria-hidden
+        width="8"
+        height="12"
+        viewBox="0 0 8 12"
+        fill="none"
+        className="text-[var(--color-faint)] [grid-area:chevron] sm:hidden"
+      >
+        <path d="M2 2l4 4-4 4" stroke="currentColor" strokeWidth="1.6" />
+      </svg>
     </div>
   );
 }

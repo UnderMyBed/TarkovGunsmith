@@ -19,11 +19,13 @@ import { CompareFromBuildDialog } from "./compare/compare-from-build-dialog.js";
 import { DetailsPanel } from "./details-panel.js";
 import { ModeSwitch } from "./mode-switch.js";
 import { OptimizeWorkbench } from "./optimize/optimize-workbench.js";
+import { PhoneActionBar, PhoneBarSpacer } from "./phone-action-bar.js";
 import { PresetSelect } from "./preset-select.js";
 import { ProgressionPanel, ProgressionStatus } from "./progression-panel.js";
 import { QuestNameProvider } from "./quest-names.js";
 import { SlotInspector } from "./slot-inspector.js";
-import { useSlotSelection } from "./slot-selection.js";
+import { useSlotSelection, type SlotSelection } from "./slot-selection.js";
+import { SlotSheet } from "./slot-sheet.js";
 import { SnapshotBanner } from "./snapshot-banner.js";
 import { StatStrip } from "./stat-strip.js";
 import { applySyncedProfile } from "./synced-profile.js";
@@ -33,6 +35,7 @@ import { useCompareHandoff } from "./useCompareHandoff.js";
 import { useSaveMetadata } from "./useSaveMetadata.js";
 import { useShareBuild } from "./useShareBuild.js";
 import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
+import { usePhoneLayout } from "./use-phone-layout.js";
 import { WeaponPicker } from "./weapon-picker.js";
 import { WorkbenchBar } from "./workbench-bar.js";
 
@@ -155,6 +158,26 @@ export function BuilderPage({
   const selection = useSlotSelection(builder.tree.data, builder.attachments);
   const selectedSlot = selection.selected?.slot ?? null;
 
+  // On a phone the inspector is a bottom sheet over the tree. Which slot it shows is still the
+  // selection's; tapping a row (or Enter on it) selects the slot and opens the sheet.
+  const phone = usePhoneLayout();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  if (!phone && sheetOpen) setSheetOpen(false);
+  const treeSelection: SlotSelection = phone
+    ? {
+        ...selection,
+        select: (path) => {
+          selection.select(path);
+          setSheetOpen(true);
+        },
+        activate: (path) => {
+          selection.select(path);
+          setSheetOpen(true);
+        },
+      }
+    : selection;
+  useFocusRowOnClose(sheetOpen, selection.focusTreeRow);
+
   const optimizing =
     view === "optimize" && weapon && builder.tree.data && builder.spec
       ? { weapon, tree: builder.tree.data, spec: builder.spec }
@@ -181,9 +204,15 @@ export function BuilderPage({
           />
         }
         modeSwitch={
-          <ModeSwitch progression={progression} onOpenPanel={openProgression} busyId={busyId} />
+          <ModeSwitch
+            progression={progression}
+            onOpenPanel={openProgression}
+            busyId={busyId}
+            className="max-sm:grid max-sm:w-full max-sm:grid-cols-2"
+          />
         }
         onCompare={weapon ? compareHandoff.open : undefined}
+        compact={phone}
         share={
           weapon
             ? {
@@ -256,7 +285,7 @@ export function BuilderPage({
               buildPrice={builder.buildPrice}
               boughtAs={boughtAsOf(builder.buildPrice)}
               nameOf={nameOf}
-              onOptimize={handleOpenOptimizer}
+              onOptimize={phone ? undefined : handleOpenOptimizer}
             />
           )}
           <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 pb-8 pt-4 sm:px-6">
@@ -289,7 +318,7 @@ export function BuilderPage({
                         tree={builder.tree}
                         attachments={builder.attachments}
                         attachedCount={builder.attachedCount}
-                        selection={selection}
+                        selection={treeSelection}
                         getAvailability={(id) => builder.availabilityById.get(id) ?? null}
                         mode={mode}
                         getFittedConflict={builder.getFittedConflict}
@@ -334,7 +363,7 @@ export function BuilderPage({
                     )}
                   </div>
                   <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
-                    {weapon && selectedSlot && (
+                    {weapon && selectedSlot && !phone && (
                       <SlotInspector
                         weaponId={builder.weaponId}
                         id={selection.inspectorId}
@@ -387,10 +416,40 @@ export function BuilderPage({
           </div>
         </>
       )}
+      {phone && weapon && selectedSlot && sheetOpen && (
+        <SlotSheet
+          weaponId={builder.weaponId}
+          id={selection.inspectorId}
+          slot={selectedSlot}
+          fittedId={builder.attachments[selectedSlot.path] ?? null}
+          parts={builder.partsById}
+          onAttach={builder.handleAttach}
+          getAvailability={(id) => builder.availabilityById.get(id) ?? null}
+          getConflict={builder.getConflict}
+          mode={mode}
+          pricesReady={builder.prices.state === "ready"}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
+      {phone && (
+        <>
+          <PhoneBarSpacer />
+          <PhoneActionBar
+            onCompare={weapon ? compareHandoff.open : undefined}
+            action={
+              view === "optimize"
+                ? { label: "Back to build", onClick: handleExitOptimizer }
+                : weapon
+                  ? { label: "Optimize", onClick: handleOpenOptimizer }
+                  : undefined
+            }
+          />
+        </>
+      )}
       {shareBuild.shareUrl && (
         <div
           role="status"
-          className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg"
+          className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg max-sm:bottom-24 max-sm:left-4"
         >
           <div className="text-sm font-medium">Build URL copied</div>
           <code className="mt-1 block max-w-xs truncate text-xs text-[var(--color-muted-foreground)]">
@@ -400,6 +459,19 @@ export function BuilderPage({
       )}
     </QuestNameProvider>
   );
+}
+
+/**
+ * Put focus back on the selected tree row when the phone's slot sheet closes. This runs after the
+ * sheet's dialog has unmounted and restored focus itself, so the row has the last word even when
+ * the tap that opened the sheet never focused it.
+ */
+function useFocusRowOnClose(sheetOpen: boolean, focusTreeRow: () => void): void {
+  const wasOpen = useRef(sheetOpen);
+  useEffect(() => {
+    if (wasOpen.current && !sheetOpen) focusTreeRow();
+    wasOpen.current = sheetOpen;
+  });
 }
 
 /**
