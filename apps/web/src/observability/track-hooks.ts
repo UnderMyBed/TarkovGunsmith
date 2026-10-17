@@ -24,14 +24,22 @@ export function useTrackOnce<E extends TrackEvent>(
 }
 
 /**
- * Sends `mode_changed` when the Builder's mode changes, whatever changed it: the mode switch,
- * or setting a profile. The mode the page opens in is not a change.
+ * `progression` with setters that send `mode_changed` when they change the mode: the mode
+ * switch, and setting a profile, which moves to progression. Only setters called in this tab
+ * send. A change another tab makes reaches this one through a storage event, outside these
+ * setters, so it is counted once, in the tab where it was made.
  */
-export function useModeChangedEvent(mode: Progression["mode"]): void {
-  const last = useRef(mode);
-  useEffect(() => {
-    if (last.current === mode) return;
-    last.current = mode;
-    track("mode_changed", { mode });
-  }, [mode]);
+export function withModeTracking(progression: Progression): Progression {
+  const { mode, setMode, setProfile } = progression;
+  return {
+    ...progression,
+    setMode: (next) => {
+      if (next !== mode) track("mode_changed", { mode: next });
+      setMode(next);
+    },
+    setProfile: (next) => {
+      if (mode !== "progression") track("mode_changed", { mode: "progression" });
+      setProfile(next);
+    },
+  };
 }

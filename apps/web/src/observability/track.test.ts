@@ -80,13 +80,17 @@ describe("optimizerRunAttrs", () => {
     });
   });
 
-  it("marks a timeout, a cancel and a worker error as not exact", () => {
+  it("marks a timeout, a cancel, an abandoned run and a worker error as not exact", () => {
     expect(optimizerRunAttrs("min-weight", failure("timeout"), 2000)).toMatchObject({
       outcome: "timeout",
       exact: false,
     });
     expect(optimizerRunAttrs("min-weight", "cancelled", 5)).toMatchObject({
       outcome: "cancelled",
+      exact: false,
+    });
+    expect(optimizerRunAttrs("min-recoil", "abandoned", 5)).toMatchObject({
+      outcome: "abandoned",
       exact: false,
     });
     expect(optimizerRunAttrs("max-accuracy", "error", 5)).toMatchObject({

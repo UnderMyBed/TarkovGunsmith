@@ -27,8 +27,12 @@ export function startFaro(url: string): void {
       new NavigationInstrumentation(),
     ],
     sessionTracking: { samplingRate: SAMPLING_RATE },
-    // Every URL leaves without its query string or fragment.
+    // Every URL leaves without its query string, fragment, or build or pair id.
     beforeSend: (item) => scrubUrls(item),
   });
-  connectTracking((name, attributes) => faro.api.pushEvent(name, attributes));
+  // skipDedupe: Faro otherwise drops an event identical to the one before it, and two
+  // identical events in a row are two uses.
+  connectTracking((name, attributes) =>
+    faro.api.pushEvent(name, attributes, undefined, { skipDedupe: true }),
+  );
 }

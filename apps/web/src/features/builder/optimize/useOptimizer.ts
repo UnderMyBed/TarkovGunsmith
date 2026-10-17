@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Objective, OptimizationResult } from "@tarkov/optimizer";
 import type { OptimizeReply, OptimizeRequest } from "./optimize-protocol.js";
 import { startOptimizerWorker, type OptimizerWorker } from "./optimizer-worker.js";
-import { optimizerRunAttrs, track } from "../../../observability/track.js";
+import { optimizerRunAttrs, track, type OptimizerRunEnding } from "../../../observability/track.js";
 
 export type OptimizerState = "idle" | "running" | "done" | "error";
 
@@ -61,8 +61,11 @@ export function useOptimizer(
   /** The run going, for `optimizer_run`: its objective and when it started. */
   const running = useRef<{ objective: Objective; at: number } | null>(null);
 
-  /** Reports how the run going ended, once. A run superseded by a new one is not reported. */
-  const finish = useCallback((ending: OptimizationResult | "cancelled" | "error") => {
+  /**
+   * Reports how the run going ended, once. A run superseded by a new one is not reported.
+   * Telemetry only: it changes no state.
+   */
+  const finish = useCallback((ending: OptimizationResult | OptimizerRunEnding) => {
     const ran = running.current;
     running.current = null;
     if (ran)
@@ -74,7 +77,14 @@ export function useOptimizer(
     current.current = null;
   }, []);
 
-  useEffect(() => stop, [stop]);
+  // Leaving the optimizer mid-run abandons the run.
+  useEffect(
+    () => () => {
+      finish("abandoned");
+      stop();
+    },
+    [stop, finish],
+  );
 
   const run = useCallback(
     (input: OptimizeRequest) => {

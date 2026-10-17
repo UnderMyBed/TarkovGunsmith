@@ -208,6 +208,26 @@ describe("useOptimizer", () => {
       expect(runs().map((attrs) => attrs.outcome)).toEqual(["cancelled", "error"]);
     });
 
+    it("reports a run still going when the optimizer unmounts as abandoned", () => {
+      const runs = tracked();
+      const worker = fakeWorker();
+      const { result, unmount } = setup(worker);
+      act(() => result.current.run(request));
+      unmount();
+      expect(runs().map((attrs) => attrs.outcome)).toEqual(["abandoned"]);
+      expect(worker.terminate).toHaveBeenCalled();
+    });
+
+    it("reports nothing on unmount when no run is going", () => {
+      const runs = tracked();
+      const worker = fakeWorker();
+      const { result, unmount } = setup(worker);
+      act(() => result.current.run(request));
+      act(() => worker.reply({ type: "result", result: timeout }));
+      unmount();
+      expect(runs().map((attrs) => attrs.outcome)).toEqual(["timeout"]);
+    });
+
     it("does not report a run superseded by a new one", () => {
       const runs = tracked();
       const first = fakeWorker();

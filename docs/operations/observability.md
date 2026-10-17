@@ -32,17 +32,19 @@ dev, `wrangler pages dev`, preview deploys and every e2e run send nothing.
 | Custom events | The six below, sent through `track()`         |
 
 Not collected: tracing, session replay, console output, resource timings, user-action clicks.
-Every URL is sent without its query string or fragment (`scrub.ts`). Geolocation is resolved at
-country level by Grafana.
+Every URL is sent without its query string or fragment, and with build and pair ids replaced by
+their route template: `/builder/:id`, `/builder/compare/:pairId` (`scrub.ts`). A share id grants
+access to a build. Geolocation is resolved at country level by Grafana. Repeated identical events
+are all sent (`skipDedupe`).
 
-| Event             | Attributes                                                                                           | Sent when                                                          |
-| ----------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `weapon_selected` | `weaponId`                                                                                           | A weapon is picked in the Builder                                  |
-| `mode_changed`    | `mode`: `theorycraft` or `progression`                                                               | The Builder's mode changes                                         |
-| `optimizer_run`   | `objective`, `outcome` (`ok`, `infeasible-<reason>`, `timeout`, `cancelled`, `error`), `ms`, `exact` | An optimizer run ends; `exact` is false for timeout, cancel, error |
-| `build_shared`    | none                                                                                                 | A build is saved to a share URL                                    |
-| `build_loaded`    | `source`: `link` or `draft`                                                                          | A shared build or a stored draft opens                             |
-| `compare_opened`  | none                                                                                                 | `/builder/compare` opens                                           |
+| Event             | Attributes                                                                                                        | Sent when                                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `weapon_selected` | `weaponId`                                                                                                        | A weapon is picked in the Builder                                                                                                |
+| `mode_changed`    | `mode`: `theorycraft` or `progression`                                                                            | The mode switch or setting a profile changes the mode, in that tab only                                                          |
+| `optimizer_run`   | `objective`, `outcome` (`ok`, `infeasible-<reason>`, `timeout`, `cancelled`, `abandoned`, `error`), `ms`, `exact` | An optimizer run ends; `abandoned` is a run still going when the optimizer unmounts; `exact` is false unless the search finished |
+| `build_shared`    | none                                                                                                              | A build is saved to a share URL                                                                                                  |
+| `build_loaded`    | `source`: `link` or `draft`                                                                                       | A shared build or a stored draft opens                                                                                           |
+| `compare_opened`  | none                                                                                                              | `/builder/compare` opens                                                                                                         |
 
 No event carries a build name or note, a TarkovTracker token or profile, or a user id.
 
@@ -58,9 +60,11 @@ included.
 
 ### Alerting
 
-`TarkovGunsmith site or API down` fires when every run of either check failed for the last
-10 minutes and stays that way for 5 more, or when a check stops reporting at all. It emails the
-`TarkovGunsmith email` contact point directly through the rule's own notification settings.
+`TarkovGunsmith site or API down` evaluates one series per check. It fires for a check when every
+run of it in the last 10 minutes failed, or when it reported nothing in that window, and that has
+held for 5 more minutes. Each check's vanishing is caught on its own, through
+`absent_over_time`. A query that returns nothing at all pages too, without a job label. It emails
+the `TarkovGunsmith email` contact point directly through the rule's own notification settings.
 
 ## Where to look
 
@@ -110,8 +114,14 @@ It never runs on pull requests, which carry no Grafana credentials. gcx is pinne
 and CI installs that exact version with `jdx/mise-action`.
 
 `packages/repo-guards/src/grafana.test.ts` checks, on every PR, that the manifests agree with each
-other and with the site: folder, receiver, check jobs, Faro origins, the CSP, and that no email
-address is committed.
+other and with the site: folder, receiver, check jobs, Faro origins, the CSP, the release wiring,
+and that no email address is committed.
+
+`packages/repo-guards/src/grafana-apply.test.ts` runs `apply.sh` against
+`src/fixtures/fake-gcx.sh`, a stand-in `gcx` that serves canned lists and records its calls.
+It covers create on an empty stack, update on a match, a second run creating nothing, and a
+non-zero exit with no create on a duplicate, a failed list, a non-array list or a failed Faro
+update. It needs `jq`, `yq` and `envsubst` on `PATH`.
 
 ### Release blocked on the Grafana apply
 

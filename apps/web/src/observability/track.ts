@@ -3,9 +3,14 @@ import type { Objective, OptimizationResult } from "@tarkov/optimizer";
 
 /**
  * How an optimizer run ended. `infeasible-*` is the solver's typed failure reason;
- * `error` is a worker that crashed or could not be reached.
+ * `error` is a worker that crashed or could not be reached; `abandoned` is a run still going
+ * when the optimizer left the page.
  */
-export type OptimizerOutcome = "ok" | "timeout" | "cancelled" | "error" | `infeasible-${string}`;
+export type OptimizerOutcome =
+  "ok" | "timeout" | "cancelled" | "abandoned" | "error" | `infeasible-${string}`;
+
+/** How a run ended without a result from the solver. */
+export type OptimizerRunEnding = "cancelled" | "abandoned" | "error";
 
 export interface OptimizerRunAttrs {
   readonly objective: Objective;
@@ -82,11 +87,11 @@ export function resetTrackingForTests(): void {
 /** The `optimizer_run` attributes for a run that ended in `ending` after `ms`. */
 export function optimizerRunAttrs(
   objective: Objective,
-  ending: OptimizationResult | "cancelled" | "error",
+  ending: OptimizationResult | OptimizerRunEnding,
   ms: number,
 ): OptimizerRunAttrs {
   const outcome: OptimizerOutcome =
-    ending === "cancelled" || ending === "error"
+    typeof ending === "string"
       ? ending
       : ending.ok
         ? "ok"
