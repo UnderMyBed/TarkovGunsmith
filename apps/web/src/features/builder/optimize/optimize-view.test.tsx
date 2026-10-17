@@ -11,33 +11,39 @@ import type {
   BuildV6,
 } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
+import type { OptimizationResult } from "@tarkov/optimizer";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
 import { tinyTree } from "../../../test/tiny-tree.js";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  solver.result = undefined;
+});
 
-// Stub @tarkov/optimizer for deterministic result.
-vi.mock("@tarkov/optimizer", () => ({
-  optimize: () => ({
-    ok: true,
-    build: {
-      version: 6,
-      weaponId: "w1",
-      attachments: { muzzle: "m-new", handguard: "h-new" },
-      orphaned: [],
-      createdAt: "2026-04-22T00:00:00Z",
-    } satisfies BuildV6,
-    stats: {
-      ergonomics: 58,
-      verticalRecoil: 120,
-      horizontalRecoil: 260,
-      weight: 3.1,
-      accuracy: 2.2,
-      modCount: 2,
-    } as WeaponSpec,
-    partial: false,
-  }),
+// Stub @tarkov/optimizer for a deterministic result; a test may swap in its own.
+const solver = vi.hoisted(() => ({
+  result: undefined,
 }));
+const proposal = {
+  ok: true,
+  build: {
+    version: 6,
+    weaponId: "w1",
+    attachments: { muzzle: "m-new", handguard: "h-new" },
+    orphaned: [],
+    createdAt: "2026-04-22T00:00:00Z",
+  } satisfies BuildV6,
+  stats: {
+    ergonomics: 58,
+    verticalRecoil: 120,
+    horizontalRecoil: 260,
+    weight: 3.1,
+    accuracy: 2.2,
+    modCount: 2,
+  } as WeaponSpec,
+  pins: { honoured: [], dropped: [] },
+} satisfies OptimizationResult;
+vi.mock("@tarkov/optimizer", () => ({ optimize: () => solver.result ?? proposal }));
 
 const weapon = { id: "w1" } as unknown as BallisticWeapon;
 const weaponItem = { id: "w1", shortName: "W", types: [], buyFor: [] } as unknown as WeaponListItem;
@@ -209,5 +215,44 @@ describe("OptimizeView", () => {
     expect(onAccept).toHaveBeenCalledTimes(1);
     const acceptedBuild = onAccept.mock.calls[0][0] as BuildV6;
     expect(acceptedBuild.attachments).toEqual({ muzzle: "m-new", handguard: "h-old" });
+  });
+  it("shows the solver's own reason when it finds no build", async () => {
+    solver.result = {
+      ok: false,
+      reason: "required-slot",
+      slotPath: "handguard",
+      message: "Nothing you can get fits the Handguard slot, and the W needs one.",
+    } satisfies OptimizationResult;
+    render(
+      <OptimizeView
+        weapon={weapon}
+        weaponItem={weaponItem}
+        slotTree={slotTree}
+        parts={parts}
+        profile={profile}
+        gate={profile}
+        presets={[]}
+        pricesReady
+        sync={sync}
+        currentAttachments={{}}
+        currentBuild={{
+          version: 6,
+          weaponId: "w1",
+          attachments: {},
+          orphaned: [],
+          createdAt: "2026-04-22T00:00:00Z",
+        }}
+        currentStats={currentStats}
+        currentPrice={{ status: "priced", totalRUB: 10_000, presetId: null }}
+        onAccept={vi.fn()}
+        onExit={vi.fn()}
+        onEditProfile={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("SOLVER").nextSibling).toHaveTextContent("EXACT");
+    fireEvent.click(screen.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }));
+    expect(
+      await screen.findByText("Nothing you can get fits the Handguard slot, and the W needs one."),
+    ).toBeInTheDocument();
   });
 });
