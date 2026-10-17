@@ -187,6 +187,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
             onKeyDown={onKeyDown}
             className="w-full truncate bg-transparent text-sm font-bold text-[var(--color-foreground)] outline-none placeholder:font-normal placeholder:text-[var(--color-faint)] disabled:cursor-not-allowed"
           />
+          {selected?.description !== undefined && (
+            <span className="text-11 text-[var(--color-faint)]">{selected.description}</span>
+          )}
         </span>
         {shortcut !== undefined && (
           <kbd

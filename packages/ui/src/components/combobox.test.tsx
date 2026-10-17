@@ -60,6 +60,16 @@ describe("Combobox", () => {
     expect(screen.queryByRole("listbox")).toBeNull();
   });
 
+  it("shows the selected option's description under it", () => {
+    render(<Harness initial="mp7" />);
+    // The closed list holds the option's own copy of it; the one shown is outside the list.
+    const shown = screen
+      .getAllByText("locked · Peacekeeper LL3")
+      .filter((el) => el.closest("[role='listbox']") === null);
+    expect(shown).toHaveLength(1);
+    expect(shown[0]).toBeVisible();
+  });
+
   it("shows the placeholder with nothing selected", () => {
     render(<Harness />);
     expect(input()).toHaveValue("");
