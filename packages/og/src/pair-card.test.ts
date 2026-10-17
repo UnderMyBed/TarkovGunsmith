@@ -22,6 +22,16 @@ describe("pairCard", () => {
     expect(text).toMatch(/WEIGHT/);
   });
 
+  it("prints a side's availability after its part count, and only the count without one", async () => {
+    const fonts = await loadFonts();
+    const left = { ...pairSample.left!, modCount: 7, availability: "LL4 BARTER · FLEA" };
+    const right = { ...pairSample.right!, modCount: 9, availability: null };
+    const text = textContent(await renderSvg(pairCard({ left, right }), fonts));
+    expect(text).toMatch(/7 MODS · LL4 BARTER · FLEA/);
+    expect(text).toMatch(/9 MODS/);
+    expect(text).not.toMatch(/9 MODS ·/);
+  });
+
   it("renders EMPTY SLOT for a missing side", async () => {
     const fonts = await loadFonts();
     const svg = await renderSvg(pairCard(pairOneSided), fonts);

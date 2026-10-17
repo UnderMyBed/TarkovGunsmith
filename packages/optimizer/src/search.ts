@@ -119,6 +119,7 @@ export function search(
       if (compareRoots(problem, open[i]!.best, open[at]!.best) < 0) at = i;
     }
     const node = open.splice(at, 1)[0]!;
+    problem.tick?.();
     const attachments = attachmentsOf(problem, node.best);
     const clash = resolveBuild(tree, attachments, catalog).conflicts[0];
     if (clash === undefined) {

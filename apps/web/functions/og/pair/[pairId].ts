@@ -21,7 +21,6 @@ import {
   type HydrateSideArgs,
 } from "@tarkov/og";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
-import { DEFAULT_PROFILE } from "@tarkov/data";
 import {
   fetchOgRowsForBuild,
   loadOgData,
@@ -29,7 +28,6 @@ import {
   type OgData,
   type StoredPairSide,
 } from "../../lib/og-graphql.js";
-import { availabilityPillText, type AvailabilityPill } from "../../lib/og-availability.js";
 import { ogCacheKey } from "../../lib/og-cache.js";
 import { isValidBuildId } from "../../lib/build-id.js";
 import { buildsApiBase } from "../../lib/builds-api.js";
@@ -50,25 +48,23 @@ const HEADERS_FALLBACK = {
   "cache-control": "public, max-age=3600",
 } as const;
 
-interface SideRows {
-  args: HydrateSideArgs;
-  availability: AvailabilityPill;
-}
-
-function hydrateSide(side: StoredPairSide | null, data: OgData): SideRows | null {
+function hydrateSide(side: StoredPairSide | null, data: OgData): HydrateSideArgs | null {
   if (!side) return null;
   const rows = fetchOgRowsForBuild(
     {
       weaponId: side.build.weaponId,
       attachments: side.build.attachments,
-      // The side's own profile, as the Compare page prices it; the pair card prints no price.
+      // The side's own profile, as the Compare page prices and gates it; the pair card prints
+      // no price, but its availability pill is drawn under this gate.
       gate: side.profile ?? null,
     },
     data,
   );
   return {
-    args: { name: side.build.name, weapon: rows.weapon, mods: rows.mods },
-    availability: availabilityPillText(rows.availability, side.profile ?? DEFAULT_PROFILE),
+    name: side.build.name,
+    weapon: rows.weapon,
+    mods: rows.mods,
+    availability: rows.availability,
   };
 }
 
@@ -102,9 +98,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     const pair = loadStoredPair(raw, data.snapshot);
     const left = hydrateSide(pair.left, data);
     const right = hydrateSide(pair.right, data);
-    const vm = hydratePairCard({ left: left?.args ?? null, right: right?.args ?? null });
-    if (vm.left && left) vm.left.availability = left.availability;
-    if (vm.right && right) vm.right.availability = right.availability;
+    const vm = hydratePairCard({ left, right });
 
     const png = await renderPng(pairCard(vm), embeddedFonts(), { width: 1200, height: 630 });
     const body = new Uint8Array(png);

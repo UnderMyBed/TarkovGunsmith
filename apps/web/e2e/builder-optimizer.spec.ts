@@ -109,6 +109,84 @@ test.describe("builder optimizer diff view", () => {
     });
   }
 
+  test("a run can be cancelled, and the page answers while it runs", async ({ page }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    const picked = await pickFirstWeapon(page);
+    expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
+
+    // On the captured data every solve finishes in milliseconds, so the run is held open by
+    // holding the worker's script: the worker exists and the run is live until it is released.
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let requested = 0;
+    let served: Promise<void> = Promise.resolve();
+    await page.route(/\/assets\/optimize\.worker-[^/]+\.js$/, (route) => {
+      requested++;
+      served = held.then(() => route.continue());
+      return served;
+    });
+
+    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+    const running = page.getByRole("status", { name: "Optimizer running" });
+    await expect(running).toBeVisible();
+    // The worker's script is held, so the solver has not started: no clock yet.
+    await expect(running).toContainText("Starting the solver · 0 candidate builds checked");
+    await expect.poll(() => requested, { message: "the run starts a worker" }).toBe(1);
+    await expect(page.getByText("RUNNING", { exact: true })).toBeVisible();
+
+    // The main thread is free: a click during the run is handled.
+    const ergonomics = page.getByRole("radio", { name: "Max ergonomics" });
+    await ergonomics.check();
+    await expect(ergonomics).toBeChecked();
+    await expect(running).toBeVisible();
+
+    await running.getByRole("button", { name: "CANCEL" }).click();
+    await expect(running).toBeHidden();
+    await expect(page.getByText("IDLE", { exact: true })).toBeVisible();
+    await expect(page.getByText(/RUN THE SOLVER/i)).toBeVisible();
+
+    // Serving the held script must not revive the cancelled run's view. This does not prove
+    // a late reply is dropped (a reply would need longer than these checks wait); that
+    // guarantee is covered in useOptimizer.test.ts.
+    release();
+    await served;
+    await expect(page.getByText("IDLE", { exact: true })).toBeVisible();
+    await expect(page.locator('[aria-label^="Accept "]')).toHaveCount(0);
+    await expect(page.getByRole("alert")).toHaveCount(0);
+
+    // A new run, on the changed objective, does report.
+    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+    await expect
+      .poll(async () => await page.locator('[aria-label^="Accept "]').count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
+    await expect(page.getByText(/^ERGO Δ · /)).toBeVisible();
+  });
+
+  test("a budget no build fits says so, and runs again without it", async ({ page }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    const picked = await pickFirstWeapon(page);
+    expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
+
+    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    const budget = page.getByLabel("Budget");
+    await expect(budget).toBeEnabled({ timeout: 15_000 });
+    await budget.fill("1");
+    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+
+    const outcome = page.getByRole("alert");
+    await expect(outcome).toContainText("OVER BUDGET", { timeout: 15_000 });
+    await expect(outcome).toContainText(/costs ₽[\d,]+, over the ₽1 budget\./);
+    await expect(page.locator('[aria-label^="Accept "]')).toHaveCount(0);
+
+    await outcome.getByRole("button", { name: "RUN WITHOUT A BUDGET" }).click();
+    await expect(budget).toHaveValue("");
+    await expect
+      .poll(async () => await page.locator('[aria-label^="Accept "]').count(), { timeout: 15_000 })
+      .toBe(OPTIMIZER_CHANGED_SLOTS);
+    await expect(page.getByText(/^RECOIL V\+H Δ · −/)).toBeVisible();
+  });
+
   test("← EDITOR discards and returns to editor without merging", async ({ page }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     const picked = await pickFirstWeapon(page);

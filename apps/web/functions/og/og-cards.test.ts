@@ -4,7 +4,6 @@ import type { BuildCardViewModel, PairCardViewModel } from "@tarkov/og";
 import { capturedBuilderData } from "../../src/test/captured-data.js";
 import { DEFAULT_PROFILE } from "@tarkov/data";
 import * as graphql from "../lib/og-graphql.js";
-import * as availability from "../lib/og-availability.js";
 import { ogCacheKey } from "../lib/og-cache.js";
 
 // Both handlers end to end over the captured game data: the stored record, its upgrade, the
@@ -29,14 +28,10 @@ vi.mock("@tarkov/og", async (importOriginal) => {
   };
 });
 
-// The real row builder and pill, wrapped so a test can read what each pair side was gated on.
+// The real row builder, wrapped so a test can read what each pair side was gated on.
 vi.mock("../lib/og-graphql.js", async (importOriginal) => {
   const real = await importOriginal<typeof graphql>();
   return { ...real, fetchOgRowsForBuild: vi.fn(real.fetchOgRowsForBuild) };
-});
-vi.mock("../lib/og-availability.js", async (importOriginal) => {
-  const real = await importOriginal<typeof availability>();
-  return { ...real, availabilityPillText: vi.fn(real.availabilityPillText) };
 });
 
 const { onRequestGet: buildCard } = await import("./build/[id].js");
@@ -87,7 +82,6 @@ beforeEach(() => {
   rendered.length = 0;
   graphql.resetOgData();
   vi.mocked(graphql.fetchOgRowsForBuild).mockClear();
-  vi.mocked(availability.availabilityPillText).mockClear();
   cache = new Map();
   stored = {};
   upstreamCalls = [];
@@ -129,7 +123,7 @@ describe("/og/build/:id over stored records", () => {
     expect(vm.stats.weight).toBeGreaterThan(0.75);
   });
 
-  it("weighs a bare v4 M4A1 at 0.75 kg", async () => {
+  it("weighs a bare v4 M4A1 at 0.75 kg, and reads its own trader level", async () => {
     stored["builds/abcd2345"] = {
       version: 4,
       weaponId: M4A1,
@@ -138,7 +132,27 @@ describe("/og/build/:id over stored records", () => {
       createdAt: CREATED,
     };
     await call(buildCard, "id", "https://site.pages.dev/og/build/abcd2345");
-    expect((rendered[0] as BuildCardViewModel).stats.weight).toBe(0.75);
+    const vm = rendered[0] as BuildCardViewModel;
+    expect(vm.stats.weight).toBe(0.75);
+    // No profile embedded: theorycraft, as the Builder opens it. Mechanic sells the receiver
+    // at LL3; the card used to print LL2 here (#254).
+    expect(vm.availability).toBe("LL3");
+  });
+
+  it("draws the pill under the build's embedded profile", async () => {
+    stored["builds/abcd2345"] = {
+      version: 6,
+      weaponId: M4A1,
+      attachments: {},
+      orphaned: [],
+      createdAt: CREATED,
+      profileSnapshot: DEFAULT_PROFILE,
+    };
+    await call(buildCard, "id", "https://site.pages.dev/og/build/abcd2345");
+    const vm = rendered[0] as BuildCardViewModel;
+    // A fresh profile cannot buy the receiver, so there is no price and the pill says so.
+    expect(vm.availability).toBe("LOCKED");
+    expect(vm.priceRub).toBeNull();
   });
 
   it("serves the fallback, uncached, for a record the Builder would refuse, naming the id", async () => {
@@ -203,8 +217,11 @@ describe("/og/pair/:pairId over stored records", () => {
     expect(rendered).toHaveLength(1);
     const gates = vi.mocked(graphql.fetchOgRowsForBuild).mock.calls.map(([args]) => args.gate);
     expect(gates).toEqual([pairProfile, null]);
-    const pills = vi.mocked(availability.availabilityPillText).mock.calls.map(([, p]) => p);
-    expect(pills).toEqual([pairProfile, DEFAULT_PROFILE]);
+    // The left side under the pair's profile, LL1 traders with the flea, buys the receiver on
+    // the flea; the right, with none, is theorycraft's Mechanic LL3. The embedded fresh
+    // profile would have read LOCKED.
+    const vm = rendered[0] as PairCardViewModel;
+    expect([vm.left?.availability, vm.right?.availability]).toEqual(["FLEA", "LL3"]);
   });
 
   it("serves the fallback, uncached, for a pair Compare would refuse, naming the id", async () => {

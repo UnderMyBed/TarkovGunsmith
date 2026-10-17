@@ -3,6 +3,7 @@ import {
   compareJudged,
   judge,
   randomRecords,
+  unpricedPinPaths,
   weaponPrice,
   weaponUnobtainable,
   type Judged,
@@ -21,44 +22,80 @@ function buildsUnder(c: RecordsCase, relax: Relax): Judged[] {
   return c.builds.flatMap((b) => judge(c, b, relax) ?? []);
 }
 
+/** A failure the oracle can name exactly: the reason, and for a budget failure its cause. */
+type Verdict = OptimizationReason | `infeasible-budget/${"over-budget" | "pins" | "unpriced"}`;
+
 /**
- * The reasons that are true of a case with no build:
+ * The one verdict that is true of a case with no build:
  *
  * - the weapon, when no way to buy it is open;
- * - the budget, when a build exists without it. Its cause is the pins when the cheapest such
- *   builds (fewest parts of unknown price, then fewest roubles) all carry a pinned part nobody
- *   prices, and the budget itself when none does; either, when some do. A gun over the budget
- *   or of unknown price, or a build of known price, makes it the budget whatever the pins;
+ * - the budget, when a build exists without it:
+ *   - over budget, when the gun alone is, or some build has a known price;
+ *   - unpriced, when the gun has no known price;
+ *   - else the unpriced pins, when dropping the pinned parts nobody prices gives a build of
+ *     known price;
+ *   - else the pins, when dropping every pin does;
+ *   - else unpriced: no build has a known price, pinned or not;
  * - else the pins, when a build exists without them;
  * - else a required slot, when none exists even with conflicts ignored;
  * - else conflicts.
  */
-function trueReasons(c: RecordsCase): readonly OptimizationReason[] {
-  if (weaponUnobtainable(c)) return ["weapon-unavailable"];
+function trueVerdict(c: RecordsCase): Verdict {
+  if (weaponUnobtainable(c)) return "weapon-unavailable";
   const { budgetRub, pinnedSlots } = c.input.constraints;
   if (budgetRub !== undefined) {
     const free = buildsUnder(c, { budget: true });
     if (free.length > 0) {
       const gun = weaponPrice(c);
-      if (gun === null || gun > budgetRub || free.some((j) => j.unknown === 0)) {
-        return ["infeasible-budget"];
+      if (gun === null) return "infeasible-budget/unpriced";
+      if (gun > budgetRub || free.some((j) => j.unknown === 0)) {
+        return "infeasible-budget/over-budget";
       }
-      const least = Math.min(...free.map((j) => j.unknown));
-      const fewest = free.filter((j) => j.unknown === least);
-      const rub = Math.min(...fewest.map((j) => j.known));
-      const cheapest = fewest.filter((j) => j.known === rub);
-      if (cheapest.every((j) => j.pinnedUnpriced)) return ["pinned-unpriced"];
-      if (cheapest.every((j) => !j.pinnedUnpriced)) return ["infeasible-budget"];
-      return ["pinned-unpriced", "infeasible-budget"];
+      const known = (relax: Relax) => buildsUnder(c, relax).some((j) => j.unknown === 0);
+      if (known({ budget: true, dropPins: unpricedPinPaths(c) })) return "pinned-unpriced";
+      if (known({ budget: true, pins: true })) return "infeasible-budget/pins";
+      return "infeasible-budget/unpriced";
     }
   }
   if (pinnedSlots.size > 0 && buildsUnder(c, { budget: true, pins: true }).length > 0) {
-    return ["pin-conflict"];
+    return "pin-conflict";
   }
   if (buildsUnder(c, { budget: true, pins: true, conflicts: true }).length === 0) {
-    return ["required-slot"];
+    return "required-slot";
   }
-  return ["no-valid-combinations"];
+  return "no-valid-combinations";
+}
+
+function verdictOf(result: Extract<ReturnType<typeof optimize>, { ok: false }>): Verdict {
+  return result.reason === "infeasible-budget"
+    ? `infeasible-budget/${result.cause}`
+    : result.reason;
+}
+
+/**
+ * Whether lifting what the failure names gives a build of known price: the pinned parts a
+ * `pinned-unpriced` names (all of them unpriced pins), or the pins a `pins` budget failure
+ * names.
+ */
+function namedPinsSuffice(
+  c: RecordsCase,
+  result: Extract<ReturnType<typeof optimize>, { ok: false }>,
+): boolean {
+  const pins = c.input.constraints.pinnedSlots;
+  let drop: Set<string>;
+  if (result.reason === "pinned-unpriced") {
+    const unpriced = unpricedPinPaths(c);
+    const named = new Set(result.itemIds);
+    drop = new Set([...unpriced].filter((path) => named.has(pins.get(path)!)));
+    if (result.itemIds.some((id) => ![...drop].some((path) => pins.get(path) === id))) {
+      return false;
+    }
+  } else if (result.reason === "infeasible-budget" && result.cause === "pins") {
+    drop = new Set(result.paths);
+  } else {
+    return true;
+  }
+  return buildsUnder(c, { budget: true, dropPins: drop }).some((j) => j.unknown === 0);
 }
 
 describe("optimize — exact against brute force, from upstream-shaped records", () => {
@@ -92,8 +129,9 @@ describe("optimize — exact against brute force, from upstream-shaped records",
       if (best === null) {
         expect(result.ok, label).toBe(false);
         if (result.ok) continue;
-        expect(trueReasons(c), `${label}: ${result.reason}`).toContain(result.reason);
-        reasons.set(result.reason, (reasons.get(result.reason) ?? 0) + 1);
+        expect(verdictOf(result), label).toBe(trueVerdict(c));
+        expect(namedPinsSuffice(c, result), `${label}: what it names suffices`).toBe(true);
+        reasons.set(verdictOf(result), (reasons.get(verdictOf(result)) ?? 0) + 1);
         tally.infeasible++;
       } else {
         expect(result.ok ? "ok" : `${result.reason}`, label).toBe("ok");
@@ -117,13 +155,18 @@ describe("optimize — exact against brute force, from upstream-shaped records",
     for (const n of Object.values(tally)) expect(n).toBeGreaterThan(20);
     for (const reason of [
       "weapon-unavailable",
-      "infeasible-budget",
+      "infeasible-budget/over-budget",
+      "infeasible-budget/pins",
+      "infeasible-budget/unpriced",
       "pinned-unpriced",
       "pin-conflict",
       "required-slot",
       "no-valid-combinations",
     ]) {
-      expect(reasons.get(reason) ?? 0, reason).toBeGreaterThan(0);
+      expect(
+        reasons.get(reason) ?? 0,
+        `${reason} in ${JSON.stringify([...reasons])}`,
+      ).toBeGreaterThan(0);
     }
   }, 120_000);
 });

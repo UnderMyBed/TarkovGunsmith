@@ -161,7 +161,7 @@ export function buildCard(vm: BuildCardViewModel): ReactNode {
           gap: 12,
         }}
       >
-        <Pill tone="amber">{vm.availability}</Pill>
+        {vm.availability !== null && <Pill tone="amber">{vm.availability}</Pill>}
         <Pill tone="paper">{vm.modCount} MODS</Pill>
         {vm.priceRub !== null && <Pill tone="paper">₽ {vm.priceRub.toLocaleString("en-US")}</Pill>}
       </div>

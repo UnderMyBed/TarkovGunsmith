@@ -5,7 +5,8 @@ import type {
   WeaponListItem,
   WeaponTree,
 } from "@tarkov/data";
-import type { Objective, OptimizationInput } from "@tarkov/optimizer";
+import type { Objective } from "@tarkov/optimizer";
+import { OPTIMIZER_TIMEOUT_MS, type OptimizeRequest } from "./optimize-protocol.js";
 import type { BallisticWeapon } from "@tarkov/ballistics";
 
 export interface ConstraintsState {
@@ -24,6 +25,8 @@ export type ConstraintsAction =
   | { type: "SET_OBJECTIVE"; objective: Objective }
   | { type: "SET_BUDGET"; value: string }
   | { type: "TOGGLE_PIN"; slotPath: string; defaultItemId?: string }
+  /** Free these slots for the solver: their pins are removed, never set to empty. */
+  | { type: "UNPIN"; slotPaths: readonly string[] }
   | { type: "INIT_FROM_BUILD"; attachments: Readonly<Record<string, string>> }
   | { type: "RESET" };
 
@@ -48,6 +51,11 @@ export function constraintsReducer(
       } else {
         next.set(action.slotPath, action.defaultItemId ?? null);
       }
+      return { ...state, pinnedSlots: next };
+    }
+    case "UNPIN": {
+      const next = new Map(state.pinnedSlots);
+      for (const path of action.slotPaths) next.delete(path);
       return { ...state, pinnedSlots: next };
     }
     case "INIT_FROM_BUILD": {
@@ -77,13 +85,13 @@ export interface OptimizerInputDeps {
 }
 
 /**
- * Combine the form state with the runtime deps to build the final
- * `OptimizationInput` passed to `optimize()`.
+ * Combine the form state with the runtime deps into the request the optimizer worker runs
+ * `optimize()` on, with the Builder's time limit.
  */
 export function toOptimizerInput(
   state: ConstraintsState,
   deps: OptimizerInputDeps,
-): OptimizationInput {
+): OptimizeRequest {
   return {
     weapon: deps.weapon,
     weaponItem: deps.weaponItem,
@@ -91,6 +99,7 @@ export function toOptimizerInput(
     parts: deps.parts,
     presets: deps.presets,
     objective: state.objective,
+    timeoutMs: OPTIMIZER_TIMEOUT_MS,
     constraints: {
       profile: deps.gate,
       pinnedSlots: state.pinnedSlots,
