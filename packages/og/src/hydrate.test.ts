@@ -8,6 +8,7 @@ const args: HydrateBuildArgs = {
   weapon: m4a1Weapon,
   mods: m4a1Mods,
   priceRub: null,
+  availability: "LL3",
 };
 
 /** The receiver's own 0.75 kg plus the three parts. */
@@ -65,22 +66,33 @@ describe("hydrateBuildCard", () => {
     expect(twice.stats.weight).toBeCloseTo(WEIGHT + 0.499, 10);
   });
 
-  it("sets availability to FLEA until the caller fills in the pill", () => {
-    expect(hydrateBuildCard(args).availability).toBe("FLEA");
+  it("prints the pill the caller worked out, and none when there is none", () => {
+    expect(hydrateBuildCard(args).availability).toBe("LL3");
+    expect(hydrateBuildCard({ ...args, availability: null }).availability).toBeNull();
   });
 });
 
 describe("hydratePairCard", () => {
-  const leftArgs: HydrateSideArgs = { name: m4a1Build.name, weapon: m4a1Weapon, mods: m4a1Mods };
+  const leftArgs: HydrateSideArgs = {
+    name: m4a1Build.name,
+    weapon: m4a1Weapon,
+    mods: m4a1Mods,
+    availability: "LL3",
+  };
   // A second, distinct side so "both sides populated" isn't the same object hydrated twice.
-  const rightArgs: HydrateSideArgs = { name: "", weapon: m4a1Weapon, mods: m4a1Mods };
+  const rightArgs: HydrateSideArgs = {
+    name: "",
+    weapon: m4a1Weapon,
+    mods: m4a1Mods,
+    availability: "LL3",
+  };
 
   it("hydrates both sides via hydrateBuildCard, dropping the card-only `accuracy`/`title` fields", () => {
     const vm = hydratePairCard({ left: leftArgs, right: rightArgs });
     for (const side of [vm.left, vm.right]) {
       expect(side?.weapon).toBe("M4A1");
       expect(side?.modCount).toBe(3);
-      expect(side?.availability).toBe("FLEA");
+      expect(side?.availability).toBe("LL3");
       expect(side?.stats.ergo).toBe(78);
       expect(side?.stats.recoilV).toBeCloseTo(60.095, 3);
       expect(side?.stats.recoilH).toBeCloseTo(342 * 0.505, 3);

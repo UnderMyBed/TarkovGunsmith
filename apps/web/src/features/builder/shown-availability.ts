@@ -13,3 +13,16 @@ export function shownAvailability(
 ): ItemAvailability | null {
   return mode === "theorycraft" && availability?.available === false ? null : availability;
 }
+
+/**
+ * The text of an item's availability pill: `LL2`, `LL3 BARTER` or `FLEA` for the path it is
+ * bought by, with ` · QUEST` when that path assumes a quest is done; `LOCKED` when no path is
+ * open.
+ */
+export function availabilityLabel(availability: ItemAvailability): string {
+  if (!availability.available) return "LOCKED";
+  if (availability.kind === "flea") return "FLEA";
+  const level = `LL${availability.minLevel}`;
+  const head = availability.kind === "barter" ? `${level} BARTER` : level;
+  return availability.assumedQuest === null ? head : `${head} · QUEST`;
+}

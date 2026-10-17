@@ -20,7 +20,6 @@ import { capturedBuilderData } from "../../src/test/captured-data.js";
 import { priceBuild } from "../../src/features/builder/build-price.js";
 import { hydrateBuildCard } from "@tarkov/og";
 import { weaponSpec } from "@tarkov/ballistics";
-import { availabilityPillText } from "./og-availability.js";
 import {
   fetchOgRowsForBuild,
   loadOgData,
@@ -196,19 +195,17 @@ describe("fetchOgRowsForBuild", () => {
     });
   });
 
-  it("returns mods with every offer and its trader level", () => {
-    const out = fetchOgRowsForBuild(
-      { weaponId: "w1", attachments: { mod_foregrip: "m1", mod_stock: "bartered" }, gate: null },
-      ogData(),
-    );
+  it("returns the mods, and the pill under the build's gate", () => {
+    const attachments = { mod_foregrip: "m1", mod_stock: "bartered" };
+    const out = fetchOgRowsForBuild({ weaponId: "w1", attachments, gate: null }, ogData());
     expect(out.mods[0]).toMatchObject({ id: "m1", weight: 0.1, ergonomicsDelta: 3 });
-    const [m1, bartered] = out.availability;
-    expect(m1!.offers).toEqual([
-      { vendor: { normalizedName: "prapor" }, minTraderLevel: 2 },
-      { vendor: { normalizedName: "flea-market" }, minTraderLevel: undefined },
-    ]);
-    // A barter is gated on its own trader level.
-    expect(bartered!.offers).toEqual([{ vendor: { normalizedName: "prapor" }, minTraderLevel: 3 }]);
+    // Theorycraft: the gun on the flea, m1 from Prapor LL2, and the barter at Prapor LL3.
+    expect(out.availability).toBe("LL3 BARTER · FLEA");
+    // A fresh profile has no flea, and the gun is sold nowhere else.
+    expect(
+      fetchOgRowsForBuild({ weaponId: "w1", attachments, gate: DEFAULT_PROFILE }, ogData())
+        .availability,
+    ).toBe("LOCKED");
   });
 
   it("prices the build as the Builder does: weapon plus parts, by the cheapest open path", () => {
@@ -228,7 +225,7 @@ describe("fetchOgRowsForBuild", () => {
     expect(fetchOgRowsForBuild({ ...build, gate: DEFAULT_PROFILE }, ogData()).priceRub).toBeNull();
   });
 
-  it("keeps an unpriced part's offers for the pill, and leaves the total out, not 0", () => {
+  it("keeps an unpriced part on the pill, and leaves the total out, not 0", () => {
     // What a Ref barter for GP coins looks like: an offer whose cost has no flea price.
     const data = ogData();
     const trader = { ...data.prices.prices.trader };
@@ -238,15 +235,15 @@ describe("fetchOgRowsForBuild", () => {
       { weaponId: "w1", attachments: { mod_stock: "bartered" }, gate: null },
       { ...data, prices: { ...data.prices, prices: { items, trader } } },
     );
-    const [bartered] = out.availability;
-    expect(bartered!.offers).toEqual([{ vendor: { normalizedName: "prapor" }, minTraderLevel: 3 }]);
-    expect(availabilityPillText(out.availability, DEFAULT_PROFILE)).toBe("LL3");
+    // The barter's cost is unknown, but Prapor LL3 still sells the part.
+    expect(out.availability).toBe("LL3 BARTER · FLEA");
     expect(out.priceRub).toBeNull();
     const vm = hydrateBuildCard({
       name: undefined,
       weapon: out.weapon,
       mods: out.mods,
       priceRub: out.priceRub,
+      availability: out.availability,
     });
     expect(vm.priceRub).toBeNull();
   });
@@ -290,7 +287,8 @@ describe("fetchOgRowsForBuild", () => {
       ogData(),
     );
     expect(out.mods.map((m) => m.id)).toEqual(["m1"]);
-    expect(out.availability.map((m) => m.id)).toEqual(["m1"]);
+    // The gun on the flea and m1 from Prapor LL2.
+    expect(out.availability).toBe("LL2 · FLEA");
   });
 
   it("skips a mounted id the snapshot holds no part for", () => {
@@ -423,6 +421,7 @@ describe("the card against the Builder, for stored builds of every version", () 
       weapon: rows.weapon,
       mods: rows.mods,
       priceRub: rows.priceRub,
+      availability: rows.availability,
     });
     return { build, gate, vm };
   }
@@ -505,6 +504,12 @@ describe("the card against the Builder, for stored builds of every version", () 
       expect(vm.priceRub).not.toBeNull();
     },
   );
+
+  it("reads a bare M4A1 at its own Mechanic LL3, not LL2", async () => {
+    // Production drew LL2 for this record (#254): the pill ignored the weapon's own offers.
+    const data = await capturedBuilderData();
+    expect(card(data, stored[0]![1](data)).vm.availability).toBe("LL3");
+  });
 
   it("weighs a bare M4A1 at the receiver's own 0.75 kg, not 0", async () => {
     const data = await capturedBuilderData();

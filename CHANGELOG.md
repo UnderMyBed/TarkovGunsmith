@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.21.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.20.0...v1.21.0) (2026-10-17)
+
+
+### Features
+
+* **compare:** carry the Builder's profile on handoff, re-seed on prices, hedge the cost ([#262](https://github.com/UnderMyBed/TarkovGunsmith/issues/262)) ([e28e6fc](https://github.com/UnderMyBed/TarkovGunsmith/commit/e28e6fc0101b4c8f5ec515a815e0673b10475b37))
+* **optimizer:** exact solver that respects required slots, conflicts and pins ([#260](https://github.com/UnderMyBed/TarkovGunsmith/issues/260)) ([20107c5](https://github.com/UnderMyBed/TarkovGunsmith/commit/20107c5afdcd8172c4485182dfcb133d9f71a4d5))
+
+
+### Bug Fixes
+
+* **og:** draw the share card's availability pill from the Builder's own rules ([#263](https://github.com/UnderMyBed/TarkovGunsmith/issues/263)) ([667c065](https://github.com/UnderMyBed/TarkovGunsmith/commit/667c065c83b16e312f0b2a72b62d1e6ad672cc77))
+
 ## [1.20.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.19.0...v1.20.0) (2026-10-17)
 
 

@@ -13,7 +13,6 @@ vi.mock("@tarkov/og", () => ({
   renderPng: vi.fn(() => Promise.resolve(new Uint8Array([0x89, 0x50, 0x4e, 0x47]))),
 }));
 vi.mock("../../lib/og-graphql.js", () => ({ fetchOgRowsForBuild: vi.fn() }));
-vi.mock("../../lib/og-availability.js", () => ({ availabilityPillText: vi.fn(() => "LL2") }));
 
 const { onRequestGet } = await import("./[pairId].js");
 
