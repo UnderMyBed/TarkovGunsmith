@@ -14,11 +14,12 @@ import itemsCapture from "../../../../packages/tarkov-data/src/__fixtures__/item
  *
  * The weapon and its parts are the captured records
  * (`packages/tarkov-data/src/__fixtures__/items-sample.json`), read by id through
- * {@link captured}: real weights, ergonomics, recoil, modifiers, prices and trader offers, so
- * no value here can drift from upstream's. What stays hand-shaped is the scenario: the slots
- * each item offers are trimmed to the parts this document carries, and the items keep short
- * readable ids (`w-m4a1`, `mod-muzzle`, ...) that the route tests name. The presets, ammo and
- * armor are hand-built for the scenarios below.
+ * {@link captured}: their weights, ergonomics, recoil, modifiers, prices and trader offers are
+ * upstream's own. A slot's `required` flag is copied from the captured slot with the same
+ * `nameId` ({@link capturedSlot}). What is hand-shaped is the scenario: which slots each item
+ * offers (trimmed to the parts this document carries, plus a weapon-level muzzle slot upstream
+ * does not have), the short ids the route tests name (`w-m4a1`, `mod-muzzle`, ...), and the
+ * presets, ammo and armor.
  *
  * Units: `recoilModifier`/`accuracyModifier` are fractions and `armorDamage` is a percent —
  * see the "Units" warning in `packages/tarkov-data/CLAUDE.md`.
@@ -148,13 +149,35 @@ function slot(owner: string, nameId: string, name: string, required: boolean, it
   };
 }
 
+/**
+ * A slot on fixture item `owner`, `required` exactly as the captured item `capturedOwner` has
+ * its slot `nameId`. Throws when upstream has no such slot, so a scenario-only slot has to be
+ * written with {@link slot} and say why.
+ */
+function capturedSlot(
+  owner: string,
+  capturedOwner: string,
+  nameId: string,
+  name: string,
+  items: string[],
+) {
+  const slots = (CAPTURED_ITEMS[capturedOwner]?.properties.slots ?? []) as {
+    nameId: string;
+    required: boolean;
+  }[];
+  const upstream = slots.find((s) => s.nameId === nameId);
+  if (upstream === undefined)
+    throw new Error(`items-sample.json: ${capturedOwner} has no ${nameId}`);
+  return slot(owner, nameId, name, upstream.required, items);
+}
+
 // ---------- Items ----------
 // The M4A1 with the A2 flash hider (Mechanic LL1, so reachable on DEFAULT_PROFILE, where every
 // trader is LL1 and flea is off), the MOE stock (Peacekeeper LL3 or flea at 20, so locked there:
 // SlotTree's "Show all items" and itemAvailability's "trader-ll-required" have something real to
 // render), a STANAG magazine, and the upper receiver carrying the 10.3" barrel and the HAMR
 // scope. The weapon itself is Mechanic LL3; DEFAULT_PROFILE reaches it through the default
-// preset below. Two ammo types and two armor pieces (one head zone, one chest zone) so `/sim`'s
+// preset below. The stock, receiver and barrel slots are required, as upstream has them. Two ammo types and two armor pieces (one head zone, one chest zone) so `/sim`'s
 // helmet vs. body-armor split and `/matrix`, `/adc`, `/aec`, `/charts` all have distinct rows.
 export const ITEMS_DOCUMENT: {
   items: Record<string, unknown>;
@@ -166,10 +189,12 @@ export const ITEMS_DOCUMENT: {
       "w-m4a1",
       CAPTURED_IDS.m4a1,
       [
+        // Not an upstream slot: the M4A1's muzzle device sits on its barrel. It is here so the
+        // route tests have an always-available part one click from the weapon.
         slot("w-m4a1", "mod_muzzle", "Muzzle", false, ["mod-muzzle"]),
-        slot("w-m4a1", "mod_stock", "Stock", false, ["mod-stock"]),
-        slot("w-m4a1", "mod_magazine", "Magazine", false, ["mod-magazine"]),
-        slot("w-m4a1", "mod_reciever", "Receiver", true, ["mod-upper"]),
+        capturedSlot("w-m4a1", CAPTURED_IDS.m4a1, "mod_stock", "Stock", ["mod-stock"]),
+        capturedSlot("w-m4a1", CAPTURED_IDS.m4a1, "mod_magazine", "Magazine", ["mod-magazine"]),
+        capturedSlot("w-m4a1", CAPTURED_IDS.m4a1, "mod_reciever", "Receiver", ["mod-upper"]),
       ],
       // An id the snapshot generator resolves to that ammo's `shortName` and `initialSpeed`.
       { defaultAmmo: "ammo-m855" },
@@ -178,16 +203,17 @@ export const ITEMS_DOCUMENT: {
     "mod-stock": captured("mod-stock", CAPTURED_IDS.moeStock, []),
     "mod-magazine": captured("mod-magazine", CAPTURED_IDS.stanag, []),
     "mod-upper": captured("mod-upper", CAPTURED_IDS.upper, [
-      slot("mod-upper", "mod_barrel", "Barrel", true, ["mod-barrel"]),
-      slot("mod-upper", "mod_scope", "Scope", false, ["mod-scope"]),
+      capturedSlot("mod-upper", CAPTURED_IDS.upper, "mod_barrel", "Barrel", ["mod-barrel"]),
+      capturedSlot("mod-upper", CAPTURED_IDS.upper, "mod_scope", "Scope", ["mod-scope"]),
     ]),
     "mod-barrel": captured("mod-barrel", CAPTURED_IDS.barrel103, []),
     "mod-scope": captured("mod-scope", CAPTURED_IDS.hamr, []),
     // Two presets of the weapon, upstream-shaped: `containsItems` lists the base weapon with
-    // its parts, and the trader offers live on the preset item. The default fits both mods and
-    // Prapor sells it at LL1 (dearer than the bare weapon, so the weapon's own offer stays its
-    // cheapest); the other fits the stock alone and only Mechanic LL2 sells it. A build with the
-    // muzzle alone matches neither, so a loaded build can be told apart from a seeded one.
+    // its parts, and the trader offers live on the preset item. The default fits the muzzle and
+    // the stock, and Prapor sells it at LL1. On DEFAULT_PROFILE that is the only way to get the
+    // M4A1, whose own offer is Mechanic LL3. The other fits the stock alone and only Mechanic LL2
+    // sells it. A build with the muzzle alone matches neither, so a loaded build can be told
+    // apart from a seeded one.
     "p-m4a1-default": {
       id: "p-m4a1-default",
       updated: UPDATED,

@@ -1,5 +1,6 @@
 import type { Page, Route } from "@playwright/test";
 import { test, expect, expectNoLiveThirdParty, installUpstreamBoundary } from "./upstream.js";
+import { capturedItemName } from "./upstream-fixtures.js";
 
 /**
  * Share links: what a reader opens is the build that was shared.
@@ -64,6 +65,24 @@ function weaponPicker(page: Page) {
 
 function attached(page: Page, count: number) {
   return page.getByText(`${count} attached`, { exact: true });
+}
+
+/**
+ * Each slot row's path and the name of the part fitted there, read from the row's own item
+ * cell (`slot-tree.tsx`: the summary's third span, whose first child is the fitted part's
+ * name). Rows with nothing fitted are left out.
+ */
+function fittedParts(page: Page): Promise<Record<string, string>> {
+  return page.evaluate(() =>
+    Object.fromEntries(
+      Array.from(document.querySelectorAll<HTMLElement>("details[data-slot-path]")).flatMap((d) => {
+        const name = d.querySelector(
+          ":scope > summary > span:nth-of-type(3) > span:first-child:not(.italic)",
+        )?.textContent;
+        return name ? [[d.dataset.slotPath ?? "", name]] : [];
+      }),
+    ),
+  );
 }
 
 /** Every Spec stat the panel shows, label to value. */
@@ -203,11 +222,13 @@ test.describe("Builder share links", () => {
       await expect(attached(page, SOPMOD_II_COUNT)).toBeVisible({ timeout: 15_000 });
       await expect(weaponPicker(page).locator("option:checked")).toHaveText(M4A1_LABEL);
       await expect(page.getByText(/couldn't be placed on this weapon/)).toHaveCount(0);
-      const rows = await slotRows(page);
-      for (const path of Object.keys(SOPMOD_II)) {
-        expect(rows[path], `${path} has a row`).toBeDefined();
-        expect(rows[path], `${path} holds a part`).not.toContain("— empty —");
-      }
+      // Every part in the slot it was saved in, by name: a migration that moved or swapped
+      // parts would still fit nineteen of them.
+      expect(await fittedParts(page)).toEqual(
+        Object.fromEntries(
+          Object.entries(SOPMOD_II).map(([path, itemId]) => [path, capturedItemName(itemId)]),
+        ),
+      );
       await expect(page.getByPlaceholder("Build name (optional)")).toHaveValue(
         version >= 4 ? `v${version} SOPMOD` : "",
       );
