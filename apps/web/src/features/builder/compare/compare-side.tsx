@@ -250,6 +250,7 @@ export function CompareSide({
                     getAvailability={getAvailability}
                     getFittedConflict={getFittedConflict}
                     diff={diff ?? undefined}
+                    side={label === "A" ? "left" : "right"}
                     label={`Build ${label} slots`}
                   />
                 </div>

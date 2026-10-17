@@ -8,13 +8,11 @@ import { traderLabel } from "./where-to-get.js";
 
 // ---------- Types ----------
 
-export interface SlotTreeProps {
+interface SlotTreeBaseProps {
   /** The rows, and which one is selected: `useSlotSelection`. */
   selection: SlotSelection;
   attachments: Readonly<Record<string, string>>;
   getAvailability?: (itemId: string) => ItemAvailability | null;
-  /** Compare's per-slot statuses: a row that differs from the other build is marked. */
-  diff?: SlotDiffMap;
   /**
    * Why the part already fitted at `path` clashes with another part on the weapon, or `null`.
    * A saved build, a preset or an optimizer result can hold such a pair; it is shown, not removed.
@@ -24,11 +22,30 @@ export interface SlotTreeProps {
   label?: string;
 }
 
-const DIFF_NOTE = {
-  differs: "differs from the other build",
-  "left-only": "filled only in this build",
-  "right-only": "filled only in this build",
-} as const;
+/** Which Compare side a tree shows: `slotDiff`'s left is build A, its right build B. */
+export type SlotDiffSide = "left" | "right";
+
+/**
+ * Compare's per-slot statuses, and the side this tree shows. A row that differs from the other
+ * build is marked; a one-side status reads differently on the filled side and the empty one, so
+ * a diff never comes without its side.
+ */
+export type SlotTreeDiffProps =
+  { diff?: undefined; side?: undefined } | { diff: SlotDiffMap | undefined; side: SlotDiffSide };
+
+export type SlotTreeProps = SlotTreeBaseProps & SlotTreeDiffProps;
+
+/**
+ * The accessible note for a row's diff status, or `null` when it matches the other build.
+ * `left-only` means build A has a part there and build B does not (`slotDiff`); the row name
+ * already says "empty", so the empty side only says where the part is.
+ */
+function diffNote(status: SlotDiffStatus | undefined, side: SlotDiffSide): string | null {
+  if (status === undefined || status === "equal") return null;
+  if (status === "differs") return "differs from the other build";
+  const filledHere = status === (side === "left" ? "left-only" : "right-only");
+  return filledHere ? "filled only in this build" : "filled in the other build";
+}
 
 // ---------- SlotTree ----------
 
@@ -49,6 +66,7 @@ export function SlotTree({
   attachments,
   getAvailability,
   diff,
+  side,
   getFittedConflict,
   label = "Slots",
 }: SlotTreeProps) {
@@ -77,6 +95,7 @@ export function SlotTree({
           tabbable={row.slot.path === keys.tabStop}
           attachments={attachments}
           getAvailability={getAvailability}
+          diffNote={side === undefined ? null : diffNote(diff?.get(row.slot.path), side)}
           diffStatus={diff?.get(row.slot.path)}
           getFittedConflict={getFittedConflict}
           onSelect={() => selection.select(row.slot.path)}
@@ -178,6 +197,7 @@ function SlotRow({
   attachments,
   getAvailability,
   diffStatus,
+  diffNote: note,
   getFittedConflict,
   onSelect,
   onFocus,
@@ -189,6 +209,7 @@ function SlotRow({
   attachments: Readonly<Record<string, string>>;
   getAvailability?: ((itemId: string) => ItemAvailability | null) | undefined;
   diffStatus: SlotDiffStatus | undefined;
+  diffNote: string | null;
   getFittedConflict?: ((path: string) => string | null) | undefined;
   onSelect: () => void;
   onFocus: () => void;
@@ -204,7 +225,7 @@ function SlotRow({
     `${slot.label}${slot.required ? ", required" : ""}: ${fitted ? fitted.name : "empty"}`,
     availability ? availabilityLabel(availability) : null,
     fittedConflict,
-    diffStatus !== undefined && diffStatus !== "equal" ? DIFF_NOTE[diffStatus] : null,
+    note,
   ]
     .filter((part): part is string => part !== null)
     .join(", ");
