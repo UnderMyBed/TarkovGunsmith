@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.26.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.25.0...v1.26.0) (2026-10-17)
+
+
+### Features
+
+* **builder:** optimizer as a diff in the slot tree (redesign 4/5) ([#290](https://github.com/UnderMyBed/TarkovGunsmith/issues/290)) ([6844256](https://github.com/UnderMyBed/TarkovGunsmith/commit/6844256dfd96cdf056ffec037b70e7cd29749973))
+* **observability:** Faro telemetry and uptime alerting, declared as code ([#289](https://github.com/UnderMyBed/TarkovGunsmith/issues/289)) ([bfc3808](https://github.com/UnderMyBed/TarkovGunsmith/commit/bfc3808219718576baa983f262b06ea858bcd4e3))
+
+
+### Bug Fixes
+
+* **grafana:** run the uptime checks from the Ohio probe ([#293](https://github.com/UnderMyBed/TarkovGunsmith/issues/293)) ([d45418c](https://github.com/UnderMyBed/TarkovGunsmith/commit/d45418c5a44af11f408b52c352f63fecf570105d))
+
+
+### Documentation
+
+* **grafana:** grant the CI service account Admin on its folder ([#294](https://github.com/UnderMyBed/TarkovGunsmith/issues/294)) ([9386b73](https://github.com/UnderMyBed/TarkovGunsmith/commit/9386b7384f38e2778f7bd4e6553f4a96e0bbaeff))
+
 ## [1.25.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.24.0...v1.25.0) (2026-10-17)
 
 
