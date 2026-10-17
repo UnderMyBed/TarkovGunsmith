@@ -1,6 +1,7 @@
 import type { APIRequestContext, Page, ConsoleMessage } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { fixtureBuildableWeaponCount } from "./upstream-fixtures.js";
+import { ROUTES } from "./routes.js";
 import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with { type: "json" };
 
 /**
@@ -15,16 +16,6 @@ import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with 
  * are excluded). `<option value="">Select weapon…</option>`.
  */
 const WEAPON_OPTION_COUNT = fixtureBuildableWeaponCount() + 1;
-
-/** Every routed page we ship today. Keep in sync with __root.tsx nav. */
-const ROUTES: ReadonlyArray<{
-  path: string;
-  /** Text we expect on the loaded page. */ contains: string;
-}> = [
-  { path: "/", contains: "BUILD THE" },
-  { path: "/builder", contains: "NO WEAPON SELECTED" },
-  { path: "/builder/compare", contains: "Add a second build" },
-];
 
 /** Parked features: no route, no nav entry; the old URL lands on the Builder (#210). */
 const PARKED_PATHS = ["/calc", "/sim", "/adc", "/aec", "/matrix", "/data", "/charts", "/smoke"];

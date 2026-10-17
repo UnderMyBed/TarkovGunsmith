@@ -32,6 +32,21 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: /phone\.spec\.ts$/,
+    },
+    {
+      // A phone-width Chromium: the shipped routes and one core Builder flow, not the whole
+      // suite a second time. CI minutes are spend, and every other spec's subject renders the
+      // same at any width.
+      name: "phone",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 3,
+        isMobile: true,
+        hasTouch: true,
+      },
+      testMatch: /phone\.spec\.ts$/,
     },
   ],
   webServer: [

@@ -64,7 +64,7 @@ Smoke-level Chromium tests live at `apps/web/e2e/`. Run:
 - `pnpm --filter @tarkov/web build` — **required before the line below.** Playwright's `webServer` runs `wrangler pages dev dist`, which serves the built output. `playwright.config.ts` checks for `dist/index.html` while the config is still evaluating, so an unbuilt tree stops immediately with the command that fixes it.
 - `pnpm --filter @tarkov/web test:e2e` — run the suite.
 
-Playwright starts two webServers: `wrangler pages dev dist` on 4173 and the builds-api Worker on 8787. CI runs the suite as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `smoke.spec.ts`. Any new route added to `__root.tsx` nav must also be added there.
+Playwright starts two webServers: `wrangler pages dev dist` on 4173 and the builds-api Worker on 8787. CI runs the suite as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `e2e/routes.ts`, which `smoke.spec.ts` loads at desktop width and `phone.spec.ts` at 390 px. Any new route added to `__root.tsx` nav must also be added there.
 
 **No spec may depend on a live third party.** Game data is served from the captures in `packages/tarkov-data/src/__fixtures__/`, not from `json.tarkov.dev`:
 
