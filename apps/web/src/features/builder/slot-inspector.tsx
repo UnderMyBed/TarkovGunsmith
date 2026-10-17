@@ -20,6 +20,8 @@ const SORT_LABELS: Record<InspectorSort, string> = {
 };
 
 export interface SlotInspectorProps {
+  /** The weapon the slot is on: a search typed for one weapon's slot is not kept for another's. */
+  weaponId: string;
   /** The selected slot. */
   slot: SlotNode;
   /** The part fitted in it, by id, or `null` when it is empty. */
@@ -72,13 +74,14 @@ function sortRows(rows: readonly OptionRow[], key: (row: OptionRow) => number | 
 /**
  * The parts that fit the selected slot, to compare and fit one: ergonomics against the part
  * fitted now, the part's own recoil modifier, its weight, and where to get it. Search narrows the
- * list by name; sort orders it best first. One component for the slot it is given, so the
- * workbench shows it beside the tree and a phone can show it in a sheet.
+ * list by name; sort orders it best first. It takes the one slot it shows, and the Builder and
+ * each side of Compare mount it under their own slot tree's selection.
  *
  * A part that clashes with the build is disabled with the reason; one the profile cannot get is
  * dimmed and marked Locked with what unlocks it, and can still be fitted.
  */
 export function SlotInspector({
+  weaponId,
   slot,
   fittedId,
   parts,
@@ -95,16 +98,19 @@ export function SlotInspector({
   const sortId = useId();
   const sectionRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  // The search belongs to the slot it was typed in; another slot starts with none.
-  const [search, setSearch] = useState({ path: slot.path, text: "" });
-  const query = search.path === slot.path ? search.text : "";
+  // The search belongs to the slot it was typed in, on its weapon; another slot starts with none.
+  const searchKey = `${weaponId}\n${slot.path}`;
+  const [search, setSearch] = useState({ key: searchKey, text: "" });
+  const query = search.key === searchKey ? search.text : "";
   const [sortChoice, setSort] = useState<InspectorSort>("ergonomics");
   const sort = sortChoice === "price" && !pricesReady ? "ergonomics" : sortChoice;
   const [showAll, setShowAll] = useState(false);
   const progression = mode === "progression";
 
   const fitted = fittedId ? slot.allowedItems.find((i) => i.id === fittedId) : undefined;
-  const fittedErgo = modifiers(fitted && parts.get(fitted.id))?.ergonomics ?? 0;
+  // What ergonomics are measured against: 0 for an empty slot; unknown (no deltas shown) when the
+  // fitted part has no figures.
+  const fittedErgo = fitted ? (modifiers(parts.get(fitted.id))?.ergonomics ?? null) : 0;
 
   const all: OptionRow[] = slot.allowedItems.map((item) => ({
     id: item.id,
@@ -188,7 +194,7 @@ export function SlotInspector({
                   type="search"
                   placeholder="Name"
                   value={query}
-                  onChange={(e) => setSearch({ path: slot.path, text: e.target.value })}
+                  onChange={(e) => setSearch({ key: searchKey, text: e.target.value })}
                   className="w-44"
                 />
               </div>
@@ -312,13 +318,13 @@ function PartRow({
 }: {
   row: OptionRow;
   isFitted: boolean;
-  fittedErgo: number;
+  fittedErgo: number | null;
   dim: boolean;
   requirement: string | null;
   onFit: () => void;
 }) {
   const m = modifiers(row.part);
-  const ergoDelta = m === null ? null : m.ergonomics - fittedErgo;
+  const ergoDelta = m === null || fittedErgo === null ? null : m.ergonomics - fittedErgo;
   const recoil = m === null ? null : m.recoilModifier * 100;
   const price = priceOf(row.availability);
   return (

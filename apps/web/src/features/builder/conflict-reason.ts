@@ -6,7 +6,7 @@ import {
 } from "@tarkov/data";
 
 /**
- * Build the `getConflict` callback `SlotTree` takes: for a candidate part at a slot path, the
+ * Build the `getConflict` callback `SlotInspector` takes: for a candidate part at a slot path, the
  * reason it cannot go there given the rest of the build, or `null` when it can.
  *
  * The reason names the part already fitted that it clashes with — the one the player has to

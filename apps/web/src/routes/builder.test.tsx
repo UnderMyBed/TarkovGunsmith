@@ -118,7 +118,7 @@ describe("/builder", () => {
     const stockButton = await partIn(user, "Stock", /AR-15 Magpul MOE Carbine stock \(FDE\)/);
     // mod-stock (the MOE stock) needs Peacekeeper LL3; DEFAULT_PROFILE's traders are all LL1
     // and flea is off,
-    // so itemAvailability has no satisfying path — the SlotTree renders it LOCKED with the
+    // so itemAvailability has no satisfying path — the SlotInspector renders it LOCKED with the
     // cheapest unmet requirement alongside it.
     expect(within(stockButton).getByText("Locked")).toBeInTheDocument();
     expect(within(stockButton).getByText("Peacekeeper LL3")).toBeInTheDocument();

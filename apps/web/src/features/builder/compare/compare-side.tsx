@@ -256,6 +256,7 @@ export function CompareSide({
               )}
               {tree.data && selectedSlot && (
                 <SlotInspector
+                  weaponId={build.weaponId}
                   id={selection.inspectorId}
                   slot={selectedSlot}
                   fittedId={build.attachments[selectedSlot.path] ?? null}

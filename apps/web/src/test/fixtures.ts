@@ -174,7 +174,7 @@ function capturedSlot(
 // ---------- Items ----------
 // The M4A1 with the A2 flash hider (Mechanic LL1, so reachable on DEFAULT_PROFILE, where every
 // trader is LL1 and flea is off), the MOE stock (Peacekeeper LL3 or flea at 20, so locked there:
-// SlotTree's "Show all items" and itemAvailability's "trader-ll-required" have something real to
+// SlotInspector's "Show all items" and itemAvailability's "trader-ll-required" have something real to
 // render), a STANAG magazine, and the upper receiver carrying the 10.3" barrel and the HAMR
 // scope. The weapon itself is Mechanic LL3; DEFAULT_PROFILE reaches it through the default
 // preset below. The stock, receiver and barrel slots are required, as upstream has them. Two ammo types and two armor pieces (one head zone, one chest zone) so `/sim`'s

@@ -75,6 +75,7 @@ function Workbench({
       />
       {slot && (
         <SlotInspector
+          weaponId={t.weaponId}
           id={selection.inspectorId}
           slot={slot}
           fittedId={attachments[slot.path] ?? null}

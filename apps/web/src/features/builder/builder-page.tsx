@@ -285,6 +285,7 @@ export function BuilderPage({
               <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
                 {weapon && selectedSlot && (
                   <SlotInspector
+                    weaponId={builder.weaponId}
                     id={selection.inspectorId}
                     slot={selectedSlot}
                     fittedId={builder.attachments[selectedSlot.path] ?? null}

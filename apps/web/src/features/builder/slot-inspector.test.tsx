@@ -80,6 +80,7 @@ function renderInspector(props: Partial<SlotInspectorProps> = {}) {
   const onEscape = vi.fn();
   const utils = render(
     <SlotInspector
+      weaponId="w"
       slot={slot()}
       fittedId="grip-a2"
       parts={PARTS}
@@ -152,6 +153,7 @@ describe("SlotInspector — fitting", () => {
   it("keeps the focus in the inspector after Remove, on the search", async () => {
     const user = userEvent.setup();
     const props = {
+      weaponId: "w",
       slot: slot(),
       parts: PARTS,
       getAvailability: () => null,
@@ -190,9 +192,25 @@ describe("SlotInspector — figures", () => {
     expect(a2).toHaveTextContent(/^Colt A2 pistol grip0 ergo0% recoil0\.08 kg/);
   });
 
-  it("measures ergonomics against an empty slot when nothing is fitted", () => {
+  it("measures ergonomics against a fitted part with more, as a loss", () => {
     renderInspector({ fittedId: "grip-hera" });
     expect(partRow("Colt A2 pistol grip")).toHaveTextContent("−12 worse");
+  });
+
+  it("measures ergonomics against an empty slot when nothing is fitted", () => {
+    renderInspector({ fittedId: null });
+    expect(partRow("Hera Arms CQR grip")).toHaveTextContent("+12 better ergo");
+    expect(partRow("Magpul MIAD pistol grip")).toHaveTextContent("+3 better ergo");
+  });
+
+  it("shows no ergonomics delta when the fitted part has no figures to measure against", () => {
+    const withoutFitted = new Map(PARTS);
+    withoutFitted.delete("grip-a2");
+    renderInspector({ parts: withoutFitted });
+    expect(partRow("Hera Arms CQR grip")).toHaveTextContent("— ergo");
+    expect(partRow("Hera Arms CQR grip")).not.toHaveTextContent("+12");
+    // Its own recoil and weight are still shown.
+    expect(partRow("Hera Arms CQR grip")).toHaveTextContent("−23% better recoil0.50 kg");
   });
 
   it("shows a dash for a part it has no figures for", () => {
@@ -224,7 +242,28 @@ describe("SlotInspector — search and sort", () => {
     const other = { ...slot(), path: "mod_stock", label: "Stock" };
     rerender(
       <SlotInspector
+        weaponId="w"
         slot={other}
+        fittedId={null}
+        parts={PARTS}
+        onAttach={vi.fn()}
+        getAvailability={() => null}
+        mode="progression"
+        pricesReady={false}
+      />,
+    );
+    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("");
+    expect(names()).toHaveLength(3);
+  });
+
+  it("starts the same slot on another weapon with no search", async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderInspector();
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "magpul");
+    rerender(
+      <SlotInspector
+        weaponId="another-weapon"
+        slot={slot()}
         fittedId={null}
         parts={PARTS}
         onAttach={vi.fn()}
@@ -273,6 +312,7 @@ describe("SlotInspector — search and sort", () => {
     expect(screen.queryByRole("option", { name: "Price" })).not.toBeInTheDocument();
     rerender(
       <SlotInspector
+        weaponId="w"
         slot={slot()}
         fittedId="grip-a2"
         parts={PARTS}
@@ -542,6 +582,7 @@ describe("SlotInspector — quests", () => {
         <TarkovDataProvider client={noClient} builderData={builderData}>
           <QuestNameProvider>
             <SlotInspector
+              weaponId="w"
               slot={slot()}
               fittedId={null}
               parts={PARTS}
