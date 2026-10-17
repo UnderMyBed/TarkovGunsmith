@@ -7,7 +7,7 @@ import { classList, classSignature } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
-const TONES = ["amber", "red", "paper"] as const;
+const TONES = ["accent", "red", "neutral"] as const;
 
 describe("Stamp", () => {
   it("renders its children inside a <span>", () => {
@@ -29,11 +29,11 @@ describe("Stamp", () => {
     expect(new Set(signatures).size).toBe(TONES.length);
   });
 
-  it("defaults to the amber tone", () => {
+  it("defaults to the accent tone", () => {
     render(<Stamp>Implicit</Stamp>);
     const implicit = classSignature(screen.getByText("Implicit"));
     cleanup();
-    render(<Stamp tone="amber">Explicit</Stamp>);
+    render(<Stamp tone="accent">Explicit</Stamp>);
     expect(classSignature(screen.getByText("Explicit"))).toBe(implicit);
   });
 

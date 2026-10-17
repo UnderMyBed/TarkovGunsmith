@@ -14,12 +14,12 @@ JSX → SVG, `@resvg/resvg-wasm` for SVG → PNG.
   Builder's own call, so the card cannot disagree with it.
 - `src/render.ts` — `renderPng(jsx, fonts, { width, height })`.
 - `src/fonts.ts` — `loadFonts()` reads the bundled `.ttf` files.
-- `src/colors.ts` — Field Ledger hex constants mirroring the SPA tokens.
+- `src/colors.ts` — Graphite hex constants mirroring the SPA tokens.
 - `src/truncate.ts` — single-line headline truncate with `…`.
 - `src/__test-utils__/svg.ts` — shared test helpers: `renderSvg()` forces
   `embedFont: false` so text survives as `<text>` in the SVG; `textContent()`
   concatenates all `<text>` inner content so multi-word assertions work.
-- `assets/fallback-card.png` — pre-rendered `BUILD NOT FOUND` card, served by
+- `assets/fallback-card.png` — pre-rendered `Build not found` card, served by
   the Pages Function on KV-miss / render failure.
 - `fonts/` — the four `.ttf` files satori loads at render time.
 - `scripts/build-fallback-png.tsx` — regenerate the fallback; run manually.
@@ -33,25 +33,21 @@ JSX → SVG, `@resvg/resvg-wasm` for SVG → PNG.
 - **Pure functions.** `hydrate.ts` takes rows, not API clients. The Pages
   Function does the fetch; this package never touches the network (except
   satori's font loads, which resolve locally via `fs` or `fetch`).
-- **Field Ledger fidelity.** Colors and font names MUST match
+- **Palette fidelity.** Colors and font names MUST match
   `packages/ui/src/styles/index.css`. If the SPA palette or `<link>` font
   stack changes, regenerate `assets/fallback-card.png` via
-  `pnpm --filter @tarkov/og run build:fallback`.
-- **Type does not follow the design tokens either — same reason as colors.**
-  `packages/ui/src/styles/index.css` has a `@theme` type scale
-  (`--text-*` / `--tracking-*`) that every `font-size` / `letter-spacing` in
-  `apps/web` and `packages/ui` is built on (added in the pre-refactor
-  hardening pass). `build-card.tsx`
-  and `pair-card.tsx` do not use it and cannot: satori only understands
-  inline style objects with literal values, the same limitation that keeps
-  `colors.ts` a hand-copied hex mirror instead of `var(--color-*)`
-  references. Their `fontSize` / `letterSpacing` numbers are hand-picked for
-  a 1200×630 card at a viewing distance nothing else in the app renders at,
-  so they were never on the SPA's scale to begin with — there is no mapping
-  to restore, only fidelity to maintain by eye. **A future redesign that
-  changes the type scale needs a manual pass over both card layouts here**;
-  nothing will catch drift automatically the way `var(--color-*)` does for
-  palette changes.
+  `pnpm --filter @tarkov/og run build:fallback`, then `src/embedded.ts` (which
+  embeds that PNG) via `pnpm --filter @tarkov/og run build:embedded`.
+- **Type follows the SPA's rules, not its tokens.** Satori only understands
+  inline style objects with literal values — the same limitation that keeps
+  `colors.ts` a hand-copied hex mirror — so `build-card.tsx` and
+  `pair-card.tsx` cannot use the `--text-*` sizes in
+  `packages/ui/src/styles/index.css`. Their `fontSize` numbers are
+  hand-picked for a 1200×630 card. They keep the SPA's type rules: Chivo for
+  labels and headings in sentence case with no letter-spacing, Azeret Mono for
+  numbers, Bungee for the wordmark only. The cards bundle Chivo at 700 only, so
+  card labels are bold. A redesign that changes those rules needs a manual pass
+  over both card layouts; nothing catches that drift automatically.
 - **No DOM.** This package runs in Workers; no `window`, no `document`.
 
 ## Testing notes

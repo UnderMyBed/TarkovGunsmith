@@ -5,16 +5,16 @@ import type { VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn.js";
 
 const stampVariants = cva(
-  "inline-block font-mono text-10 font-bold tracking-25 uppercase px-2.5 py-1 border-[1.5px] -rotate-2",
+  "inline-block rounded-[var(--radius)] text-12 font-bold px-2.5 py-1 border-[1.5px]",
   {
     variants: {
       tone: {
-        amber: "text-[var(--color-primary)] border-[var(--color-primary)]",
+        accent: "text-[var(--color-primary-text)] border-[var(--color-primary)]",
         red: "text-[var(--color-destructive)] border-[var(--color-destructive)]",
-        paper: "text-[var(--color-foreground)] border-[var(--color-foreground)]",
+        neutral: "text-[var(--color-foreground)] border-[var(--color-border-strong)]",
       },
     },
-    defaultVariants: { tone: "amber" },
+    defaultVariants: { tone: "accent" },
   },
 );
 

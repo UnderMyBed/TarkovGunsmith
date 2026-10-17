@@ -101,9 +101,7 @@ export function SlotTree({
 }: SlotTreeProps) {
   if (tree.slots.length === 0) {
     return (
-      <p className="font-mono text-xs tracking-15 uppercase text-[var(--color-muted-foreground)]">
-        This weapon has no mod slots.
-      </p>
+      <p className="text-xs text-[var(--color-muted-foreground)]">This weapon has no mod slots.</p>
     );
   }
   // Every target this handler delegates to (details>summary, and the mod-picker buttons
@@ -189,7 +187,7 @@ function SlotRow({
       <details
         data-slot-path={slot.path}
         {...diffDataAttr}
-        className="group border-b border-dashed border-[var(--color-border)] data-[diff=differs]:border-dashed data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-l-2 data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-l-2 data-[diff=right-only]:border-[var(--color-primary)]"
+        className="group border-b border-[var(--color-border)] data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-l-2 data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-l-2 data-[diff=right-only]:border-[var(--color-primary)]"
       >
         <summary
           tabIndex={0}
@@ -200,11 +198,11 @@ function SlotRow({
         >
           <span
             aria-hidden
-            className="font-mono text-[var(--color-primary)] text-xs group-open:rotate-90 transition-transform inline-block w-[10px]"
+            className="font-mono text-[var(--color-primary-text)] text-xs group-open:rotate-90 transition-transform inline-block w-[10px]"
           >
             ▸
           </span>
-          <span className="font-mono text-11 tracking-15 uppercase text-[var(--color-muted-foreground)] min-w-[140px]">
+          <span className="text-11 text-[var(--color-muted-foreground)] min-w-[140px]">
             {slot.label}
           </span>
           <span className="flex-1 text-sm truncate">
@@ -212,40 +210,40 @@ function SlotRow({
               <>
                 <span className="text-[var(--color-foreground)]">{selectedItem.name}</span>
                 {fittedConflict !== null && (
-                  <span className="ml-2 font-mono text-10 tracking-18 uppercase text-[var(--color-destructive)]">
+                  <span className="ml-2 text-11 text-[var(--color-destructive)]">
                     {fittedConflict}
                   </span>
                 )}
               </>
             ) : (
-              <span className="italic text-[var(--color-paper-dim)]">
+              <span className="italic text-[var(--color-faint)]">
                 — empty —
                 {slot.required && (
-                  <span className="not-italic ml-2 font-mono text-10 tracking-18 uppercase text-[var(--color-destructive)]">
-                    REQUIRED
+                  <span className="not-italic ml-2 text-11 text-[var(--color-destructive)]">
+                    Required
                   </span>
                 )}
               </span>
             )}
           </span>
           {selectedItem && <AvailabilityPill availability={selectedAvailability} />}
-          <span className="font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)] whitespace-nowrap">
+          <span className="text-11 text-[var(--color-faint)] whitespace-nowrap">
             {slot.allowedItems.length} opt{slot.allowedItems.length === 1 ? "" : "s"}
           </span>
         </summary>
         <div
-          className="border-t border-dashed border-[var(--color-border)] py-2"
+          className="border-t border-[var(--color-border)] py-2"
           style={{ paddingLeft: `${24 + indentPx}px` }}
         >
           {slot.allowedItems.length === 0 ? (
             slot.allowedCategories.length > 0 ? (
-              <p className="p-2 font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
-                <span className="text-[var(--color-foreground)]">ACCEPTS</span>
+              <p className="p-2 text-11 text-[var(--color-faint)]">
+                <span className="text-[var(--color-foreground)]">Accepts</span>
                 {" · "}
                 {slot.allowedCategories.map((c) => c.name).join(" · ")}
               </p>
             ) : (
-              <p className="p-2 font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
+              <p className="p-2 text-11 text-[var(--color-faint)]">
                 No explicit allowed items or categories.
               </p>
             )
@@ -257,11 +255,11 @@ function SlotRow({
                   onClick={() => onAttach(slot.path, null)}
                   className={`w-full px-3 py-1.5 text-left text-sm border-l-2 ${focusRing} ${
                     !selectedId
-                      ? "border-[var(--color-primary)] bg-[var(--color-muted)] text-[var(--color-primary)]"
+                      ? "border-[var(--color-primary)] bg-[var(--color-muted)] text-[var(--color-primary-text)]"
                       : "border-transparent hover:bg-[var(--color-muted)]"
                   }`}
                 >
-                  <span className="font-mono text-10 tracking-20 uppercase">— none —</span>
+                  <span className="text-11">— none —</span>
                 </button>
               </li>
               {slot.allowedItems.map((item) => {
@@ -288,12 +286,10 @@ function SlotRow({
                       <span className="truncate">{item.name}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {conflict !== null && (
-                          <span className="font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
-                            {conflict}
-                          </span>
+                          <span className="text-11 text-[var(--color-faint)]">{conflict}</span>
                         )}
                         {conflict === null && requirementLabel && (
-                          <span className="font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
+                          <span className="text-11 text-[var(--color-faint)]">
                             {requirementLabel}
                           </span>
                         )}
@@ -306,7 +302,7 @@ function SlotRow({
             </ul>
           )}
           {selectedItem && childSlots.length > 0 && (
-            <ul className="flex flex-col mt-2 border-t border-dashed border-[var(--color-border)]">
+            <ul className="flex flex-col mt-2 border-t border-[var(--color-border)]">
               {childSlots.map((child) => (
                 <SlotRow
                   key={child.path}
@@ -342,7 +338,7 @@ export function AvailabilityPill({ availability }: { availability: ItemAvailabil
         ? null
         : (questName(availability.assumedQuest) ?? "a quest");
     return (
-      <Pill tone="reliable" title={assumed === null ? undefined : `Assumes ${assumed} is complete`}>
+      <Pill tone="default" title={assumed === null ? undefined : `Assumes ${assumed} is complete`}>
         {availabilityLabel(availability)}
       </Pill>
     );

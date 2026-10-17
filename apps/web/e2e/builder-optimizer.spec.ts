@@ -52,19 +52,19 @@ test.describe("builder optimizer diff view", () => {
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    await page.getByRole("button", { name: /◇ Optimize/i }).click();
     await expect(page).toHaveURL(/\?view=optimize/);
-    await expect(page.getByRole("heading", { name: /OPTIMIZER/i })).toBeVisible();
-    await expect(page.getByText(/RUN THE SOLVER/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Optimizer/i })).toBeVisible();
+    await expect(page.getByText(/Run the solver/i)).toBeVisible();
 
-    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+    await page.getByRole("button", { name: /Re-run optimization/i }).click();
 
     const changedRows = page.locator('[aria-label^="Accept "]');
     await expect
       .poll(async () => await changedRows.count(), { timeout: 15_000 })
       .toBe(OPTIMIZER_CHANGED_SLOTS);
 
-    const acceptSelected = page.getByRole("button", { name: /ACCEPT SELECTED/ });
+    const acceptSelected = page.getByRole("button", { name: /Accept selected/ });
     const beforeLabel = await acceptSelected.textContent();
     const beforeN = parseInt((beforeLabel ?? "").match(/\((\d+)\)/)?.[1] ?? "0", 10);
     // Every changed row starts selected, so the counter is the row count until one is toggled.
@@ -93,16 +93,16 @@ test.describe("builder optimizer diff view", () => {
         "the captured document must offer a weapon on the seeded profile",
       ).toBeTruthy();
 
-      await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+      await page.getByRole("button", { name: /◇ Optimize/i }).click();
       await page.getByRole("radio", { name: label }).check();
-      await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+      await page.getByRole("button", { name: /Re-run optimization/i }).click();
       await expect
         .poll(async () => await page.locator('[aria-label^="Accept "]').count(), {
           timeout: 15_000,
         })
         .toBe(changed);
 
-      await page.getByRole("button", { name: /ACCEPT ALL/ }).click();
+      await page.getByRole("button", { name: /Accept all/ }).click();
       await expect(page).not.toHaveURL(/\?view=optimize/);
       await expect(page.getByText(`${changed} attached`, { exact: true })).toBeVisible();
       // The Builder flags a build with an empty required slot or two parts that clash.
@@ -128,14 +128,14 @@ test.describe("builder optimizer diff view", () => {
       return served;
     });
 
-    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
-    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+    await page.getByRole("button", { name: /◇ Optimize/i }).click();
+    await page.getByRole("button", { name: /Re-run optimization/i }).click();
     const running = page.getByRole("status", { name: "Optimizer running" });
     await expect(running).toBeVisible();
     // The worker's script is held, so the solver has not started: no clock yet.
     await expect(running).toContainText("Starting the solver · 0 candidate builds checked");
     await expect.poll(() => requested, { message: "the run starts a worker" }).toBe(1);
-    await expect(page.getByText("RUNNING", { exact: true })).toBeVisible();
+    await expect(page.getByText("Running", { exact: true })).toBeVisible();
 
     // The main thread is free: a click during the run is handled.
     const ergonomics = page.getByRole("radio", { name: "Max ergonomics" });
@@ -143,26 +143,26 @@ test.describe("builder optimizer diff view", () => {
     await expect(ergonomics).toBeChecked();
     await expect(running).toBeVisible();
 
-    await running.getByRole("button", { name: "CANCEL" }).click();
+    await running.getByRole("button", { name: "Cancel" }).click();
     await expect(running).toBeHidden();
-    await expect(page.getByText("IDLE", { exact: true })).toBeVisible();
-    await expect(page.getByText(/RUN THE SOLVER/i)).toBeVisible();
+    await expect(page.getByText("Idle", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Run the solver/i)).toBeVisible();
 
     // Serving the held script must not revive the cancelled run's view. This does not prove
     // a late reply is dropped (a reply would need longer than these checks wait); that
     // guarantee is covered in useOptimizer.test.ts.
     release();
     await served;
-    await expect(page.getByText("IDLE", { exact: true })).toBeVisible();
+    await expect(page.getByText("Idle", { exact: true })).toBeVisible();
     await expect(page.locator('[aria-label^="Accept "]')).toHaveCount(0);
     await expect(page.getByRole("alert")).toHaveCount(0);
 
     // A new run, on the changed objective, does report.
-    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+    await page.getByRole("button", { name: /Re-run optimization/i }).click();
     await expect
       .poll(async () => await page.locator('[aria-label^="Accept "]').count(), { timeout: 15_000 })
       .toBeGreaterThan(0);
-    await expect(page.getByText(/^ERGO Δ · /)).toBeVisible();
+    await expect(page.getByText(/^Ergo Δ · /)).toBeVisible();
   });
 
   test("a budget no build fits says so, and runs again without it", async ({ page }) => {
@@ -170,23 +170,23 @@ test.describe("builder optimizer diff view", () => {
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    await page.getByRole("button", { name: /◇ Optimize/i }).click();
     const budget = page.getByLabel("Budget");
     await expect(budget).toBeEnabled({ timeout: 15_000 });
     await budget.fill("1");
-    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+    await page.getByRole("button", { name: /Re-run optimization/i }).click();
 
     const outcome = page.getByRole("alert");
-    await expect(outcome).toContainText("OVER BUDGET", { timeout: 15_000 });
+    await expect(outcome).toContainText("Over budget", { timeout: 15_000 });
     await expect(outcome).toContainText(/costs ₽[\d,]+, over the ₽1 budget\./);
     await expect(page.locator('[aria-label^="Accept "]')).toHaveCount(0);
 
-    await outcome.getByRole("button", { name: "RUN WITHOUT A BUDGET" }).click();
+    await outcome.getByRole("button", { name: "Run without a budget" }).click();
     await expect(budget).toHaveValue("");
     await expect
       .poll(async () => await page.locator('[aria-label^="Accept "]').count(), { timeout: 15_000 })
       .toBe(OPTIMIZER_CHANGED_SLOTS);
-    await expect(page.getByText(/^RECOIL V\+H Δ · −/)).toBeVisible();
+    await expect(page.getByText(/^Recoil V\+H Δ · −/)).toBeVisible();
   });
 
   test("a nested slot can be pinned, emptied with its parent, and is kept by the result", async ({
@@ -209,7 +209,7 @@ test.describe("builder optimizer diff view", () => {
     await sopmod.click();
     await expect(sopmod).toHaveAttribute("aria-pressed", "true");
 
-    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    await page.getByRole("button", { name: /◇ Optimize/i }).click();
     const tree = page.getByRole("list", { name: "Pinned slots" });
     await expect(page.getByText("Nothing pinned")).toBeVisible();
 
@@ -224,11 +224,11 @@ test.describe("builder optimizer diff view", () => {
     let childPath: string | undefined;
     let parentPath: string | undefined;
     for (const path of paths.filter((p) => p.includes("/"))) {
-      if (!(await enabled(path, "LOCK"))) continue;
+      if (!(await enabled(path, "Lock"))) continue;
       const segments = path.split("/");
       for (let i = segments.length - 1; i >= 1 && parentPath === undefined; i--) {
         const above = segments.slice(0, i).join("/");
-        if (await enabled(above, "EMPTY")) parentPath = above;
+        if (await enabled(above, "Empty")) parentPath = above;
       }
       if (parentPath !== undefined) {
         childPath = path;
@@ -247,20 +247,20 @@ test.describe("builder optimizer diff view", () => {
         "",
       );
 
-    await child.getByRole("radio", { name: "LOCK" }).check({ force: true });
+    await child.getByRole("radio", { name: "Lock" }).check({ force: true });
     await expect(page.getByText("1 slot pinned")).toBeVisible();
 
     // EMPTY asks first, then takes the nested lock with it, in view.
-    await parent.getByRole("radio", { name: "EMPTY" }).click({ force: true });
-    await expect(parent.getByRole("radio", { name: "EMPTY" })).not.toBeChecked();
+    await parent.getByRole("radio", { name: "Empty" }).click({ force: true });
+    await expect(parent.getByRole("radio", { name: "Empty" })).not.toBeChecked();
     const ask = parent.getByRole("group", { name: `Empty ${await labelOf(parentPath!)}` });
     await expect(ask).toContainText("clears 1 pin below it.");
     await expect(child).toHaveCount(1);
-    await ask.getByRole("button", { name: "EMPTY IT" }).click();
+    await ask.getByRole("button", { name: "Empty it" }).click();
     await expect(child).toHaveCount(0);
     await expect(page.getByText("1 slot pinned")).toBeVisible();
-    await parent.getByRole("radio", { name: "FREE" }).check({ force: true });
-    await expect(child.getByRole("radio", { name: "FREE" })).toBeChecked();
+    await parent.getByRole("radio", { name: "Free" }).check({ force: true });
+    await expect(child.getByRole("radio", { name: "Free" })).toBeChecked();
     await expect(page.getByText("Nothing pinned")).toBeVisible();
 
     // Lock the child and every slot above it, so its path exists in every build the solver
@@ -268,28 +268,28 @@ test.describe("builder optimizer diff view", () => {
     const segments = childPath!.split("/");
     const chain = segments.map((_, i) => segments.slice(0, i + 1).join("/"));
     for (const path of chain)
-      await row(path).getByRole("radio", { name: "LOCK" }).check({ force: true });
+      await row(path).getByRole("radio", { name: "Lock" }).check({ force: true });
     await expect(page.getByText(`${chain.length} slots pinned`)).toBeVisible();
-    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+    await page.getByRole("button", { name: /Re-run optimization/i }).click();
 
     const report = page.getByRole("region", { name: "Pins" });
-    await expect(report).toContainText(`${chain.length} KEPT`, { timeout: 15_000 });
+    await expect(report).toContainText(`${chain.length} kept`, { timeout: 15_000 });
     const labels = await Promise.all(chain.map(labelOf));
-    await expect(report.getByRole("listitem").filter({ hasText: /^KEPT/ })).toHaveText(
-      labels.map((_, i) => new RegExp(`^KEPT${escape(labels.slice(0, i + 1).join(" › "))}`)),
+    await expect(report.getByRole("listitem").filter({ hasText: /^Kept/ })).toHaveText(
+      labels.map((_, i) => new RegExp(`^Kept${escape(labels.slice(0, i + 1).join(" › "))}`)),
     );
   });
 
-  test("← EDITOR discards and returns to editor without merging", async ({ page }) => {
+  test("← Editor discards and returns to editor without merging", async ({ page }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    await page.getByRole("button", { name: /◇ Optimize/i }).click();
     await expect(page).toHaveURL(/\?view=optimize/);
 
     await page.getByRole("button", { name: /Back to builder editor/ }).click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
-    await expect(page.getByRole("heading", { name: /OPTIMIZER/i })).not.toBeVisible();
+    await expect(page.getByRole("heading", { name: /Optimizer/i })).not.toBeVisible();
   });
 });

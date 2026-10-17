@@ -51,11 +51,11 @@ test.describe("Builder item graph", () => {
     const gasBlock = slot(page, "mod_reciever/mod_barrel/mod_gas_block");
     await expect(gasBlock).toBeVisible();
     await expect(gasBlock.locator(":scope > summary")).toContainText("Gas Block");
-    await expect(gasBlock.locator(":scope > summary")).toContainText("REQUIRED");
+    await expect(gasBlock.locator(":scope > summary")).toContainText("Required");
 
     await fit(page, "mod_reciever/mod_barrel/mod_gas_block", /MK12 Low Profile Gas Block/);
     await expect(gasBlock.locator(":scope > summary")).toContainText("MK12 Low Profile Gas Block");
-    await expect(gasBlock.locator(":scope > summary")).not.toContainText("REQUIRED");
+    await expect(gasBlock.locator(":scope > summary")).not.toContainText("Required");
   });
 
   test("an option that clashes with a fitted part is disabled, with the reason", async ({

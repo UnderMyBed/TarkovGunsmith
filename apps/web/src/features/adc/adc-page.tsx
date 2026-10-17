@@ -69,12 +69,12 @@ export function AdcPage() {
     <div className="flex flex-col gap-6">
       <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
-        <div className="font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
-          <span>FORWARD · BURST</span>
-          <span>/ PER-SHOT TABLE</span>
+        <div className="text-11 text-[var(--color-faint)] flex gap-4 flex-wrap">
+          <span>Forward · burst</span>
+          <span>/ per-shot table</span>
         </div>
-        <h1 className="font-display text-56 leading-[0.95] tracking-tight uppercase">
-          Armor Damage <span className="text-[var(--color-primary)]">Calculator</span>
+        <h1 className="font-bold text-56 leading-[0.95]">
+          Armor Damage <span className="text-[var(--color-primary-text)]">Calculator</span>
         </h1>
         <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Multi-shot forward ballistics at a single armor piece. Pick ammo, armor, and shot count;
@@ -181,7 +181,7 @@ export function AdcPage() {
         </CardContent>
       </Card>
 
-      <Card variant="bracket">
+      <Card>
         <CardHeader>
           <CardTitle>Results</CardTitle>
           {!results && !isLoading && (
@@ -221,7 +221,7 @@ export function AdcPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
+                  <tr className="border-b text-left text-xs text-[var(--color-muted-foreground)]">
                     <th className="py-2">#</th>
                     <th className="py-2">Pen</th>
                     <th className="py-2">Damage</th>
@@ -236,7 +236,7 @@ export function AdcPage() {
                       <td className="py-1.5 font-mono tabular-nums">{i + 1}</td>
                       <td className="py-1.5">
                         <Pill tone={r.didPenetrate ? "accent" : "muted"}>
-                          {r.didPenetrate ? "PEN" : "blocked"}
+                          {r.didPenetrate ? "Pen" : "blocked"}
                         </Pill>
                       </td>
                       <td className="py-1.5 tabular-nums">{r.damage.toFixed(1)}</td>
@@ -258,9 +258,7 @@ export function AdcPage() {
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="border border-[var(--color-border)] p-3">
-      <dt className="font-mono text-10 tracking-20 uppercase text-[var(--color-muted-foreground)]">
-        {label}
-      </dt>
+      <dt className="text-11 text-[var(--color-muted-foreground)]">{label}</dt>
       <dd className="mt-1 font-mono tabular-nums">{value}</dd>
     </div>
   );

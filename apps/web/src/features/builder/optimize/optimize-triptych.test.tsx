@@ -26,7 +26,7 @@ const optimized: WeaponSpec = {
 } as WeaponSpec;
 
 describe("OptimizeTriptych", () => {
-  it("renders CURRENT numerics, OPTIMIZED numerics, and derived DELTA numerics", () => {
+  it("renders Current numerics, Optimized numerics, and derived Delta numerics", () => {
     const { getByTestId } = render(
       <OptimizeTriptych
         current={current}
@@ -40,12 +40,12 @@ describe("OptimizeTriptych", () => {
     // Delta: +8 ergo (higher-is-better → olive)
     const deltaErgo = getByTestId("triptych-delta-ergo");
     expect(deltaErgo.textContent).toContain("+8");
-    expect(deltaErgo.className).toContain("text-[var(--color-olive)]");
+    expect(deltaErgo.className).toContain("text-[var(--color-better)]");
     // MOA, lower is better: 2.50 → 2.20 is an improvement.
     expect(getByTestId("triptych-current-moa").textContent).toBe("2.50");
     expect(getByTestId("triptych-optimized-moa").textContent).toBe("2.20");
     expect(getByTestId("triptych-delta-moa").textContent).toBe("−0.30");
-    expect(getByTestId("triptych-delta-moa").className).toContain("text-[var(--color-olive)]");
+    expect(getByTestId("triptych-delta-moa").className).toContain("text-[var(--color-better)]");
   });
 
   it("shows ergonomics below 0 as 0 with the raw sum in a title, and deltas the floored values", () => {
@@ -79,7 +79,7 @@ describe("OptimizeTriptych", () => {
     expect(getAllByText("—").length).toBeGreaterThanOrEqual(10);
   });
 
-  it("colours recoil improvement (lower) as olive and regression (higher) as destructive", () => {
+  it("colours recoil improvement (lower) as better and regression (higher) as worse", () => {
     const { getByTestId } = render(
       <OptimizeTriptych
         current={current}
@@ -90,6 +90,6 @@ describe("OptimizeTriptych", () => {
     );
     const deltaRecoil = getByTestId("triptych-delta-recoil");
     expect(deltaRecoil.textContent).toContain("+10");
-    expect(deltaRecoil.className).toContain("text-[var(--color-destructive)]");
+    expect(deltaRecoil.className).toContain("text-[var(--color-worse)]");
   });
 });

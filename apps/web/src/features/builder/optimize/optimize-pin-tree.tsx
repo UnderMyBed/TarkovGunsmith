@@ -16,9 +16,9 @@ interface Props {
 type RowState = "free" | "lock" | "empty";
 
 const OPTIONS: readonly { value: RowState; label: string }[] = [
-  { value: "free", label: "FREE" },
-  { value: "lock", label: "LOCK" },
-  { value: "empty", label: "EMPTY" },
+  { value: "free", label: "Free" },
+  { value: "lock", label: "Lock" },
+  { value: "empty", label: "Empty" },
 ];
 
 function stateOf(pin: string | null | undefined): RowState {
@@ -66,20 +66,20 @@ export function OptimizePinTree({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-xs uppercase tracking-18 text-[var(--color-muted-foreground)]">
+        <span className="text-xs text-[var(--color-muted-foreground)]">
           {pinnedSlots.size === 0
             ? "Nothing pinned"
             : `${pinnedSlots.size} ${pinnedSlots.size === 1 ? "slot" : "slots"} pinned`}
         </span>
         {pinnedSlots.size > 0 && (
           <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "CLEAR_PINS" })}>
-            CLEAR ALL
+            Clear all
           </Button>
         )}
       </div>
       <ul
         aria-label="Pinned slots"
-        className="flex flex-col border border-dashed border-[var(--color-border)] p-2"
+        className="flex flex-col border border-[var(--color-border)] p-2"
       >
         {rows.map((slot) => (
           <PinRow
@@ -98,12 +98,9 @@ export function OptimizePinTree({
           />
         ))}
         {elsewhere.map(([path, id]) => (
-          <li
-            key={path}
-            className="flex items-center justify-between gap-2 py-1.5 font-mono text-xs"
-          >
+          <li key={path} className="flex items-center justify-between gap-2 py-1.5 text-13">
             <span className="min-w-0">
-              <span className="uppercase tracking-wider">{pathLabel(path)}</span>{" "}
+              <span>{pathLabel(path)}</span>{" "}
               <span className="text-[var(--color-muted-foreground)]">
                 {id === null ? "empty" : nameOf(id)} · not on this build
               </span>
@@ -114,7 +111,7 @@ export function OptimizePinTree({
               onClick={() => set(path, "free")}
               aria-label={`Free ${pathLabel(path)}`}
             >
-              FREE
+              Free
             </Button>
           </li>
         ))}
@@ -160,8 +157,8 @@ function PinRow({
       style={{ paddingLeft: `${depth * 14}px` }}
       data-slot-path={slot.path}
     >
-      <span className="min-w-0 flex-1 font-mono text-xs">
-        <span className="uppercase tracking-wider">
+      <span className="min-w-0 flex-1 text-13">
+        <span>
           {depth > 0 && <span className="text-[var(--color-muted-foreground)]">└ </span>}
           {label}
           {slot.required && <span className="text-[var(--color-muted-foreground)]"> · req</span>}
@@ -178,7 +175,7 @@ function PinRow({
         {OPTIONS.map((o) => (
           <label
             key={o.value}
-            className={`cursor-pointer px-2 py-0.5 font-mono text-10 uppercase tracking-14 has-[:checked]:bg-[var(--color-primary)] has-[:checked]:text-[var(--color-primary-foreground)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-40 has-[:focus-visible]:outline has-[:focus-visible]:outline-[var(--color-primary)]`}
+            className={`cursor-pointer px-2 py-0.5 text-11 has-[:checked]:bg-[var(--color-primary)] has-[:checked]:text-[var(--color-primary-foreground)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-40 has-[:focus-visible]:outline has-[:focus-visible]:outline-[var(--color-primary)]`}
           >
             <input
               type="radio"
@@ -198,16 +195,16 @@ function PinRow({
         <span
           role="group"
           aria-label={`Empty ${label}`}
-          className="flex basis-full flex-wrap items-center justify-end gap-2 font-mono text-xs"
+          className="flex basis-full flex-wrap items-center justify-end gap-2 text-13"
         >
           <span className="text-[var(--color-muted-foreground)]">
             Emptying {label} clears {below} {below === 1 ? "pin" : "pins"} below it.
           </span>
           <Button variant="destructive" size="sm" onClick={onConfirm}>
-            EMPTY IT
+            Empty it
           </Button>
           <Button variant="ghost" size="sm" onClick={onCancel}>
-            KEEP PINS
+            Keep pins
           </Button>
         </span>
       )}

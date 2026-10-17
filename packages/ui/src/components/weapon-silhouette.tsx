@@ -19,7 +19,7 @@ export interface WeaponSilhouetteProps extends Omit<ImgHTMLAttributes<HTMLImageE
 
 /**
  * Renders a weapon's base-image from the tarkov.dev CDN, treated as a
- * Field Ledger monochrome silhouette. Hides itself on CDN failure so
+ * monochrome silhouette. Hides itself on CDN failure so
  * layout stays intact.
  *
  * Consumer controls sizing/positioning via `className`. Typical pattern:

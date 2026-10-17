@@ -27,17 +27,16 @@ export function OptimizeRunning({ progress, timeoutMs, onCancel }: RunningProps)
       : `${(Math.max(0, now - progress.startedAt) / 1000).toFixed(1)} s of ${seconds(timeoutMs)}`;
   return (
     <Card
-      variant="bracket"
       className="flex flex-wrap items-center gap-4 p-5"
       role="status"
       aria-label="Optimizer running"
     >
-      <span className="font-display text-base tracking-wide">SOLVING</span>
-      <span className="font-mono text-xs uppercase tracking-18 text-[var(--color-muted-foreground)]">
+      <span className="font-bold text-base">Solving</span>
+      <span className="text-xs text-[var(--color-muted-foreground)]">
         {clock} · {n} candidate {n === 1 ? "build" : "builds"} checked
       </span>
       <Button className="ml-auto" variant="secondary" size="sm" onClick={onCancel}>
-        CANCEL
+        Cancel
       </Button>
     </Card>
   );
@@ -76,10 +75,10 @@ interface Shown {
 export function OptimizeOutcome(props: OutcomeProps): ReactElement {
   const shown = describe(props);
   return (
-    <Card variant="bracket" className="flex flex-col gap-3 p-5" role="alert">
+    <Card className="flex flex-col gap-3 p-5" role="alert">
       <div className="flex items-center gap-3">
-        <span className="font-display text-base tracking-wide">{shown.heading}</span>
-        <Pill tone="marginal">NO BUILD</Pill>
+        <span className="font-bold text-base">{shown.heading}</span>
+        <Pill tone="marginal">No build</Pill>
       </div>
       <p className="text-sm text-[var(--color-destructive)]">{shown.message}</p>
       {shown.hint !== null && (
@@ -105,48 +104,48 @@ function describe({
 }: OutcomeProps): Shown {
   const editProfile = theorycraft ? null : (
     <Button variant="secondary" onClick={onEditProfile}>
-      EDIT PROFILE
+      Edit profile
     </Button>
   );
   const withoutBudget = (
     <Button variant="secondary" onClick={onRunWithoutBudget}>
-      RUN WITHOUT A BUDGET
+      Run without a budget
     </Button>
   );
   const pinLabel = (path: string): string => {
     const id = pinnedSlots.get(path);
-    return id === null || id === undefined ? `EMPTY ${path}` : nameOf(id);
+    return id === null || id === undefined ? `Empty ${path}` : nameOf(id);
   };
   const unpin = (paths: readonly string[], label: string) =>
     paths.length === 0 ? null : (
       <Button key={label} variant="secondary" onClick={() => onUnpin(paths)}>
-        UNPIN {label}
+        Unpin {label}
       </Button>
     );
 
   if (failure === null) {
     return {
-      heading: "OPTIMIZER STOPPED",
+      heading: "Optimizer stopped",
       message: error?.message ?? "The optimizer stopped without an answer.",
       hint: null,
-      actions: <Button onClick={onRunAgain}>RUN AGAIN</Button>,
+      actions: <Button onClick={onRunAgain}>Run again</Button>,
     };
   }
   switch (failure.reason) {
     case "timeout":
       return {
-        heading: "NO BUILD IN TIME",
+        heading: "No build in time",
         message: `The search reached its ${seconds(timeoutMs)} limit before it finished. Only a finished search is shown as the best build.`,
         hint: "Pin more slots or set a budget to narrow the search, then run it again.",
         actions: (
           <Button variant="secondary" onClick={onBack}>
-            BACK TO CONSTRAINTS
+            Back to constraints
           </Button>
         ),
       };
     case "weapon-unavailable":
       return {
-        heading: "WEAPON OUT OF REACH",
+        heading: "Weapon out of reach",
         message: failure.message,
         hint: theorycraft
           ? "Pick another weapon."
@@ -155,7 +154,7 @@ function describe({
       };
     case "required-slot":
       return {
-        heading: "REQUIRED SLOT EMPTY",
+        heading: "Required slot empty",
         message: failure.message,
         hint: theorycraft
           ? "Pick another weapon."
@@ -166,14 +165,14 @@ function describe({
       switch (failure.cause) {
         case "over-budget":
           return {
-            heading: "OVER BUDGET",
+            heading: "Over budget",
             message: failure.message,
             hint: "Raise the budget, or run without one.",
             actions: withoutBudget,
           };
         case "pins":
           return {
-            heading: "NO KNOWN PRICE",
+            heading: "No known price",
             message: failure.message,
             hint: "Unpin slots, or run without a budget.",
             actions: (
@@ -185,7 +184,7 @@ function describe({
           };
         case "unpriced":
           return {
-            heading: "NO KNOWN PRICE",
+            heading: "No known price",
             message: failure.message,
             hint: theorycraft
               ? "Run without a budget."
@@ -205,7 +204,7 @@ function describe({
         .filter(([, id]) => id !== null && ids.has(id))
         .map(([path]) => path);
       return {
-        heading: "PINNED PART UNPRICED",
+        heading: "Pinned part unpriced",
         message: failure.message,
         hint: "Unpin the part, or run without a budget.",
         actions: (
@@ -218,7 +217,7 @@ function describe({
     }
     case "pin-conflict":
       return {
-        heading: "PINS CLASH",
+        heading: "Pins clash",
         message: failure.message,
         // The named pins are the ones a build needs gone, together: one alone may not do.
         hint: failure.paths.length === 1 ? "Unpin it." : "Unpin all of them.",
@@ -226,7 +225,7 @@ function describe({
       };
     case "no-valid-combinations":
       return {
-        heading: "NO BUILD FITS TOGETHER",
+        heading: "No build fits together",
         message: failure.message,
         hint: theorycraft
           ? "Pick another weapon."

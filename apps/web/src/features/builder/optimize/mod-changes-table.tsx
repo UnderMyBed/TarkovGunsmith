@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { Button, Card, Pill } from "@tarkov/ui";
 import type { ChangedRow, WeaponChange } from "./slot-diff.js";
 
@@ -25,10 +25,40 @@ export interface ModChangesTableProps {
   weaponChange?: WeaponChange | null;
 }
 
-function deltaClass(delta: number, lowerIsBetter: boolean): string {
-  if (Math.abs(delta) < 0.005) return "text-[var(--color-paper-dim)]";
+function deltaDirection(delta: number, lowerIsBetter: boolean): "better" | "worse" | null {
+  if (Math.abs(delta) < 0.005) return null;
   const improved = lowerIsBetter ? delta < 0 : delta > 0;
-  return improved ? "text-[var(--color-olive)]" : "text-[var(--color-destructive)]";
+  return improved ? "better" : "worse";
+}
+
+const DIRECTION_CLASS = {
+  better: "text-[var(--color-better)]",
+  worse: "text-[var(--color-worse)]",
+} as const;
+
+/**
+ * A delta cell. The colour is not the only signal: the direction is spoken by screen readers
+ * and shown on hover as well.
+ */
+function DeltaCell({
+  delta,
+  lowerIsBetter,
+  children,
+}: {
+  delta: number;
+  lowerIsBetter: boolean;
+  children: ReactNode;
+}): ReactElement {
+  const direction = deltaDirection(delta, lowerIsBetter);
+  return (
+    <span
+      className={`text-right font-mono text-xs ${direction === null ? "text-[var(--color-faint)]" : DIRECTION_CLASS[direction]}`}
+      title={direction ?? undefined}
+    >
+      {children}
+      {direction !== null && <span className="sr-only"> {direction}</span>}
+    </span>
+  );
 }
 
 function fmtSigned(value: number, decimals = 0): string {
@@ -62,13 +92,13 @@ export function ModChangesTable({
   const isResult = mode === "result";
 
   return (
-    <Card variant="bracket" className="flex flex-col overflow-hidden">
-      <div className="flex items-center gap-3 border-b border-dashed border-[var(--color-border)] px-4 py-3">
-        <span className="font-display text-base tracking-wide">MOD CHANGES</span>
-        <Pill tone="accent">{rows.length} SLOTS CHANGED</Pill>
-        <Pill tone="muted">{unchangedCount} SLOTS UNCHANGED</Pill>
+    <Card className="flex flex-col overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
+        <span className="font-bold text-base">Mod changes</span>
+        <Pill tone="accent">{rows.length} slots changed</Pill>
+        <Pill tone="muted">{unchangedCount} slots unchanged</Pill>
         {scoreDelta !== null && (
-          <span className="ml-auto font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
+          <span className="ml-auto text-11 text-[var(--color-muted-foreground)]">
             {scoreDelta.label} Δ · {scoreDelta.value >= 0 ? "+" : "−"}
             {Math.abs(scoreDelta.value).toFixed(scoreDelta.digits)}
           </span>
@@ -77,40 +107,26 @@ export function ModChangesTable({
 
       <div className={`grid ${cols} gap-2 border-b border-[var(--color-border)] px-4 py-2`}>
         <span />
-        <span className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-          SLOT
-        </span>
-        <span className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-          CURRENT
-        </span>
-        <span className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-          SUGGESTED
-        </span>
-        <span className="text-right font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-          ERGO
-        </span>
-        <span className="text-right font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-          RCL %
-        </span>
-        <span className="text-right font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-          ₽
-        </span>
+        <span className="text-11 text-[var(--color-muted-foreground)]">Slot</span>
+        <span className="text-11 text-[var(--color-muted-foreground)]">Current</span>
+        <span className="text-11 text-[var(--color-muted-foreground)]">Suggested</span>
+        <span className="text-right text-11 text-[var(--color-muted-foreground)]">Ergo</span>
+        <span className="text-right text-11 text-[var(--color-muted-foreground)]">Rcl %</span>
+        <span className="text-right text-11 text-[var(--color-muted-foreground)]">₽</span>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-auto max-h-[420px]">
         {mode === "idle" && (
-          <p className="py-12 text-center font-mono text-xs uppercase tracking-18 text-[var(--color-paper-dim)]">
-            RUN THE SOLVER TO SEE PROPOSED CHANGES
+          <p className="py-12 text-center text-xs text-[var(--color-faint)]">
+            Run the solver to see proposed changes
           </p>
         )}
         {mode === "running" && (
-          <p className="py-12 text-center font-mono text-xs uppercase tracking-18 text-[var(--color-paper-dim)]">
-            RUNNING…
-          </p>
+          <p className="py-12 text-center text-xs text-[var(--color-faint)]">Running…</p>
         )}
         {isResult && !hasRows && (
-          <p className="py-12 text-center font-mono text-xs uppercase tracking-18 text-[var(--color-paper-dim)]">
-            NO IMPROVEMENTS FOUND · TRY A DIFFERENT OBJECTIVE
+          <p className="py-12 text-center text-xs text-[var(--color-faint)]">
+            No improvements found · try a different objective
           </p>
         )}
         {isResult &&
@@ -118,7 +134,7 @@ export function ModChangesTable({
           rows.map((row) => (
             <div
               key={row.slotId}
-              className={`grid ${cols} items-center gap-2 border-b border-dashed border-[var(--color-border)] px-4 py-2.5`}
+              className={`grid ${cols} items-center gap-2 border-b border-[var(--color-border)] px-4 py-2.5`}
             >
               <input
                 type="checkbox"
@@ -126,73 +142,63 @@ export function ModChangesTable({
                 checked={selected.has(row.slotId)}
                 onChange={() => onToggle(row.slotId)}
               />
-              <span className="font-mono text-11 uppercase tracking-18 text-[var(--color-primary)]">
-                {row.slotLabel}
-              </span>
-              <span className="text-13 text-[var(--color-paper-dim)] line-through decoration-[var(--color-border)]">
+              <span className="text-11 text-[var(--color-primary-text)]">{row.slotLabel}</span>
+              <span className="text-13 text-[var(--color-faint)] line-through decoration-[var(--color-border)]">
                 {row.currentName ?? "—"}
               </span>
-              <span className="text-13 text-[var(--color-olive)]">
+              <span className="text-13 text-[var(--color-primary-text)]">
                 → {row.proposedName ?? "— (removed)"}
               </span>
-              <span className={`text-right font-mono text-xs ${deltaClass(row.ergoDelta, false)}`}>
+              <DeltaCell delta={row.ergoDelta} lowerIsBetter={false}>
                 {fmtSigned(row.ergoDelta)}
-              </span>
+              </DeltaCell>
               {/* `recoilDelta` is a fraction (slot-diff.ts keeps upstream's
                   unit), so it must be scaled here. Unscaled it hit fmtSigned's
                   0-decimal rounding and every changed row rendered "−0". */}
-              <span
-                className={`text-right font-mono text-xs ${deltaClass(row.recoilDelta * 100, true)}`}
-              >
+              <DeltaCell delta={row.recoilDelta * 100} lowerIsBetter>
                 {fmtSigned(row.recoilDelta * 100, 1)}
-              </span>
-              <span
-                className={`text-right font-mono text-xs ${deltaClass(row.priceDelta ?? 0, true)}`}
-              >
+              </DeltaCell>
+              <DeltaCell delta={row.priceDelta ?? 0} lowerIsBetter>
                 {fmtPrice(row.priceDelta)}
-              </span>
+              </DeltaCell>
             </div>
           ))}
         {isResult && weaponChange !== null && (
           <div
-            className={`grid ${cols} items-center gap-2 border-b border-dashed border-[var(--color-border)] px-4 py-2.5`}
+            className={`grid ${cols} items-center gap-2 border-b border-[var(--color-border)] px-4 py-2.5`}
             data-testid="weapon-change"
           >
             <span />
-            <span className="font-mono text-11 uppercase tracking-18 text-[var(--color-primary)]">
-              WEAPON
+            <span className="text-11 text-[var(--color-primary-text)]">Weapon</span>
+            <span className="text-13 text-[var(--color-faint)]">bought as {weaponChange.from}</span>
+            <span className="text-13 text-[var(--color-primary-text)]">
+              → bought as {weaponChange.to}
             </span>
-            <span className="text-13 text-[var(--color-paper-dim)]">
-              bought as {weaponChange.from}
-            </span>
-            <span className="text-13 text-[var(--color-olive)]">→ bought as {weaponChange.to}</span>
             <span />
             <span />
-            <span
-              className={`text-right font-mono text-xs ${deltaClass(weaponChange.priceDelta ?? 0, true)}`}
-            >
+            <DeltaCell delta={weaponChange.priceDelta ?? 0} lowerIsBetter>
               {fmtPrice(weaponChange.priceDelta)}
-            </span>
+            </DeltaCell>
           </div>
         )}
       </div>
 
       <div className="flex items-center gap-2 border-t border-[var(--color-border)] px-4 py-3">
         <Button onClick={onAcceptAll} disabled={!isResult || !hasRows}>
-          ACCEPT ALL
+          Accept all
         </Button>
         <Button
           variant="secondary"
           onClick={onAcceptSelected}
           disabled={!isResult || !hasRows || selectedCount === 0}
         >
-          ACCEPT SELECTED ({selectedCount})
+          Accept selected ({selectedCount})
         </Button>
         <Button variant="ghost" onClick={onDiscard}>
-          {isResult && !hasRows ? "BACK TO EDITOR" : "DISCARD"}
+          {isResult && !hasRows ? "Back to editor" : "Discard"}
         </Button>
-        <span className="ml-auto font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-          DFS · LINEAR LOWER-BOUND PRUNE · 2s BUDGET
+        <span className="ml-auto text-11 text-[var(--color-muted-foreground)]">
+          DFS · linear lower-bound prune · 2s budget
         </span>
       </div>
     </Card>

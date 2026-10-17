@@ -62,12 +62,12 @@ test.describe("Builder mode", () => {
     await expect(page.getByText(`${all} weapons`, { exact: true })).toBeVisible();
     // The placeholder plus one option per weapon, none of them locked.
     await expect(weaponPicker(page).locator("option")).toHaveCount(all + 1);
-    await expect(weaponPicker(page).locator("option", { hasText: "LOCKED" })).toHaveCount(0);
+    await expect(weaponPicker(page).locator("option", { hasText: "Locked" })).toHaveCount(0);
 
     await pickM4A1(page);
     const elcan = await elcanOption(page);
     await expect(elcan).toBeVisible();
-    await expect(elcan.getByText("LOCKED")).toHaveCount(0);
+    await expect(elcan.getByText("Locked")).toHaveCount(0);
   });
 
   test("LL2 switches to progression, and a reload stays there", async ({ page }) => {
@@ -86,14 +86,14 @@ test.describe("Builder mode", () => {
     await expect(page.getByText("Set your progression")).toHaveCount(0);
     await expect(modeButton(page, "Progression")).toHaveAttribute("aria-pressed", "true");
     await pickM4A1(page);
-    await expect((await elcanOption(page)).getByText("LOCKED")).toBeVisible();
+    await expect((await elcanOption(page)).getByText("Locked")).toBeVisible();
 
     await page.reload({ waitUntil: "networkidle" });
     await expect(gated).toBeVisible({ timeout: 15_000 });
     await expect(modeButton(page, "Progression")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText("Set your progression")).toHaveCount(0);
     // The reload restores the build from its draft; the part stays locked under LL2.
-    await expect((await elcanOption(page)).getByText("LOCKED")).toBeVisible();
+    await expect((await elcanOption(page)).getByText("Locked")).toBeVisible();
   });
 
   test("switching back to theorycraft is kept across a reload, and so is the profile", async ({

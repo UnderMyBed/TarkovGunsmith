@@ -4,7 +4,7 @@ Design tokens and shared React primitives for TarkovGunsmith. shadcn-style (copy
 
 ## What's in this package
 
-- `src/styles/index.css` — Tailwind v4 `@theme` tokens + dark-first base styles. Consumers `@import "@tarkov/ui/styles.css"` from their root CSS. It also carries the `@source` directive that puts `src/` in Tailwind's scan set — without it this package resolves through `node_modules`, which Tailwind never scans, and every class used only by a primitive here is purged from the consumer's stylesheet. Do not remove it; `apps/web/src/styles.test.ts` fails if the classes stop reaching the compiled CSS.
+- `src/styles/index.css` — Tailwind v4 `@theme` tokens (the Graphite palette, the type sizes and the two radii) + dark base styles. Consumers `@import "@tarkov/ui/styles.css"` from their root CSS. It also carries the `@source` directive that puts `src/` in Tailwind's scan set — without it this package resolves through `node_modules`, which Tailwind never scans, and every class used only by a primitive here is purged from the consumer's stylesheet. Do not remove it; `apps/web/src/styles.test.ts` fails if the classes stop reaching the compiled CSS.
 - `src/lib/cn.ts` — `cn(...inputs)` class-merge utility (clsx + tailwind-merge).
 - `src/components/button.tsx` — `<Button>` with `variant` (`default | secondary | ghost | destructive`) and `size` (`sm | md | lg | icon`).
 - `src/components/card.tsx` — `<Card>` family: `<CardHeader>`, `<CardTitle>`, `<CardDescription>`, `<CardContent>`, `<CardFooter>`.
@@ -23,10 +23,10 @@ Design tokens and shared React primitives for TarkovGunsmith. shadcn-style (copy
   forwarding, and that a variant prop makes an observable difference. `environment: "jsdom"` is set package-wide in
   `vitest.config.ts` (this package is entirely components, unlike `apps/web` which sets jsdom
   per-file via a docblock). Pure-function helpers that live alongside a component (`iconUrl`,
-  `weaponSilhouetteSrc`, `cardVariants`/`cn`-style `cva` string assertions) keep their own
+  `weaponSilhouetteSrc`, `cn`-style `cva` string assertions) keep their own
   `<kebab-case>.test.ts` — both can coexist for the same component.
 - **Don't assert Tailwind class strings here.** jsdom runs no stylesheet, so
-  `expect(el.className).toContain("before:border-[var(--color-primary)]")` proves only that the
+  `expect(el.className).toContain("focus-visible:ring-[var(--color-ring)]")` proves only that the
   string is on the node — it passed straight through GitHub issue #162, where none of those
   classes had a CSS rule at all. Whether a class resolves to a real rule is checked against the
   compiled stylesheet in `apps/web/src/styles.test.ts`; add new primitives to its table. Here, use

@@ -27,7 +27,7 @@ export function TarkovTrackerConnectPopover({
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-background)]/80"
       onClick={(e) => {
         // Only close on a click that lands directly on the backdrop, not one that bubbles
         // up from inside the panel — matches the pattern in packages/ui/src/components
@@ -38,9 +38,7 @@ export function TarkovTrackerConnectPopover({
       }}
     >
       <div className="w-full max-w-sm border bg-[var(--color-card)] p-6">
-        <h3 className="font-display mb-2 text-base uppercase tracking-wider">
-          Connect TarkovTracker
-        </h3>
+        <h3 className="font-bold mb-2 text-base">Connect TarkovTracker</h3>
         <label
           htmlFor="tarkovtracker-token"
           className="mb-1 block text-xs text-[var(--color-muted-foreground)]"
@@ -70,7 +68,7 @@ export function TarkovTrackerConnectPopover({
               href="https://tarkovtracker.io/settings"
               target="_blank"
               rel="noreferrer noopener"
-              className="text-[var(--color-primary)] underline"
+              className="text-[var(--color-primary-text)] underline"
             >
               tarkovtracker.io/settings →
             </a>

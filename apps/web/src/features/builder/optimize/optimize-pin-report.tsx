@@ -48,17 +48,17 @@ export function OptimizePinReport({
     }
   };
   return (
-    <Card variant="bracket" className="flex flex-col gap-3 p-5" role="region" aria-label="Pins">
+    <Card className="flex flex-col gap-3 p-5" role="region" aria-label="Pins">
       <div className="flex items-center gap-3">
-        <span className="font-display text-base tracking-wide">PINS</span>
-        <Pill tone="reliable">{pins.honoured.length} KEPT</Pill>
-        {pins.dropped.length > 0 && <Pill tone="marginal">{pins.dropped.length} DROPPED</Pill>}
+        <span className="font-bold text-base">Pins</span>
+        <Pill tone="reliable">{pins.honoured.length} kept</Pill>
+        {pins.dropped.length > 0 && <Pill tone="marginal">{pins.dropped.length} dropped</Pill>}
       </div>
-      <ul className="flex flex-col gap-1.5 font-mono text-xs">
+      <ul className="flex flex-col gap-1.5 text-13">
         {pins.honoured.map((path) => (
           <li key={path} className="flex flex-wrap gap-x-2">
-            <span className="uppercase tracking-wider text-[var(--color-olive)]">KEPT</span>
-            <span className="uppercase tracking-wider">{slotName(path)}</span>
+            <span className="text-[var(--color-better)]">Kept</span>
+            <span>{slotName(path)}</span>
             <span className="text-[var(--color-muted-foreground)]">
               {proposed[path] === undefined ? "empty" : nameOf(proposed[path])}
             </span>
@@ -66,10 +66,8 @@ export function OptimizePinReport({
         ))}
         {pins.dropped.map((d) => (
           <li key={`${d.path}:${d.reason}`} className="flex flex-wrap gap-x-2">
-            <span className="uppercase tracking-wider text-[var(--color-destructive)]">
-              DROPPED
-            </span>
-            <span className="uppercase tracking-wider">{slotName(d.path)}</span>
+            <span className="text-[var(--color-destructive)]">Dropped</span>
+            <span>{slotName(d.path)}</span>
             <span className="text-[var(--color-muted-foreground)]">
               {d.itemId === null ? "empty" : nameOf(d.itemId)} · {why(d)}
             </span>

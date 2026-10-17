@@ -23,12 +23,10 @@ export function ShortcutOverlay({ open, onClose }: ShortcutOverlayProps) {
       <DialogPanel className="max-w-md">
         <DialogTitle id="shortcut-overlay-title">Keyboard shortcuts</DialogTitle>
         <DialogBody>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 font-mono text-sm">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
             {SHORTCUTS.map((s) => (
               <div key={s.key} className="contents">
-                <dt className="text-[var(--color-primary)] tracking-15 uppercase text-xs">
-                  {s.key}
-                </dt>
+                <dt className="text-[var(--color-primary-text)] text-xs">{s.key}</dt>
                 <dd className="text-[var(--color-foreground)]">{s.action}</dd>
               </div>
             ))}

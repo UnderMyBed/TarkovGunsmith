@@ -177,9 +177,9 @@ function renderView(
   );
 }
 
-const runButton = () => screen.getByRole("button", { name: /RE-RUN OPTIMIZATION/i });
+const runButton = () => screen.getByRole("button", { name: /Re-run optimization/i });
 /** Set a slot's pin in the tree: FREE, LOCK or EMPTY. */
-function pin(slot: string, choice: "FREE" | "LOCK" | "EMPTY") {
+function pin(slot: string, choice: "Free" | "Lock" | "Empty") {
   fireEvent.click(
     within(screen.getByRole("radiogroup", { name: `${slot} pin` })).getByRole("radio", {
       name: choice,
@@ -193,10 +193,10 @@ const pinState = (slot: string) =>
 const lastWorker = () => workers.started[workers.started.length - 1] as FakeWorker;
 
 describe("OptimizeView", () => {
-  it("renders idle state with CURRENT filled and diff table idle message", () => {
+  it("renders idle state with Current filled and diff table idle message", () => {
     renderView();
-    expect(screen.getByText(/OPTIMIZER/)).toBeInTheDocument();
-    expect(screen.getByText(/RUN THE SOLVER/)).toBeInTheDocument();
+    expect(screen.getByText(/Optimizer/)).toBeInTheDocument();
+    expect(screen.getByText(/Run the solver/)).toBeInTheDocument();
     // Current ergo populates the CURRENT card.
     expect(screen.getByTestId("triptych-current-ergo").textContent).toContain("50");
   });
@@ -215,7 +215,7 @@ describe("OptimizeView", () => {
     );
   });
 
-  it("calls onAccept with merged build when ACCEPT SELECTED fires with 1 row unchecked", async () => {
+  it("calls onAccept with merged build when Accept selected fires with 1 row unchecked", async () => {
     const onAccept = vi.fn();
     renderView({ attachments: { muzzle: "m-old", handguard: "h-old" }, onAccept });
     fireEvent.click(runButton());
@@ -226,9 +226,9 @@ describe("OptimizeView", () => {
     await waitFor(() =>
       expect(screen.getByTestId("triptych-optimized-ergo")).toHaveTextContent("58"),
     );
-    expect(screen.getByRole("button", { name: /ACCEPT SELECTED \(2\)/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Accept selected \(2\)/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: /Accept HANDGUARD/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /ACCEPT SELECTED \(1\)/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Accept selected \(1\)/ }));
     expect(onAccept).toHaveBeenCalledTimes(1);
     const acceptedBuild = onAccept.mock.calls[0]![0] as BuildV6;
     expect(acceptedBuild.attachments).toEqual({ muzzle: "m-new", handguard: "h-old" });
@@ -248,19 +248,19 @@ describe("OptimizeView", () => {
     renderView();
     fireEvent.click(runButton());
     // V+H 150 + 300 → 120 + 260.
-    expect(await screen.findByText(/RECOIL V\+H Δ/)).toHaveTextContent("RECOIL V+H Δ · −70");
+    expect(await screen.findByText(/Recoil V\+H Δ/)).toHaveTextContent("Recoil V+H Δ · −70");
   });
 
   it("sends the pins set in the tree, and shows which the result kept", async () => {
     solver.result = { ...proposal, pins: { honoured: ["muzzle"], dropped: [] } };
     renderView();
     expect(screen.queryByRole("region", { name: "Pins" })).toBeNull();
-    pin("Muzzle", "LOCK");
+    pin("Muzzle", "Lock");
     fireEvent.click(runButton());
     expect([...lastWorker().request!.constraints.pinnedSlots]).toEqual([["muzzle", "m-old"]]);
     const report = await screen.findByRole("region", { name: "Pins" });
-    expect(report).toHaveTextContent("1 KEPT");
-    expect(report).toHaveTextContent("KEPTMuzzlePart m-new");
+    expect(report).toHaveTextContent("1 kept");
+    expect(report).toHaveTextContent("KeptMuzzlePart m-new");
   });
 
   describe("while it runs", () => {
@@ -271,9 +271,9 @@ describe("OptimizeView", () => {
       const running = screen.getByRole("status", { name: "Optimizer running" });
       // The clock waits for the worker: its boot is not the solver's time.
       expect(running).toHaveTextContent("Starting the solver · 0 candidate builds checked");
-      expect(screen.getByText("RUNNING")).toBeInTheDocument();
+      expect(screen.getByText("Running")).toBeInTheDocument();
       act(() => lastWorker().onmessage?.({ data: { type: "progress", nodes: 0, elapsedMs: 0 } }));
-      expect(running).toHaveTextContent(/^SOLVING0\.\d s of 2 s · 0 candidate builds checked/);
+      expect(running).toHaveTextContent(/^Solving0\.\d s of 2 s · 0 candidate builds checked/);
       act(() => lastWorker().onmessage?.({ data: { type: "progress", nodes: 1, elapsedMs: 50 } }));
       expect(running).toHaveTextContent("1 candidate build checked");
       act(() =>
@@ -285,14 +285,14 @@ describe("OptimizeView", () => {
       expect(screen.getByRole("radio", { name: "Max ergonomics" })).toBeChecked();
 
       const worker = lastWorker();
-      fireEvent.click(within(running).getByRole("button", { name: "CANCEL" }));
+      fireEvent.click(within(running).getByRole("button", { name: "Cancel" }));
       expect(worker.terminated).toBe(true);
       expect(screen.queryByRole("status", { name: "Optimizer running" })).toBeNull();
-      expect(screen.getByText("IDLE")).toBeInTheDocument();
-      expect(screen.getByText(/RUN THE SOLVER/)).toBeInTheDocument();
+      expect(screen.getByText("Idle")).toBeInTheDocument();
+      expect(screen.getByText(/Run the solver/)).toBeInTheDocument();
       // A reply the worker posted before it was terminated is ignored.
       act(() => worker.onmessage?.({ data: { type: "result", result: proposal } }));
-      expect(screen.getByText("IDLE")).toBeInTheDocument();
+      expect(screen.getByText("Idle")).toBeInTheDocument();
     });
 
     it("lets a new run supersede the one going, ignoring the old one's reply", () => {
@@ -310,10 +310,10 @@ describe("OptimizeView", () => {
           data: { type: "result", result: { ok: false, reason: "timeout" } },
         }),
       );
-      expect(screen.queryByText("NO BUILD IN TIME")).toBeNull();
+      expect(screen.queryByText("No build in time")).toBeNull();
       act(() => second.onmessage?.({ data: { type: "result", result: proposal } }));
       // 3.5 → 3.1 kg.
-      expect(screen.getByText(/WEIGHT KG Δ/)).toHaveTextContent("WEIGHT KG Δ · −0.40");
+      expect(screen.getByText(/Weight kg Δ/)).toHaveTextContent("Weight kg Δ · −0.40");
     });
   });
 
@@ -325,22 +325,22 @@ describe("OptimizeView", () => {
     ) {
       solver.result = result;
       renderView(options);
-      for (const slot of lock) pin(slot, "LOCK");
+      for (const slot of lock) pin(slot, "Lock");
       fireEvent.click(runButton());
       return screen.findByRole("alert");
     }
 
     it("explains a timeout and shows no build", async () => {
       const alert = await fail({ ok: false, reason: "timeout" });
-      expect(alert).toHaveTextContent("NO BUILD IN TIME");
+      expect(alert).toHaveTextContent("No build in time");
       expect(alert).toHaveTextContent(
         "The search reached its 2 s limit before it finished. Only a finished search is shown as the best build.",
       );
       expect(alert).toHaveTextContent("Pin more slots or set a budget to narrow the search");
       expect(screen.queryByTestId("triptych-optimized-ergo")).toBeNull();
-      fireEvent.click(within(alert).getByRole("button", { name: "BACK TO CONSTRAINTS" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Back to constraints" }));
       expect(screen.queryByRole("alert")).toBeNull();
-      expect(screen.getByText(/RUN THE SOLVER/)).toBeInTheDocument();
+      expect(screen.getByText(/Run the solver/)).toBeInTheDocument();
     });
 
     it("runs again without a budget when the budget is the cause", async () => {
@@ -354,11 +354,11 @@ describe("OptimizeView", () => {
       };
       fireEvent.click(runButton());
       const alert = await screen.findByRole("alert");
-      expect(alert).toHaveTextContent("OVER BUDGET");
+      expect(alert).toHaveTextContent("Over budget");
       expect(alert).toHaveTextContent("₽80,000, over the ₽5,000 budget.");
       expect(lastWorker().request?.constraints.budgetRub).toBe(5000);
       solver.result = undefined;
-      fireEvent.click(within(alert).getByRole("button", { name: "RUN WITHOUT A BUDGET" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Run without a budget" }));
       expect(lastWorker().request?.constraints.budgetRub).toBeUndefined();
       expect(screen.getByLabelText("Budget")).toHaveValue(null);
       await waitFor(() =>
@@ -379,12 +379,12 @@ describe("OptimizeView", () => {
         { attachments: { muzzle: "m-old", handguard: "h-old" } },
         ["Muzzle", "Handguard"],
       );
-      expect(alert).toHaveTextContent("NO KNOWN PRICE");
+      expect(alert).toHaveTextContent("No known price");
       expect(alert).toHaveTextContent("Unpin slots, or run without a budget.");
       expect(alert).not.toHaveTextContent("Raise the budget");
-      expect(within(alert).getByRole("button", { name: "RUN WITHOUT A BUDGET" })).toBeVisible();
+      expect(within(alert).getByRole("button", { name: "Run without a budget" })).toBeVisible();
       solver.result = undefined;
-      fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part h-old" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Unpin Part h-old" }));
       expect([...lastWorker().request!.constraints.pinnedSlots]).toEqual([["muzzle", "m-old"]]);
     });
 
@@ -398,17 +398,17 @@ describe("OptimizeView", () => {
       } as const;
       const onEditProfile = vi.fn();
       const alert = await fail(unpriced, { onEditProfile });
-      expect(alert).toHaveTextContent("NO KNOWN PRICE");
+      expect(alert).toHaveTextContent("No known price");
       expect(alert).toHaveTextContent(
         "Run without a budget, or change the profile to reach parts with a known price.",
       );
       expect(alert).not.toHaveTextContent("Raise the budget");
-      fireEvent.click(within(alert).getByRole("button", { name: "EDIT PROFILE" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Edit profile" }));
       expect(onEditProfile).toHaveBeenCalled();
       cleanup();
       const theorycraft = await fail(unpriced, { gate: null });
       expect(theorycraft).toHaveTextContent("Run without a budget.");
-      expect(within(theorycraft).queryByRole("button", { name: "EDIT PROFILE" })).toBeNull();
+      expect(within(theorycraft).queryByRole("button", { name: "Edit profile" })).toBeNull();
     });
 
     it("names the pins the run used, though the form has moved on", async () => {
@@ -423,9 +423,9 @@ describe("OptimizeView", () => {
         ["Muzzle"],
       );
       // The form frees the slot after the run: the outcome still names the run's pin.
-      pin("Muzzle", "FREE");
+      pin("Muzzle", "Free");
       expect(pinState("Muzzle")).toBe("free");
-      expect(within(alert).getByRole("button", { name: "UNPIN Part m-old" })).toBeVisible();
+      expect(within(alert).getByRole("button", { name: "Unpin Part m-old" })).toBeVisible();
     });
 
     it("unpins a pinned part nobody prices, leaving the slot free rather than empty", async () => {
@@ -440,10 +440,10 @@ describe("OptimizeView", () => {
         ["Muzzle"],
       );
       expect(lastWorker().request?.constraints.pinnedSlots.get("muzzle")).toBe("m-old");
-      expect(alert).toHaveTextContent("PINNED PART UNPRICED");
-      expect(within(alert).getByRole("button", { name: "RUN WITHOUT A BUDGET" })).toBeVisible();
+      expect(alert).toHaveTextContent("Pinned part unpriced");
+      expect(within(alert).getByRole("button", { name: "Run without a budget" })).toBeVisible();
       solver.result = undefined;
-      fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part m-old" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Unpin Part m-old" }));
       // Free for the solver: no pin at all, not a pin to empty.
       expect(lastWorker().request?.constraints.pinnedSlots.has("muzzle")).toBe(false);
       expect(pinState("Muzzle")).toBe("free");
@@ -461,10 +461,10 @@ describe("OptimizeView", () => {
         { attachments: { muzzle: "m-old", handguard: "h-old" } },
         ["Muzzle", "Handguard"],
       );
-      expect(alert).toHaveTextContent("PINS CLASH");
+      expect(alert).toHaveTextContent("Pins clash");
       expect(alert).toHaveTextContent("Unpin all of them.");
       solver.result = undefined;
-      fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part h-old, Part m-old" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Unpin Part h-old, Part m-old" }));
       const pins = lastWorker().request?.constraints.pinnedSlots;
       expect(pins && [...pins]).toEqual([]);
       expect(pinState("Muzzle")).toBe("free");
@@ -479,26 +479,26 @@ describe("OptimizeView", () => {
         message: "No complete build keeps every pin. Unpin empty handguard and run it again.",
       };
       renderView();
-      pin("Handguard", "EMPTY");
+      pin("Handguard", "Empty");
       fireEvent.click(runButton());
       const alert = await screen.findByRole("alert");
-      expect(within(alert).getByRole("button", { name: "UNPIN EMPTY handguard" })).toBeVisible();
+      expect(within(alert).getByRole("button", { name: "Unpin Empty handguard" })).toBeVisible();
     });
 
     for (const [reason, heading, hint] of [
       [
         "weapon-unavailable",
-        "WEAPON OUT OF REACH",
+        "Weapon out of reach",
         "Raise trader levels or turn on the flea in your profile, or switch to theorycraft.",
       ],
       [
         "required-slot",
-        "REQUIRED SLOT EMPTY",
+        "Required slot empty",
         "Raise trader levels or turn on the flea to reach a part for it, or switch to theorycraft.",
       ],
       [
         "no-valid-combinations",
-        "NO BUILD FITS TOGETHER",
+        "No build fits together",
         "Change the profile to reach other parts, or pick another weapon.",
       ],
     ] as const) {
@@ -514,7 +514,7 @@ describe("OptimizeView", () => {
         expect(alert).toHaveTextContent(heading);
         expect(alert).toHaveTextContent(message);
         expect(alert).toHaveTextContent(hint);
-        fireEvent.click(within(alert).getByRole("button", { name: "EDIT PROFILE" }));
+        fireEvent.click(within(alert).getByRole("button", { name: "Edit profile" }));
         expect(onEditProfile).toHaveBeenCalledTimes(1);
       });
     }
@@ -533,7 +533,7 @@ describe("OptimizeView", () => {
         ) as OptimizationResult;
         const alert = await fail(result, { gate: null });
         expect(alert).toHaveTextContent(hint);
-        expect(within(alert).queryByRole("button", { name: "EDIT PROFILE" })).toBeNull();
+        expect(within(alert).queryByRole("button", { name: "Edit profile" })).toBeNull();
       });
     }
 
@@ -547,12 +547,12 @@ describe("OptimizeView", () => {
         }),
       );
       const alert = screen.getByRole("alert");
-      expect(alert).toHaveTextContent("OPTIMIZER STOPPED");
+      expect(alert).toHaveTextContent("Optimizer stopped");
       expect(alert).toHaveTextContent("the slot graph has a cycle through loop");
-      expect(screen.getByText("ERROR")).toBeInTheDocument();
-      fireEvent.click(within(alert).getByRole("button", { name: "RUN AGAIN" }));
+      expect(screen.getByText("Error")).toBeInTheDocument();
+      fireEvent.click(within(alert).getByRole("button", { name: "Run again" }));
       expect(workers.started).toHaveLength(2);
-      expect(screen.getByText("RUNNING")).toBeInTheDocument();
+      expect(screen.getByText("Running")).toBeInTheDocument();
     });
   });
 });
@@ -570,17 +570,17 @@ describe("objectiveDelta", () => {
   });
   it("scores each objective on the stat it optimises", () => {
     expect(objectiveDelta("min-recoil", currentStats, proposed)).toEqual({
-      label: "RECOIL V+H",
+      label: "Recoil V+H",
       value: -70,
       digits: 0,
     });
     expect(objectiveDelta("max-ergonomics", currentStats, proposed)).toEqual({
-      label: "ERGO",
+      label: "Ergo",
       value: 8,
       digits: 0,
     });
     expect(objectiveDelta("min-weight", currentStats, proposed)).toMatchObject({
-      label: "WEIGHT KG",
+      label: "Weight kg",
       digits: 2,
     });
     expect(objectiveDelta("max-accuracy", currentStats, proposed)).toMatchObject({

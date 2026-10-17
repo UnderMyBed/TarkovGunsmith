@@ -57,7 +57,7 @@ test.describe("smoke — parked feature URLs redirect to the Builder", () => {
       const { errors } = captureConsoleErrors(page);
       await page.goto(path, { waitUntil: "networkidle" });
       await expect(page).toHaveURL(/\/builder$/);
-      await expect(page.getByText("NO WEAPON SELECTED", { exact: false }).first()).toBeVisible({
+      await expect(page.getByText("No weapon selected", { exact: false }).first()).toBeVisible({
         timeout: 10_000,
       });
       expect(errors, `Console errors after ${path} redirect:\n${errors.join("\n")}`).toEqual([]);
@@ -86,7 +86,7 @@ async function gotoAndAwaitFonts(page: Page): Promise<void> {
   await page.goto("/", { waitUntil: "networkidle" });
   // A header element that uses the display + mono faces, so a real layout has happened.
   await page
-    .getByRole("link", { name: /TARKOVGUNSMITH/i })
+    .getByRole("link", { name: /TarkovGunsmith/i })
     .first()
     .waitFor();
   await page.evaluate(async () => {
@@ -123,10 +123,10 @@ test.describe("smoke — design system", () => {
     await expect(page.getByText("Try Optimizer", { exact: false })).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByText("WHAT IT DOES", { exact: false })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "What it does" })).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByText("OPTIMIZER", { exact: true }).first()).toBeVisible({
+    await expect(page.getByText("Optimizer", { exact: true }).first()).toBeVisible({
       timeout: 10_000,
     });
   });
@@ -458,7 +458,7 @@ test.describe("smoke — TarkovTracker import", () => {
 
     // The progression completes "I Need More Power", one of the captures' 3 quests that gate
     // gear, plus two the snapshot does not hold.
-    const banner = page.getByText("TARKOVTRACKER · 1/3 GEAR QUESTS · PMC LV 25");
+    const banner = page.getByText("TarkovTracker · 1/3 gear quests · PMC lv 25");
     await expect(banner).toBeVisible({ timeout: 10_000 });
 
     expect(errors, `Console errors on TarkovTracker connect:\n${errors.join("\n")}`).toEqual([]);

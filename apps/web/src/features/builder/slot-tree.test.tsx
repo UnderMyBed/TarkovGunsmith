@@ -129,13 +129,13 @@ describe("SlotTree — slot headers", () => {
 
   it("flags a required slot while it is empty, and stops flagging it once filled", () => {
     const { rerender } = renderTree();
-    expect(within(slotRegion("Stock")).getByText("REQUIRED")).toBeInTheDocument();
-    expect(within(slotRegion("Muzzle")).queryByText("REQUIRED")).not.toBeInTheDocument();
+    expect(within(slotRegion("Stock")).getByText("Required")).toBeInTheDocument();
+    expect(within(slotRegion("Muzzle")).queryByText("Required")).not.toBeInTheDocument();
 
     rerender(
       <SlotTree tree={DEFAULT_TREE} attachments={{ mod_stock: "mod-stock" }} onAttach={vi.fn()} />,
     );
-    expect(within(slotRegion("Stock")).queryByText("REQUIRED")).not.toBeInTheDocument();
+    expect(within(slotRegion("Stock")).queryByText("Required")).not.toBeInTheDocument();
   });
 
   it("counts the options each slot offers, singular and plural", () => {
@@ -308,9 +308,9 @@ describe("SlotTree — slots with no concrete options", () => {
 describe("SlotTree — availability", () => {
   it("shows no source badge at all when availability is unknown", () => {
     renderTree({ getAvailability: () => null, attachments: { mod_muzzle: "mod-dtk" } });
-    expect(screen.queryByText("LOCKED")).not.toBeInTheDocument();
+    expect(screen.queryByText("Locked")).not.toBeInTheDocument();
     expect(screen.queryByText("LL1")).not.toBeInTheDocument();
-    expect(screen.queryByText("FLEA")).not.toBeInTheDocument();
+    expect(screen.queryByText("Flea")).not.toBeInTheDocument();
   });
 
   it("labels an option reachable from a trader with that trader's loyalty level", () => {
@@ -319,7 +319,7 @@ describe("SlotTree — availability", () => {
     expect(within(option).getByText("LL1")).toBeInTheDocument();
   });
 
-  it("labels an option reachable by a trader barter with the level and BARTER", () => {
+  it("labels an option reachable by a trader barter with the level and barter", () => {
     renderTree({
       getAvailability: () => ({
         available: true,
@@ -333,13 +333,13 @@ describe("SlotTree — availability", () => {
       }),
     });
     const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    expect(within(option).getByText("LL1 BARTER")).toBeInTheDocument();
+    expect(within(option).getByText("LL1 barter")).toBeInTheDocument();
   });
 
-  it("labels an option reachable only on the flea market as FLEA", () => {
+  it("labels an option reachable only on the flea market as Flea", () => {
     renderTree({ getAvailability: () => AVAILABLE_FLEA });
     const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    expect(within(option).getByText("FLEA")).toBeInTheDocument();
+    expect(within(option).getByText("Flea")).toBeInTheDocument();
   });
 
   it("carries the attached mod's source badge up into the collapsed slot header", () => {
@@ -414,7 +414,7 @@ describe("SlotTree — availability", () => {
     (_label, availability, expected) => {
       renderTree({ getAvailability: () => availability });
       const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-      expect(within(option).getByText("LOCKED")).toBeInTheDocument();
+      expect(within(option).getByText("Locked")).toBeInTheDocument();
       expect(within(option).getByText(expected)).toBeInTheDocument();
     },
   );
@@ -667,7 +667,7 @@ describe("SlotTree — quests", () => {
       assumedQuest: "i-need-more-power",
     }));
     const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    const pill = within(option).getByText("LL3 · QUEST");
+    const pill = within(option).getByText("LL3 · quest");
     expect(await within(option).findByTitle("Assumes I Need More Power is complete")).toBe(pill);
   });
 

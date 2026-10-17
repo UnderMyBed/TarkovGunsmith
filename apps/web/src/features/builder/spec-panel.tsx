@@ -54,9 +54,7 @@ export function SpecPanel({ weaponShortName, spec, magazine }: SpecPanelProps) {
           <SpecStat label="Mods attached" value={`${spec.modCount}`} />
         </dl>
         <section aria-label="Magazine" className="flex flex-col gap-2">
-          <h3 className="text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
-            Magazine
-          </h3>
+          <h3 className="text-xs text-[var(--color-muted-foreground)]">Magazine</h3>
           {magazine === null ? (
             <p className="text-sm text-[var(--color-muted-foreground)]">None fitted.</p>
           ) : (
@@ -92,9 +90,7 @@ function SpecStat({
 }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-[var(--radius)] border p-3">
-      <dt className="text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
-        {label}
-      </dt>
+      <dt className="text-xs text-[var(--color-muted-foreground)]">{label}</dt>
       <dd className="text-lg font-semibold" title={title}>
         {value}
       </dd>

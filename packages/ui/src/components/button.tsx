@@ -6,16 +6,16 @@ import { cn } from "../lib/cn.js";
 import { focusRing } from "../lib/focus-ring.js";
 
 const buttonVariants = cva(
-  `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius)] font-mono text-12 tracking-14 uppercase font-medium transition-colors ${focusRing} disabled:pointer-events-none disabled:opacity-40 border`,
+  `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius)] text-sm font-medium transition-colors ${focusRing} disabled:pointer-events-none disabled:opacity-40 border`,
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] border-[var(--color-primary)] hover:bg-[var(--color-amber-deep)] hover:border-[var(--color-amber-deep)] hover:text-[var(--color-foreground)] font-semibold",
+          "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] border-[var(--color-primary)] hover:brightness-110 font-bold",
         secondary:
-          "bg-transparent text-[var(--color-foreground)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]",
+          "bg-transparent text-[var(--color-foreground)] border-[var(--color-border-strong)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary-text)]",
         ghost:
-          "bg-transparent text-[var(--color-muted-foreground)] border-transparent hover:text-[var(--color-primary)]",
+          "bg-transparent text-[var(--color-muted-foreground)] border-transparent hover:text-[var(--color-primary-text)]",
         destructive:
           "bg-[var(--color-destructive)] text-[var(--color-destructive-foreground)] border-[var(--color-destructive)] hover:opacity-90",
       },

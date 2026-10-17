@@ -33,7 +33,7 @@ describe("ZONE_META", () => {
     }
   });
 
-  /* Colour comes from the Field Ledger tokens in packages/ui/src/styles/index.css, never from a
+  /* Colour comes from the palette tokens in packages/ui/src/styles/index.css, never from a
    * raw Tailwind palette class. A `bg-red-700` slipping back in would render, so nothing else
    * would catch it. */
   it("every entry paints from a palette token, not a raw Tailwind colour", () => {

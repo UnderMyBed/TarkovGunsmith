@@ -39,50 +39,50 @@ function sync(state: "disconnected" | "syncing" | "synced" | "error"): UseTarkov
 }
 
 describe("ProfileReadout", () => {
-  it("shows MANUAL meta and disables RE-IMPORT when disconnected", () => {
+  it("shows Manual meta and disables Re-import when disconnected", () => {
     render(<ProfileReadout gate={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />);
-    expect(screen.getByText(/MANUAL/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /RE-IMPORT/ })).toBeDisabled();
+    expect(screen.getByText(/Manual/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Re-import/ })).toBeDisabled();
   });
 
-  it("shows TARKOVTRACKER · Nh AGO and enables RE-IMPORT when synced", () => {
+  it("shows TarkovTracker · Nh ago and enables Re-import when synced", () => {
     render(<ProfileReadout gate={profile} sync={sync("synced")} onEditProfile={vi.fn()} />);
-    expect(screen.getByText(/TARKOVTRACKER · 2H AGO/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /RE-IMPORT/ })).toBeEnabled();
+    expect(screen.getByText(/TarkovTracker · 2h ago/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Re-import/ })).toBeEnabled();
   });
 
-  it("calls sync.reSync when RE-IMPORT clicked", () => {
+  it("calls sync.reSync when Re-import clicked", () => {
     const reSyncMock = vi.fn();
     const s = sync("synced");
     s.reSync = reSyncMock;
     render(<ProfileReadout gate={profile} sync={s} onEditProfile={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /RE-IMPORT/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Re-import/ }));
     expect(reSyncMock).toHaveBeenCalled();
   });
 
-  it("calls onEditProfile when EDIT PROFILE link clicked", () => {
+  it("calls onEditProfile when Edit profile link clicked", () => {
     const onEditProfile = vi.fn();
     render(
       <ProfileReadout gate={profile} sync={sync("disconnected")} onEditProfile={onEditProfile} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /EDIT PROFILE/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Edit profile/ }));
     expect(onEditProfile).toHaveBeenCalled();
   });
 
   it("renders all 7 trader rows with level values", () => {
     render(<ProfileReadout gate={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />);
-    expect(screen.getByText(/PRAPOR/)).toBeInTheDocument();
-    expect(screen.getByText(/JAEGER/)).toBeInTheDocument();
+    expect(screen.getByText(/Prapor/)).toBeInTheDocument();
+    expect(screen.getByText(/Jaeger/)).toBeInTheDocument();
   });
 
   it("names theorycraft, with every gate open, and offers to set a progression", () => {
     const onEditProfile = vi.fn();
     render(<ProfileReadout gate={null} sync={sync("synced")} onEditProfile={onEditProfile} />);
-    expect(screen.getByText("THEORYCRAFT")).toBeInTheDocument();
+    expect(screen.getByText("Theorycraft")).toBeInTheDocument();
     expect(screen.getByText(/Every trader, flea offer and quest open/i)).toBeInTheDocument();
-    expect(screen.queryByText("PMC LEVEL")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /RE-IMPORT/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /SET PROGRESSION/ }));
+    expect(screen.queryByText("PMC level")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Re-import/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Set progression/ }));
     expect(onEditProfile).toHaveBeenCalledOnce();
   });
 });

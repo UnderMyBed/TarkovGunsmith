@@ -295,7 +295,7 @@ describe("ProfileEditor — TarkovTracker", () => {
       sync: makeSync({ state: "connected", detail: { state: "connected" } }),
     });
 
-    expect(screen.getByText(/TARKOVTRACKER · CONNECTED/)).toBeInTheDocument();
+    expect(screen.getByText(/TarkovTracker · connected/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Connect TarkovTracker/ })).not.toBeInTheDocument();
   });
 

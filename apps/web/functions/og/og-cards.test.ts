@@ -151,7 +151,7 @@ describe("/og/build/:id over stored records", () => {
     await call(buildCard, "id", "https://site.pages.dev/og/build/abcd2345");
     const vm = rendered[0] as BuildCardViewModel;
     // A fresh profile cannot buy the receiver, so there is no price and the pill says so.
-    expect(vm.availability).toBe("LOCKED");
+    expect(vm.availability).toBe("Locked");
     expect(vm.priceRub).toBeNull();
   });
 
@@ -221,7 +221,7 @@ describe("/og/pair/:pairId over stored records", () => {
     // the flea; the right, with none, is theorycraft's Mechanic LL3. The embedded fresh
     // profile would have read LOCKED.
     const vm = rendered[0] as PairCardViewModel;
-    expect([vm.left?.availability, vm.right?.availability]).toEqual(["FLEA", "LL3"]);
+    expect([vm.left?.availability, vm.right?.availability]).toEqual(["Flea", "LL3"]);
   });
 
   it("serves the fallback, uncached, for a pair Compare would refuse, naming the id", async () => {

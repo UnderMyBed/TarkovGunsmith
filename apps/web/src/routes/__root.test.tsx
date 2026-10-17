@@ -11,7 +11,7 @@ describe("__root shell (header nav, footer)", () => {
   it("renders the brand and exactly the Builder and Compare nav links", async () => {
     await renderRoute("/");
 
-    expect(screen.getByText("TARKOVGUNSMITH")).toBeInTheDocument();
+    expect(screen.getByText("TarkovGunsmith")).toBeInTheDocument();
     const nav = within(screen.getByRole("navigation"));
     expect(nav.getAllByRole("link").map((el) => el.textContent)).toEqual(["Builder", "Compare"]);
     expect(nav.getByRole("link", { name: "Builder" })).toHaveAttribute("href", "/builder");

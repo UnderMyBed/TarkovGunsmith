@@ -15,8 +15,8 @@ import { test, expect } from "./upstream.js";
  *     Restoring the ring also restores `outline-none` — which means a broken or unpainted
  *     ring would leave keyboard users with NO focus indicator at all, strictly worse than
  *     the bug. Both halves are asserted together, on a Button and on an Input.
- *  2. `<Card variant="bracket">`'s corner marks, which are ::before/::after pseudo-elements.
- *     Nothing short of a real engine resolves those.
+ *  2. `<Card>`'s panel radius, an arbitrary value over a theme variable
+ *     (`rounded-[var(--radius-panel)]`). Only a real engine resolves the variable to pixels.
  */
 
 /**
@@ -79,39 +79,16 @@ test.describe("design system — styles reach the browser", () => {
     expect(boxShadow, "the focus ring has no visible colour").toMatch(/rgb/);
   });
 
-  test("Card variant=bracket paints its corner brackets", async ({ page }) => {
+  test("a DialogPanel paints the 8px panel radius", async ({ page }) => {
     await page.goto("/", { waitUntil: "networkidle" });
-    // The keyboard-shortcut overlay is a <DialogPanel>, i.e. a bracket-variant <Card>.
+    // The keyboard-shortcut overlay is a <DialogPanel>, i.e. a <Card>.
     await page.keyboard.press("Shift+?");
     await expect(page.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible({
       timeout: 5_000,
     });
 
     const panel = page.getByRole("dialog").locator(":scope > div").first();
-    const corners = await panel.evaluate((el) =>
-      (["::before", "::after"] as const).map((pseudo) => {
-        const s = getComputedStyle(el, pseudo);
-        return {
-          pseudo,
-          content: s.content,
-          borderTopWidth: parseFloat(s.borderTopWidth),
-          borderBottomWidth: parseFloat(s.borderBottomWidth),
-          width: parseFloat(s.width),
-          height: parseFloat(s.height),
-        };
-      }),
-    );
-
-    for (const corner of corners) {
-      expect(corner.content, `${corner.pseudo} was never generated`).not.toBe("none");
-      expect(corner.width, `${corner.pseudo} has no width`).toBeGreaterThan(0);
-      expect(corner.height, `${corner.pseudo} has no height`).toBeGreaterThan(0);
-      // Each corner draws exactly two of its four edges, so one of top/bottom is 0 and the
-      // other is not — asserting the sum keeps this true for both corners at once.
-      expect(
-        corner.borderTopWidth + corner.borderBottomWidth,
-        `${corner.pseudo} draws no border`,
-      ).toBeGreaterThan(0);
-    }
+    const radius = await panel.evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+    expect(radius, "the panel radius token did not reach the Card").toBe("8px");
   });
 });

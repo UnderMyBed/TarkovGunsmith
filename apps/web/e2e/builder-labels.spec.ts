@@ -53,7 +53,7 @@ test.describe("Builder weapon picker and slot labels", () => {
       const picker = weaponPicker(page);
       await expect(picker).toHaveValue(M4A1, { timeout: 15_000 });
       await expect(picker.locator("option:checked")).toHaveText(
-        `${M4A1_LABEL} — LOCKED · peacekeeper LL2 barter`,
+        `${M4A1_LABEL} — locked · peacekeeper LL2 barter`,
       );
       await expect(page.getByRole("button", { name: "Progression", pressed: true })).toBeVisible();
     });

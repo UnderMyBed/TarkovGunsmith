@@ -40,7 +40,7 @@ export function OptimizeConstraintsForm({
           {OBJECTIVES.map((o) => (
             <label
               key={o.value}
-              className="flex items-center gap-2 border border-[var(--color-border)] p-2 font-mono text-sm uppercase tracking-wider hover:border-[var(--color-primary)]"
+              className="flex items-center gap-2 border border-[var(--color-border)] p-2 text-sm hover:border-[var(--color-primary)]"
             >
               <input
                 type="radio"

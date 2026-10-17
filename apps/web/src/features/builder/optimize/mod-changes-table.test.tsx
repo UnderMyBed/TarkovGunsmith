@@ -40,10 +40,10 @@ describe("ModChangesTable", () => {
         unchangedCount={0}
       />,
     );
-    expect(screen.getByText(/RUN THE SOLVER/)).toBeInTheDocument();
+    expect(screen.getByText(/Run the solver/)).toBeInTheDocument();
   });
 
-  it("renders rows and reflects ACCEPT SELECTED (N) count from selected set", () => {
+  it("renders rows and reflects Accept selected (N) count from selected set", () => {
     const rows = [row({ slotId: "muzzle" }), row({ slotId: "handguard", slotLabel: "HANDGUARD" })];
     render(
       <ModChangesTable
@@ -58,9 +58,32 @@ describe("ModChangesTable", () => {
         unchangedCount={12}
       />,
     );
-    expect(screen.getByRole("button", { name: /ACCEPT SELECTED \(1\)/ })).toBeEnabled();
-    expect(screen.getByText(/2 SLOTS CHANGED/)).toBeInTheDocument();
-    expect(screen.getByText(/12 SLOTS UNCHANGED/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Accept selected \(1\)/ })).toBeEnabled();
+    expect(screen.getByText(/2 slots changed/)).toBeInTheDocument();
+    expect(screen.getByText(/12 slots unchanged/)).toBeInTheDocument();
+  });
+
+  /* Better and worse are close in lightness, so each directed delta also says which way it
+   * went. The fixture row gains ergonomics and loses recoil (both better) but costs more. */
+  it("names each delta cell better or worse, not by colour alone", () => {
+    render(
+      <ModChangesTable
+        rows={[row()]}
+        selected={new Set(["muzzle"])}
+        onToggle={vi.fn()}
+        onAcceptAll={vi.fn()}
+        onAcceptSelected={vi.fn()}
+        onDiscard={vi.fn()}
+        scoreDelta={null}
+        mode="result"
+        unchangedCount={0}
+      />,
+    );
+    const better = screen.getAllByTitle("better");
+    expect(better.map((c) => c.textContent)).toEqual(["+1 better", "−4.0 better"]);
+    const worse = screen.getAllByTitle("worse");
+    expect(worse).toHaveLength(1);
+    expect(worse[0]).toHaveTextContent(/ worse$/);
   });
 
   it("toggles a row via the per-row checkbox", () => {
@@ -73,7 +96,7 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={{ label: "ERGO", value: 0, digits: 0 }}
+        scoreDelta={{ label: "Ergo", value: 0, digits: 0 }}
         mode="result"
         unchangedCount={0}
       />,
@@ -82,7 +105,7 @@ describe("ModChangesTable", () => {
     expect(onToggle).toHaveBeenCalledWith("muzzle");
   });
 
-  it("disables ACCEPT SELECTED when selected is empty", () => {
+  it("disables Accept selected when selected is empty", () => {
     render(
       <ModChangesTable
         rows={[row()]}
@@ -91,12 +114,12 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={{ label: "ERGO", value: 0, digits: 0 }}
+        scoreDelta={{ label: "Ergo", value: 0, digits: 0 }}
         mode="result"
         unchangedCount={0}
       />,
     );
-    expect(screen.getByRole("button", { name: /ACCEPT SELECTED \(0\)/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Accept selected \(0\)/ })).toBeDisabled();
   });
 
   it("renders zero-change state when mode='result' and rows is empty", () => {
@@ -108,13 +131,13 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={{ label: "ERGO", value: 0, digits: 0 }}
+        scoreDelta={{ label: "Ergo", value: 0, digits: 0 }}
         mode="result"
         unchangedCount={14}
       />,
     );
-    expect(screen.getByText(/NO IMPROVEMENTS FOUND/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ACCEPT ALL/ })).toBeDisabled();
+    expect(screen.getByText(/No improvements found/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Accept all/ })).toBeDisabled();
   });
 
   it("renders the recoil delta as a percentage, not a rounded-to-zero fraction", () => {
@@ -129,7 +152,7 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={{ label: "RECOIL V+H", value: -30, digits: 0 }}
+        scoreDelta={{ label: "Recoil V+H", value: -30, digits: 0 }}
         mode="result"
         unchangedCount={0}
       />,
@@ -147,11 +170,11 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={{ label: "WEIGHT KG", value: 0.125, digits: 2 }}
+        scoreDelta={{ label: "Weight kg", value: 0.125, digits: 2 }}
         mode="result"
         unchangedCount={0}
       />,
     );
-    expect(screen.getByText(/WEIGHT KG Δ/)).toHaveTextContent("WEIGHT KG Δ · +0.13");
+    expect(screen.getByText(/Weight kg Δ/)).toHaveTextContent("Weight kg Δ · +0.13");
   });
 });

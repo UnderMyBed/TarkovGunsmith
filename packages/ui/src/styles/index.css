@@ -4,9 +4,8 @@
  * is `apps/web/**` — and it deliberately never descends into node_modules. `@tarkov/ui`
  * resolves through `node_modules/@tarkov/ui` (a pnpm workspace symlink), so every class
  * that exists ONLY in this package's components was invisible to the scanner and its
- * rules were never emitted: no `focus-visible:` ring on Button or Input, no `before:`/
- * `after:` corner brackets on `<Card variant="bracket">`, no `animate-pulse` on Skeleton,
- * no `grid-cols-[110px_46px_56px_48px_1fr]` on StatRow. The markup shipped the class
+ * rules were never emitted: no `focus-visible:` ring on Button or Input, no
+ * `animate-pulse` on Skeleton, no `grid-cols-[110px_46px_56px_48px_1fr]` on StatRow. The markup shipped the class
  * names; the stylesheet had no matching rule. See GitHub issue #162.
  *
  * The directive lives here rather than in a consumer's stylesheet because this package
@@ -27,74 +26,57 @@
  * (including Tailwind's @layer output), so compilers strip it from the bundle. */
 
 @theme {
-  /* ───── Field Ledger palette ────────────────────────────────── */
-  --color-background: #0e0f0c;
-  --color-foreground: #e6e4db;
+  /* ───── Graphite palette ────────────────────────────────────── */
+  --color-background: #1a1c20;
+  --color-foreground: #e8eaed;
+  /* Secondary text: values beside a label, part names in a list. */
+  --color-foreground-2: #c5cad1;
+  /* `muted-foreground` is the dim text tier: labels, captions, units. */
+  --color-muted-foreground: #a0a7b1;
+  /* The quietest text tier — empty slots, placeholders. Lifted from the mockup's #7a818b
+   * so it still clears 4.5:1 against the panel (4.59) and the page (5.23). */
+  --color-faint: #888f99;
 
   /* Surfaces */
-  --color-card: #16170f;
-  --color-card-foreground: #e6e4db;
-  --color-popover: #1f211a;
-  --color-popover-foreground: #e6e4db;
-  --color-muted: #1f211a;
-  --color-muted-foreground: #9a988d;
-  --color-accent: #2a2c23;
-  --color-accent-foreground: #e6e4db;
-  --color-secondary: #2a2c23;
-  --color-secondary-foreground: #e6e4db;
+  --color-card: #24272c;
+  --color-card-foreground: #e8eaed;
+  --color-popover: #24272c;
+  --color-popover-foreground: #e8eaed;
+  /* The bar / strip tier: header bar, stat strip, track behind a bar fill. */
+  --color-muted: #1f2226;
+  --color-selected: #2b3a3a;
 
   /* Strokes + inputs */
-  --color-border: #3a3d33;
-  --color-input: #1f211a;
-  --color-ring: #f59e0b;
+  --color-border: #34383f;
+  --color-border-strong: #454a53;
+  --color-divider: #2c3036;
+  --color-input: #1a1c20;
+  --color-ring: #5fbfb3;
 
-  /* Amber — primary accent */
-  --color-primary: #f59e0b;
-  --color-primary-foreground: #0e0f0c;
+  /* Teal accent. `primary-text` is the accent when it is the text colour itself. */
+  --color-primary: #5fbfb3;
+  --color-primary-foreground: #0d2422;
+  --color-primary-text: #7fd3c8;
 
-  /* Destructive (blood red) */
-  --color-destructive: #b91c1c;
-  --color-destructive-foreground: #e6e4db;
+  /* Deltas. Blue and orange are a colour-blind-safe pair, but they are close in lightness
+   * (1.14:1), so every delta painted with them also says "better" or "worse" in text. */
+  --color-better: #8ec5ff;
+  --color-worse: #f2a272;
 
-  /* Field Ledger — additional palette (not semantic aliases) */
-  --color-amber-deep: #b45309;
-  --color-olive: #7a8b3f;
-  --color-rust: #9c3f1e;
-  --color-paper-dim: #6b6a60;
-  --color-line-muted: #26291f;
+  /* Errors. Always paired with wording, never colour alone. */
+  --color-destructive: #f28b82;
+  --color-destructive-foreground: #2a0e0e;
 
   /* ───── Typography ──────────────────────────────────────────── */
+  /* Bungee is the wordmark only. Chivo is every label, button, heading and line of prose,
+   * in sentence case with no letter-spacing. Azeret Mono is for numbers. */
   --font-display: "Bungee", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Chivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Azeret Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Type scale — EXTRACTED, not designed.
-   *
-   * Every `text-[Npx]` / `tracking-[N.NNem]` arbitrary value hardcoded across apps/web and
-   * packages/ui as of the 2026-08-19 pre-refactor audit, lifted verbatim into `--text-*` /
-   * `--tracking-*` theme tokens so a future redesign is a value edit here instead of an
-   * 85-file hand sweep. Tailwind v4 turns each `--text-N` into a first-class `text-N`
-   * utility (and `--tracking-N` into `tracking-N`) — no brackets needed at call sites.
-   *
-   * Token names are literal, not semantic (`--text-11`, not `--text-caption`): the same
-   * pixel value serves different UI roles at different call sites (a stat label here, a nav
-   * item there), so a single semantic name would assert a shared meaning that was never
-   * actually decided. Naming them after their own value avoids inventing that meaning.
-   * Deliberately NOT rounded into a tidier ramp and NOT consolidated beyond exact
-   * duplicates. Inventing an actual scale (and giving sizes role-based names) is the
-   * redesign's job.
-   *
-   * `--tracking-N` names the em value ×100 (`--tracking-18` == `letter-spacing: 0.18em`).
-   * These sit far outside Tailwind's built-in `--tracking-tighter…widest` range (max
-   * 0.1em), so reusing those names would misrepresent the built-ins, not just add to them.
-   *
-   * `--text-56` / `--text-88` are the two `clamp()` fluid headline sizes (route `<h1>` and
-   * the home hero `<h1>`, respectively), named after their capped/max value for the same
-   * reason as the rest of the scale — mechanically, not semantically.
-   */
-  --text-8: 8px;
-  --text-9: 9px;
-  --text-10: 10px;
+  /* Type sizes named after their pixel value. 11px is the floor for a label and 13px for
+   * body text; nothing smaller exists. `--text-56` / `--text-88` are the fluid headline
+   * sizes, named after their capped value. */
   --text-11: 11px;
   --text-12: 12px;
   --text-13: 13px;
@@ -103,15 +85,10 @@
   --text-56: clamp(32px, 5vw, 56px);
   --text-88: clamp(44px, 7vw, 88px);
 
-  --tracking-14: 0.14em;
-  --tracking-15: 0.15em;
-  --tracking-18: 0.18em;
-  --tracking-20: 0.2em;
-  --tracking-22: 0.22em;
-  --tracking-25: 0.25em;
-
   /* ───── Shape ───────────────────────────────────────────────── */
-  --radius: 0.125rem;
+  /* `--radius` is the control radius (buttons, inputs, pills); panels take 8px. */
+  --radius: 6px;
+  --radius-panel: 8px;
 }
 
 @layer base {
@@ -126,32 +103,6 @@
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-
-    /* Subtle atmospheric backlight */
-    background-image:
-      radial-gradient(ellipse at 15% 0%, rgba(245, 158, 11, 0.05), transparent 55%),
-      radial-gradient(ellipse at 85% 100%, rgba(122, 139, 63, 0.04), transparent 55%);
-    background-attachment: fixed;
-  }
-
-  /* Grain overlay on the body — subtle texture so the dark theme isn't sterile */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 1;
-    mix-blend-mode: overlay;
-    opacity: 0.28;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9  0 0 0 0 0.9  0 0 0 0 0.85  0 0 0 0.06 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
-  }
-
-  /* Ensure app content sits above the grain layer */
-  #root,
-  #__root,
-  main {
-    position: relative;
-    z-index: 2;
   }
 
   /* Mono numerics everywhere by default on tabular contexts */
@@ -180,6 +131,6 @@
     border: 2px solid var(--color-background);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-paper-dim);
+    background: var(--color-border-strong);
   }
 }

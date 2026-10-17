@@ -79,9 +79,9 @@ describe("sim page (parked, no route)", () => {
     await user.click(runButton);
 
     // ScenarioSummary renders a real outcome (Alive or Killed) and a shot count.
-    expect(await screen.findByText("OUTCOME")).toBeInTheDocument();
+    expect(await screen.findByText("Outcome")).toBeInTheDocument();
     expect(screen.getByText(/Alive|Killed/)).toBeInTheDocument();
-    const shotsFiredStat = screen.getByText("SHOTS FIRED").parentElement;
+    const shotsFiredStat = screen.getByText("Shots fired").parentElement;
     expect(shotsFiredStat).not.toBeNull();
     expect(shotsFiredStat).toHaveTextContent("2");
 
@@ -90,7 +90,7 @@ describe("sim page (parked, no route)", () => {
     // still-populated ShotQueue rows above the results — so the pill count is the reliable
     // signal that two timeline rows rendered.)
     expect(screen.queryByText("No shots executed.")).not.toBeInTheDocument();
-    const pens = screen.getAllByText(/^(PEN|blocked)$/);
+    const pens = screen.getAllByText(/^(Pen|blocked)$/);
     expect(pens).toHaveLength(2);
   });
 

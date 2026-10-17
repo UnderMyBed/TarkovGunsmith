@@ -261,9 +261,9 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
                       key={key}
                       type="button"
                       onClick={() => setFilter(key)}
-                      className={`border px-2 py-0.5 font-mono uppercase tracking-wider ${focusRing} ${
+                      className={`border px-2 py-0.5 ${focusRing} ${
                         filter === key
-                          ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+                          ? "border-[var(--color-primary)] text-[var(--color-primary-text)]"
                           : "border-[var(--color-border)] text-[var(--color-muted-foreground)]"
                       }`}
                     >

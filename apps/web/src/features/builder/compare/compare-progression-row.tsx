@@ -37,9 +37,9 @@ function SidePill({
     <span className="flex items-baseline gap-3 font-mono text-sm tabular-nums">
       <span>{text}</span>
       {/* Unlisted flea entries are only known once prices are in: before then a lock is a guess. */}
-      {pricesReady && gated && price?.status === "unobtainable" && <Pill tone="muted">LOCKED</Pill>}
+      {pricesReady && gated && price?.status === "unobtainable" && <Pill tone="muted">Locked</Pill>}
       {pricesReady && gated && price !== null && price.status !== "unobtainable" && (
-        <Pill tone="reliable">REACHABLE</Pill>
+        <Pill tone="accent">Reachable</Pill>
       )}
     </span>
   );
@@ -52,7 +52,7 @@ function SidePill({
 export function CompareProgressionRow(props: CompareProgressionRowProps): ReactElement {
   const pricesReady = props.prices.state === "ready";
   return (
-    <div className="flex flex-col gap-1 border-t border-dashed border-[var(--color-border)] py-2">
+    <div className="flex flex-col gap-1 border-t border-[var(--color-border)] py-2">
       <div className="flex items-center justify-between text-sm" data-testid="compare-price-row">
         <SidePill side={props.left} pricesReady={pricesReady} nameOf={props.nameOf} />
         <SidePill side={props.right} pricesReady={pricesReady} nameOf={props.nameOf} />

@@ -9,8 +9,6 @@ afterEach(() => cleanup());
 describe("StatRow", () => {
   it("renders label, stock, delta and value text", () => {
     render(<StatRow label="Recoil V" stock={119} delta="−50%" value={60.095} percent={50} />);
-    // The `uppercase` class is a CSS text-transform, not a DOM text mutation —
-    // the rendered text node stays exactly as the `label` prop was passed.
     expect(screen.getByText("Recoil V")).toBeInTheDocument();
     expect(screen.getByText("119")).toBeInTheDocument();
     expect(screen.getByText("−50%")).toBeInTheDocument();
@@ -66,7 +64,7 @@ describe("StatRow", () => {
   });
 
   it("gives every barTone its own class set on the fill", () => {
-    const tones = ["primary", "olive", "destructive"] as const;
+    const tones = ["primary", "better", "worse"] as const;
     const signatures = tones.map((barTone) => {
       const { container } = render(
         <StatRow label="Tone" value={1} percent={50} barTone={barTone} />,
@@ -86,6 +84,20 @@ describe("StatRow", () => {
       <StatRow label="Explicit" value={1} percent={50} barTone="primary" />,
     );
     expect(classSignature(explicit.querySelector('[style*="width"]')!)).toBe(implicitSig);
+  });
+
+  /* Better and worse are a colour-blind-safe pair but close in lightness, so the colour is
+   * never the only signal: a directed delta also says which way it went. */
+  it("names a directed delta better or worse, and leaves a neutral one unnamed", () => {
+    render(<StatRow label="Ergo" value={55} delta="+7" deltaDirection="up" />);
+    expect(screen.getByTitle("better")).toHaveTextContent(/^\+7 better$/);
+    cleanup();
+    render(<StatRow label="Weight" value={2.85} delta="+2.10" deltaDirection="down" />);
+    expect(screen.getByTitle("worse")).toHaveTextContent(/^\+2\.10 worse$/);
+    cleanup();
+    render(<StatRow label="Same" value={1} delta="0" />);
+    expect(screen.queryByTitle(/better|worse/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/better|worse/)).not.toBeInTheDocument();
   });
 
   it("merges a caller className onto the row wrapper", () => {

@@ -24,24 +24,24 @@ describe("buildCard", () => {
     const text = textContent(svg);
     expect(text).toMatch(/RECOIL KING/);
     expect(text).toMatch(/M4A1/);
-    expect(text).toMatch(/11 MODS/);
+    expect(text).toMatch(/11 mods/);
     expect(text).toMatch(/LL3/);
-    expect(text).toMatch(/SHAREABLE/);
-    expect(text).toMatch(/ERGO/);
-    expect(text).toMatch(/RECOIL V/);
-    expect(text).toMatch(/RECOIL H/);
-    expect(text).toMatch(/WEIGHT/);
+    expect(text).toMatch(/Shareable/);
+    expect(text).toMatch(/Ergo/);
+    expect(text).toMatch(/Recoil V/);
+    expect(text).toMatch(/Recoil H/);
+    expect(text).toMatch(/Weight/);
     expect(text).toMatch(/MOA/);
     expect(text).toMatch(/1\.17/);
-    expect(text).toMatch(/SHARED BUILD/);
-    expect(text).toMatch(/TARKOVGUNSMITH/);
+    expect(text).toMatch(/Shared build/);
+    expect(text).toMatch(/TarkovGunsmith/);
     expect(text).toMatch(/187 240|187,240/);
   });
 
   it("omits the availability pill when there is none", async () => {
     const text = textContent(await render({ ...vm, availability: null }));
     expect(text).not.toMatch(/LL3/);
-    expect(text).toMatch(/11 MODS/);
+    expect(text).toMatch(/11 mods/);
   });
 
   it("omits the price pill when priceRub is null", async () => {

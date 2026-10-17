@@ -49,12 +49,12 @@ export function AecPage() {
     <div className="flex flex-col gap-6">
       <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
-        <div className="font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
-          <span>INVERSE · RANKING</span>
-          <span>/ ARMOR FIXED</span>
+        <div className="text-11 text-[var(--color-faint)] flex gap-4 flex-wrap">
+          <span>Inverse · ranking</span>
+          <span>/ armor fixed</span>
         </div>
-        <h1 className="font-display text-56 leading-[0.95] tracking-tight uppercase">
-          Armor Effectiveness <span className="text-[var(--color-primary)]">Calculator</span>
+        <h1 className="font-bold text-56 leading-[0.95]">
+          Armor Effectiveness <span className="text-[var(--color-primary-text)]">Calculator</span>
         </h1>
         <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Pick an armor; every ammo is simulated and ranked by how efficiently it breaks it.
@@ -130,7 +130,7 @@ export function AecPage() {
         </CardContent>
       </Card>
 
-      <Card variant="bracket">
+      <Card>
         <CardHeader>
           <CardTitle>Ranked ammo</CardTitle>
           {!rows && !isLoading && (
@@ -150,7 +150,7 @@ export function AecPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
+                  <tr className="border-b text-left text-xs text-[var(--color-muted-foreground)]">
                     <th className="py-2">#</th>
                     <th className="py-2">Ammo</th>
                     <th className="py-2">Shots to break</th>

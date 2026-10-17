@@ -5,28 +5,21 @@ import type { PairCardViewModel, SideViewModel } from "./view-model.js";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
-const BRACKET = 40;
-const BRACKET_STROKE = 4;
 
 const fontDisplay = "Bungee";
+const fontSans = "Chivo";
 const fontMono = "Azeret Mono";
 
-function Bracket({ corner }: { corner: "tl" | "tr" | "bl" | "br" }): ReactNode {
-  const base = {
-    position: "absolute" as const,
-    width: BRACKET,
-    height: BRACKET,
-    border: `${BRACKET_STROKE}px solid ${COLORS.amber}`,
-  };
-  const pos =
-    corner === "tl"
-      ? { top: 28, left: 28, borderRight: "none", borderBottom: "none" }
-      : corner === "tr"
-        ? { top: 28, right: 28, borderLeft: "none", borderBottom: "none" }
-        : corner === "bl"
-          ? { bottom: 28, left: 28, borderRight: "none", borderTop: "none" }
-          : { bottom: 28, right: 28, borderLeft: "none", borderTop: "none" };
-  return <div style={{ ...base, ...pos }} />;
+/** The triangle mark and the Bungee wordmark — the one place Bungee is used. */
+function Wordmark(): ReactNode {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <svg width="20" height="17" viewBox="0 0 14 12">
+        <path d="M7 0 14 12H0z" fill={COLORS.accent} />
+      </svg>
+      <span style={{ fontFamily: fontDisplay, color: COLORS.foreground }}>TarkovGunsmith</span>
+    </div>
+  );
 }
 
 function fmt(n: number, digits = 0): string {
@@ -40,10 +33,10 @@ function Side({
   tone,
 }: {
   side: SideViewModel | null;
-  label: "BUILD A" | "BUILD B";
-  tone: "paper" | "amber";
+  label: "Build A" | "Build B";
+  tone: "neutral" | "accent";
 }): ReactNode {
-  const nameColor = tone === "amber" ? COLORS.amber : COLORS.foreground;
+  const nameColor = tone === "accent" ? COLORS.accentText : COLORS.foreground;
   if (!side) {
     return (
       <div
@@ -57,34 +50,33 @@ function Side({
       >
         <div
           style={{
-            fontFamily: fontMono,
+            fontFamily: fontSans,
+            fontWeight: 700,
             fontSize: 20,
-            color: COLORS.paperDim,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
+            color: COLORS.dim,
           }}
         >
           {label}
         </div>
         <div
           style={{
-            fontFamily: fontDisplay,
+            fontFamily: fontSans,
+            fontWeight: 700,
             fontSize: 48,
-            color: COLORS.paperDim,
-            textTransform: "uppercase",
+            color: COLORS.faint,
             lineHeight: 1,
           }}
         >
-          EMPTY SLOT
+          Empty slot
         </div>
       </div>
     );
   }
   const rows: [string, string][] = [
-    ["ERGO", fmt(side.stats.ergo)],
-    ["RECOIL V", fmt(side.stats.recoilV)],
-    ["RECOIL H", fmt(side.stats.recoilH)],
-    ["WEIGHT", fmt(side.stats.weight, 2)],
+    ["Ergo", fmt(side.stats.ergo)],
+    ["Recoil V", fmt(side.stats.recoilV)],
+    ["Recoil H", fmt(side.stats.recoilH)],
+    ["Weight", fmt(side.stats.weight, 2)],
   ];
   return (
     <div
@@ -98,21 +90,20 @@ function Side({
     >
       <div
         style={{
-          fontFamily: fontMono,
+          fontFamily: fontSans,
+          fontWeight: 700,
           fontSize: 20,
-          color: COLORS.paperDim,
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
+          color: COLORS.dim,
         }}
       >
         {label}
       </div>
       <div
         style={{
-          fontFamily: fontDisplay,
+          fontFamily: fontSans,
+          fontWeight: 700,
           fontSize: 48,
           color: nameColor,
-          textTransform: "uppercase",
           lineHeight: 1,
         }}
       >
@@ -121,17 +112,17 @@ function Side({
       <div
         style={{
           display: "flex",
-          fontFamily: fontMono,
+          fontFamily: fontSans,
+          fontWeight: 700,
           fontSize: 22,
-          color: COLORS.paperDim,
-          letterSpacing: "0.05em",
+          color: COLORS.foreground2,
           flexWrap: "wrap",
           columnGap: 12,
         }}
       >
         {/* One unbreakable run per segment, each separator riding on the segment after it, so a
             long pill wraps between segments and never leaves a separator dangling. */}
-        {[`${side.modCount} MODS`, ...(side.availability?.split(" · ") ?? [])].map((seg, i) => (
+        {[`${side.modCount} mods`, ...(side.availability?.split(" · ") ?? [])].map((seg, i) => (
           <span key={i} style={{ whiteSpace: "nowrap" }}>
             {i === 0 ? seg : `· ${seg}`}
           </span>
@@ -151,15 +142,26 @@ function Side({
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontFamily: fontMono,
-              borderBottom: `1px dashed ${COLORS.lineMuted}`,
+              alignItems: "baseline",
+              borderBottom: `1px solid ${COLORS.divider}`,
               paddingBottom: 6,
             }}
           >
-            <span style={{ color: COLORS.paperDim, fontSize: 22, letterSpacing: "0.1em" }}>
+            <span
+              style={{ fontFamily: fontSans, fontWeight: 700, color: COLORS.dim, fontSize: 22 }}
+            >
               {k}
             </span>
-            <span style={{ color: COLORS.foreground, fontSize: 26, fontWeight: 700 }}>{v}</span>
+            <span
+              style={{
+                fontFamily: fontMono,
+                color: COLORS.foreground,
+                fontSize: 26,
+                fontWeight: 700,
+              }}
+            >
+              {v}
+            </span>
           </div>
         ))}
       </div>
@@ -179,11 +181,6 @@ export function pairCard(vm: PairCardViewModel): ReactNode {
         display: "flex",
       }}
     >
-      <Bracket corner="tl" />
-      <Bracket corner="tr" />
-      <Bracket corner="bl" />
-      <Bracket corner="br" />
-
       {/* Divider */}
       <div
         style={{
@@ -192,7 +189,7 @@ export function pairCard(vm: PairCardViewModel): ReactNode {
           bottom: 100,
           left: WIDTH / 2 - 0.5,
           width: 1,
-          background: COLORS.border,
+          background: COLORS.line,
         }}
       />
 
@@ -204,21 +201,23 @@ export function pairCard(vm: PairCardViewModel): ReactNode {
           left: WIDTH / 2 - 42,
           width: 84,
           height: 84,
-          border: `4px solid ${COLORS.amber}`,
+          border: `3px solid ${COLORS.accent}`,
+          borderRadius: 42,
           background: COLORS.background,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: fontDisplay,
-          fontSize: 32,
-          color: COLORS.amber,
+          fontFamily: fontSans,
+          fontWeight: 700,
+          fontSize: 30,
+          color: COLORS.accentText,
         }}
       >
-        VS
+        vs
       </div>
 
-      <Side side={vm.left} label="BUILD A" tone="paper" />
-      <Side side={vm.right} label="BUILD B" tone="amber" />
+      <Side side={vm.left} label="Build A" tone="neutral" />
+      <Side side={vm.right} label="Build B" tone="accent" />
 
       {/* Brand */}
       <div
@@ -229,15 +228,15 @@ export function pairCard(vm: PairCardViewModel): ReactNode {
           right: 0,
           display: "flex",
           justifyContent: "center",
-          fontFamily: fontMono,
+          alignItems: "center",
           fontSize: 22,
-          letterSpacing: "0.15em",
-          textTransform: "uppercase",
-          gap: 8,
+          gap: 10,
         }}
       >
-        <span style={{ color: COLORS.amber }}>▲ TARKOVGUNSMITH</span>
-        <span style={{ color: COLORS.paperDim }}>· BUILD COMPARISON</span>
+        <Wordmark />
+        <span style={{ fontFamily: fontSans, fontWeight: 700, color: COLORS.dim }}>
+          · Build comparison
+        </span>
       </div>
     </div>
   );

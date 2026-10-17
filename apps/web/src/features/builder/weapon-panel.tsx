@@ -42,7 +42,7 @@ const DATA_DATE = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
-const META = "font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]";
+const META = "text-11 text-[var(--color-muted-foreground)]";
 
 /**
  * The "Weapon" card: the picker, every weapon in theorycraft and those the profile can get in
@@ -100,7 +100,7 @@ export function WeaponPanel({
             <option key={w.id} value={w.id}>
               {w.lockedBy === null
                 ? w.name
-                : `${w.name} — LOCKED · ${formatRequirement(w.lockedBy, questName)}`}
+                : `${w.name} — locked · ${formatRequirement(w.lockedBy, questName)}`}
             </option>
           ))}
         </select>
