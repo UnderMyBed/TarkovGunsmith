@@ -3,10 +3,11 @@ import type { AvailabilityMod, AvailabilityOffer } from "./og-availability.js";
 import {
   adaptMod,
   buildPriceUnder,
-  mountedAttachments,
   parseBuilderPrices,
   parseBuilderSnapshot,
+  resolveBuild,
   snapshotPart,
+  snapshotPartsById,
   snapshotWeaponList,
   snapshotWeaponPresets,
   snapshotWeaponTree,
@@ -114,7 +115,7 @@ export function fetchOgRowsForBuild(
 ): {
   weapon: HydrateWeapon;
   mods: OgMod[];
-  /** The attachments actually on the weapon (`mountedAttachments`); the card counts these. */
+  /** The attachments actually on the weapon (`resolveBuild`); the card counts these. */
   attachments: Record<string, string>;
   /**
    * The build's price under `args.gate` by the Builder's own rule (`buildPriceUnder`): weapon
@@ -147,26 +148,27 @@ export function fetchOgRowsForBuild(
     },
   };
 
-  // Only parts on the weapon reach the card, exactly as the Builder counts them: a key left
-  // beneath a removed or replaced part is not on the gun.
-  const attachments = mountedAttachments(
+  // Only parts on the weapon reach the card, resolved exactly as the Builder resolves them: a
+  // key beneath an empty or replaced part, or an id the snapshot does not hold, is not on it.
+  const { placed, attachments } = resolveBuild(
     snapshotWeaponTree(snapshot, args.weaponId),
     args.attachments,
-    new Set(snapshot.parts.map((p) => p.id)),
+    snapshotPartsById(snapshot),
   );
 
+  // One row per distinct part: the lookup `hydrateBuildCard` maps `attachments` onto, one entry
+  // per filled slot, so a part fitted twice counts twice for stats as in the Builder.
   const mods: OgMod[] = [];
   const priced = new Map<string, AttachablePart>();
-  for (const id of new Set(Object.values(attachments))) {
+  for (const { itemId } of placed) {
+    if (priced.has(itemId)) continue;
     // The same part record and adapter the Builder uses, so a barrel, scope or magazine counts
     // here exactly as it does on the page, and cylinder ammo adds weight but no stat modifiers.
-    // An id the snapshot does not hold (gone upstream) is left off the card.
-    const part = snapshotPart(snapshot, table, id);
-    if (part === undefined) continue;
-    priced.set(id, part);
+    const part = snapshotPart(snapshot, table, itemId)!;
+    priced.set(itemId, part);
     const stats = adaptMod(part);
     mods.push({
-      id,
+      id: itemId,
       shortName: part.shortName,
       weight: part.weight,
       properties: {
@@ -183,13 +185,15 @@ export function fetchOgRowsForBuild(
   }
 
   // One entry per filled slot, so a part fitted twice is paid for twice, as in the Builder.
-  const parts = Object.values(attachments).flatMap((id) => {
-    const part = priced.get(id);
-    return part === undefined ? [] : [part];
-  });
+  const parts = placed.map(({ itemId }) => priced.get(itemId)!);
   // The weapon's presets, as the Builder passes them (`priceBuild`): a build bought as a preset
   // does not pay again for the parts it comes with.
   const presets = snapshotWeaponPresets(snapshot, table)[args.weaponId] ?? [];
   const price = buildPriceUnder(args.gate, { weapon: found, parts, presets });
-  return { weapon, mods, attachments, priceRub: price.status === "priced" ? price.totalRUB : null };
+  return {
+    weapon,
+    mods,
+    attachments: { ...attachments },
+    priceRub: price.status === "priced" ? price.totalRUB : null,
+  };
 }
