@@ -100,11 +100,16 @@ export function resolveInitialProfile(): PlayerProfile {
  */
 export function resolveMode(rawMode: string | null, rawProfile: string | null): BuilderMode {
   if (rawMode === "theorycraft" || rawMode === "progression") return rawMode;
-  if (rawProfile === null || rawProfile === "") return "theorycraft";
+  return isStoredProfile(rawProfile) ? "progression" : "theorycraft";
+}
+
+/** Whether `raw` is a profile the user set: present, and one that parses. */
+export function isStoredProfile(raw: string | null): boolean {
+  if (raw === null || raw === "") return false;
   try {
-    return PlayerProfile.safeParse(JSON.parse(rawProfile)).success ? "progression" : "theorycraft";
+    return PlayerProfile.safeParse(JSON.parse(raw)).success;
   } catch {
-    return "theorycraft";
+    return false;
   }
 }
 
@@ -118,6 +123,16 @@ export function resolveInitialMode(): BuilderMode {
     );
   } catch {
     return "theorycraft";
+  }
+}
+
+/** {@link isStoredProfile} over `localStorage`; `false` when it cannot be read. */
+export function resolveHasProfile(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return isStoredProfile(window.localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return false;
   }
 }
 
@@ -154,8 +169,21 @@ export function loyaltyProfile(ll: LoyaltyLevel, base: PlayerProfile): PlayerPro
 
 export interface Progression {
   readonly profile: PlayerProfile;
-  /** Sets the profile, and with it progression mode: a profile set is a profile applied. */
+  /**
+   * Whether the user has set a profile, now or on an earlier visit. Until they have,
+   * {@link profile} is `DEFAULT_PROFILE` and nothing of theirs is at stake.
+   */
+  readonly hasProfile: boolean;
+  /**
+   * Sets the profile, and with it progression mode: what the user does to choose a profile,
+   * a profile set is a profile applied.
+   */
   readonly setProfile: (next: PlayerProfile) => void;
+  /**
+   * Writes the profile and leaves the mode as it is: for a refresh the user did not just ask
+   * to apply, such as a TarkovTracker re-sync finishing after a switch to theorycraft.
+   */
+  readonly updateProfile: (next: PlayerProfile) => void;
   readonly mode: BuilderMode;
   readonly setMode: (next: BuilderMode) => void;
 }
@@ -182,20 +210,26 @@ function store(key: string, value: string): void {
 export function useProgression(): Progression {
   const [profile, setProfileState] = useState<PlayerProfile>(resolveInitialProfile);
   const [mode, setModeState] = useState<BuilderMode>(resolveInitialMode);
+  const [hasProfile, setHasProfile] = useState<boolean>(resolveHasProfile);
 
   const setMode = useCallback((next: BuilderMode) => {
     setModeState(next);
     store(MODE_STORAGE_KEY, next);
   }, []);
 
+  const updateProfile = useCallback((next: PlayerProfile) => {
+    setProfileState(next);
+    setHasProfile(true);
+    store(STORAGE_KEY, JSON.stringify(next));
+  }, []);
+
   const setProfile = useCallback(
     (next: PlayerProfile) => {
-      setProfileState(next);
-      store(STORAGE_KEY, JSON.stringify(next));
+      updateProfile(next);
       setMode("progression");
     },
-    [setMode],
+    [updateProfile, setMode],
   );
 
-  return { profile, setProfile, mode, setMode };
+  return { profile, hasProfile, setProfile, updateProfile, mode, setMode };
 }

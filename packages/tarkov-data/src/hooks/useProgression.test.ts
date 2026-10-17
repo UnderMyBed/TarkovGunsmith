@@ -10,6 +10,7 @@ import {
   FLEA_UNLOCK_LEVEL,
   loyaltyProfile,
   parseStoredProfile,
+  resolveHasProfile,
   resolveInitialMode,
   resolveInitialProfile,
   resolveMode,
@@ -332,6 +333,64 @@ describe("useProgression: the mode", () => {
     const { result } = renderHook(() => useProgression());
     expect(() => act(() => result.current.setMode("progression"))).not.toThrow();
     expect(result.current.mode).toBe("progression");
+  });
+});
+
+describe("useProgression: whether a profile is set", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it("is false on a first visit and for a stored profile that does not parse", () => {
+    expect(renderHook(() => useProgression()).result.current.hasProfile).toBe(false);
+    window.localStorage.setItem(STORAGE_KEY, "{not json");
+    expect(renderHook(() => useProgression()).result.current.hasProfile).toBe(false);
+  });
+
+  it("is true for a stored profile, and once one is set or updated", () => {
+    window.localStorage.setItem(STORAGE_KEY, STORED_PROFILE);
+    expect(renderHook(() => useProgression()).result.current.hasProfile).toBe(true);
+
+    window.localStorage.clear();
+    const { result } = renderHook(() => useProgression());
+    act(() => result.current.updateProfile({ ...DEFAULT_PROFILE, level: 3 }));
+    expect(result.current.hasProfile).toBe(true);
+  });
+
+  it("is false when localStorage cannot be read, or there is no window", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    expect(resolveHasProfile()).toBe(false);
+    vi.restoreAllMocks();
+
+    const realWindow = globalThis.window;
+    // @ts-expect-error -- simulating an environment with no `window`, e.g. SSR.
+    delete globalThis.window;
+    try {
+      expect(resolveHasProfile()).toBe(false);
+    } finally {
+      globalThis.window = realWindow;
+    }
+  });
+});
+
+describe("useProgression: updateProfile", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => window.localStorage.clear());
+
+  it("writes the profile and leaves theorycraft alone", () => {
+    window.localStorage.setItem(STORAGE_KEY, STORED_PROFILE);
+    window.localStorage.setItem(MODE_KEY, "theorycraft");
+    const { result } = renderHook(() => useProgression());
+    act(() => result.current.updateProfile({ ...DEFAULT_PROFILE, level: 30 }));
+
+    expect(result.current.mode).toBe("theorycraft");
+    expect(result.current.profile.level).toBe(30);
+    expect(window.localStorage.getItem(MODE_KEY)).toBe("theorycraft");
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ level: 30 });
   });
 });
 

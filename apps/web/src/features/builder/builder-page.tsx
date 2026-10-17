@@ -9,6 +9,7 @@ import { Button, Card, CardContent } from "@tarkov/ui";
 import { adaptWeapon } from "../data-adapters/adapters.js";
 import { ProfileEditor } from "./profile-editor.js";
 import { ModeBar } from "./mode-bar.js";
+import { applySyncedProfile } from "./synced-profile.js";
 import { BuildHeader } from "./build-header.js";
 import { CompareFromBuildDialog } from "./compare/compare-from-build-dialog.js";
 import { OptimizeView } from "./optimize/optimize-view.js";
@@ -78,7 +79,7 @@ export function BuilderPage({
   const tasks = useTasks();
   const sync = useTarkovTrackerSync({
     profile,
-    onChange: setProfile,
+    onChange: (next, cause) => applySyncedProfile(progression, next, cause),
     tasks: tasks.data,
     tasksError: tasks.error,
   });
@@ -164,7 +165,10 @@ export function BuilderPage({
         <CompareFromBuildDialog
           open={compareHandoff.isOpen}
           onClose={compareHandoff.close}
-          onConfirm={compareHandoff.confirm}
+          onConfirm={(result) => {
+            builder.commit();
+            compareHandoff.confirm(result);
+          }}
         />
 
         {view === "editor" ? (
@@ -201,7 +205,10 @@ export function BuilderPage({
               onWeaponChange={builder.handleWeaponChange}
               mode={mode}
               hasSelectedWeapon={Boolean(builder.selectedWeapon)}
-              onShare={shareBuild.share}
+              onShare={() => {
+                builder.commit();
+                shareBuild.share();
+              }}
               isSaving={shareBuild.isSaving}
               saveFailed={shareBuild.saveFailed}
               shareBlocked={shareBuild.blocked}

@@ -357,6 +357,18 @@ describe("useBuilderState seeding before live prices arrive", () => {
     expect(result.current.orphaned).toEqual(initialBuild.orphaned);
   });
 
+  it("drops the redo once the build is committed by a share or a Compare handoff", () => {
+    presetsQuery = { data: UNPRICED, isLoading: false, error: null };
+    const { result, rerender } = renderHook(() => useBuilderState(args()));
+    act(() => result.current.handleWeaponChange(WEAPON));
+    act(() => result.current.commit());
+
+    presetsQuery = { data: PRESETS, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender();
+    expect(result.current.attachments).toEqual(FLEA.attachments);
+  });
+
   it("keeps the seed made without prices when they fail", () => {
     presetsQuery = { data: UNPRICED, isLoading: false, error: null };
     const { result, rerender } = renderHook(() => useBuilderState(args()));

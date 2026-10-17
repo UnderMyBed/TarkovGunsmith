@@ -1,35 +1,43 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { FLEA_UNLOCK_LEVEL, useProgression, type PlayerProfile } from "@tarkov/data";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  DEFAULT_PROFILE,
+  FLEA_UNLOCK_LEVEL,
+  useProgression,
+  type PlayerProfile,
+} from "@tarkov/data";
 import { ModeBar } from "./mode-bar.js";
-import type { UseTarkovTrackerSyncResult } from "./useTarkovTrackerSync.js";
+import { applySyncedProfile } from "./synced-profile.js";
+import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
+
+const PROFILE_KEY = "tg:player-profile";
+const MODE_KEY = "tg:builder-mode";
 
 beforeEach(() => window.localStorage.clear());
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   window.localStorage.clear();
 });
-
-function stubSync(connect = vi.fn(() => Promise.resolve())): UseTarkovTrackerSyncResult {
-  return {
-    state: "disconnected",
-    detail: { state: "disconnected" },
-    connect,
-    reSync: vi.fn(() => Promise.resolve()),
-    disconnect: vi.fn(),
-  };
-}
 
 /** The profile the harness last rendered with. */
 function latestProfile(): PlayerProfile {
   return JSON.parse(screen.getByTestId("profile").textContent ?? "") as PlayerProfile;
 }
 
-/** The bar over the real `useProgression`, so what it sets is what persists. */
-function Harness({ sync }: { sync: UseTarkovTrackerSyncResult }) {
+/**
+ * The bar over the real `useProgression` and `useTarkovTrackerSync`, wired as `BuilderPage`
+ * wires them, so what it sets is what persists.
+ */
+function Harness() {
   const progression = useProgression();
+  const sync = useTarkovTrackerSync({
+    profile: progression.profile,
+    onChange: (next, cause) => applySyncedProfile(progression, next, cause),
+    tasks: [],
+  });
   return (
     <>
       <span data-testid="mode">{progression.mode}</span>
@@ -41,9 +49,19 @@ function Harness({ sync }: { sync: UseTarkovTrackerSyncResult }) {
 
 const pressed = (name: string) => screen.getByRole("button", { name, pressed: true });
 
-describe("ModeBar", () => {
-  it("prompts a first visit, in theorycraft, to set a progression", () => {
-    render(<Harness sync={stubSync()} />);
+/** Open the import popover, paste a token and connect, then let the fetch settle. */
+async function importToken(token: string) {
+  fireEvent.click(screen.getByRole("button", { name: /Import from TarkovTracker/ }));
+  fireEvent.change(screen.getByPlaceholderText(/token/i), { target: { value: token } });
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: /^Connect/ }));
+    await Promise.resolve();
+  });
+}
+
+describe("ModeBar on a first visit", () => {
+  it("prompts, in theorycraft, to set a progression", () => {
+    render(<Harness />);
     expect(screen.getByTestId("mode")).toHaveTextContent("theorycraft");
     expect(screen.getByText("Set your progression")).toBeInTheDocument();
     expect(pressed("Theorycraft")).toBeInTheDocument();
@@ -53,7 +71,7 @@ describe("ModeBar", () => {
   });
 
   it("sets an LL2 profile in one click and switches to progression", () => {
-    render(<Harness sync={stubSync()} />);
+    render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "LL2" }));
 
     expect(screen.getByTestId("mode")).toHaveTextContent("progression");
@@ -61,29 +79,90 @@ describe("ModeBar", () => {
     expect(pressed("Progression")).toBeInTheDocument();
     expect(latestProfile().traders.peacekeeper).toBe(2);
     expect(latestProfile()).toMatchObject({ flea: true, level: FLEA_UNLOCK_LEVEL });
-    expect(window.localStorage.getItem("tg:builder-mode")).toBe("progression");
+    expect(window.localStorage.getItem(MODE_KEY)).toBe("progression");
   });
 
-  it("toggles back to theorycraft, keeping the profile", () => {
-    render(<Harness sync={stubSync()} />);
+  it("applies a TarkovTracker import only once it succeeds, in advanced mode", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            tasksProgress: [],
+            taskObjectivesProgress: [],
+            hideoutModulesProgress: [],
+            hideoutPartsProgress: [],
+            displayName: "SyncUser",
+            userId: "sync",
+            playerLevel: 30,
+            gameEdition: 1,
+            pmcFaction: "USEC",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    render(<Harness />);
+    await importToken("tok-123");
+
+    await screen.findByText("progression");
+    expect(latestProfile()).toMatchObject({ mode: "advanced", level: 30, flea: true });
+  });
+
+  it("leaves a first visit in theorycraft, with nothing stored, when the import fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 401 })));
+    render(<Harness />);
+    await importToken("bad-token");
+
+    expect(await screen.findByText(/Token rejected/)).toBeInTheDocument();
+    expect(screen.getByTestId("mode")).toHaveTextContent("theorycraft");
+    expect(screen.getByText("Set your progression")).toBeInTheDocument();
+    expect(window.localStorage.getItem(PROFILE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(MODE_KEY)).toBeNull();
+  });
+});
+
+describe("ModeBar in theorycraft with a profile set", () => {
+  const OWN: PlayerProfile = {
+    ...DEFAULT_PROFILE,
+    traders: {
+      prapor: 4,
+      therapist: 3,
+      skier: 2,
+      peacekeeper: 4,
+      mechanic: 3,
+      ragman: 2,
+      jaeger: 1,
+    },
+    flea: true,
+    level: 37,
+  };
+
+  it("offers the way back to it, never a one-click profile that would overwrite it", () => {
+    window.localStorage.setItem(PROFILE_KEY, JSON.stringify(OWN));
+    window.localStorage.setItem(MODE_KEY, "theorycraft");
+    render(<Harness />);
+
+    expect(screen.getByTestId("mode")).toHaveTextContent("theorycraft");
+    expect(screen.queryByText("Set your progression")).not.toBeInTheDocument();
+    for (const ll of ["LL1", "LL2", "LL3", "LL4"]) {
+      expect(screen.queryByRole("button", { name: ll })).not.toBeInTheDocument();
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to your progression" }));
+    expect(screen.getByTestId("mode")).toHaveTextContent("progression");
+    expect(latestProfile()).toEqual(OWN);
+    expect(JSON.parse(window.localStorage.getItem(PROFILE_KEY)!)).toEqual(OWN);
+  });
+
+  it("keeps the profile set by the one-click prompt when toggled back to theorycraft", () => {
+    render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "LL3" }));
     fireEvent.click(screen.getByRole("button", { name: "Theorycraft" }));
 
     expect(screen.getByTestId("mode")).toHaveTextContent("theorycraft");
-    expect(screen.getByText("Set your progression")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back to your progression" })).toBeInTheDocument();
     expect(latestProfile().traders.jaeger).toBe(3);
-    expect(window.localStorage.getItem("tg:builder-mode")).toBe("theorycraft");
-  });
-
-  it("imports from TarkovTracker in advanced mode, which reads the quests it brings", () => {
-    const connect = vi.fn(() => Promise.resolve());
-    render(<Harness sync={stubSync(connect)} />);
-    fireEvent.click(screen.getByRole("button", { name: /Import from TarkovTracker/ }));
-    fireEvent.change(screen.getByPlaceholderText(/token/i), { target: { value: "tok-123" } });
-    fireEvent.click(screen.getByRole("button", { name: /^Connect/ }));
-
-    expect(connect).toHaveBeenCalledWith("tok-123");
-    expect(latestProfile().mode).toBe("advanced");
-    expect(screen.getByTestId("mode")).toHaveTextContent("progression");
+    expect(window.localStorage.getItem(MODE_KEY)).toBe("theorycraft");
   });
 });

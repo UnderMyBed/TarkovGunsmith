@@ -94,6 +94,12 @@ export interface UseBuilderStateResult {
   applyPreset: (next: Readonly<Record<string, string>>) => void;
   clearOrphaned: () => void;
   acceptOptimized: (attachments: Readonly<Record<string, string>>) => void;
+  /**
+   * The build as it stands is committed, by a share or a Compare handoff: a seed waiting for
+   * live prices is dropped, as an edit drops it, so the build on screen stays the one handed
+   * on.
+   */
+  commit: () => void;
   modNamesById: Record<string, string>;
   /** Why a part cannot go at a slot path given the current build, or `null`. */
   getConflict: (path: string, itemId: string) => string | null;
@@ -306,6 +312,7 @@ export function useBuilderState({
   const clearOrphaned = () => dispatch({ type: "dismissOrphaned" });
   const acceptOptimized = (next: Readonly<Record<string, string>>) =>
     dispatch({ type: "acceptOptimized", attachments: next });
+  const commit = () => setPendingSeed(null);
 
   return {
     isLoading: snapshot.isLoading || weapons.isLoading || catalog.isLoading || presets.isLoading,
@@ -330,6 +337,7 @@ export function useBuilderState({
     applyPreset,
     clearOrphaned,
     acceptOptimized,
+    commit,
     modNamesById,
     getConflict,
     getFittedConflict,

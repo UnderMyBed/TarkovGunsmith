@@ -13,7 +13,11 @@ export interface ModsPanelProps {
   onAttach: (path: string, itemId: string | null) => void;
   /** Each part's availability under the Builder's gate (`useBuilderState`'s `gate`). */
   getAvailability: (itemId: string) => ItemAvailability | null;
-  /** In theorycraft every gate is open, so there is nothing locked to show or dim. */
+  /**
+   * In theorycraft no part is shown locked or dimmed for availability, including the parts
+   * nobody sells (`no-sources`, `flea-unlisted`) that even an open gate cannot buy: the mode
+   * promises everything unlocked. A part that clashes with the build is still dimmed.
+   */
   mode: BuilderMode;
   /** See `SlotTree`'s `getConflict`. */
   getConflict: (path: string, itemId: string) => string | null;
@@ -26,8 +30,9 @@ export interface ModsPanelProps {
 
 /**
  * The "Mods" card: slot tree + orphaned-mod banner. Owns the "Show all items" toggle locally:
- * it only sets how strongly a part the profile cannot get is dimmed, which is not a mode and
- * nothing outside this panel reads. It is offered in progression only.
+ * it only sets whether a part the profile cannot get is dimmed, which is not a mode and nothing
+ * outside this panel reads. It is offered in progression only; theorycraft shows every part
+ * undimmed and without a LOCKED pill.
  */
 export function ModsPanel({
   tree,
@@ -43,6 +48,13 @@ export function ModsPanel({
   onDismissOrphaned,
 }: ModsPanelProps) {
   const [showAll, setShowAll] = useState(false);
+  const theorycraft = mode === "theorycraft";
+  // A part no source sells is the only one an open gate leaves unavailable; in theorycraft it
+  // carries no pill rather than LOCKED. Every available part keeps its pill.
+  const availabilityOf = (itemId: string): ItemAvailability | null => {
+    const availability = getAvailability(itemId);
+    return theorycraft && availability?.available === false ? null : availability;
+  };
 
   return (
     <Card>
@@ -78,10 +90,10 @@ export function ModsPanel({
             tree={tree.data}
             attachments={attachments}
             onAttach={onAttach}
-            getAvailability={getAvailability}
+            getAvailability={availabilityOf}
             getConflict={getConflict}
             getFittedConflict={getFittedConflict}
-            showAll={showAll}
+            showAll={theorycraft || showAll}
           />
         )}
         <OrphanedBanner orphanedIds={orphaned} names={modNames} onDismiss={onDismissOrphaned} />

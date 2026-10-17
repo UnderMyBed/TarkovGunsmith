@@ -7,6 +7,7 @@ import {
 } from "@tarkov/data";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { TarkovTrackerConnectPopover } from "./tarkovtracker-connect-popover.js";
+import { TarkovTrackerSyncBanner } from "./tarkovtracker-sync-banner.js";
 import type { UseTarkovTrackerSyncResult } from "./useTarkovTrackerSync.js";
 
 export interface ModeBarProps {
@@ -22,13 +23,20 @@ const MODE_LABEL: Record<BuilderMode, string> = {
 };
 
 /**
- * The Builder's mode. In theorycraft, the "Set your progression" prompt: one click sets every
- * trader to a loyalty level, or TarkovTracker imports the profile, and either switches to
- * progression. In progression, the toggle back. The toggle is in both.
+ * The Builder's mode, with the toggle in every state.
+ *
+ * - Theorycraft with no profile set: the "Set your progression" prompt. One click sets every
+ *   trader to a loyalty level, or TarkovTracker imports the profile; either switches to
+ *   progression, the import only once it succeeds (`applySyncedProfile`).
+ * - Theorycraft with a profile set: the way back to it. The one-click profiles are not offered,
+ *   since one click would overwrite the user's own trader levels with no undo.
+ * - Progression: the toggle back.
  */
 export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
-  const { profile, setProfile, mode, setMode } = progression;
+  const { profile, hasProfile, setProfile, mode, setMode } = progression;
   const [popoverOpen, setPopoverOpen] = useState(false);
+  // Set once the user starts an import here, so its progress and any failure show here too.
+  const [importing, setImporting] = useState(false);
 
   const toggle = (
     <div
@@ -67,6 +75,27 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
     );
   }
 
+  if (hasProfile) {
+    return (
+      <Card data-testid="mode-bar">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+          <p className="text-sm">
+            <span className="font-medium">Theorycraft.</span>{" "}
+            <span className="text-[var(--color-muted-foreground)]">
+              Everything is unlocked. Your progression is kept.
+            </span>
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" onClick={() => setMode("progression")}>
+              Back to your progression
+            </Button>
+            {toggle}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card data-testid="mode-bar">
       <CardHeader>
@@ -95,6 +124,11 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
         <Button type="button" size="sm" variant="ghost" onClick={() => setPopoverOpen(true)}>
           ▲ Import from TarkovTracker
         </Button>
+        {importing && (sync.state === "syncing" || sync.state === "error") && (
+          <div className="w-full">
+            <TarkovTrackerSyncBanner sync={sync} />
+          </div>
+        )}
       </CardContent>
 
       <TarkovTrackerConnectPopover
@@ -102,8 +136,9 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
         onClose={() => setPopoverOpen(false)}
         onConnect={(token) => {
           setPopoverOpen(false);
-          // TarkovTracker brings completed quests, which only advanced mode reads.
-          setProfile({ ...profile, mode: "advanced" });
+          setImporting(true);
+          // Nothing is written until the import succeeds: a bad token leaves a first visit
+          // in theorycraft with no profile stored.
           void sync.connect(token);
         }}
       />

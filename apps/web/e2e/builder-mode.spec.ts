@@ -112,8 +112,10 @@ test.describe("Builder mode", () => {
     await expect(all).toBeVisible({ timeout: 15_000 });
     await expect(modeButton(page, "Theorycraft")).toHaveAttribute("aria-pressed", "true");
 
-    // The LL2 profile is still there to switch back to.
-    await modeButton(page, "Progression").click();
+    // With a profile set, theorycraft offers the way back to it, never a one-click profile
+    // that would overwrite it. The LL2 profile is still there to switch back to.
+    await expect(page.getByRole("button", { name: "LL2", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Back to your progression" }).click();
     await expect(
       page.getByText(`${fixtureBuildableWeaponCount()} weapons available on your profile`, {
         exact: true,
