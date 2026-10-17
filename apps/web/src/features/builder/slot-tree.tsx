@@ -1,4 +1,10 @@
-import type { SlotNode, WeaponTree, ItemAvailability, SlotDiffMap } from "@tarkov/data";
+import {
+  expandSlots,
+  type SlotNode,
+  type WeaponTree,
+  type ItemAvailability,
+  type SlotDiffMap,
+} from "@tarkov/data";
 import { Pill, focusRing } from "@tarkov/ui";
 
 // ---------- Keyboard navigation handler ----------
@@ -11,9 +17,11 @@ function handleSlotTreeKeyDown(e: React.KeyboardEvent<HTMLUListElement>) {
     return;
   }
 
+  // Disabled options (a conflicting part) are skipped: focus() on one is a no-op, so including
+  // them would strand ArrowDown on the option above.
   const targets = Array.from(
     root.querySelectorAll<HTMLElement>(
-      "details[data-slot-path] > summary, details[data-slot-path] > div button",
+      "details[data-slot-path] > summary, details[data-slot-path] > div button:not(:disabled)",
     ),
   );
   const active = document.activeElement as HTMLElement | null;
@@ -65,6 +73,11 @@ export interface SlotTreeProps {
   getAvailability?: (itemId: string) => ItemAvailability | null;
   showAll?: boolean;
   diff?: SlotDiffMap;
+  /**
+   * Why `itemId` cannot go at `path` given the rest of the build, or `null` when it can.
+   * A conflicting option is shown disabled with this reason beside it.
+   */
+  getConflict?: (path: string, itemId: string) => string | null;
 }
 
 // ---------- SlotTree root ----------
@@ -76,6 +89,7 @@ export function SlotTree({
   getAvailability,
   showAll,
   diff,
+  getConflict,
 }: SlotTreeProps) {
   if (tree.slots.length === 0) {
     return (
@@ -98,13 +112,16 @@ export function SlotTree({
       {tree.slots.map((slot) => (
         <SlotRow
           key={slot.path}
+          tree={tree}
           slot={slot}
+          ancestors={ROOT_ANCESTORS}
           attachments={attachments}
           onAttach={onAttach}
           getAvailability={getAvailability}
           showAll={showAll}
           depth={0}
           diff={diff}
+          getConflict={getConflict}
         />
       ))}
     </ul>
@@ -113,25 +130,40 @@ export function SlotTree({
 
 // ---------- SlotRow ----------
 
+const ROOT_ANCESTORS: ReadonlySet<string> = new Set();
+
 function SlotRow({
+  tree,
   slot,
+  ancestors,
   attachments,
   onAttach,
   getAvailability,
   showAll,
   depth,
   diff,
+  getConflict,
 }: {
+  tree: WeaponTree;
   slot: SlotNode;
+  /** Item ids attached above this row. One of them is never expanded again here. */
+  ancestors: ReadonlySet<string>;
   attachments: Readonly<Record<string, string>>;
   onAttach: (path: string, itemId: string | null) => void;
   getAvailability?: (itemId: string) => ItemAvailability | null;
   showAll?: boolean;
   depth: number;
   diff?: SlotDiffMap;
+  getConflict?: (path: string, itemId: string) => string | null;
 }) {
   const selectedId = attachments[slot.path] ?? null;
   const selectedItem = selectedId ? slot.allowedItems.find((i) => i.id === selectedId) : null;
+  // The attached part's own slots, expanded on demand from the graph — barrels, scopes and
+  // magazines included, at any depth. A part attached beneath itself is not expanded again.
+  const childSlots =
+    selectedItem && !ancestors.has(selectedItem.id)
+      ? expandSlots(tree.graph, selectedItem.id, slot.path)
+      : [];
   const selectedAvailability =
     selectedItem && getAvailability ? getAvailability(selectedItem.id) : null;
 
@@ -214,24 +246,31 @@ function SlotRow({
               </li>
               {slot.allowedItems.map((item) => {
                 const availability = getAvailability?.(item.id) ?? null;
-                const dim = !showAll && availability?.available === false;
+                const isSelected = selectedId === item.id;
+                const conflict = isSelected ? null : (getConflict?.(slot.path, item.id) ?? null);
+                const dim = conflict !== null || (!showAll && availability?.available === false);
                 const requirementLabel =
                   availability && !availability.available ? formatRequirement(availability) : null;
-                const isSelected = selectedId === item.id;
                 return (
                   <li key={item.id}>
                     <button
                       type="button"
                       onClick={() => onAttach(slot.path, item.id)}
+                      disabled={conflict !== null}
                       className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm border-l-2 ${focusRing} ${
                         isSelected
                           ? "border-[var(--color-primary)] bg-[var(--color-muted)]"
-                          : "border-transparent hover:bg-[var(--color-muted)]"
+                          : "border-transparent hover:bg-[var(--color-muted)] disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       } ${dim ? "opacity-40" : ""}`}
                     >
                       <span className="truncate">{item.name}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {requirementLabel && (
+                        {conflict !== null && (
+                          <span className="font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
+                            {conflict}
+                          </span>
+                        )}
+                        {conflict === null && requirementLabel && (
                           <span className="font-mono text-10 tracking-15 uppercase text-[var(--color-paper-dim)]">
                             {requirementLabel}
                           </span>
@@ -244,18 +283,21 @@ function SlotRow({
               })}
             </ul>
           )}
-          {selectedItem && selectedItem.children.length > 0 && (
+          {selectedItem && childSlots.length > 0 && (
             <ul className="flex flex-col mt-2 border-t border-dashed border-[var(--color-border)]">
-              {selectedItem.children.map((child) => (
+              {childSlots.map((child) => (
                 <SlotRow
                   key={child.path}
+                  tree={tree}
                   slot={child}
+                  ancestors={new Set([...ancestors, selectedItem.id])}
                   attachments={attachments}
                   onAttach={onAttach}
                   getAvailability={getAvailability}
                   showAll={showAll}
                   depth={depth + 1}
                   diff={diff}
+                  getConflict={getConflict}
                 />
               ))}
             </ul>

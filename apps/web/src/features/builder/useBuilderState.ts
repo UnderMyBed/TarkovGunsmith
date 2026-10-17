@@ -1,17 +1,26 @@
 import { useMemo, useState } from "react";
 import {
-  useModList,
+  usePartCatalog,
   useWeaponList,
   useWeaponTree,
+  attachedParts,
+  fleaPriceRub,
+  mountedAttachments,
+  withAttachment,
   itemAvailability,
+  legacyV1MigrationSlots,
+  partsById,
+  type AttachablePart,
   type BuildV6,
-  type ModListItem,
   type PlayerProfile,
   type WeaponListItem,
 } from "@tarkov/data";
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import { adaptMod, adaptWeapon } from "../data-adapters/adapters.js";
 import { useV1Migration } from "./useV1Migration.js";
+import { conflictReasonFor } from "./conflict-reason.js";
+
+const EMPTY_PARTS: AttachablePart[] = [];
 
 export interface UseBuilderStateArgs {
   initialWeaponId: string;
@@ -38,15 +47,21 @@ export interface UseBuilderStateResult {
   selectedWeapon: WeaponListItem | undefined;
 
   tree: ReturnType<typeof useWeaponTree>;
-  modList: ModListItem[];
+  /** Every slot-attachable part: mods, barrels, scopes, magazines, cylinder ammo. */
+  parts: AttachablePart[];
+  partsById: ReadonlyMap<string, AttachablePart>;
 
   attachments: Record<string, string>;
+  /** How many parts are on the weapon: filled slots the tree shows, not stale keys. */
+  attachedCount: number;
   orphaned: string[];
   handleAttach: (path: string, itemId: string | null) => void;
   applyPreset: (next: Readonly<Record<string, string>>) => void;
   clearOrphaned: () => void;
   acceptOptimized: (attachments: Record<string, string>, orphaned: string[]) => void;
   modNamesById: Record<string, string>;
+  /** Why a part cannot go at a slot path given the current build, or `null`. */
+  getConflict: (path: string, itemId: string) => string | null;
   availabilityById: Map<string, ReturnType<typeof itemAvailability>>;
 
   spec: WeaponSpec | null;
@@ -75,7 +90,7 @@ export function useBuilderState({
   embedProfileOnSave,
 }: UseBuilderStateArgs): UseBuilderStateResult {
   const weapons = useWeaponList();
-  const mods = useModList();
+  const catalog = usePartCatalog();
 
   const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
   const [attachments, setAttachments] = useState<Record<string, string>>(
@@ -86,7 +101,12 @@ export function useBuilderState({
 
   const tree = useWeaponTree(weaponId);
 
-  useV1Migration(initialWeaponId, initialModIds, tree.data?.slots, setAttachments, setOrphaned);
+  // v1 links migrate against the frozen legacy tree, so their mods land where they always did.
+  const legacyV1Slots = useMemo(
+    () => (initialModIds && tree.data ? legacyV1MigrationSlots(tree.data) : undefined),
+    [initialModIds, tree.data],
+  );
+  useV1Migration(initialWeaponId, initialModIds, legacyV1Slots, setAttachments, setOrphaned);
 
   const weaponAvailabilityById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof itemAvailability>>();
@@ -108,28 +128,41 @@ export function useBuilderState({
     [weapons.data, weaponId],
   );
 
-  const selectedMods = useMemo(
-    () => (mods.data ? mods.data.filter((m) => Object.values(attachments).includes(m.id)) : []),
-    [mods.data, attachments],
+  const byId = useMemo(() => partsById(catalog.data ?? []), [catalog.data]);
+
+  // Only parts on the weapon count — never a stale key under a removed or replaced part. One
+  // entry per slot: a part fitted twice counts twice, for stats and price alike. Until the
+  // tree loads nothing is known to be on the weapon.
+  const treeData = tree.data;
+  const mounted = useMemo(
+    () => (treeData ? mountedAttachments(treeData, attachments, byId) : {}),
+    [treeData, attachments, byId],
+  );
+  const attached = useMemo(
+    () => (treeData ? attachedParts(treeData, attachments, byId) : { entries: [], missing: [] }),
+    [treeData, attachments, byId],
   );
 
   const modNamesById = useMemo(
-    () => Object.fromEntries((mods.data ?? []).map((m) => [m.id, m.name])),
-    [mods.data],
+    () => Object.fromEntries((catalog.data ?? []).map((m) => [m.id, m.name])),
+    [catalog.data],
   );
 
   const availabilityById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof itemAvailability>>();
-    for (const m of mods.data ?? []) {
+    for (const m of catalog.data ?? []) {
       map.set(m.id, itemAvailability(m, profile));
     }
     return map;
-  }, [mods.data, profile]);
+  }, [catalog.data, profile]);
 
   const spec = useMemo(() => {
     if (!selectedWeapon) return null;
-    return weaponSpec(adaptWeapon(selectedWeapon), selectedMods.map(adaptMod));
-  }, [selectedWeapon, selectedMods]);
+    return weaponSpec(
+      adaptWeapon(selectedWeapon),
+      attached.entries.map((e) => adaptMod(e.part)),
+    );
+  }, [selectedWeapon, attached]);
 
   const stockSpec = useMemo(() => {
     if (!selectedWeapon) return null;
@@ -139,17 +172,33 @@ export function useBuilderState({
   const upstreamDriftInfo = useMemo(() => {
     // Only meaningful for loaded builds; fresh builds can't drift because they're built from current data.
     if (!initialWeaponId) return null;
-    if (!weapons.data || !mods.data) return null;
+    if (!weapons.data || !catalog.data) return null;
 
     const missingWeapon = !weapons.data.some((w) => w.id === initialWeaponId);
-    const knownModIds = new Set(mods.data.map((m) => m.id));
-    const v1Missing = (initialModIds ?? []).filter((id) => !knownModIds.has(id));
-    const v2Missing = Object.values(initialAttachments ?? {}).filter((id) => !knownModIds.has(id));
-    const missingModCount = v1Missing.length + v2Missing.length;
+    const v1Missing = (initialModIds ?? []).filter((id) => !byId.has(id));
+    // Gone parts count only where they sit on the weapon. Without the weapon there is no tree
+    // to place them in, so every saved id the catalog lacks counts.
+    let v2Missing: number;
+    if (missingWeapon) {
+      v2Missing = Object.values(initialAttachments ?? {}).filter((id) => !byId.has(id)).length;
+    } else if (treeData?.weaponId === initialWeaponId) {
+      v2Missing = attachedParts(treeData, initialAttachments ?? {}, byId).missing.length;
+    } else {
+      return null;
+    }
+    const missingModCount = v1Missing.length + v2Missing;
 
     if (!missingWeapon && missingModCount === 0) return null;
     return { missingWeapon, missingModCount };
-  }, [initialWeaponId, initialModIds, initialAttachments, weapons.data, mods.data]);
+  }, [
+    initialWeaponId,
+    initialModIds,
+    initialAttachments,
+    weapons.data,
+    catalog.data,
+    byId,
+    treeData,
+  ]);
 
   const currentBuild = useMemo<BuildV6>(
     () => ({
@@ -165,17 +214,15 @@ export function useBuilderState({
     [weaponId, attachments, orphaned, buildName, buildDescription, embedProfileOnSave, profile],
   );
 
+  const getConflict = useMemo(
+    () => (tree.data ? conflictReasonFor(tree.data, attachments, byId) : () => null),
+    [tree.data, attachments, byId],
+  );
+
   const currentPrice = useMemo(() => {
-    if (!mods.data) return null;
-    let total = 0;
-    for (const id of Object.values(attachments)) {
-      const m = mods.data.find((x) => x.id === id);
-      const fleaPrice =
-        (m?.buyFor ?? []).find((b) => b.vendor.__typename === "FleaMarket")?.priceRUB ?? 0;
-      total += fleaPrice;
-    }
-    return total;
-  }, [mods.data, attachments]);
+    if (!catalog.data) return null;
+    return attached.entries.reduce((total, e) => total + fleaPriceRub(e.part), 0);
+  }, [catalog.data, attached]);
 
   function handleWeaponChange(newWeaponId: string) {
     setWeaponId(newWeaponId);
@@ -183,13 +230,9 @@ export function useBuilderState({
     setOrphaned([]);
   }
 
+  // Replacing or clearing a part drops everything beneath it: those slots were the old part's.
   function handleAttach(path: string, itemId: string | null) {
-    setAttachments((prev) => {
-      const next = { ...prev };
-      if (itemId === null) delete next[path];
-      else next[path] = itemId;
-      return next;
-    });
+    setAttachments((prev) => withAttachment(prev, path, itemId));
   }
 
   function applyPreset(next: Readonly<Record<string, string>>) {
@@ -207,8 +250,8 @@ export function useBuilderState({
   }
 
   return {
-    isLoading: weapons.isLoading || mods.isLoading,
-    error: weapons.error ?? mods.error,
+    isLoading: weapons.isLoading || catalog.isLoading,
+    error: weapons.error ?? catalog.error,
 
     weaponOptions,
     weaponId,
@@ -218,15 +261,18 @@ export function useBuilderState({
     selectedWeapon,
 
     tree,
-    modList: mods.data ?? [],
+    parts: catalog.data ?? EMPTY_PARTS,
+    partsById: byId,
 
     attachments,
+    attachedCount: Object.keys(mounted).length,
     orphaned,
     handleAttach,
     applyPreset,
     clearOrphaned,
     acceptOptimized,
     modNamesById,
+    getConflict,
     availabilityById,
 
     spec,

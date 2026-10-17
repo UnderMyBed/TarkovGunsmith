@@ -1,4 +1,4 @@
-import type { BuildV6, PlayerProfile, WeaponTree, ModListItem } from "@tarkov/data";
+import type { AttachablePart, BuildV6, PlayerProfile, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 
 /**
@@ -24,8 +24,8 @@ export interface OptimizationInput {
   readonly weapon: BallisticWeapon;
   /** Resolved weapon slot tree (output of `useWeaponTree`). */
   readonly slotTree: WeaponTree;
-  /** All candidate mods (output of `useModList`). */
-  readonly modList: readonly ModListItem[];
+  /** Every attachable part (output of `usePartCatalog`): mods, barrels, scopes, magazines, ammo. */
+  readonly parts: readonly AttachablePart[];
   readonly constraints: OptimizationConstraints;
   readonly objective: Objective;
   /** Wall-clock timeout in milliseconds. Default 2000. */

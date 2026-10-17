@@ -6,8 +6,13 @@ import {
   migrateV4ToV5,
   migrateV5ToV6,
   upgradeLoadedBuild,
+  legacyV1MigrationSlots,
   type SlotNodeForMigration,
 } from "./build-migrations.js";
+import { fetchWeaponTree } from "./queries/weaponTree.js";
+import { fixtureClient } from "./__fixtures__/client.js";
+import type { ItemsDocument } from "./queries/documents.js";
+import { tinyTree } from "./__test-utils__/tiny-tree.js";
 import {
   Build,
   CURRENT_BUILD_VERSION,
@@ -347,5 +352,96 @@ describe("upgradeLoadedBuild", () => {
 
     const v2 = Build.parse({ ...shared, version: 2 });
     expect(upgradeLoadedBuild(v2).version).toBe(2);
+  });
+});
+
+/**
+ * Placements the pre-#214 tree (depth 3, recursing only into WeaponMod children) produced for a
+ * v1 build listing every item in the fixture, captured by running that implementation over this
+ * same fixture before it was replaced. v1 share links must keep migrating to exactly this.
+ * Every fixture item the old tree cannot place is an orphan, up to the cap of 64, so the counts
+ * track the fixture: when it grows, re-derive them by running the pre-#214 implementation over it
+ * (last done when the barter and gas-block captures landed; placements unchanged).
+ */
+const LEGACY_V1_PLACEMENTS = [
+  {
+    weaponId: "5447a9cd4bdc2dbd208b4567",
+    orphanedCount: 37,
+    attachments: {
+      "mod_reciever/mod_handguard/mod_tactical": "5a7b483fe899ef0016170d15",
+      "mod_reciever/mod_scope": "57aca93d2459771f2c7e26db",
+      mod_pistol_grip: "5c0e2ff6d174af02a1659d4a",
+      mod_reciever: "5d4405aaa4b9361e6a4e6bd3",
+      "mod_reciever/mod_barrel": "68a63ac58e1fe612970728f2",
+      mod_charge: "5c0faf68d174af02a96260b8",
+      mod_magazine: "61840d85568c120fdd2962a5",
+      mod_stock: "5c0faeddd174af02a962601f",
+      "mod_stock/mod_stock": "5d4406a8a4b9361e4f6eb8b7",
+      "mod_stock/mod_stock_000": "606587d11246154cad35d635",
+      "mod_reciever/mod_handguard": "63f4ba71f31d4a33b87bd046",
+      "mod_reciever/mod_sight_rear": "5dfa3d7ac41b2312ea33362a",
+      mod_charge_001: "675307301f7c19a9780f2668",
+      "mod_stock/mod_stock_003": "6985eca7de77dd8dd50025ba",
+    },
+  },
+  {
+    weaponId: "5448bd6b4bdc2dfc2f8b4569",
+    orphanedCount: 64,
+    attachments: {
+      mod_magazine: "55d485be4bdc2d962f8b456f",
+      "mod_pistolgrip/mod_tactical": "5a7b4900e899ef197b331a2a",
+      mod_pistolgrip: "637b6d610aef6cfc5e02dd14",
+      mod_reciever: "6374a822e629013b9c0645c8",
+      "mod_reciever/mod_sight_rear": "63c6adcfb4ba094317063742",
+    },
+  },
+];
+
+describe("legacyV1MigrationSlots", () => {
+  it.each(LEGACY_V1_PLACEMENTS)(
+    "places v1 mods on $weaponId exactly as the old eager tree did",
+    async ({ weaponId, attachments, orphanedCount }) => {
+      const client = fixtureClient();
+      const doc = await client.fetchResource<ItemsDocument>("items");
+      const tree = await fetchWeaponTree(client, weaponId);
+      const v2 = migrateV1ToV2(
+        {
+          version: 1,
+          weaponId,
+          modIds: Object.keys(doc.items).sort(),
+          createdAt: "2024-01-01T00:00:00.000Z",
+        },
+        legacyV1MigrationSlots(tree),
+      );
+      expect(v2.attachments).toEqual(attachments);
+      expect(v2.orphaned).toHaveLength(orphanedCount);
+    },
+  );
+});
+
+describe("legacyV1MigrationSlots depth", () => {
+  it("stops at three levels, as the old tree did", () => {
+    const tree = tinyTree("w", [
+      {
+        nameId: "l1",
+        items: [
+          [
+            "a",
+            [
+              {
+                nameId: "l2",
+                items: [
+                  ["b", [{ nameId: "l3", items: [["c", [{ nameId: "l4", items: ["d"] }]]] }]],
+                ],
+              },
+            ],
+          ],
+        ],
+      },
+    ]);
+    const [l1] = legacyV1MigrationSlots(tree);
+    const l3 = l1?.children[0]?.children[0];
+    expect(l3?.path).toBe("l1/l2/l3");
+    expect(l3?.children).toEqual([]);
   });
 });

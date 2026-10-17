@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { itemAvailability } from "./item-availability.js";
-import type { ModListItem } from "./queries/modList.js";
+import type { AttachablePart } from "./queries/parts.js";
 import type { PlayerProfile } from "./build-schema.js";
 import type { BuyForEntry } from "./queries/shared/buy-for.js";
-import { fetchModList } from "./queries/modList.js";
+import { fetchPartCatalog } from "./queries/parts.js";
 import { fixtureClient } from "./__fixtures__/client.js";
 import { fetchWeaponList } from "./queries/weaponList.js";
 import { fetchOfferResolver } from "./queries/barters.js";
@@ -60,7 +60,7 @@ function fleaOffer(
   };
 }
 
-function mod(overrides: Partial<ModListItem> = {}): ModListItem {
+function mod(overrides: Partial<AttachablePart> = {}): AttachablePart {
   return {
     id: "m1",
     name: "Test mod",
@@ -76,6 +76,8 @@ function mod(overrides: Partial<ModListItem> = {}): ModListItem {
       accuracyModifier: 0,
     },
     buyFor: [traderOffer("prapor", 1)],
+    conflictingItems: [],
+    conflictingSlotIds: [],
     ...overrides,
   };
 }
@@ -416,14 +418,14 @@ describe("itemAvailability — weapon shape", () => {
 
 /**
  * The unit tests above build their offers by hand. This one drives the composed path —
- * `fetchModList` → `resolveBuyFor` → `itemAvailability` — over the committed sample of the
+ * `fetchPartCatalog` → `createOfferResolver` → `itemAvailability` — over the committed sample of the
  * real upstream document, so a break in the chain that carries upstream's `minLevelForFlea`
  * onto the gate shows up here rather than passing on hand-shaped input. That chain is the
  * thing that was silently broken: the value was parsed and then never read.
  */
 describe("flea level gate, composed over the real document shape", () => {
   it("carries upstream minLevelForFlea through to the vendor", async () => {
-    const mods = await fetchModList(fixtureClient());
+    const mods = await fetchPartCatalog(fixtureClient());
     const gatedFleaLevels = mods
       .flatMap((m) => m.buyFor ?? [])
       .filter((b) => b.vendor.__typename === "FleaMarket")
@@ -437,7 +439,7 @@ describe("flea level gate, composed over the real document shape", () => {
   });
 
   it("gates a real gated mod below its level and releases it at the level", async () => {
-    const mods = await fetchModList(fixtureClient());
+    const mods = await fetchPartCatalog(fixtureClient());
     const gated = mods.find((m) =>
       (m.buyFor ?? []).some(
         (b) => b.vendor.__typename === "FleaMarket" && (b.vendor.minPlayerLevel ?? 0) >= 20,
@@ -794,7 +796,7 @@ describe("itemAvailability — captured documents", () => {
   });
 
   it("makes a mod reachable at LL1 through a barter when its cash offer needs LL2", async () => {
-    const mods = await fetchModList(fixtureClient());
+    const mods = await fetchPartCatalog(fixtureClient());
     const latch = mods.find((m) => m.id === "56ea7165d2720b6e518b4583")!;
     expect(itemAvailability(latch, ll(1))).toMatchObject({
       available: true,
@@ -822,7 +824,7 @@ describe("itemAvailability — captured documents", () => {
   });
 
   it("reports a Ref-only mod as untracked instead of no-sources", async () => {
-    const mods = await fetchModList(fixtureClient());
+    const mods = await fetchPartCatalog(fixtureClient());
     const ravage = mods.find((m) => m.id === "6984b82c5aab442620032fe8")!;
     expect(itemAvailability(ravage, ll(4))).toEqual({
       available: false,

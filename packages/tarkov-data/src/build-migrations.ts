@@ -7,12 +7,11 @@ import type {
   BuildV5,
   BuildV6,
 } from "./build-schema.js";
+import { expandSlots, type SlotGraph, type WeaponTree } from "./queries/slot-graph.js";
 
 /**
- * Minimal shape of a slot node the migration needs. The full `SlotNode` type
- * (exported from `queries/weaponTree.ts` in Task 3) is a superset. We declare
- * a local contract here so the migration stays independent of transport
- * concerns.
+ * The eager slot tree `migrateV1ToV2` walks: every allowed item's child slots
+ * flattened into `children`. Build it with {@link legacyV1MigrationSlots}.
  */
 export interface SlotNodeForMigration {
   readonly nameId: string;
@@ -22,6 +21,42 @@ export interface SlotNodeForMigration {
 }
 
 const ORPHANED_CAP = 64;
+
+/** The depth the v1 → v2 placement has always searched to. */
+const LEGACY_V1_DEPTH = 3;
+
+/**
+ * The tree v1 builds have always been migrated against, rebuilt from the lazy slot graph.
+ *
+ * v1 builds stored bare mod ids, and `migrateV1ToV2` places each in the first slot (pre-order)
+ * that allows it. That placement was computed over a tree three levels deep that recursed only
+ * into `ItemPropertiesWeaponMod` children. The live slot tree is deeper and also recurses into
+ * barrels and scopes (#214), which would move where an old shared link's mods land. So v1
+ * migration keeps its own, frozen view: same depth, same recursion rule, same order, and
+ * therefore the same placements for every v1 link ever shared.
+ */
+export function legacyV1MigrationSlots(tree: WeaponTree): readonly SlotNodeForMigration[] {
+  return legacyLevel(tree.graph, tree.weaponId, "", LEGACY_V1_DEPTH);
+}
+
+function legacyLevel(
+  graph: SlotGraph,
+  ownerId: string,
+  parentPath: string,
+  depth: number,
+): SlotNodeForMigration[] {
+  if (depth <= 0) return [];
+  return expandSlots(graph, ownerId, parentPath).map((slot) => ({
+    nameId: slot.nameId,
+    path: slot.path,
+    allowedItemIds: slot.allowedItemIds,
+    children: slot.allowedItems.flatMap((item) =>
+      graph.owners[item.id]?.kind === "ItemPropertiesWeaponMod"
+        ? legacyLevel(graph, item.id, slot.path, depth - 1)
+        : [],
+    ),
+  }));
+}
 
 /**
  * Migrate a v1 build to v2 using the weapon's resolved slot tree.

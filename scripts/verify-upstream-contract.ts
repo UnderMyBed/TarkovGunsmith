@@ -39,7 +39,9 @@ import {
 import { createTarkovClient } from "../packages/tarkov-data/src/client.js";
 import { fetchAmmoList } from "../packages/tarkov-data/src/queries/ammoList.js";
 import { fetchArmorList } from "../packages/tarkov-data/src/queries/armorList.js";
-import { fetchModList } from "../packages/tarkov-data/src/queries/modList.js";
+import { fetchPartCatalog } from "../packages/tarkov-data/src/queries/parts.js";
+import type { ItemsDocument } from "../packages/tarkov-data/src/queries/documents.js";
+import { buildSlotGraph } from "../packages/tarkov-data/src/queries/slot-graph.js";
 import { fetchWeaponList } from "../packages/tarkov-data/src/queries/weaponList.js";
 import { fetchBarters } from "../packages/tarkov-data/src/queries/barters.js";
 
@@ -265,21 +267,22 @@ async function main(): Promise<void> {
  */
 async function checkSelectorsAcceptLiveDocument(): Promise<void> {
   const client = createTarkovClient(API_BASE);
-  const minimums = { weapons: 50, mods: 500, ammo: 50, armor: 20, barters: 300 } as const;
+  const minimums = { weapons: 50, parts: 2000, ammo: 50, armor: 20, barters: 300 } as const;
 
-  const [weapons, mods, ammo, armor, barters] = await Promise.all([
+  const [weapons, parts, ammo, armor, barters, doc] = await Promise.all([
     fetchWeaponList(client),
-    fetchModList(client),
+    fetchPartCatalog(client),
     fetchAmmoList(client),
     fetchArmorList(client),
     // Barters are offers, not a picker: a schema break here silently turns every barter-only
     // mod and every preset-barter weapon back into "unobtainable".
     fetchBarters(client),
+    client.fetchResource<ItemsDocument>("items"),
   ]);
 
   const counts = {
     weapons: weapons.length,
-    mods: mods.length,
+    parts: parts.length,
     ammo: ammo.length,
     armor: armor.length,
     barters: barters.length,
@@ -294,8 +297,39 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
         `renamed or retyped makes safeParse drop rows silently, which reaches users as an empty picker`,
     );
   }
+  // Every item reachable through slots from a weapon must resolve to a catalog part, or it
+  // contributes nothing to stats or price and reads as "missing" on shared builds (#213). A new
+  // ItemPropertiesX type appearing in a weapon's slot graph is exactly how that would start.
+  // Walked from the weapons rather than over every slot owner: gear has slots too (helmet NVG
+  // mounts hold goggles), and those are not weapon parts.
+  const partIds = new Set(parts.map((p) => p.id));
+  const graph = buildSlotGraph(doc);
+  const unresolved = new Set<string>();
+  const visited = new Set<string>();
+  const stack = weapons.map((w) => w.id);
+  for (let owner = stack.pop(); owner !== undefined; owner = stack.pop()) {
+    if (visited.has(owner)) continue;
+    visited.add(owner);
+    for (const slot of graph.owners[owner]?.slots ?? []) {
+      for (const id of slot.allowedItemIds) {
+        if (!partIds.has(id)) unresolved.add(id);
+        stack.push(id);
+      }
+    }
+  }
+  check(
+    "selector/parts-cover-slots",
+    unresolved.size === 0,
+    `${unresolved.size} weapon-reachable slot item(s) are not in the part catalog, e.g. ${[
+      ...unresolved,
+    ]
+      .slice(0, 5)
+      .join(", ")} — a new item type in weapon slots, or a part schema that rejects real rows`,
+  );
+
+  notes.push(`${visited.size - weapons.length} items reachable through weapon slots`);
   notes.push(
-    `selectors parsed: ${counts.weapons} weapons, ${counts.mods} mods, ${counts.ammo} ammo, ${counts.armor} armor, ${counts.barters} barters`,
+    `selectors parsed: ${counts.weapons} weapons, ${counts.parts} parts, ${counts.ammo} ammo, ${counts.armor} armor, ${counts.barters} barters`,
   );
 }
 

@@ -21,7 +21,7 @@ vi.mock("@tarkov/data", async () => {
   return {
     ...actual,
     useWeaponList: () => idleQuery,
-    useModList: () => idleQuery,
+    usePartCatalog: () => idleQuery,
     useWeaponTree: () => idleQuery,
     useSavePair: () => ({ mutate: vi.fn(), isPending: false, error: null }),
     useForkPair: () => ({ mutate: vi.fn(), isPending: false, error: null }),

@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { test, expect } from "./upstream.js";
 
 /**
  * Browser half of GitHub issue #174 — keyboard and screen-reader correctness.
@@ -14,6 +15,9 @@ import { test, expect, type Page } from "@playwright/test";
  *  2. **Whether the skip link is actually revealed.** It is parked off-screen by a
  *     transform. jsdom runs no stylesheet, so it cannot see the transform, let alone that
  *     `:focus-visible` undoes it.
+ *  3. **Whether arrow keys get past a disabled option.** `focus()` on a disabled button is a
+ *     no-op only a real engine enforces, so a roving-focus list that includes one strands the
+ *     user on the option above it.
  */
 
 /** The element the browser currently has focused, as role + accessible-ish name. */
@@ -72,5 +76,50 @@ test.describe("skip link (issue #174, defect 3)", () => {
     });
     expect(landed.insideHeader, "Tab after skipping went back into the header").toBe(false);
     expect(landed.insideMain).toBe(true);
+  });
+});
+
+test.describe("Builder slot tree arrow keys", () => {
+  test("ArrowDown skips a disabled (conflicting) option instead of stopping above it", async ({
+    page,
+  }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    const picker = page
+      .locator("select")
+      .filter({ has: page.locator('option:has-text("Select weapon")') })
+      .first();
+    await expect(picker).toBeVisible({ timeout: 15_000 });
+    await picker.selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+
+    const fit = async (path: string, name: RegExp) => {
+      const region = page.locator(`details[data-slot-path="${path}"]`);
+      await region.locator(":scope > summary").click();
+      await region.locator(":scope > div").getByRole("button", { name }).first().click();
+    };
+    await fit("mod_reciever", /M4A1 5\.56x45 upper receiver/);
+    await fit("mod_reciever/mod_barrel", /10\.3 inch barrel/);
+
+    const handguard = page.locator('details[data-slot-path="mod_reciever/mod_handguard"]');
+    await handguard.locator(":scope > summary").click();
+    await expect(
+      handguard
+        .locator(":scope > div")
+        .getByRole("button", { name: /Aeroknox AX-15 10\.5 inch M-LOK handguard/ }),
+    ).toBeDisabled();
+
+    // An enabled option directly above a run of disabled ones, and the next enabled option.
+    const options = handguard.locator(":scope > div button");
+    const disabled = await options.evaluateAll((buttons) =>
+      buttons.map((b) => (b as HTMLButtonElement).disabled),
+    );
+    const above = disabled.findIndex((d, k) => !d && disabled[k + 1] === true);
+    const below = disabled.findIndex((d, k) => k > above && !d);
+    expect(above, "an enabled option above a disabled one").toBeGreaterThanOrEqual(0);
+    expect(below, "an enabled option below it").toBeGreaterThan(above + 1);
+
+    await options.nth(above).focus();
+    await expect(options.nth(above)).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(options.nth(below)).toBeFocused();
   });
 });

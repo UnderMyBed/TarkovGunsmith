@@ -3,7 +3,10 @@
 Pure-TypeScript constraint solver for Tarkov weapon builds. Given a weapon,
 its slot tree, an allowed mod list, constraints (budget, profile, pinned
 slots), and an objective (min-recoil / max-ergonomics / min-weight /
-max-accuracy), returns the provably-optimal build.
+max-accuracy), returns the best build its heuristic branch-and-bound search
+finds. It is not provably optimal: the bound covers only pending slots, not the
+sub-slots of candidates not yet chosen, and a result may leave required slots
+empty or contain conflicting parts (#225).
 
 ## What's in this package
 

@@ -1,4 +1,4 @@
-import type { BuildV6 } from "@tarkov/data";
+import { partsById, type BuildV6 } from "@tarkov/data";
 import { branchAndBound } from "./branch-and-bound.js";
 import type { OptimizationInput, OptimizationResult } from "./types.js";
 
@@ -16,7 +16,8 @@ export function optimize(input: OptimizationInput): OptimizationResult {
   const best = branchAndBound(
     {
       weapon: input.weapon,
-      modList: input.modList,
+      parts: partsById(input.parts),
+      graph: input.slotTree.graph,
       profile: input.constraints.profile,
       pinnedSlots: input.constraints.pinnedSlots,
       objective: input.objective,

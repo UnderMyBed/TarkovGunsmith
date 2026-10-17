@@ -132,7 +132,7 @@ export function BuilderPage({
         stockSpec={builder.stockSpec}
         weaponName={builder.selectedWeapon?.shortName ?? builder.selectedWeapon?.name ?? null}
         weaponId={builder.weaponId || null}
-        modCount={Object.keys(builder.attachments).length}
+        modCount={builder.attachedCount}
         sharedId={shareBuild.shareUrl?.split("/").pop() ?? null}
         onCompare={builder.selectedWeapon ? compareHandoff.open : undefined}
         onOptimize={builder.selectedWeapon ? handleOpenOptimizer : undefined}
@@ -188,8 +188,10 @@ export function BuilderPage({
               <ModsPanel
                 tree={builder.tree}
                 attachments={builder.attachments}
+                attachedCount={builder.attachedCount}
                 onAttach={builder.handleAttach}
                 getAvailability={(id) => builder.availabilityById.get(id) ?? null}
+                getConflict={builder.getConflict}
                 orphaned={builder.orphaned}
                 modNames={builder.modNamesById}
                 onDismissOrphaned={builder.clearOrphaned}
@@ -205,7 +207,7 @@ export function BuilderPage({
         <OptimizeView
           weapon={adaptWeapon(builder.selectedWeapon)}
           slotTree={builder.tree.data}
-          modList={builder.modList}
+          parts={builder.parts}
           profile={profile}
           sync={sync}
           currentAttachments={builder.attachments}

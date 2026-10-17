@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { lowerBoundForRemaining } from "./bounds.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
-import type { PlayerProfile } from "@tarkov/data";
+import { partsById, type PlayerProfile } from "@tarkov/data";
+
+const PARTS = partsById(SMALL_MODS);
 
 const flea: PlayerProfile = {
   mode: "basic",
@@ -16,7 +18,7 @@ describe("lowerBoundForRemaining", () => {
   it("min-weight: null (0 weight) is always the best candidate → 0 bound", () => {
     const bound = lowerBoundForRemaining(
       SMALL_TREE.slots,
-      SMALL_MODS,
+      PARTS,
       flea,
       new Map(),
       "min-weight",
@@ -28,7 +30,7 @@ describe("lowerBoundForRemaining", () => {
   it("max-ergonomics: negative sum of best-ergo candidate per slot", () => {
     const bound = lowerBoundForRemaining(
       SMALL_TREE.slots,
-      SMALL_MODS,
+      PARTS,
       flea,
       new Map(),
       "max-ergonomics",
@@ -42,7 +44,7 @@ describe("lowerBoundForRemaining", () => {
   it("min-recoil: best possible recoil delta after all slots contribute their min recoilModifier", () => {
     const bound = lowerBoundForRemaining(
       SMALL_TREE.slots,
-      SMALL_MODS,
+      PARTS,
       flea,
       new Map(),
       "min-recoil",
@@ -58,7 +60,7 @@ describe("lowerBoundForRemaining", () => {
     const pinBrake = new Map([["muzzle", "muzzle_brake"]]);
     const bound = lowerBoundForRemaining(
       SMALL_TREE.slots,
-      SMALL_MODS,
+      PARTS,
       flea,
       pinBrake,
       "max-ergonomics",
@@ -79,7 +81,7 @@ describe("lowerBoundForRemaining", () => {
     expect(
       lowerBoundForRemaining(
         SMALL_TREE.slots,
-        SMALL_MODS,
+        PARTS,
         flea,
         new Map(),
         "max-accuracy",
@@ -102,7 +104,7 @@ describe("lowerBoundForRemaining", () => {
     );
     const bound = lowerBoundForRemaining(
       [SMALL_TREE.slots[0]],
-      mods,
+      partsById(mods),
       flea,
       new Map(),
       "max-accuracy",

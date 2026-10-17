@@ -1,22 +1,28 @@
 import { useMemo, type ReactElement } from "react";
 import {
-  useModList,
+  usePartCatalog,
   useWeaponList,
   useWeaponTree,
+  attachedParts,
   itemAvailability,
+  mountedAttachments,
+  withAttachment,
+  partsById,
   CURRENT_BUILD_VERSION,
+  type AttachablePart,
   type BuildV6,
-  type ModListItem,
   type WeaponListItem,
   type PlayerProfile,
   type SlotDiffMap,
   type ItemAvailability,
+  type WeaponTree,
 } from "@tarkov/data";
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import { Card, CardContent, SectionTitle, WeaponSilhouette } from "@tarkov/ui";
 import { adaptMod, adaptWeapon } from "../../data-adapters/adapters.js";
 import { SlotTree } from "../slot-tree.js";
 import { OrphanedBanner } from "../orphaned-banner.js";
+import { conflictReasonFor } from "../conflict-reason.js";
 
 export interface CompareSideProps {
   /** Display label for this column (A = left, B = right). */
@@ -51,8 +57,14 @@ export function CompareSide({
   onBuildChange,
 }: CompareSideProps): ReactElement {
   const weapons = useWeaponList();
-  const mods = useModList();
+  const mods = usePartCatalog();
   const tree = useWeaponTree(build?.weaponId ?? "");
+  const byId = useMemo(() => partsById(mods.data ?? []), [mods.data]);
+  const attachments = build?.attachments;
+  const getConflict = useMemo(
+    () => (tree.data && attachments ? conflictReasonFor(tree.data, attachments, byId) : undefined),
+    [tree.data, attachments, byId],
+  );
 
   const weaponOptions = useMemo(() => {
     if (!weapons.data) return [];
@@ -92,12 +104,10 @@ export function CompareSide({
     onBuildChange(base);
   }
 
+  // Replacing or clearing a part drops everything beneath it: those slots were the old part's.
   function handleAttach(slotPath: string, itemId: string | null) {
     if (!build) return;
-    const nextAttachments = { ...build.attachments };
-    if (itemId === null) delete nextAttachments[slotPath];
-    else nextAttachments[slotPath] = itemId;
-    onBuildChange({ ...build, attachments: nextAttachments });
+    onBuildChange({ ...build, attachments: withAttachment(build.attachments, slotPath, itemId) });
   }
 
   function handleDismissOrphans() {
@@ -127,7 +137,7 @@ export function CompareSide({
           <SectionTitle
             index={sectionIndex}
             title={`Build ${label}`}
-            meta={build ? `${Object.keys(build.attachments).length} attached` : "empty"}
+            meta={attachedMeta(build, tree.data, tree.error, byId)}
           />
 
           <div className="flex flex-col gap-2">
@@ -188,6 +198,7 @@ export function CompareSide({
                   attachments={build.attachments}
                   onAttach={handleAttach}
                   getAvailability={getAvailability}
+                  getConflict={getConflict}
                   diff={diff ?? undefined}
                 />
               )}
@@ -200,22 +211,44 @@ export function CompareSide({
 }
 
 /**
+ * The section-title count: parts on the weapon, never stale keys under a removed part. A
+ * non-empty build needs its slot tree to know which keys those are.
+ */
+function attachedMeta(
+  build: BuildV6 | null,
+  tree: WeaponTree | undefined,
+  treeError: Error | null,
+  parts: ReadonlyMap<string, AttachablePart>,
+): string {
+  if (!build) return "empty";
+  if (Object.keys(build.attachments).length === 0) return "0 attached";
+  if (tree)
+    return `${Object.keys(mountedAttachments(tree, build.attachments, parts)).length} attached`;
+  return treeError ? "slot tree unavailable" : "loading";
+}
+
+/**
  * Pure helper: compute the {@link WeaponSpec} for one side of the compare
  * workspace. Shared with the parent so stat deltas don't have to reassemble
  * the adapted-weapon / adapted-mods wiring themselves.
  *
- * Returns `null` when the build is missing, the data lists haven't loaded,
- * or the referenced weapon isn't in the current data set (upstream drift).
+ * Returns `null` when the build is missing, the data lists or the build's
+ * slot tree haven't loaded, or the referenced weapon isn't in the current
+ * data set (upstream drift).
  */
 export function computeSideSpec(
   build: BuildV6 | null,
+  tree: WeaponTree | undefined,
   weapons: readonly WeaponListItem[] | undefined,
-  mods: readonly ModListItem[] | undefined,
+  parts: readonly AttachablePart[] | undefined,
 ): WeaponSpec | null {
-  if (!build || !weapons || !mods) return null;
+  if (!build || !weapons || !parts || tree?.weaponId !== build.weaponId) return null;
   const weapon = weapons.find((w) => w.id === build.weaponId);
   if (!weapon) return null;
-  const attachedIds = new Set(Object.values(build.attachments));
-  const attached = mods.filter((m) => attachedIds.has(m.id));
-  return weaponSpec(adaptWeapon(weapon), attached.map(adaptMod));
+  // Only parts on the weapon, one entry per slot: a part fitted twice counts twice.
+  const { entries } = attachedParts(tree, build.attachments, partsById(parts));
+  return weaponSpec(
+    adaptWeapon(weapon),
+    entries.map((e) => adaptMod(e.part)),
+  );
 }

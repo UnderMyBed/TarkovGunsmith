@@ -21,6 +21,7 @@ import { migrateV1ToV2, type BuildV1, type SlotNodeForMigration } from "@tarkov/
 export function useV1Migration(
   initialWeaponId: string,
   initialModIds: string[] | undefined,
+  /** The weapon's `legacyV1MigrationSlots`, once its tree has loaded. */
   treeSlots: readonly SlotNodeForMigration[] | undefined,
   setAttachments: (attachments: Record<string, string>) => void,
   setOrphaned: (orphaned: string[]) => void,
@@ -34,7 +35,6 @@ export function useV1Migration(
       modIds: initialModIds,
       createdAt: new Date(0).toISOString(),
     };
-    // The tree's SlotNode structurally extends SlotNodeForMigration.
     const v2 = migrateV1ToV2(v1, treeSlots);
     setAttachments(v2.attachments);
     setOrphaned(v2.orphaned);

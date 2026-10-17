@@ -1,17 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { slotDiff, type ChangedRow } from "./slot-diff.js";
-import type { ModListItem, WeaponTree } from "@tarkov/data";
+import { shownSlots, slotDiff, type ChangedRow } from "./slot-diff.js";
+import { partsById, type AttachablePart } from "@tarkov/data";
+import { tinyTree } from "../../../test/tiny-tree.js";
 
-const slotTree: WeaponTree = {
-  weaponId: "w1",
-  slots: [
-    { path: "muzzle", name: "Muzzle", nameId: "muzzle", allowedItems: [] },
-    { path: "handguard", name: "Handguard", nameId: "handguard", allowedItems: [] },
-    { path: "stock", name: "Stock", nameId: "stock", allowedItems: [] },
-  ],
-} as unknown as WeaponTree;
+const slotTree = tinyTree("w1", [
+  { nameId: "muzzle", name: "Muzzle", items: ["m-old", "m-new"] },
+  { nameId: "handguard", name: "Handguard", items: ["h-new"] },
+  { nameId: "stock", name: "Stock", items: [] },
+]);
 
-const modList: readonly ModListItem[] = [
+const partList: readonly AttachablePart[] = [
   {
     id: "m-old",
     name: "Old Muzzle",
@@ -26,6 +24,8 @@ const modList: readonly ModListItem[] = [
       recoilModifier: -0.05,
       accuracyModifier: 0,
     },
+    conflictingItems: [],
+    conflictingSlotIds: [],
     buyFor: [
       {
         priceRUB: 10_000,
@@ -48,6 +48,8 @@ const modList: readonly ModListItem[] = [
       recoilModifier: -0.09,
       accuracyModifier: 0,
     },
+    conflictingItems: [],
+    conflictingSlotIds: [],
     buyFor: [
       {
         priceRUB: 22_000,
@@ -70,6 +72,8 @@ const modList: readonly ModListItem[] = [
       recoilModifier: -0.02,
       accuracyModifier: 0,
     },
+    conflictingItems: [],
+    conflictingSlotIds: [],
     buyFor: [
       {
         priceRUB: 8_000,
@@ -80,13 +84,15 @@ const modList: readonly ModListItem[] = [
   },
 ];
 
+const parts = partsById(partList);
+
 describe("slotDiff", () => {
   it("emits one ChangedRow per swapped slot in slot-tree order", () => {
     const rows = slotDiff(
       { muzzle: "m-old", stock: "s-keep" },
       { muzzle: "m-new", handguard: "h-new", stock: "s-keep" },
       slotTree,
-      modList,
+      parts,
     );
     expect(rows.map((r) => r.slotId)).toEqual(["muzzle", "handguard"]);
   });
@@ -96,7 +102,7 @@ describe("slotDiff", () => {
       { muzzle: "m-old" },
       { muzzle: "m-old", handguard: "h-new" },
       slotTree,
-      modList,
+      parts,
     );
     expect(hg).toMatchObject({
       slotId: "handguard",
@@ -110,7 +116,7 @@ describe("slotDiff", () => {
       { muzzle: "m-old", handguard: "h-new" },
       { muzzle: "m-old" },
       slotTree,
-      modList,
+      parts,
     );
     expect(row).toMatchObject({
       slotId: "handguard",
@@ -124,13 +130,13 @@ describe("slotDiff", () => {
       { muzzle: "m-old", handguard: "h-new" },
       { muzzle: "m-old", handguard: "h-new" },
       slotTree,
-      modList,
+      parts,
     );
     expect(rows).toEqual([]);
   });
 
-  it("falls back to the mod id when the mod is missing from modList", () => {
-    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-missing" }, slotTree, modList);
+  it("falls back to the mod id when the mod is missing from the catalog", () => {
+    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-missing" }, slotTree, parts);
     expect(row).toMatchObject({
       proposedName: "m-missing",
       proposedErgo: 0,
@@ -140,7 +146,7 @@ describe("slotDiff", () => {
   });
 
   it("computes per-row deltas (proposed minus current)", () => {
-    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-new" }, slotTree, modList);
+    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-new" }, slotTree, parts);
     expect(row).toMatchObject<Partial<ChangedRow>>({
       ergoDelta: 1, // 3 - 2
       priceDelta: 12_000, // 22_000 - 10_000
@@ -151,15 +157,28 @@ describe("slotDiff", () => {
     expect(row?.recoilDelta).toBeCloseTo(-0.04, 10);
   });
 
-  it("appends fallback rows for slot paths outside the tree, after tree-ordered rows", () => {
+  it("ignores keys that are not on the weapon", () => {
     const rows = slotDiff(
-      { muzzle: "m-old", "tac-device": "t-old" },
+      { muzzle: "m-old", "tac-device": "t-old", "handguard/rail": "r-old" },
       { muzzle: "m-new", handguard: "h-new", "tac-device": "t-new" },
       slotTree,
-      modList,
+      parts,
     );
-    expect(rows.map((r) => r.slotId)).toEqual(["muzzle", "handguard", "tac-device"]);
-    // Fallback rows get an uppercased slotLabel since they aren't in the tree.
-    expect(rows[2]).toMatchObject({ slotId: "tac-device", slotLabel: "TAC-DEVICE" });
+    expect(rows.map((r) => r.slotId)).toEqual(["muzzle", "handguard"]);
+  });
+});
+
+describe("shownSlots", () => {
+  it("lists each slot either build shows once, the current build's first", () => {
+    const tree = tinyTree("w1", [
+      { nameId: "a", name: "A", items: [["p", [{ nameId: "x", name: "X", items: ["c"] }]], "q"] },
+      { nameId: "b", name: "B", items: [["r", [{ nameId: "y", name: "Y", items: ["c"] }]]] },
+    ]);
+    expect(shownSlots(tree, { a: "p" }, { a: "q", b: "r" }).map((s) => s.path)).toEqual([
+      "a",
+      "a/x",
+      "b",
+      "b/y",
+    ]);
   });
 });

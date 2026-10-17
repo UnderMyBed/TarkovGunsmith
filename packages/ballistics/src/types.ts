@@ -74,9 +74,9 @@ export interface BallisticWeapon {
  * `recoilModifier` and `accuracyModifier` carry upstream's own unit rather than
  * a converted one. Converting at the adapter is what produced three divergent
  * copies of the same 100x error — see docs/operations/data-api-audit.md §B.
- * Both names deliberately match `ItemPropertiesWeaponMod` so a reader can diff
- * this shape against the Zod schema at
- * packages/tarkov-data/src/queries/modList.ts:12-13 field-for-field.
+ * Both names deliberately match the mod-like part properties so a reader can
+ * diff this shape against the Zod schema at
+ * packages/tarkov-data/src/queries/parts.ts:14-15 field-for-field.
  */
 export interface BallisticMod {
   readonly id: string;

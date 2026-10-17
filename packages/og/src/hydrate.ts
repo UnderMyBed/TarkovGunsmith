@@ -84,7 +84,7 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
         // Passthrough, no unit conversion: `recoilModifier` and
         // `accuracyModifier` are fractions on both sides. Stays inline rather
         // than using @tarkov/data's `adaptMod` because `HydrateMod` is a
-        // deliberately looser Pages-Function shape, not a `ModListItem` —
+        // deliberately looser Pages-Function shape, not an `AttachablePart` —
         // optional properties, `shortName`, and a `buyFor` price list.
         attachedMods.map((m) => ({
           id: m.id,

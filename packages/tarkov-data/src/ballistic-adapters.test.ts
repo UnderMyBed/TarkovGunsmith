@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { adaptWeapon, adaptMod, DEFAULT_BASE_ACCURACY } from "./ballistic-adapters.js";
 import type { WeaponListItem } from "./queries/weaponList.js";
-import type { ModListItem } from "./queries/modList.js";
+import type { AttachablePart } from "./queries/parts.js";
 
 /**
  * `adaptWeapon` / `adaptMod` are pure passthrough converters into
  * `@tarkov/ballistics`'s input shape — see the "why" comments on each in
  * `ballistic-adapters.ts`. These tests exist mainly to pin the field mapping
  * (especially the deliberate non-`default*` field reads on the weapon side)
- * so a future rename in `queries/weaponList.ts` / `queries/modList.ts` fails
+ * so a future rename in `queries/weaponList.ts` / `queries/parts.ts` fails
  * loudly here instead of silently zeroing a stat on every card.
  */
 
@@ -33,7 +33,7 @@ function weaponListItem(overrides: Partial<WeaponListItem> = {}): WeaponListItem
   };
 }
 
-function modListItem(overrides: Partial<ModListItem> = {}): ModListItem {
+function partItem(overrides: Partial<AttachablePart> = {}): AttachablePart {
   return {
     id: "5a33e75ac4a2826c6e06d759",
     name: "CQR AR15",
@@ -49,6 +49,8 @@ function modListItem(overrides: Partial<ModListItem> = {}): ModListItem {
       accuracyModifier: 0,
     },
     buyFor: [],
+    conflictingItems: [],
+    conflictingSlotIds: [],
     ...overrides,
   };
 }
@@ -75,7 +77,7 @@ describe("adaptWeapon", () => {
 
 describe("adaptMod", () => {
   it("passes recoilModifier/accuracyModifier through unconverted (fractions, not percents)", () => {
-    const spec = adaptMod(modListItem());
+    const spec = adaptMod(partItem());
     expect(spec).toEqual({
       id: "5a33e75ac4a2826c6e06d759",
       name: "CQR AR15",
@@ -88,7 +90,7 @@ describe("adaptMod", () => {
 
   it("carries a non-zero accuracyModifier through untouched", () => {
     const spec = adaptMod(
-      modListItem({
+      partItem({
         id: "compensator",
         properties: {
           propertiesType: "ItemPropertiesWeaponMod",

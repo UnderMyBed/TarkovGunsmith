@@ -1,7 +1,7 @@
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { weaponSpec } from "@tarkov/ballistics";
-import type { ModListItem, PlayerProfile, SlotNode } from "@tarkov/data";
-import { adaptMod, itemAvailability } from "@tarkov/data";
+import type { AttachablePart, PlayerProfile, SlotGraph, SlotNode } from "@tarkov/data";
+import { adaptMod, expandSlots, itemAvailability } from "@tarkov/data";
 import { cheapestPrice, slotCandidates } from "./feasibility.js";
 import { lowerBoundForRemaining } from "./bounds.js";
 import { score } from "./objective.js";
@@ -9,7 +9,10 @@ import type { Objective } from "./types.js";
 
 export interface BnbState {
   readonly weapon: BallisticWeapon;
-  readonly modList: readonly ModListItem[];
+  /** The part catalog, indexed by id. */
+  readonly parts: ReadonlyMap<string, AttachablePart>;
+  /** The slot graph sub-slots expand from, one level per attached candidate. */
+  readonly graph: SlotGraph;
   readonly profile: PlayerProfile;
   readonly pinnedSlots: ReadonlyMap<string, string | null>;
   readonly objective: Objective;
@@ -38,9 +41,14 @@ interface MutableBest {
 }
 
 /**
- * Runs an exact branch-and-bound DFS over the slot tree and returns the
- * best (lowest-score) leaf found, or `null` if no leaf was ever reached
+ * Runs a heuristic branch-and-bound DFS over the slot tree and returns the
+ * best (lowest-score) leaf it found, or `null` if no leaf was ever reached
  * (e.g. the onNodeVisit callback aborted before the first completion).
+ *
+ * Not provably optimal: the pruning bound covers only the slots already
+ * pending, not the sub-slots of candidates not yet chosen, so it can cut a
+ * branch whose deeper parts would have won. A result may also leave a
+ * required slot empty or contain conflicting parts. #225 owns all three.
  *
  * Tie-breaking: lower price wins; then lexicographic order of the sorted
  * attachments map ensures determinism.
@@ -48,14 +56,29 @@ interface MutableBest {
 export function branchAndBound(state: BnbState, slots: readonly SlotNode[]): BnbBest | null {
   const best: { value: MutableBest | null } = { value: null };
   const visits = { count: 0 };
-  dfs(state, slots, [], 0, {}, best, visits);
+  const root: ReadonlySet<string> = new Set();
+  dfs(
+    state,
+    slots.map((slot) => ({ slot, ancestors: root })),
+    [],
+    0,
+    {},
+    best,
+    visits,
+  );
   return best.value;
+}
+
+/** A slot still to decide, with the item ids attached above it (the cycle guard). */
+interface PendingSlot {
+  readonly slot: SlotNode;
+  readonly ancestors: ReadonlySet<string>;
 }
 
 function dfs(
   state: BnbState,
-  remainingSlots: readonly SlotNode[],
-  partialMods: ModListItem[],
+  remainingSlots: readonly PendingSlot[],
+  partialMods: AttachablePart[],
   runningPrice: number,
   attachments: Record<string, string>,
   best: { value: MutableBest | null },
@@ -89,12 +112,17 @@ function dfs(
     return true;
   }
 
-  const [slot, ...rest] = remainingSlots;
-  // Defensive: `slot` is guaranteed defined by the `remainingSlots.length === 0`
+  const [pending, ...rest] = remainingSlots;
+  // Defensive: `pending` is guaranteed defined by the `remainingSlots.length === 0`
   // early-return above, but TS's `noUncheckedIndexedAccess` forces the guard.
   /* v8 ignore next */
-  if (!slot) return true;
-  const candidates = slotCandidates(slot, state.modList, state.profile, state.pinnedSlots);
+  if (!pending) return true;
+  const { slot, ancestors } = pending;
+  // An item already attached above this slot cannot go in it again: that would be a cycle in
+  // the slot graph, which the live document does not have but nothing upstream guarantees.
+  const candidates = slotCandidates(slot, state.parts, state.profile, state.pinnedSlots).filter(
+    (c) => c === null || !ancestors.has(c.id),
+  );
 
   // Sort candidates best-first (by single-item score) for better pruning.
   const sorted = [...candidates].sort(
@@ -125,9 +153,12 @@ function dfs(
     const newPrice = runningPrice + additionalPrice;
     if (state.budgetRub !== undefined && newPrice > state.budgetRub) continue;
 
-    // Sub-slots unlocked by this item.
-    const subSlots: readonly SlotNode[] = candidate
-      ? (slot.allowedItems.find((ai) => ai.id === candidate.id)?.children ?? [])
+    // Sub-slots unlocked by this item, expanded lazily from the graph.
+    const subSlots: readonly PendingSlot[] = candidate
+      ? expandSlots(state.graph, candidate.id, slot.path).map((sub) => ({
+          slot: sub,
+          ancestors: new Set([...ancestors, candidate.id]),
+        }))
       : [];
     const newRemaining = [...subSlots, ...rest];
 
@@ -136,8 +167,8 @@ function dfs(
       const partialForBoundCheck = candidate ? [...partialMods, candidate] : partialMods;
       const runningStats = weaponSpec(state.weapon, partialForBoundCheck.map(adaptMod));
       const bound = lowerBoundForRemaining(
-        newRemaining,
-        state.modList,
+        newRemaining.map((p) => p.slot),
+        state.parts,
         state.profile,
         state.pinnedSlots,
         state.objective,
@@ -162,19 +193,20 @@ function dfs(
   return true;
 }
 
-function singleItemScore(objective: Objective, item: ModListItem | null): number {
+function singleItemScore(objective: Objective, item: AttachablePart | null): number {
   if (item === null) return 0;
+  const mod = adaptMod(item);
   switch (objective) {
     case "min-recoil":
-      return item.properties.recoilModifier;
+      return mod.recoilModifier;
     case "max-ergonomics":
-      return -item.properties.ergonomics;
+      return -mod.ergonomicsDelta;
     case "min-weight":
-      return item.weight;
+      return mod.weight;
     case "max-accuracy":
       // Negated: a larger accuracyModifier is better accuracy, and this
       // function is "smaller sorts first". See bounds.ts's max-accuracy case.
-      return -item.properties.accuracyModifier;
+      return -mod.accuracyModifier;
   }
 }
 

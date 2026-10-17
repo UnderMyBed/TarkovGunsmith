@@ -1,5 +1,6 @@
-import type { ModListItem, WeaponTree } from "@tarkov/data";
+import type { AttachablePart, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon } from "@tarkov/ballistics";
+import { tinyTree } from "./tree.js";
 
 /**
  * Toy 3-slot weapon used by unit tests. The numbers are chosen so
@@ -28,7 +29,7 @@ export const SMALL_WEAPON: BallisticWeapon = {
   baseAccuracy: 3.0,
 };
 
-export const SMALL_MODS: readonly ModListItem[] = [
+export const SMALL_MODS: readonly AttachablePart[] = [
   makeMod("muzzle_brake", "Brake", -0.12, 2, 0.3, 1500),
   makeMod("muzzle_silencer", "Silencer", -0.08, 3, 0.5, 3500),
   makeMod("grip_vertical", "Vertical grip", -0.04, 5, 0.15, 900),
@@ -36,13 +37,12 @@ export const SMALL_MODS: readonly ModListItem[] = [
 ];
 
 export const SMALL_TREE: WeaponTree = {
-  weaponId: "weap1",
+  ...tinyTree("weap1", [
+    { nameId: "muzzle", items: ["muzzle_brake", "muzzle_silencer"] },
+    { nameId: "grip", items: ["grip_vertical"] },
+    { nameId: "stock", items: ["stock_standard"] },
+  ]),
   weaponName: "Test Rifle",
-  slots: [
-    slot("muzzle", ["muzzle_brake", "muzzle_silencer"]),
-    slot("grip", ["grip_vertical"]),
-    slot("stock", ["stock_standard"]),
-  ],
 };
 
 function makeMod(
@@ -52,7 +52,7 @@ function makeMod(
   ergonomics: number,
   weight: number,
   priceRub: number,
-): ModListItem {
+): AttachablePart {
   return {
     id,
     name,
@@ -67,6 +67,8 @@ function makeMod(
       recoilModifier,
       accuracyModifier: 0,
     },
+    conflictingItems: [],
+    conflictingSlotIds: [],
     buyFor: [
       {
         priceRUB: priceRub,
@@ -78,18 +80,5 @@ function makeMod(
         },
       },
     ],
-  };
-}
-
-function slot(nameId: string, itemIds: readonly string[]) {
-  return {
-    nameId,
-    path: nameId,
-    name: nameId,
-    required: false,
-    allowedItemIds: new Set(itemIds),
-    allowedItems: itemIds.map((id) => ({ id, name: id, children: [] })),
-    allowedCategories: [],
-    children: [],
   };
 }

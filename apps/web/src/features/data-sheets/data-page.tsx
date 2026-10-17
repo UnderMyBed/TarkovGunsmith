@@ -3,11 +3,12 @@ import {
   useAmmoList,
   useArmorList,
   useWeaponList,
-  useModList,
+  usePartCatalog,
+  isModLikePart,
   type AmmoListItem,
   type ArmorListItem,
   type WeaponListItem,
-  type ModListItem,
+  type ModLikePart,
 } from "@tarkov/data";
 import {
   Card,
@@ -372,15 +373,17 @@ function WeaponTable({ query }: { query: string }) {
 }
 
 function ModTable({ query }: { query: string }) {
-  const q = useModList();
-  type Row = ModListItem & {
+  const q = usePartCatalog();
+  // Every stat-bearing part a weapon slot takes: mods, barrels, scopes and magazines. Cartridges
+  // have their own Ammo table.
+  type Row = ModLikePart & {
     ergo: number;
     recoilPct: number;
     accuracyPct: number;
   };
   const rows = useMemo<Row[]>(
     () =>
-      (q.data ?? []).map((m) => ({
+      (q.data ?? []).filter(isModLikePart).map((m) => ({
         ...m,
         ergo: m.properties.ergonomics,
         // Upstream ships these as fractions (-0.21 for the AK-74 polymer

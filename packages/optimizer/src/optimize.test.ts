@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { optimize } from "./optimize.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
+import { tinyTree, type SlotSpec } from "./__fixtures__/tree.js";
 import { M4A1_WEAPON, M4A1_MODS, M4A1_TREE } from "./__fixtures__/m4a1-like.js";
-import type { ModListItem, PlayerProfile, WeaponTree } from "@tarkov/data";
+import type { AttachablePart, PlayerProfile, WeaponTree } from "@tarkov/data";
 
 function makeTieMod(
   id: string,
@@ -11,7 +12,7 @@ function makeTieMod(
   ergonomics: number,
   weight: number,
   priceRub: number,
-): ModListItem {
+): AttachablePart {
   return {
     id,
     name,
@@ -26,6 +27,8 @@ function makeTieMod(
       recoilModifier,
       accuracyModifier: 0,
     },
+    conflictingItems: [],
+    conflictingSlotIds: [],
     buyFor: [
       {
         priceRUB: priceRub,
@@ -49,26 +52,18 @@ function makeTieMod(
 function makeVeryWideFixture(numSlots: number): {
   weapon: typeof SMALL_WEAPON;
   tree: WeaponTree;
-  mods: readonly ModListItem[];
+  mods: readonly AttachablePart[];
 } {
-  const mods: ModListItem[] = [];
-  const slots = [];
+  const mods: AttachablePart[] = [];
+  const slots: SlotSpec[] = [];
   for (let s = 0; s < numSlots; s++) {
     const id = `slot${s}_item`;
     mods.push(makeTieMod(id, id, 0, 0, 0, 1000));
-    slots.push({
-      nameId: `slot${s}`,
-      path: `slot${s}`,
-      name: `slot${s}`,
-      required: false,
-      allowedItemIds: new Set([id]),
-      allowedItems: [{ id, name: id, children: [] as never[] }],
-      children: [],
-    });
+    slots.push({ nameId: `slot${s}`, items: [id] });
   }
   return {
     weapon: SMALL_WEAPON,
-    tree: { weaponId: SMALL_WEAPON.id, weaponName: SMALL_WEAPON.name, slots },
+    tree: { ...tinyTree(SMALL_WEAPON.id, slots), weaponName: SMALL_WEAPON.name },
     mods,
   };
 }
@@ -89,7 +84,7 @@ describe("optimize — small weapon", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
       slotTree: SMALL_TREE,
-      modList: SMALL_MODS,
+      parts: SMALL_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "min-recoil",
     });
@@ -107,7 +102,7 @@ describe("optimize — small weapon", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
       slotTree: SMALL_TREE,
-      modList: SMALL_MODS,
+      parts: SMALL_MODS,
       constraints: { profile: fleaOff, pinnedSlots: new Map() },
       objective: "min-recoil",
     });
@@ -116,11 +111,11 @@ describe("optimize — small weapon", () => {
     expect(result.build.attachments).toEqual({});
   });
 
-  it("returns ok:false reason=no-valid-combinations when a pinned item isn't in modList", () => {
+  it("returns ok:false reason=no-valid-combinations when a pinned item isn't in the catalog", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
       slotTree: SMALL_TREE,
-      modList: SMALL_MODS,
+      parts: SMALL_MODS,
       constraints: {
         profile: flea,
         pinnedSlots: new Map([["muzzle", "nonexistent"]]),
@@ -136,7 +131,7 @@ describe("optimize — small weapon", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
       slotTree: SMALL_TREE,
-      modList: SMALL_MODS,
+      parts: SMALL_MODS,
       constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: 2000 },
       objective: "min-recoil",
     });
@@ -147,7 +142,7 @@ describe("optimize — small weapon", () => {
     const input = {
       weapon: SMALL_WEAPON,
       slotTree: SMALL_TREE,
-      modList: SMALL_MODS,
+      parts: SMALL_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "min-recoil" as const,
     };
@@ -165,7 +160,7 @@ describe("optimize — m4a1-like weapon", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
       slotTree: M4A1_TREE,
-      modList: M4A1_MODS,
+      parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "min-recoil",
     });
@@ -178,7 +173,7 @@ describe("optimize — m4a1-like weapon", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
       slotTree: M4A1_TREE,
-      modList: M4A1_MODS,
+      parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "max-ergonomics",
     });
@@ -189,7 +184,7 @@ describe("optimize — m4a1-like weapon", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
       slotTree: M4A1_TREE,
-      modList: M4A1_MODS,
+      parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "min-weight",
     });
@@ -200,7 +195,7 @@ describe("optimize — m4a1-like weapon", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
       slotTree: M4A1_TREE,
-      modList: M4A1_MODS,
+      parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "max-accuracy",
     });
@@ -212,7 +207,7 @@ describe("optimize — m4a1-like weapon", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
       slotTree: M4A1_TREE,
-      modList: M4A1_MODS,
+      parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: budget },
       objective: "min-recoil",
     });
@@ -226,7 +221,7 @@ describe("optimize — tiebreak", () => {
   it("deterministically picks the cheaper build when two builds score equal", () => {
     // Two muzzles with identical recoil/ergo/weight stats but different prices.
     // The optimizer should pick the cheaper one by tie-breaking.
-    const modListForTie = [
+    const partsForTie = [
       ...SMALL_MODS.filter((m) => !m.id.startsWith("muzzle")),
       makeTieMod("muzzle_a", "A", -12, 2, 0.3, 1000),
       makeTieMod("muzzle_b", "B", -12, 2, 0.3, 2000),
@@ -249,7 +244,7 @@ describe("optimize — tiebreak", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
       slotTree: treeForTie,
-      modList: modListForTie,
+      parts: partsForTie,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "min-recoil",
     });
@@ -278,7 +273,7 @@ describe("optimize — timeout", () => {
       const result = optimize({
         weapon: wide.weapon,
         slotTree: wide.tree,
-        modList: wide.mods,
+        parts: wide.mods,
         constraints: { profile: flea, pinnedSlots: new Map() },
         objective: "min-recoil",
         timeoutMs: 60_000,
@@ -305,7 +300,7 @@ describe("optimize — timeout", () => {
     const result = optimize({
       weapon: wide.weapon,
       slotTree: wide.tree,
-      modList: wide.mods,
+      parts: wide.mods,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "min-recoil",
       timeoutMs: 0,
@@ -323,7 +318,7 @@ describe("optimize — timeout", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
       slotTree: M4A1_TREE,
-      modList: M4A1_MODS,
+      parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
       objective: "min-recoil",
       timeoutMs: 0,

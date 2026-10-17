@@ -13,5 +13,8 @@ export function useWeaponTree(weaponId: string): UseQueryResult<WeaponTree, Erro
     queryKey: ["weapon-tree", weaponId],
     queryFn: () => fetchWeaponTree(client, weaponId),
     enabled: weaponId.length > 0,
+    // The tree holds the whole shared slot graph by reference. Structural sharing would deep-walk
+    // it on every refetch to preserve references nothing compares.
+    structuralSharing: false,
   });
 }

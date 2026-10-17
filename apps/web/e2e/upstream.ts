@@ -59,8 +59,8 @@ const PROFILE_STORAGE_KEY = "tg:player-profile";
  * specs on the wrong weapon.
  *
  * A progressed profile also puts the specs on the weapon the captures were built around: the
- * M4A1 resolves to a 46-node slot tree, which is what the slot-tree and optimizer specs need
- * to be exercising. Availability gating is still live — it is simply being driven from a
+ * M4A1, whose captured parts reach four slot levels deep (a barrel's muzzle device's own muzzle
+ * slot), which is what the slot-tree and optimizer specs need to be exercising. Availability gating is still live — it is simply being driven from a
  * state that makes the fixture's own content reachable.
  *
  * `test.use({ playerProfile: "fresh" })` opts a spec out; `builder-profile.spec.ts` does,
@@ -75,8 +75,9 @@ export const PROGRESSED_PROFILE: PlayerProfile = {
 
 /**
  * How many slots `min-recoil` changes on a bare M4A1, over the captured document, on
- * {@link PROGRESSED_PROFILE}: pistol grip, receiver, stock, charging handle, bolt release,
- * handguard, and the stock's own nested stock slot.
+ * {@link PROGRESSED_PROFILE}: pistol grip, magazine, charging handle, bolt release, stock and
+ * its nested stock slot, receiver, and under the receiver its handguard, scope, rear sight and
+ * barrel — and under the barrel its gas block, muzzle device, and that device's own muzzle slot.
  *
  * Deterministic, because all three inputs are — which is the point. The specs used to
  * `test.skip` when the solver found nothing, and against live data that skip could fire on
@@ -84,7 +85,7 @@ export const PROGRESSED_PROFILE: PlayerProfile = {
  *
  * If this number moves, the captures or the solver moved. Read the diff before retuning it.
  */
-export const OPTIMIZER_CHANGED_SLOTS = 7;
+export const OPTIMIZER_CHANGED_SLOTS = 14;
 
 /**
  * The RCL % cell for the strongest mod that run proposes — a -0.24 `recoilModifier` rendered

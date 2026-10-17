@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { slotDiff, type SlotDiffStatus, type SlotDiffInput } from "./slot-diff.js";
+import { slotDiff, type SlotDiffStatus } from "./slot-diff.js";
+import { tinyTree } from "./__test-utils__/tiny-tree.js";
 
-function leaf(nameId: string): SlotDiffInput["tree"][number] {
-  return { nameId, path: nameId, children: [] };
-}
-
-const tree = [leaf("mod_scope"), leaf("mod_barrel"), leaf("mod_stock")];
+const tree = tinyTree("w", [
+  { nameId: "mod_scope", items: ["x", "y"] },
+  { nameId: "mod_barrel", items: ["y"] },
+  { nameId: "mod_stock", items: [] },
+]);
 
 describe("slotDiff", () => {
   it("returns all 'equal' when attachments match", () => {
@@ -36,20 +37,29 @@ describe("slotDiff", () => {
     expect(map.get("mod_scope")).toBe<SlotDiffStatus>("right-only");
   });
 
-  it("recurses into nested slot children", () => {
-    const nested = [
-      {
-        nameId: "mod_mount",
-        path: "mod_mount",
-        children: [{ nameId: "mod_scope", path: "mod_mount/mod_scope", children: [] }],
-      },
-    ] as unknown as SlotDiffInput["tree"];
+  it("covers the slots of attached items, at any depth", () => {
+    const nested = tinyTree("w", [
+      { nameId: "mod_mount", items: [["m", [{ nameId: "mod_scope", items: ["x"] }]]] },
+    ]);
 
     const map = slotDiff(
-      { tree: nested, attachments: { "mod_mount/mod_scope": "x" } },
+      { tree: nested, attachments: { mod_mount: "m", "mod_mount/mod_scope": "x" } },
+      { tree: nested, attachments: { mod_mount: "m" } },
+    );
+    expect(map.get("mod_mount")).toBe<SlotDiffStatus>("equal");
+    expect(map.get("mod_mount/mod_scope")).toBe<SlotDiffStatus>("left-only");
+  });
+
+  it("lists a child slot when either side shows it", () => {
+    const nested = tinyTree("w", [
+      { nameId: "mod_mount", items: [["m", [{ nameId: "mod_scope", items: ["x"] }]]] },
+    ]);
+    const map = slotDiff(
+      { tree: nested, attachments: { mod_mount: "m" } },
       { tree: nested, attachments: {} },
     );
-    expect(map.get("mod_mount/mod_scope")).toBe<SlotDiffStatus>("left-only");
+    expect(map.get("mod_mount/mod_scope")).toBe<SlotDiffStatus>("equal");
+    expect(map.get("mod_mount")).toBe<SlotDiffStatus>("left-only");
   });
 
   it("handles null sides gracefully", () => {

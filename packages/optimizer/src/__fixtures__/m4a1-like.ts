@@ -1,5 +1,6 @@
-import type { ModListItem, WeaponTree } from "@tarkov/data";
+import type { AttachablePart, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon } from "@tarkov/ballistics";
+import { tinyTree } from "./tree.js";
 
 /**
  * Realistic-ish 8-slot rifle fixture for integration tests. Slot counts
@@ -22,7 +23,7 @@ export const M4A1_WEAPON: BallisticWeapon = {
 // stepping 0.01 per variant. Percent-scale magnitudes here would be unreachable
 // upstream — the condition that hid the 100x error described in
 // docs/operations/data-api-audit.md §B.
-export const M4A1_MODS: readonly ModListItem[] = [
+export const M4A1_MODS: readonly AttachablePart[] = [
   ...generateSlotMods("muzzle", 4, { recoilBase: -0.1, priceBase: 5000 }),
   ...generateSlotMods("barrel", 3, { recoilBase: -0.05, priceBase: 8000 }),
   ...generateSlotMods("handguard", 3, { recoilBase: 0, priceBase: 3000, ergonomicsBase: 10 }),
@@ -34,18 +35,17 @@ export const M4A1_MODS: readonly ModListItem[] = [
 ];
 
 export const M4A1_TREE: WeaponTree = {
-  weaponId: "m4a1",
+  ...tinyTree("m4a1", [
+    { nameId: "muzzle", items: optionIds("muzzle", 4) },
+    { nameId: "barrel", items: optionIds("barrel", 3) },
+    { nameId: "handguard", items: optionIds("handguard", 3) },
+    { nameId: "foregrip", items: optionIds("foregrip", 3) },
+    { nameId: "stock", items: optionIds("stock", 3) },
+    { nameId: "pistolgrip", items: optionIds("pistolgrip", 3) },
+    { nameId: "sight", items: optionIds("sight", 3) },
+    { nameId: "mag", items: optionIds("mag", 2) },
+  ]),
   weaponName: "M4A1",
-  slots: [
-    slotWithOptions("muzzle", 4),
-    slotWithOptions("barrel", 3),
-    slotWithOptions("handguard", 3),
-    slotWithOptions("foregrip", 3),
-    slotWithOptions("stock", 3),
-    slotWithOptions("pistolgrip", 3),
-    slotWithOptions("sight", 3),
-    slotWithOptions("mag", 2),
-  ],
 };
 
 function generateSlotMods(
@@ -57,8 +57,8 @@ function generateSlotMods(
     ergonomicsBase?: number;
     weightBase?: number;
   },
-): readonly ModListItem[] {
-  const out: ModListItem[] = [];
+): readonly AttachablePart[] {
+  const out: AttachablePart[] = [];
   for (let i = 0; i < count; i++) {
     const recoilModifier = base.recoilBase - i * 0.01;
     const ergonomics = (base.ergonomicsBase ?? 0) + i;
@@ -79,6 +79,8 @@ function generateSlotMods(
         recoilModifier,
         accuracyModifier,
       },
+      conflictingItems: [],
+      conflictingSlotIds: [],
       buyFor: [
         {
           priceRUB: priceRub,
@@ -95,16 +97,6 @@ function generateSlotMods(
   return out;
 }
 
-function slotWithOptions(nameId: string, count: number) {
-  const ids = Array.from({ length: count }, (_, i) => `${nameId}_${i}`);
-  return {
-    nameId,
-    path: nameId,
-    name: nameId,
-    required: false,
-    allowedItemIds: new Set(ids),
-    allowedItems: ids.map((id) => ({ id, name: id, children: [] })),
-    allowedCategories: [],
-    children: [],
-  };
+function optionIds(nameId: string, count: number): string[] {
+  return Array.from({ length: count }, (_, i) => `${nameId}_${i}`);
 }

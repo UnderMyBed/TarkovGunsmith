@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { branchAndBound, type BnbState } from "./branch-and-bound.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
-import type { ModListItem, PlayerProfile } from "@tarkov/data";
+import { tinyTree } from "./__fixtures__/tree.js";
+import { partsById, type AttachablePart, type PlayerProfile } from "@tarkov/data";
 
 const flea: PlayerProfile = {
   mode: "basic",
@@ -15,7 +16,8 @@ const flea: PlayerProfile = {
 function makeState(overrides: Partial<BnbState> = {}): BnbState {
   return {
     weapon: SMALL_WEAPON,
-    modList: SMALL_MODS,
+    parts: partsById(SMALL_MODS),
+    graph: SMALL_TREE.graph,
     profile: flea,
     pinnedSlots: new Map(),
     objective: "min-recoil",
@@ -25,6 +27,33 @@ function makeState(overrides: Partial<BnbState> = {}): BnbState {
     ...overrides,
   };
 }
+
+describe("branchAndBound — lazy sub-slots", () => {
+  it("expands a chosen part's own slots from the graph and fills them", () => {
+    // A barrel-like part whose child slot holds the best muzzle device: the optimum is only
+    // reachable by expanding the attached part, which is what the eager tree used to hide.
+    const tree = tinyTree("w", [
+      { nameId: "barrel", items: [["brl", [{ nameId: "muzzle", items: ["brake"] }]]] },
+    ]);
+    const best = branchAndBound(
+      makeState({
+        parts: partsById([tieMod("brl", -0.05, 0, 0.4, 100), tieMod("brake", -0.12, 0, 0.1, 100)]),
+        graph: tree.graph,
+      }),
+      tree.slots,
+    );
+    expect(best!.attachments).toEqual({ barrel: "brl", "barrel/muzzle": "brake" });
+  });
+
+  it("never attaches a part beneath itself", () => {
+    const tree = tinyTree("w", [{ nameId: "s", items: [["a", [{ nameId: "s", items: ["a"] }]]] }]);
+    const best = branchAndBound(
+      makeState({ parts: partsById([tieMod("a", -0.1, 0, 0.1, 100)]), graph: tree.graph }),
+      tree.slots,
+    );
+    expect(best!.attachments).toEqual({ s: "a" });
+  });
+});
 
 describe("branchAndBound", () => {
   it("finds min-recoil optimum on small weapon", () => {
@@ -98,44 +127,21 @@ describe("branchAndBound", () => {
     // alt branch produces a leaf and sets best, the DFS tries item A and
     // calls lowerBoundForRemaining, which hits `candidates.length === 0`
     // and returns 0 for that sub-slot.
-    const modList = [
+    const parts = [
       // B sorts first (lower recoilModifier), reaches a leaf, sets best.
       // Then A is tried — its pruning check calls lowerBoundForRemaining
       // for the sub-slot, hitting the empty-candidates fallback.
       tieMod("A", 0, 0, 0.1, 100),
       tieMod("B", -10, 0, 0.1, 100),
     ];
-    const slots = [
-      {
-        nameId: "top",
-        path: "top",
-        name: "top",
-        required: false,
-        allowedItemIds: new Set(["A", "B"]),
-        allowedItems: [
-          {
-            id: "A",
-            name: "A",
-            children: [
-              {
-                nameId: "sub",
-                path: "top/sub",
-                name: "sub",
-                required: false,
-                allowedItemIds: new Set(["nonexistent"]),
-                allowedItems: [{ id: "nonexistent", name: "nonexistent", children: [] as never[] }],
-                children: [],
-              },
-            ] as never[],
-          },
-          { id: "B", name: "B", children: [] as never[] },
-        ],
-        children: [],
-      },
-    ] as never[];
+    const tree = tinyTree("w", [
+      { nameId: "top", items: [["A", [{ nameId: "sub", items: ["nonexistent"] }]], "B"] },
+    ]);
+    const slots = tree.slots;
     const best = branchAndBound(
       makeState({
-        modList,
+        parts: partsById(parts),
+        graph: tree.graph,
         pinnedSlots: new Map([["top/sub", "nonexistent"]]),
       }),
       slots,
@@ -147,10 +153,10 @@ describe("branchAndBound", () => {
   });
 
   it("handles a pinned item whose id isn't in slot.allowedItems (?? [] fallback)", () => {
-    // Pin muzzle to a pistolgrip — the item exists in modList but not in
+    // Pin muzzle to a pistolgrip — the item exists in the catalog but not in
     // the muzzle slot's allowedItemIds, so `.find()` returns undefined and
     // the `?? []` fallback path is taken for subSlots.
-    const extendedModList = [
+    const extendedParts = [
       ...SMALL_MODS,
       {
         id: "rogue_item",
@@ -166,6 +172,8 @@ describe("branchAndBound", () => {
           recoilModifier: 0,
           accuracyModifier: 0,
         },
+        conflictingItems: [],
+        conflictingSlotIds: [],
         buyFor: [
           {
             priceRUB: 100,
@@ -181,7 +189,7 @@ describe("branchAndBound", () => {
     ];
     const best = branchAndBound(
       makeState({
-        modList: extendedModList,
+        parts: partsById(extendedParts),
         pinnedSlots: new Map([["muzzle", "rogue_item"]]),
       }),
       SMALL_TREE.slots,
@@ -220,7 +228,7 @@ describe("branchAndBound", () => {
     // even after Bc1's leaf sets best. Both Bc1+Cc and Bc2+Cc reach leaves
     // with identical scores — priced equally, so the tie resolves via
     // stableKey (Bc1 < Bc2 lex).
-    const modList = [
+    const parts = [
       tieMod("B_premium", -20, 0, 0.1, 99999),
       tieMod("Bc1", -10, 0, 0.1, 100),
       tieMod("Bc2", -10, 0, 0.1, 100),
@@ -254,7 +262,7 @@ describe("branchAndBound", () => {
         children: [],
       },
     ] as never[];
-    const best = branchAndBound(makeState({ modList, budgetRub: 500 }), slots);
+    const best = branchAndBound(makeState({ parts: partsById(parts), budgetRub: 500 }), slots);
     expect(best).not.toBeNull();
     // Bc1 < Bc2 by stableKey — ties resolve to Bc1.
     expect(best!.attachments).toEqual({ B: "Bc1", C: "Cc" });
@@ -276,6 +284,8 @@ function tieMod(id: string, recoil: number, ergo: number, weight: number, price:
       recoilModifier: recoil,
       accuracyModifier: 0,
     },
+    conflictingItems: [],
+    conflictingSlotIds: [],
     buyFor: [
       {
         priceRUB: price,
@@ -308,7 +318,7 @@ function makeVeryWideState(): { state: BnbState; slots: never[] } {
     });
   }
   return {
-    state: makeState({ modList: mods as never }),
+    state: makeState({ parts: partsById(mods as never) }),
     slots: slots as never[],
   };
 }
@@ -316,7 +326,7 @@ function makeVeryWideState(): { state: BnbState; slots: never[] } {
 describe("branchAndBound — unpriced but obtainable candidates", () => {
   // Unknown price is not free. The brake here is obtainable only through a Prapor LL1 barter
   // whose ingredient has no flea price, so itemAvailability says available, priceRUB null.
-  const unpricedBrake: ModListItem = {
+  const unpricedBrake: AttachablePart = {
     ...SMALL_MODS[0]!,
     buyFor: [
       {
@@ -339,14 +349,17 @@ describe("branchAndBound — unpriced but obtainable candidates", () => {
   const mods = [unpricedBrake, ...SMALL_MODS.slice(1)];
 
   it("does not treat an unpriced candidate as free under a budget", () => {
-    const best = branchAndBound(makeState({ modList: mods, budgetRub: 5000 }), SMALL_TREE.slots);
+    const best = branchAndBound(
+      makeState({ parts: partsById(mods), budgetRub: 5000 }),
+      SMALL_TREE.slots,
+    );
     expect(best).not.toBeNull();
     expect(best!.attachments.muzzle).not.toBe("muzzle_brake");
   });
 
   it("skips a flea-only candidate with no flea price under a budget, too", () => {
     // Upstream sends some flea-tradeable items with neither avg24hPrice nor lastLowPrice.
-    const unpricedFleaBrake: ModListItem = {
+    const unpricedFleaBrake: AttachablePart = {
       ...SMALL_MODS[0]!,
       buyFor: [
         {
@@ -358,23 +371,23 @@ describe("branchAndBound — unpriced but obtainable candidates", () => {
     };
     const fleaMods = [unpricedFleaBrake, ...SMALL_MODS.slice(1)];
     const budgeted = branchAndBound(
-      makeState({ modList: fleaMods, budgetRub: 5000 }),
+      makeState({ parts: partsById(fleaMods), budgetRub: 5000 }),
       SMALL_TREE.slots,
     );
     expect(budgeted!.attachments.muzzle).not.toBe("muzzle_brake");
-    const unbudgeted = branchAndBound(makeState({ modList: fleaMods }), SMALL_TREE.slots);
+    const unbudgeted = branchAndBound(makeState({ parts: partsById(fleaMods) }), SMALL_TREE.slots);
     expect(unbudgeted!.attachments.muzzle).toBe("muzzle_brake");
   });
 
   it("still considers it when no budget is set", () => {
-    const best = branchAndBound(makeState({ modList: mods }), SMALL_TREE.slots);
+    const best = branchAndBound(makeState({ parts: partsById(mods) }), SMALL_TREE.slots);
     expect(best!.attachments.muzzle).toBe("muzzle_brake");
   });
 
   it("still honours a pin on it under a budget", () => {
     const best = branchAndBound(
       makeState({
-        modList: mods,
+        parts: partsById(mods),
         budgetRub: 5000,
         pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
       }),

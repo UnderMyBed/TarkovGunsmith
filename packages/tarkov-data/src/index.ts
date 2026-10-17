@@ -36,8 +36,23 @@ export { weaponListSchema, fetchWeaponList, isBuildableWeapon } from "./queries/
 export { barterSchema, parseBarters, fetchBarters, fetchOfferResolver } from "./queries/barters.js";
 export type { Barter, BarterItem } from "./queries/barters.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
-export { modListSchema, fetchModList } from "./queries/modList.js";
-export type { ModListItem, ModListBuyFor, ModListVendor } from "./queries/modList.js";
+export {
+  selectPartCatalog,
+  parseAttachablePart,
+  fetchPartCatalog,
+  partsById,
+  isModLikePart,
+} from "./queries/parts.js";
+export type { AttachablePart, AttachablePartType, ModLikePart } from "./queries/parts.js";
+export {
+  attachedParts,
+  fleaPriceRub,
+  mountedAttachments,
+  withAttachment,
+} from "./attached-parts.js";
+export { conflictsWith } from "./conflicts.js";
+export type { Conflict, ConflictContext } from "./conflicts.js";
+export type { AttachedParts, AttachedPartEntry, KnownItems } from "./attached-parts.js";
 
 // Build schema
 export {
@@ -61,7 +76,7 @@ export { useAmmoList } from "./hooks/useAmmoList.js";
 export { useArmorList } from "./hooks/useArmorList.js";
 export { useWeapon } from "./hooks/useWeapon.js";
 export { useWeaponList } from "./hooks/useWeaponList.js";
-export { useModList } from "./hooks/useModList.js";
+export { usePartCatalog } from "./hooks/usePartCatalog.js";
 export { useSaveBuild } from "./hooks/useSaveBuild.js";
 export { useLoadBuild } from "./hooks/useLoadBuild.js";
 export { useLoadPair } from "./hooks/useLoadPair.js";
@@ -89,8 +104,22 @@ export {
 } from "./pairsApi.js";
 
 // Weapon tree (slot-based compatibility)
-export { fetchWeaponTree, normalizeSlots } from "./queries/weaponTree.js";
-export type { WeaponTree, SlotNode, AllowedItem, SlotCategory } from "./queries/weaponTree.js";
+export { fetchWeaponTree, slotGraphFor } from "./queries/weaponTree.js";
+export {
+  buildSlotGraph,
+  expandSlots,
+  selectWeaponTree,
+  slotAtPath,
+  visibleSlots,
+} from "./queries/slot-graph.js";
+export type {
+  WeaponTree,
+  SlotNode,
+  SlotDef,
+  SlotGraph,
+  SlotOwner,
+  SlotCategory,
+} from "./queries/slot-graph.js";
 export { useWeaponTree } from "./hooks/useWeaponTree.js";
 
 // Build migrations
@@ -101,6 +130,7 @@ export {
   migrateV4ToV5,
   migrateV5ToV6,
   upgradeLoadedBuild,
+  legacyV1MigrationSlots,
 } from "./build-migrations.js";
 export type { SlotNodeForMigration } from "./build-migrations.js";
 

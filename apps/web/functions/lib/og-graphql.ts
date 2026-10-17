@@ -1,8 +1,13 @@
 import type { HydrateMod, HydrateWeapon } from "@tarkov/og";
 import type { AvailabilityMod } from "./og-availability.js";
 import {
+  adaptMod,
   createTarkovClient,
+  mountedAttachments,
+  parseAttachablePart,
   resolveBuyFor,
+  selectWeaponTree,
+  slotGraphFor,
   fetchTraders,
   fetchTasks,
   type TarkovJsonClient,
@@ -45,7 +50,8 @@ function clientFor(baseUrl: string): TarkovJsonClient {
 
 interface Args {
   weaponId: string;
-  modIds: readonly string[];
+  /** The saved build's attachments, slot path → item id. */
+  attachments: Readonly<Record<string, string>>;
 }
 
 interface ItemsDoc {
@@ -70,7 +76,12 @@ function readNumber(source: unknown, key: string): number {
 export async function fetchOgRowsForBuild(
   args: Args,
   baseUrl?: string,
-): Promise<{ weapon: HydrateWeapon; mods: OgMod[] }> {
+): Promise<{
+  weapon: HydrateWeapon;
+  mods: OgMod[];
+  /** The attachments actually on the weapon (`mountedAttachments`); the card counts these. */
+  attachments: Record<string, string>;
+}> {
   const client = clientFor(baseUrl !== undefined && baseUrl !== "" ? baseUrl : OG_JSON_API_BASE);
 
   const [doc, traders, tasks] = await Promise.all([
@@ -96,24 +107,35 @@ export async function fetchOgRowsForBuild(
     },
   };
 
+  // Only parts on the weapon reach the card, exactly as the Builder counts them: a key left
+  // beneath a removed or replaced part is not on the gun.
+  const attachments = mountedAttachments(
+    selectWeaponTree(doc, args.weaponId, slotGraphFor(doc)),
+    args.attachments,
+    { has: (id) => doc.items[id] !== undefined },
+  );
+
+  const resolveOffers = (item: unknown) => resolveBuyFor(item, traders, tasks);
   const mods: OgMod[] = [];
-  for (const id of args.modIds) {
-    const raw = doc.items[id];
-    if (raw === null || raw === undefined || typeof raw !== "object") continue;
-    const record = raw as Record<string, unknown>;
-    const props = record.properties;
+  for (const id of new Set(Object.values(attachments))) {
+    // Parsed through the same part schema and adapter the Builder uses, so a barrel, scope or
+    // magazine counts here exactly as it does on the page, and cylinder ammo adds weight but
+    // no stat modifiers. An id that is not a part (gone upstream) is left off the card.
+    const part = parseAttachablePart(doc.items[id], resolveOffers);
+    if (part === null) continue;
+    const stats = adaptMod(part);
 
     mods.push({
       id,
-      shortName: typeof record.shortName === "string" ? record.shortName : id,
-      weight: readNumber(record, "weight"),
+      shortName: part.shortName,
+      weight: part.weight,
       properties: {
-        ergonomics: readNumber(props, "ergonomics"),
-        recoilModifier: readNumber(props, "recoilModifier"),
-        accuracyModifier: readNumber(props, "accuracyModifier"),
+        ergonomics: stats.ergonomicsDelta,
+        recoilModifier: stats.recoilModifier,
+        accuracyModifier: stats.accuracyModifier,
       },
       // Flatten minTraderLevel up from the vendor, where availabilityPillText expects it.
-      buyFor: resolveBuyFor(raw, traders, tasks).map((entry) => ({
+      buyFor: (part.buyFor ?? []).map((entry) => ({
         vendor: { normalizedName: entry.vendor.normalizedName },
         priceRUB: entry.priceRUB ?? 0,
         minTraderLevel:
@@ -124,5 +146,5 @@ export async function fetchOgRowsForBuild(
     });
   }
 
-  return { weapon, mods };
+  return { weapon, mods, attachments };
 }

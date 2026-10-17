@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adaptAmmo, adaptArmor, adaptMod, adaptWeapon } from "./adapters.js";
-import type { AmmoListItem, ArmorListItem, ModListItem, WeaponListItem } from "@tarkov/data";
+import type { AmmoListItem, ArmorListItem, AttachablePart, WeaponListItem } from "@tarkov/data";
 
 const sampleAmmoListItem: AmmoListItem = {
   id: "ammo-1",
@@ -97,7 +97,7 @@ const sampleWeaponListItem: WeaponListItem = {
 // a fraction where positive means better — the previous fixture asserted -15
 // and -0.5, magnitudes 43x and 8x beyond anything upstream can return, which is
 // why nothing here caught the 100x unit error.
-const sampleModListItem: ModListItem = {
+const samplePart: AttachablePart = {
   id: "5a7c147ce899ef00150bd8b8",
   name: "AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake",
   shortName: "VP-09",
@@ -130,8 +130,8 @@ describe("adaptWeapon", () => {
 });
 
 describe("adaptMod", () => {
-  it("maps ModListItem to BallisticMod", () => {
-    const out = adaptMod(sampleModListItem);
+  it("maps an AttachablePart to BallisticMod", () => {
+    const out = adaptMod(samplePart);
     expect(out.id).toBe("5a7c147ce899ef00150bd8b8");
     expect(out.name).toBe("AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake");
     expect(out.ergonomicsDelta).toBe(-2);
@@ -139,11 +139,11 @@ describe("adaptMod", () => {
   });
 
   it("passes recoil and accuracy through in upstream's fractional unit", () => {
-    const out = adaptMod(sampleModListItem);
+    const out = adaptMod(samplePart);
     // No scaling, in either direction. -0.085 is -8.5%; display sites multiply
     // by 100, the model never does. See docs/operations/data-api-audit.md §B.
-    expect(out.recoilModifier).toBe(sampleModListItem.properties.recoilModifier);
-    expect(out.accuracyModifier).toBe(sampleModListItem.properties.accuracyModifier);
+    expect(out.recoilModifier).toBe(-0.085);
+    expect(out.accuracyModifier).toBe(0.04);
     expect(out.recoilModifier).toBeGreaterThanOrEqual(-0.35);
     expect(out.recoilModifier).toBeLessThanOrEqual(0);
   });
