@@ -139,7 +139,7 @@ function ogData(): OgData {
 
 describe("fetchOgRowsForBuild", () => {
   it("returns the weapon with its stats", () => {
-    const out = fetchOgRowsForBuild({ weaponId: "w1", attachments: {} }, ogData());
+    const out = fetchOgRowsForBuild({ weaponId: "w1", attachments: {}, gate: null }, ogData());
     expect(out.weapon).toEqual({
       id: "w1",
       shortName: "M4A1",
@@ -147,37 +147,52 @@ describe("fetchOgRowsForBuild", () => {
     });
   });
 
-  it("returns mods with their prices, and every offer with its trader level", () => {
+  it("returns mods with every offer and its trader level", () => {
     const out = fetchOgRowsForBuild(
-      { weaponId: "w1", attachments: { mod_foregrip: "m1", mod_stock: "bartered" } },
+      { weaponId: "w1", attachments: { mod_foregrip: "m1", mod_stock: "bartered" }, gate: null },
       ogData(),
     );
     const [m1, bartered] = out.mods;
     expect(m1).toMatchObject({ id: "m1", shortName: "RVG", weight: 0.1 });
-    expect(m1!.buyFor).toEqual([{ priceRUB: 8000 }, { priceRUB: 9000 }]);
     expect(m1!.offers).toEqual([
       { vendor: { normalizedName: "prapor" }, minTraderLevel: 2 },
       { vendor: { normalizedName: "flea-market" }, minTraderLevel: undefined },
     ]);
-    // A barter is gated on its own trader level, priced from its inputs' flea prices.
-    expect(bartered!.buyFor).toEqual([{ priceRUB: 400 }]);
+    // A barter is gated on its own trader level.
     expect(bartered!.offers).toEqual([{ vendor: { normalizedName: "prapor" }, minTraderLevel: 3 }]);
   });
 
-  it("keeps an unpriced part's offers for the pill, and prices it at nothing, not 0", () => {
+  it("prices the build as the Builder does: weapon plus parts, by the cheapest open path", () => {
+    const build = { weaponId: "w1", attachments: { mod_foregrip: "m1", mod_stock: "bartered" } };
+    // Theorycraft: the gun on the flea (50,000), m1 from Prapor (8,000, under its 9,000 flea
+    // listing), and the barter's four nuts at 100.
+    expect(fetchOgRowsForBuild({ ...build, gate: null }, ogData()).priceRub).toBe(58_400);
+    // The author's profile: LL3 traders and flea from level 5.
+    const author = {
+      ...DEFAULT_PROFILE,
+      traders: { ...DEFAULT_PROFILE.traders, prapor: 3 },
+      flea: true,
+      level: 5,
+    };
+    expect(fetchOgRowsForBuild({ ...build, gate: author }, ogData()).priceRub).toBe(58_400);
+    // A fresh profile cannot buy the gun at all, so the card carries no total.
+    expect(fetchOgRowsForBuild({ ...build, gate: DEFAULT_PROFILE }, ogData()).priceRub).toBeNull();
+  });
+
+  it("keeps an unpriced part's offers for the pill, and leaves the total out, not 0", () => {
     // What a Ref barter for GP coins looks like: an offer whose cost has no flea price.
     const data = ogData();
     const trader = { ...data.prices.prices.trader };
     for (const key of Object.keys(trader)) trader[key] = null;
     const items = { ...data.prices.prices.items, nuts: [null, null, null] as const };
     const out = fetchOgRowsForBuild(
-      { weaponId: "w1", attachments: { mod_stock: "bartered" } },
+      { weaponId: "w1", attachments: { mod_stock: "bartered" }, gate: null },
       { ...data, prices: { ...data.prices, prices: { items, trader } } },
     );
     const [bartered] = out.mods;
-    expect(bartered!.buyFor).toEqual([]);
     expect(bartered!.offers).toEqual([{ vendor: { normalizedName: "prapor" }, minTraderLevel: 3 }]);
     expect(availabilityPillText(out.mods, DEFAULT_PROFILE)).toBe("LL3");
+    expect(out.priceRub).toBeNull();
     const vm = hydrateBuildCard({
       build: {
         version: 6,
@@ -188,6 +203,7 @@ describe("fetchOgRowsForBuild", () => {
       },
       weapon: out.weapon,
       mods: out.mods,
+      priceRub: out.priceRub,
     });
     expect(vm.priceRub).toBeNull();
   });
@@ -195,7 +211,7 @@ describe("fetchOgRowsForBuild", () => {
   it("counts a barrel's modifiers, and only a cartridge's weight", () => {
     // The Builder's own rule (adaptMod): upstream preset stats leave cartridge recoil out.
     const out = fetchOgRowsForBuild(
-      { weaponId: "w1", attachments: { mod_barrel: BARREL, camora_000: M855A1 } },
+      { weaponId: "w1", attachments: { mod_barrel: BARREL, camora_000: M855A1 }, gate: null },
       ogData(),
     );
     expect(out.mods.map((m) => [m.id, m.weight, m.properties])).toEqual([
@@ -213,6 +229,7 @@ describe("fetchOgRowsForBuild", () => {
           "mod_handguard/mod_barrel": BARREL,
           camora_000: "m1",
         },
+        gate: null,
       },
       ogData(),
     );
@@ -222,16 +239,16 @@ describe("fetchOgRowsForBuild", () => {
 
   it("skips a mounted id the snapshot holds no part for", () => {
     const out = fetchOgRowsForBuild(
-      { weaponId: "w1", attachments: { mod_barrel: BARREL, camora_000: "ghost" } },
+      { weaponId: "w1", attachments: { mod_barrel: BARREL, camora_000: "ghost" }, gate: null },
       ogData(),
     );
     expect(out.mods.map((m) => m.id)).toEqual([BARREL]);
   });
 
   it("throws when the weapon id is unknown", () => {
-    expect(() => fetchOgRowsForBuild({ weaponId: "ghost", attachments: {} }, ogData())).toThrow(
-      /weapon ghost not found/,
-    );
+    expect(() =>
+      fetchOgRowsForBuild({ weaponId: "ghost", attachments: {}, gate: null }, ogData()),
+    ).toThrow(/weapon ghost not found/);
   });
 });
 

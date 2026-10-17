@@ -41,7 +41,6 @@ export interface FixtureMod {
   id: string;
   shortName: string;
   weight: number;
-  buyFor: { priceRUB: number }[];
   properties: {
     ergonomics?: number;
     recoilModifier?: number;
@@ -62,21 +61,18 @@ export const m4a1Mods: FixtureMod[] = [
     id: "5a33e75ac4a2826c6e06d759",
     shortName: "CQR AR15",
     weight: 0.499,
-    buyFor: [{ priceRUB: 12_000 }],
     properties: { ergonomics: 15, recoilModifier: -0.23, accuracyModifier: 0 },
   },
   {
     id: "5947e98b86f774778f1448bc",
     shortName: "UBR GEN2",
     weight: 0.61,
-    buyFor: [{ priceRUB: 42_000 }],
     properties: { ergonomics: 8, recoilModifier: -0.225, accuracyModifier: 0 },
   },
   {
     id: "59bfe68886f7746004266202",
     shortName: "MUR-1S",
     weight: 0.246,
-    buyFor: [{ priceRUB: 36_000 }],
     properties: { ergonomics: 7, recoilModifier: -0.04, accuracyModifier: 0 },
   },
 ];

@@ -65,7 +65,11 @@ interface SideArgs {
 function hydrateSide(build: BuildV6 | null, data: OgData): SideArgs | null {
   if (!build) return null;
   const rows = fetchOgRowsForBuild(
-    { weaponId: build.weaponId, attachments: build.attachments },
+    {
+      weaponId: build.weaponId,
+      attachments: build.attachments,
+      gate: build.profileSnapshot ?? null,
+    },
     data,
   );
   return {
