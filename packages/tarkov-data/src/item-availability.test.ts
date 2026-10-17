@@ -777,15 +777,15 @@ describe("itemAvailability — captured documents", () => {
       kind: "barter",
       traderNormalizedName: "peacekeeper",
       minLevel: 2,
-      priceRUB: 75882,
+      priceRUB: 60665,
       barterId: "6ad1e61cef48f022220a4ec81",
       preset: {
         id: "5af08cf886f774223c269184",
         normalizedName: "colt-m4a1-556x45-assault-rifle-carbine",
       },
     });
-    // At LL1 two preset barters are one level away: Peacekeeper's Carbine (75882) and
-    // Mechanic's SOPMOD II (2 × 84994). The cheaper one is named — not whichever the
+    // At LL1 two preset barters are one level away: Peacekeeper's Carbine (60665) and
+    // Mechanic's SOPMOD II (142000). The cheaper one is named — not whichever the
     // document lists first, and not the bare receiver's Mechanic LL3.
     expect(itemAvailability(m4, ll(1))).toMatchObject({
       available: false,
@@ -805,7 +805,7 @@ describe("itemAvailability — captured documents", () => {
       kind: "barter",
       traderNormalizedName: "mechanic",
       minLevel: 1,
-      priceRUB: 11406,
+      priceRUB: 8990,
     });
   });
 
@@ -821,7 +821,7 @@ describe("itemAvailability — captured documents", () => {
       available: true,
       kind: "barter",
       traderNormalizedName: "peacekeeper",
-      priceRUB: 38878,
+      priceRUB: 44111,
     });
   });
 
@@ -835,5 +835,71 @@ describe("itemAvailability — captured documents", () => {
       minLevel: 3,
       payment: "barter",
     });
+  });
+});
+
+describe("itemAvailability — unlisted flea entries", () => {
+  const withFlea: PlayerProfile = { ...baseProfile, flea: true, level: 40 };
+  const unlisted = (): BuyForEntry => ({ ...fleaOffer(null), unlisted: true });
+
+  it("reports an unlisted flea-only item as flea-unlisted, not available at an unknown price", () => {
+    expect(itemAvailability(mod({ buyFor: [unlisted()] }), withFlea)).toEqual({
+      available: false,
+      reason: "flea-unlisted",
+    });
+  });
+
+  it("checks the listing before the player level: more levels would not list it", () => {
+    const low: PlayerProfile = { ...withFlea, level: 1 };
+    expect(itemAvailability(mod({ buyFor: [unlisted()] }), low)).toEqual({
+      available: false,
+      reason: "flea-unlisted",
+    });
+  });
+
+  it("ranks a trader gate above an unlisted flea entry", () => {
+    expect(
+      itemAvailability(mod({ buyFor: [traderOffer("prapor", 3), unlisted()] }), withFlea),
+    ).toMatchObject({ available: false, reason: "trader-ll-required" });
+  });
+
+  it("keeps a flea entry whose price is merely unknown obtainable", () => {
+    expect(itemAvailability(mod({ buyFor: [fleaOffer(null)] }), withFlea)).toEqual({
+      available: true,
+      kind: "flea",
+      priceRUB: null,
+    });
+  });
+});
+
+describe("itemAvailability — theorycraft (null gate)", () => {
+  it("opens every trader gate, quest and untracked trader, and the flea at any level", () => {
+    const quest = traderOffer("skier", 4, 300, "some-quest");
+    const ref = traderOffer("ref", 3, 100);
+    expect(itemAvailability(mod({ buyFor: [quest] }), null)).toMatchObject({
+      available: true,
+      kind: "trader",
+      traderNormalizedName: "skier",
+      priceRUB: 300,
+    });
+    expect(
+      itemAvailability(mod({ buyFor: [quest, ref, fleaOffer(5000, 40)] }), null),
+    ).toMatchObject({ available: true, traderNormalizedName: "ref", priceRUB: 100 });
+    expect(itemAvailability(mod({ buyFor: [fleaOffer(50, 99)] }), null)).toEqual({
+      available: true,
+      kind: "flea",
+      priceRUB: 50,
+    });
+  });
+
+  it("still treats an unlisted flea entry as no path, and a noFlea item as off the flea", () => {
+    const unlisted: BuyForEntry = { ...fleaOffer(null), unlisted: true };
+    expect(itemAvailability(mod({ buyFor: [unlisted] }), null)).toEqual({
+      available: false,
+      reason: "flea-unlisted",
+    });
+    expect(
+      itemAvailability(mod({ types: ["mods", "noFlea"], buyFor: [fleaOffer(10)] }), null),
+    ).toEqual({ available: false, reason: "flea-locked" });
   });
 });

@@ -55,6 +55,11 @@ export type ItemAvailability =
       reason: "flea-level-required";
       minPlayerLevel: number;
     }
+  | {
+      /** Flea is the only open path, and upstream saw no listing for the item. */
+      available: false;
+      reason: "flea-unlisted";
+    }
   | { available: false; reason: "flea-locked" }
   | {
       /** Sold only by a trader the profile has no loyalty level for (Ref, Fence, …). */
@@ -98,13 +103,21 @@ function isFleaBlacklisted(item: AvailabilityInput): boolean {
 }
 
 /**
- * Evaluate an item's availability under a player profile.
+ * Whose access gates offers. A profile gates them by trader loyalty, quests, flea access and
+ * player level. `null` is theorycraft: every gate is open, including traders a profile does
+ * not track (Ref, Fence). A flea listing is not a gate: an unlisted item stays unlisted.
+ */
+export type PriceGate = PlayerProfile | null;
+
+/**
+ * Evaluate an item's availability under a player profile, or with every gate open (`null`).
  *
  * Walks every buyFor entry. A trader offer — cash (`TraderOffer`) or barter
  * (`TraderBarter`), the item's own or one of its presets' — is satisfied iff the profile's
  * trader LL meets `minTraderLevel` AND (no taskUnlock OR advanced-mode profile has the quest
  * marked complete). A FleaMarket offer is satisfied iff `profile.flea === true` AND the item
- * isn't on the `noFlea` list AND `profile.level` meets the offer's `minPlayerLevel`.
+ * isn't on the `noFlea` list AND it is listed (no `unlisted` mark) AND `profile.level` meets
+ * the offer's `minPlayerLevel`.
  *
  * Returns the cheapest satisfying path (by priceRUB, nulls sort last — so a priced cash
  * offer beats a barter whose cost is unknown). An exact price tie goes to trader cash, then
@@ -118,10 +131,11 @@ function isFleaBlacklisted(item: AvailabilityInput): boolean {
  *      trader name, then offer id, so the pick never depends on document order;
  *   2. a quest;
  *   3. the lowest flea player-level gate;
- *   4. flea-locked;
- *   5. an untracked trader (Ref, Fence) — the profile has no level for them, so nothing it
+ *   4. flea-unlisted — the flea is open to the profile but nobody is selling;
+ *   5. flea-locked;
+ *   6. an untracked trader (Ref, Fence) — the profile has no level for them, so nothing it
  *      can change unlocks the offer, but the offer is real and is reported, not dropped;
- *   6. no-sources.
+ *   7. no-sources.
  *
  * The flea player-level gate sits above `flea-locked` because it can only be
  * reached with `profile.flea === true` — telling that player they have no flea
@@ -132,10 +146,7 @@ function isFleaBlacklisted(item: AvailabilityInput): boolean {
  * Accepts any `{ buyFor, types }` shape — both `AttachablePart` and
  * `WeaponListItem` satisfy `AvailabilityInput` structurally.
  */
-export function itemAvailability(
-  item: AvailabilityInput,
-  profile: PlayerProfile,
-): ItemAvailability {
+export function itemAvailability(item: AvailabilityInput, profile: PriceGate): ItemAvailability {
   // No offers at all falls through every accumulator below to `no-sources`.
   const offers = item.buyFor ?? [];
 
@@ -168,6 +179,7 @@ export function itemAvailability(
   const unmetFleaLevel: Array<{ minPlayerLevel: number }> = [];
   const untracked: Unmet[] = [];
   let sawFleaPath = false;
+  let sawUnlisted = false;
 
   for (const offer of offers) {
     const vendor = offer.vendor;
@@ -185,7 +197,21 @@ export function itemAvailability(
             ? vendor.barterId
             : `cash:${traderName}:${preset?.id ?? "own"}`;
         const tie = { priceRUB: offer.priceRUB, offerKey };
+        const base = {
+          traderNormalizedName: traderName,
+          minLevel,
+          priceRUB: offer.priceRUB,
+          preset,
+        };
+        const sat: SatTrader | SatBarter =
+          vendor.__typename === "TraderBarter"
+            ? { ...base, kind: "barter", barterId: vendor.barterId }
+            : { ...base, kind: "trader" };
 
+        if (profile === null) {
+          satisfied.push({ sat, trader: traderName, offerKey });
+          continue;
+        }
         if (!isTraderKey(traderName)) {
           untracked.push({ traderNormalizedName: traderName, minLevel, payment, preset, ...tie });
           continue;
@@ -219,25 +245,21 @@ export function itemAvailability(
             continue;
           }
         }
-        const base = {
-          traderNormalizedName: traderName,
-          minLevel,
-          priceRUB: offer.priceRUB,
-          preset,
-        };
-        satisfied.push({
-          sat:
-            vendor.__typename === "TraderBarter"
-              ? { ...base, kind: "barter", barterId: vendor.barterId }
-              : { ...base, kind: "trader" },
-          trader: traderName,
-          offerKey,
-        });
+        satisfied.push({ sat, trader: traderName, offerKey });
         break;
       }
       case "FleaMarket": {
         sawFleaPath = true;
         if (isFleaBlacklisted(item)) continue;
+        if (offer.unlisted === true) {
+          sawUnlisted = true;
+          continue;
+        }
+        const fleaSat = { sat: { kind: "flea", priceRUB: offer.priceRUB } as SatFlea, trader: "" };
+        if (profile === null) {
+          satisfied.push({ ...fleaSat, offerKey: "flea" });
+          continue;
+        }
         if (!profile.flea) continue;
         // Upstream's `minLevelForFlea`, mapped onto the vendor by `createOfferCollector`. Absent
         // and 0 both mean "no level requirement", and `?? 1` collapses them onto the
@@ -252,11 +274,7 @@ export function itemAvailability(
           unmetFleaLevel.push({ minPlayerLevel });
           continue;
         }
-        satisfied.push({
-          sat: { kind: "flea", priceRUB: offer.priceRUB },
-          trader: "",
-          offerKey: "flea",
-        });
+        satisfied.push({ ...fleaSat, offerKey: "flea" });
         break;
       }
       default: {
@@ -331,6 +349,9 @@ export function itemAvailability(
       reason: "flea-level-required",
       minPlayerLevel: unmetFleaLevel[0]!.minPlayerLevel,
     };
+  }
+  if (sawUnlisted) {
+    return { available: false, reason: "flea-unlisted" };
   }
   if (sawFleaPath) {
     return { available: false, reason: "flea-locked" };

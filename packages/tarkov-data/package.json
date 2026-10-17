@@ -15,6 +15,10 @@
     "./schemas": {
       "types": "./dist/schemas.d.ts",
       "import": "./dist/schemas.js"
+    },
+    "./prices": {
+      "types": "./dist/prices/index.d.ts",
+      "import": "./dist/prices/index.js"
     }
   },
   "files": [

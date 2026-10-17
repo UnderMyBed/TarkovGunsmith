@@ -53,7 +53,7 @@ function documents(): SnapshotDocuments {
           weight: 2.9,
           types: ["gun"],
           updated: "2026-10-16T12:00:00.000Z",
-          avg24hPrice: 50000,
+          lastLowPrice: 50000,
           buyFromTrader: [],
           properties: {
             propertiesType: "ItemPropertiesWeapon",
@@ -74,7 +74,7 @@ function documents(): SnapshotDocuments {
           shortName: "RVG",
           weight: 0.1,
           minLevelForFlea: 5,
-          avg24hPrice: 9000,
+          lastLowPrice: 9000,
           properties: {
             propertiesType: "ItemPropertiesWeaponMod",
             ergonomics: 3,
@@ -89,7 +89,7 @@ function documents(): SnapshotDocuments {
         [BARREL]: part(BARREL, {
           shortName: "10.3",
           weight: 0.409,
-          avg24hPrice: 12000,
+          lastLowPrice: 12000,
           properties: {
             propertiesType: "ItemPropertiesBarrel",
             ergonomics: -2,
@@ -101,7 +101,7 @@ function documents(): SnapshotDocuments {
           shortName: "M855A1",
           weight: 0.012,
           types: ["ammo"],
-          avg24hPrice: 800,
+          lastLowPrice: 800,
           properties: { propertiesType: "ItemPropertiesAmmo", recoilModifier: 0.05 },
         }),
         // Only sold for a barter, and not on the flea.
@@ -115,7 +115,7 @@ function documents(): SnapshotDocuments {
             accuracyModifier: 0,
           },
         }),
-        nuts: { id: "nuts", name: "Nuts", shortName: "Nuts", avg24hPrice: 100, types: [] },
+        nuts: { id: "nuts", name: "Nuts", shortName: "Nuts", lastLowPrice: 100, types: [] },
       },
     },
     traders: { tr1: { id: "tr1", name: "Prapor", normalizedName: "prapor" } },

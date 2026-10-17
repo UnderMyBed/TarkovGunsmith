@@ -202,6 +202,7 @@ export function BuilderPage({
       ) : builder.selectedWeapon && builder.tree.data && builder.spec ? (
         <OptimizeView
           weapon={adaptWeapon(builder.selectedWeapon)}
+          weaponItem={builder.selectedWeapon}
           slotTree={builder.tree.data}
           parts={builder.parts}
           profile={profile}

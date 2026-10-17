@@ -5,7 +5,7 @@ import {
   toOptimizerInput,
   type ConstraintsState,
 } from "./optimize-constraints-reducer.js";
-import type { PlayerProfile } from "@tarkov/data";
+import type { PlayerProfile, WeaponListItem } from "@tarkov/data";
 
 const profile: PlayerProfile = {
   mode: "basic",
@@ -102,6 +102,13 @@ describe("constraintsReducer", () => {
 });
 
 describe("toOptimizerInput", () => {
+  const weaponItem = {
+    id: "w1",
+    shortName: "W",
+    types: [],
+    buyFor: [],
+  } as unknown as WeaponListItem;
+
   it("builds an OptimizationInput from ConstraintsState + deps", () => {
     const state: ConstraintsState = {
       objective: "min-recoil",
@@ -118,6 +125,7 @@ describe("toOptimizerInput", () => {
         baseWeight: 0,
         baseAccuracy: 0,
       },
+      weaponItem,
       slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
       parts: [],
       profile,
@@ -140,6 +148,7 @@ describe("toOptimizerInput", () => {
         baseWeight: 0,
         baseAccuracy: 0,
       },
+      weaponItem,
       slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
       parts: [],
       profile,

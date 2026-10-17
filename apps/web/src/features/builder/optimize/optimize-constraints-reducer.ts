@@ -1,4 +1,4 @@
-import type { AttachablePart, PlayerProfile, WeaponTree } from "@tarkov/data";
+import type { AttachablePart, PlayerProfile, WeaponListItem, WeaponTree } from "@tarkov/data";
 import type { Objective, OptimizationInput } from "@tarkov/optimizer";
 import type { BallisticWeapon } from "@tarkov/ballistics";
 
@@ -58,6 +58,8 @@ export function constraintsReducer(
 
 export interface OptimizerInputDeps {
   weapon: BallisticWeapon;
+  /** The weapon's own record: its offers count toward the budget. */
+  weaponItem: WeaponListItem;
   slotTree: WeaponTree;
   parts: readonly AttachablePart[];
   profile: PlayerProfile;
@@ -73,6 +75,7 @@ export function toOptimizerInput(
 ): OptimizationInput {
   return {
     weapon: deps.weapon,
+    weaponItem: deps.weaponItem,
     slotTree: deps.slotTree,
     parts: deps.parts,
     objective: state.objective,

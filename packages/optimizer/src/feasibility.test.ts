@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cheapestPrice, slotCandidates } from "./feasibility.js";
+import { slotCandidates } from "./feasibility.js";
 import { SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
 import { partsById, type PlayerProfile } from "@tarkov/data";
 
@@ -19,23 +19,6 @@ const fleaOffProfile: PlayerProfile = { ...fleaOnProfile, flea: false };
 
 /** Same flea access, but below every fixture offer's minPlayerLevel. */
 const underLevelledProfile: PlayerProfile = { ...fleaOnProfile, level: 14 };
-
-describe("cheapestPrice", () => {
-  it("returns the flea price when profile has flea on", () => {
-    const brake = SMALL_MODS.find((m) => m.id === "muzzle_brake")!;
-    expect(cheapestPrice(brake, fleaOnProfile)).toBe(1500);
-  });
-
-  it("returns null when profile has flea off and no trader source", () => {
-    const brake = SMALL_MODS.find((m) => m.id === "muzzle_brake")!;
-    expect(cheapestPrice(brake, fleaOffProfile)).toBeNull();
-  });
-
-  it("returns null when the only source is a flea offer above the profile's level", () => {
-    const brake = SMALL_MODS.find((m) => m.id === "muzzle_brake")!;
-    expect(cheapestPrice(brake, underLevelledProfile)).toBeNull();
-  });
-});
 
 describe("slotCandidates", () => {
   it("returns compatible available items + null for unpinned slots", () => {

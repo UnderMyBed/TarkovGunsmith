@@ -2,7 +2,8 @@ import type { z } from "zod";
 import type { snapshotPartSchema } from "../queries/parts.js";
 import type { snapshotWeaponSchema } from "../queries/weaponList.js";
 import type { SlotOwner } from "../queries/slot-graph.js";
-import type { PriceTable, UnpricedOffer } from "../queries/shared/buy-for.js";
+import type { UnpricedOffer } from "../queries/shared/buy-for.js";
+import type { PriceTable } from "../prices/table.js";
 import type { TaskListItem } from "../queries/tasks.js";
 import type { TraderListItem } from "../queries/traders.js";
 

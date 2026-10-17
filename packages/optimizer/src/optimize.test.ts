@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { optimize } from "./optimize.js";
-import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
+import {
+  SMALL_WEAPON,
+  SMALL_WEAPON_ITEM,
+  SMALL_WEAPON_PRICE,
+  SMALL_MODS,
+  SMALL_TREE,
+} from "./__fixtures__/small-weapon.js";
 import { tinyTree, type SlotSpec } from "./__fixtures__/tree.js";
 import { M4A1_WEAPON, M4A1_MODS, M4A1_TREE } from "./__fixtures__/m4a1-like.js";
 import type { AttachablePart, PlayerProfile, WeaponTree } from "@tarkov/data";
@@ -63,6 +69,7 @@ function makeVeryWideFixture(numSlots: number): {
   }
   return {
     weapon: SMALL_WEAPON,
+    weaponItem: SMALL_WEAPON_ITEM,
     tree: { ...tinyTree(SMALL_WEAPON.id, slots), weaponName: SMALL_WEAPON.name },
     mods,
   };
@@ -83,6 +90,7 @@ describe("optimize — small weapon", () => {
   it("returns ok:true with the computable optimum for min-recoil", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: SMALL_TREE,
       parts: SMALL_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -101,6 +109,7 @@ describe("optimize — small weapon", () => {
   it("returns ok:true with empty build when profile excludes all items", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: SMALL_TREE,
       parts: SMALL_MODS,
       constraints: { profile: fleaOff, pinnedSlots: new Map() },
@@ -114,6 +123,7 @@ describe("optimize — small weapon", () => {
   it("returns ok:false reason=no-valid-combinations when a pinned item isn't in the catalog", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: SMALL_TREE,
       parts: SMALL_MODS,
       constraints: {
@@ -130,9 +140,10 @@ describe("optimize — small weapon", () => {
   it("returns ok:true when budget is tight but some combinations fit", () => {
     const result = optimize({
       weapon: SMALL_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: SMALL_TREE,
       parts: SMALL_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: 2000 },
+      constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: SMALL_WEAPON_PRICE + 2000 },
       objective: "min-recoil",
     });
     expect(result.ok).toBe(true);
@@ -141,6 +152,7 @@ describe("optimize — small weapon", () => {
   it("is deterministic — same input, same output across 10 runs", () => {
     const input = {
       weapon: SMALL_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: SMALL_TREE,
       parts: SMALL_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -159,6 +171,7 @@ describe("optimize — m4a1-like weapon", () => {
     const start = Date.now();
     const result = optimize({
       weapon: M4A1_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: M4A1_TREE,
       parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -172,6 +185,7 @@ describe("optimize — m4a1-like weapon", () => {
   it("returns ok:true for max-ergonomics", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: M4A1_TREE,
       parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -183,6 +197,7 @@ describe("optimize — m4a1-like weapon", () => {
   it("returns ok:true for min-weight", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: M4A1_TREE,
       parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -194,6 +209,7 @@ describe("optimize — m4a1-like weapon", () => {
   it("returns ok:true for max-accuracy", () => {
     const result = optimize({
       weapon: M4A1_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: M4A1_TREE,
       parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -203,9 +219,10 @@ describe("optimize — m4a1-like weapon", () => {
   });
 
   it("respects budget — resulting build costs at most budget", () => {
-    const budget = 20000;
+    const budget = SMALL_WEAPON_PRICE + 20000;
     const result = optimize({
       weapon: M4A1_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: M4A1_TREE,
       parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: budget },
@@ -243,6 +260,7 @@ describe("optimize — tiebreak", () => {
     };
     const result = optimize({
       weapon: SMALL_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: treeForTie,
       parts: partsForTie,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -272,6 +290,7 @@ describe("optimize — timeout", () => {
       const wide = makeVeryWideFixture(1100);
       const result = optimize({
         weapon: wide.weapon,
+        weaponItem: SMALL_WEAPON_ITEM,
         slotTree: wide.tree,
         parts: wide.mods,
         constraints: { profile: flea, pinnedSlots: new Map() },
@@ -299,6 +318,7 @@ describe("optimize — timeout", () => {
     const wide = makeVeryWideFixture(1100);
     const result = optimize({
       weapon: wide.weapon,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: wide.tree,
       parts: wide.mods,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -317,6 +337,7 @@ describe("optimize — timeout", () => {
     // on the very first check before any leaf is scored.
     const result = optimize({
       weapon: M4A1_WEAPON,
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: M4A1_TREE,
       parts: M4A1_MODS,
       constraints: { profile: flea, pinnedSlots: new Map() },
@@ -328,5 +349,129 @@ describe("optimize — timeout", () => {
     } else {
       expect(result.reason).toBe("timeout");
     }
+  });
+});
+
+describe("optimize — the budget covers the whole build", () => {
+  const base = {
+    weapon: SMALL_WEAPON,
+    weaponItem: SMALL_WEAPON_ITEM,
+    slotTree: SMALL_TREE,
+    parts: SMALL_MODS,
+    objective: "min-recoil" as const,
+  };
+
+  it("refuses a budget below the cheapest gun, naming its price", () => {
+    const result = optimize({
+      ...base,
+      constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: 9_999 },
+    });
+    expect(result).toEqual({
+      ok: false,
+      reason: "infeasible-budget",
+      message: "The cheapest TR you can get costs ₽10,000, over the ₽9,999 budget.",
+    });
+  });
+
+  it("refuses when the profile cannot buy the gun at all, or only at an unknown price", () => {
+    const locked = { ...SMALL_WEAPON_ITEM, buyFor: [] };
+    expect(
+      optimize({
+        ...base,
+        weaponItem: locked,
+        constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: 50_000 },
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "infeasible-budget",
+      message: "You can't get the TR on this profile.",
+    });
+    const unpriced = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: SMALL_WEAPON_ITEM.buyFor!.map((e) => ({ ...e, priceRUB: null })),
+    };
+    expect(
+      optimize({
+        ...base,
+        weaponItem: unpriced,
+        constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: 50_000 },
+      }),
+    ).toMatchObject({ ok: false, reason: "infeasible-budget", message: /no build can be shown/ });
+  });
+
+  it("still optimizes a gun the profile cannot buy when there is no budget", () => {
+    const locked = { ...SMALL_WEAPON_ITEM, buyFor: [] };
+    const result = optimize({
+      ...base,
+      weaponItem: locked,
+      constraints: { profile: flea, pinnedSlots: new Map() },
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("refuses pinned parts with no price the profile can pay, naming them", () => {
+    const fleaOffProfile: PlayerProfile = { ...flea, flea: false };
+    const result = optimize({
+      ...base,
+      constraints: {
+        profile: fleaOffProfile,
+        budgetRub: 50_000,
+        pinnedSlots: new Map<string, string | null>([
+          ["muzzle", "muzzle_brake"],
+          ["grip", "grip_vertical"],
+          ["stock", null],
+          ["other", "not-in-catalog"],
+        ]),
+      },
+    });
+    expect(result).toEqual({
+      ok: false,
+      reason: "pinned-unpriced",
+      itemIds: ["muzzle_brake", "grip_vertical"],
+      message:
+        "No price you can pay is known for Brake, Vertical grip. Unpin them or clear the budget.",
+    });
+    const one = optimize({
+      ...base,
+      constraints: {
+        profile: fleaOffProfile,
+        budgetRub: 50_000,
+        pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
+      },
+    });
+    expect(one).toMatchObject({ message: /Unpin it or clear the budget/ });
+  });
+
+  it("runs with a pinned part it can price", () => {
+    const result = optimize({
+      ...base,
+      constraints: {
+        profile: flea,
+        budgetRub: 50_000,
+        pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
+      },
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("does not refuse a pin a bought preset supplies", () => {
+    const fleaOffProfile: PlayerProfile = { ...flea, flea: false };
+    const preset = { id: "p", normalizedName: "tr-default" };
+    const result = optimize({
+      ...base,
+      weaponItem: {
+        ...SMALL_WEAPON_ITEM,
+        buyFor: [{ ...SMALL_WEAPON_ITEM.buyFor![0]!, priceRUB: 12_000, preset }],
+      },
+      presets: [{ id: "p", attachments: { muzzle: "muzzle_brake" } }],
+      constraints: {
+        profile: fleaOffProfile,
+        budgetRub: 12_000,
+        pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.build.attachments.muzzle).toBe("muzzle_brake");
   });
 });

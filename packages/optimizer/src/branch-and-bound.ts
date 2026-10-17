@@ -1,8 +1,8 @@
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { weaponSpec } from "@tarkov/ballistics";
-import type { AttachablePart, PlayerProfile, SlotGraph, SlotNode } from "@tarkov/data";
-import { adaptMod, expandSlots, itemAvailability } from "@tarkov/data";
-import { cheapestPrice, slotCandidates } from "./feasibility.js";
+import type { AttachablePart, PriceGate, SlotGraph, SlotNode } from "@tarkov/data";
+import { adaptMod, expandSlots, priceUnder } from "@tarkov/data";
+import { slotCandidates } from "./feasibility.js";
 import { lowerBoundForRemaining } from "./bounds.js";
 import { score } from "./objective.js";
 import type { Objective } from "./types.js";
@@ -13,10 +13,16 @@ export interface BnbState {
   readonly parts: ReadonlyMap<string, AttachablePart>;
   /** The slot graph sub-slots expand from, one level per attached candidate. */
   readonly graph: SlotGraph;
-  readonly profile: PlayerProfile;
+  readonly profile: PriceGate;
   readonly pinnedSlots: ReadonlyMap<string, string | null>;
   readonly objective: Objective;
   readonly budgetRub: number | undefined;
+  /**
+   * The ways to buy the weapon, each with its price (`Infinity` when not known) and the parts
+   * it comes with. A build's price is the cheapest of: a path's price plus every part that
+   * path does not supply. With no budget these only break ties.
+   */
+  readonly paths: readonly BudgetPath[];
   /** `Date.now()` deadline in ms; checked periodically via onNodeVisit. */
   readonly deadline: number;
   /**
@@ -24,6 +30,20 @@ export interface BnbState {
    * (used for timeout enforcement).
    */
   readonly onNodeVisit: (visits: number) => boolean;
+}
+
+/** One way to buy the weapon, as the search prices it. */
+export interface BudgetPath {
+  /** `Infinity` when the path's price is not known: it can never be shown to fit a budget. */
+  readonly price: number;
+  /** Item id → how many of it the path supplies. */
+  readonly covers: ReadonlyMap<string, number>;
+}
+
+/** What the DFS carries per path: the total so far and the parts still supplied free. */
+interface PathState {
+  total: number;
+  readonly left: Map<string, number>;
 }
 
 export interface BnbBest {
@@ -57,11 +77,12 @@ export function branchAndBound(state: BnbState, slots: readonly SlotNode[]): Bnb
   const best: { value: MutableBest | null } = { value: null };
   const visits = { count: 0 };
   const root: ReadonlySet<string> = new Set();
+  const paths: PathState[] = state.paths.map((p) => ({ total: p.price, left: new Map(p.covers) }));
   dfs(
     state,
     slots.map((slot) => ({ slot, ancestors: root })),
     [],
-    0,
+    paths,
     {},
     best,
     visits,
@@ -79,7 +100,7 @@ function dfs(
   state: BnbState,
   remainingSlots: readonly PendingSlot[],
   partialMods: AttachablePart[],
-  runningPrice: number,
+  paths: PathState[],
   attachments: Record<string, string>,
   best: { value: MutableBest | null },
   visits: { count: number },
@@ -92,6 +113,7 @@ function dfs(
 
   if (remainingSlots.length === 0) {
     // Leaf.
+    const runningPrice = cheapest(paths);
     const stats = weaponSpec(state.weapon, partialMods.map(adaptMod));
     const leafScore = score(state.objective, stats);
     if (
@@ -130,28 +152,32 @@ function dfs(
   );
 
   for (const candidate of sorted) {
-    // Budget check.
-    let additionalPrice = 0;
+    // Budget check. A candidate a path supplies is free on that path; elsewhere it costs its
+    // price under the profile, and an unknown price (or none: a pinned part the profile cannot
+    // buy) is `Infinity` on that path, never 0. `optimize` has already refused a budget run
+    // whose pins no path can price, so an `Infinity` here only rules out paths.
+    const totals = paths.map((path) => path.total);
+    const taken: boolean[] = [];
     if (candidate !== null) {
-      const priceOrNull = cheapestPrice(candidate, state.profile);
-      if (priceOrNull !== null) {
-        additionalPrice = priceOrNull;
-      } else if (
-        state.budgetRub !== undefined &&
-        state.pinnedSlots.get(slot.path) !== candidate.id &&
-        itemAvailability(candidate, state.profile).available
-      ) {
-        // Any obtainable candidate whose price is unknown: a flea entry with neither
-        // avg24hPrice nor lastLowPrice, or a barter whose ingredient has no flea price. Its
-        // cost is unknown, not zero, so the solver cannot show it fits a budget. (Unpriced
-        // flea entries used to be billed at 0 here.) A pin is the user's explicit choice and
-        // still goes through, as a pinned unavailable item does.
-        continue;
+      const price = priceUnder(state.profile, candidate) ?? Number.POSITIVE_INFINITY;
+      for (const path of paths) {
+        const left = path.left.get(candidate.id) ?? 0;
+        taken.push(left > 0);
+        if (left > 0) path.left.set(candidate.id, left - 1);
+        else path.total += price;
       }
-      // else: pinned unavailable item, or no budget to respect — proceed at price 0.
     }
-    const newPrice = runningPrice + additionalPrice;
-    if (state.budgetRub !== undefined && newPrice > state.budgetRub) continue;
+    // Restores exactly what was there: subtracting an `Infinity` back out would leave NaN.
+    const undo = (): void => {
+      paths.forEach((path, i) => {
+        path.total = totals[i]!;
+        if (taken[i] === true) path.left.set(candidate!.id, path.left.get(candidate!.id)! + 1);
+      });
+    };
+    if (state.budgetRub !== undefined && cheapest(paths) > state.budgetRub) {
+      undo();
+      continue;
+    }
 
     // Sub-slots unlocked by this item, expanded lazily from the graph.
     const subSlots: readonly PendingSlot[] = candidate
@@ -175,22 +201,33 @@ function dfs(
         state.weapon,
       );
       const projectedScore = score(state.objective, runningStats) + bound;
-      if (projectedScore >= best.value.score) continue;
+      if (projectedScore >= best.value.score) {
+        undo();
+        continue;
+      }
     }
 
     if (candidate) {
       attachments[slot.path] = candidate.id;
       partialMods.push(candidate);
     }
-    const keepGoing = dfs(state, newRemaining, partialMods, newPrice, attachments, best, visits);
+    const keepGoing = dfs(state, newRemaining, partialMods, paths, attachments, best, visits);
     if (candidate) {
       partialMods.pop();
       delete attachments[slot.path];
     }
+    undo();
     if (!keepGoing) return false;
   }
 
   return true;
+}
+
+/** The build's price so far: its cheapest path. `Infinity` when none is known. */
+function cheapest(paths: readonly PathState[]): number {
+  let min = Number.POSITIVE_INFINITY;
+  for (const path of paths) if (path.total < min) min = path.total;
+  return min;
 }
 
 function singleItemScore(objective: Objective, item: AttachablePart | null): number {

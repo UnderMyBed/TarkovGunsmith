@@ -1,7 +1,8 @@
 import type { AttachablePart } from "../queries/parts.js";
 import type { WeaponListItem } from "../queries/weaponList.js";
 import { expandSlots, type SlotGraph, type WeaponTree } from "../queries/slot-graph.js";
-import { offerPriceIds, priceOffers, type PriceTable } from "../queries/shared/buy-for.js";
+import { offerPriceIds, priceOffers } from "../queries/shared/buy-for.js";
+import type { PriceTable } from "../prices/table.js";
 import type { BuilderSnapshot, SnapshotPart } from "./types.js";
 import { ORPHANED_CAP } from "../build-schema.js";
 
@@ -39,7 +40,7 @@ function derive(snapshot: BuilderSnapshot): Derived {
   return out;
 }
 
-function pricedOffers(snapshot: BuilderSnapshot, id: string, prices: PriceTable) {
+function pricedOffers(snapshot: BuilderSnapshot, id: string, prices: PriceTable | null) {
   const { names } = derive(snapshot);
   const offers = snapshot.offers[id];
   // The generator records offers for every weapon and part, even an empty list.
@@ -47,10 +48,13 @@ function pricedOffers(snapshot: BuilderSnapshot, id: string, prices: PriceTable)
   return priceOffers(id, offers, prices, (key) => names.get(key));
 }
 
-/** The part catalog: every snapshot part with its offers priced from `prices`. */
+/**
+ * The part catalog: every snapshot part with its offers priced from `prices`, or with every
+ * price unknown when `prices` is `null` (live prices loading or failed).
+ */
 export function snapshotPartCatalog(
   snapshot: BuilderSnapshot,
-  prices: PriceTable,
+  prices: PriceTable | null,
 ): AttachablePart[] {
   return snapshot.parts.map((part) => ({
     ...part,
@@ -64,7 +68,7 @@ export function snapshotPartCatalog(
  */
 export function snapshotPart(
   snapshot: BuilderSnapshot,
-  prices: PriceTable,
+  prices: PriceTable | null,
   id: string,
 ): AttachablePart | undefined {
   const part = derive(snapshot).parts.get(id);
@@ -74,7 +78,7 @@ export function snapshotPart(
 /** The buildable weapons, each with its offers priced from `prices`. */
 export function snapshotWeaponList(
   snapshot: BuilderSnapshot,
-  prices: PriceTable,
+  prices: PriceTable | null,
 ): WeaponListItem[] {
   return snapshot.weapons.map((weapon) => ({
     ...weapon,

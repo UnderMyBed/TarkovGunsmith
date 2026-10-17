@@ -70,7 +70,7 @@ describe("presetAvailability", () => {
     expect(availability(TT_GOLDEN_DEFAULT, WITH_FLEA)).toEqual({
       available: true,
       kind: "flea",
-      priceRUB: 37045,
+      priceRUB: 31109,
     });
 
     // Weapon-level availability is unchanged: it reads the receiver's own flea entry.
@@ -80,7 +80,7 @@ describe("presetAvailability", () => {
     expect(itemAvailability(tt, WITH_FLEA)).toEqual({
       available: true,
       kind: "flea",
-      priceRUB: 37045,
+      priceRUB: 31109,
     });
   });
 

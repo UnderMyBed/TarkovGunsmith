@@ -6,6 +6,7 @@ import {
   type AttachablePart,
   type BuildV6,
   type PlayerProfile,
+  type WeaponListItem,
   type WeaponTree,
 } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
@@ -26,6 +27,8 @@ import { buildFromSelection } from "./build-from-selection.js";
 
 export interface OptimizeViewProps {
   weapon: BallisticWeapon;
+  /** The weapon's own record: the optimizer's budget covers the gun as well as its parts. */
+  weaponItem: WeaponListItem;
   slotTree: WeaponTree;
   parts: readonly AttachablePart[];
   profile: PlayerProfile;
@@ -67,6 +70,7 @@ function computeScoreDelta(objective: string, current: WeaponSpec, proposed: Wea
 
 export function OptimizeView({
   weapon,
+  weaponItem,
   slotTree,
   parts,
   profile,
@@ -140,7 +144,7 @@ export function OptimizeView({
       : null;
 
   function handleRun(): void {
-    optimizer.run(toOptimizerInput(state, { weapon, slotTree, parts, profile }));
+    optimizer.run(toOptimizerInput(state, { weapon, weaponItem, slotTree, parts, profile }));
   }
 
   function handleToggle(slotId: string): void {

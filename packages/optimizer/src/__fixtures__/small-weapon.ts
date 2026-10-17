@@ -1,4 +1,4 @@
-import type { AttachablePart, WeaponTree } from "@tarkov/data";
+import type { AttachablePart, AvailabilityInput, WeaponTree } from "@tarkov/data";
 import type { BallisticWeapon } from "@tarkov/ballistics";
 import { tinyTree } from "./tree.js";
 
@@ -27,6 +27,29 @@ export const SMALL_WEAPON: BallisticWeapon = {
   baseHorizontalRecoil: 200,
   baseWeight: 3.0,
   baseAccuracy: 3.0,
+};
+
+/**
+ * The weapon's own record: Prapor sells the bare receiver at LL1. Budgets cover the whole
+ * build, so this price is part of every budget test's arithmetic.
+ */
+export const SMALL_WEAPON_PRICE = 10_000;
+export const SMALL_WEAPON_ITEM: AvailabilityInput & { shortName: string } = {
+  shortName: "TR",
+  types: ["gun"],
+  buyFor: [
+    {
+      priceRUB: SMALL_WEAPON_PRICE,
+      currency: "RUB",
+      vendor: {
+        __typename: "TraderOffer",
+        normalizedName: "prapor",
+        minTraderLevel: 1,
+        taskUnlock: null,
+        trader: { normalizedName: "prapor" },
+      },
+    },
+  ],
 };
 
 export const SMALL_MODS: readonly AttachablePart[] = [

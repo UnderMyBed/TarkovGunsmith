@@ -338,6 +338,8 @@ export function formatRequirement(a: ItemAvailability): string {
       return `${a.traderNormalizedName} LL${a.minLevel} (not in profile)`;
     case "flea-level-required":
       return `Flea level ${a.minPlayerLevel}`;
+    case "flea-unlisted":
+      return "Not listed on flea";
     case "flea-locked":
       return "Flea only";
     case "no-sources":

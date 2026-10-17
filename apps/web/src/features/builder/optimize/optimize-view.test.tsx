@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { OptimizeView } from "./optimize-view.js";
-import type { PlayerProfile, WeaponTree, BuildV6 } from "@tarkov/data";
+import type { PlayerProfile, WeaponListItem, WeaponTree, BuildV6 } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
 import { tinyTree } from "../../../test/tiny-tree.js";
@@ -34,6 +34,7 @@ vi.mock("@tarkov/optimizer", () => ({
 }));
 
 const weapon = { id: "w1" } as unknown as BallisticWeapon;
+const weaponItem = { id: "w1", shortName: "W", types: [], buyFor: [] } as unknown as WeaponListItem;
 const slotTree: WeaponTree = tinyTree("w1", [
   { nameId: "muzzle", name: "Muzzle", items: [] },
   { nameId: "handguard", name: "Handguard", items: [] },
@@ -65,6 +66,7 @@ describe("OptimizeView", () => {
     render(
       <OptimizeView
         weapon={weapon}
+        weaponItem={weaponItem}
         slotTree={slotTree}
         parts={[]}
         profile={profile}
@@ -94,6 +96,7 @@ describe("OptimizeView", () => {
     render(
       <OptimizeView
         weapon={weapon}
+        weaponItem={weaponItem}
         slotTree={slotTree}
         parts={[]}
         profile={profile}
@@ -126,6 +129,7 @@ describe("OptimizeView", () => {
     render(
       <OptimizeView
         weapon={weapon}
+        weaponItem={weaponItem}
         slotTree={slotTree}
         parts={[]}
         profile={profile}

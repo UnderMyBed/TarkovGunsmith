@@ -26,7 +26,7 @@ export async function fixtureBuilderData(
   client: TarkovJsonClient = fixtureClient(),
 ): Promise<BuilderDataSource> {
   const { snapshot, prices } = await fixtureSnapshot(client);
-  return staticBuilderDataSource(snapshot, prices.prices);
+  return staticBuilderDataSource(snapshot, prices);
 }
 
 /** The part catalog the Builder sees, priced at the captures' prices. */
