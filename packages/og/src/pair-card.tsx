@@ -29,8 +29,8 @@ function Bracket({ corner }: { corner: "tl" | "tr" | "bl" | "br" }): ReactNode {
   return <div style={{ ...base, ...pos }} />;
 }
 
-function fmt(n: number | null, digits = 0): string {
-  if (n === null || Number.isNaN(n)) return "—";
+function fmt(n: number, digits = 0): string {
+  if (Number.isNaN(n)) return "—";
   return n.toLocaleString("en-US", { maximumFractionDigits: digits });
 }
 

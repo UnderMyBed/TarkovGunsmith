@@ -9,7 +9,9 @@ JSX → SVG, `@resvg/resvg-wasm` for SVG → PNG.
 - `src/build-card.tsx` — JSX for the build card (layout C).
 - `src/pair-card.tsx` — JSX for the pair card (layout A — mirror split).
 - `src/hydrate.ts` — `hydrateBuildCard` / `hydratePairCard` — pure view-model
-  builders. Consumers fetch the upstream JSON data and pass it in.
+  builders. The caller passes the weapon as `adaptWeapon` output and the placed parts as
+  `adaptMod` output, one per filled slot, and the stats are `weaponSpec` over them: the
+  Builder's own call, so the card cannot disagree with it.
 - `src/render.ts` — `renderPng(jsx, fonts, { width, height })`.
 - `src/fonts.ts` — `loadFonts()` reads the bundled `.ttf` files.
 - `src/colors.ts` — Field Ledger hex constants mirroring the SPA tokens.

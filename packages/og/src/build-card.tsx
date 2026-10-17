@@ -81,8 +81,8 @@ function StatCell({ label, value }: { label: string; value: string }): ReactNode
   );
 }
 
-function fmt(n: number | null, digits = 0): string {
-  if (n === null || Number.isNaN(n)) return "—";
+function fmt(n: number, digits = 0): string {
+  if (Number.isNaN(n)) return "—";
   return n.toLocaleString("en-US", { maximumFractionDigits: digits });
 }
 

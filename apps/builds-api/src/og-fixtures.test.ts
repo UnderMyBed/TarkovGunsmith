@@ -55,4 +55,28 @@ describe("maybeSeedOgFixtures", () => {
     expect(parsed.left).not.toBeNull();
     expect(parsed.right).not.toBeNull();
   });
+
+  it("seeds a v1 build and a pair with a v1 side under their own ids", async () => {
+    await maybeSeedOgFixtures({
+      ...env,
+      OG_FIXTURE_V1_BUILD_ID: "ogfix003",
+      OG_FIXTURE_V1_PAIR_ID: "ogfix004",
+    });
+    const build = JSON.parse((await env.BUILDS.get("b:ogfix003"))!) as {
+      version: number;
+      modIds: string[];
+    };
+    expect(build.version).toBe(1);
+    expect(build.modIds).toHaveLength(3);
+    const pair = JSON.parse((await env.BUILDS.get("p:ogfix004"))!) as {
+      v: number;
+      left: { version: number };
+      right: unknown;
+    };
+    expect(pair.v).toBe(1);
+    expect(pair.left.version).toBe(1);
+    expect(pair.right).toBeNull();
+    // Nothing else is written.
+    expect((await env.BUILDS.list({ prefix: "" })).keys).toHaveLength(2);
+  });
 });
