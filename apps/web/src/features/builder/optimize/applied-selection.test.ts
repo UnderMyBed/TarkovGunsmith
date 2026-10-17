@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { partsById, type AttachablePart, type BuildV6 } from "@tarkov/data";
+import { partsById, resolveBuild, type AttachablePart, type BuildV6 } from "@tarkov/data";
 import { tinyTree } from "../../../test/tiny-tree.js";
 import { appliedSelection, toggleChange } from "./applied-selection.js";
 import { buildFromSelection } from "./build-from-selection.js";
@@ -235,5 +235,149 @@ describe("a part the proposal takes off under a new parent part", () => {
     const without = new Set(["barrel", "barrel/gas"]);
     expect(v3(without).build.attachments["barrel/muzzle"]).toBeUndefined();
     expect(v3(without).rows.get("barrel/muzzle")?.landed).toBe(true);
+  });
+});
+
+describe("a change whose part clashes with a part another change takes off", () => {
+  /** Hand-built parts with the given `conflictingItems`. */
+  const partsWith = (ids: readonly string[], clashes: Record<string, string[]> = {}) =>
+    partsById(
+      ids.map((id) => ({
+        ...PARTS.get("b-old")!,
+        id,
+        name: id,
+        conflictingItems: clashes[id] ?? [],
+      })),
+    );
+  const conflictsOf = (t: Parameters<typeof tinyTree>[1], p: typeof PARTS, b: BuildV6) =>
+    resolveBuild(tinyTree("w1", t), b.attachments, p).conflicts;
+
+  // The issue's probe: the new handguard clashes with the current stock, and the proposal
+  // replaces the stock to make room.
+  const slots = [
+    { nameId: "hg", name: "Handguard", items: ["h-old", "h-new"] },
+    { nameId: "stock", name: "Stock", items: ["s-old", "s-new"] },
+  ];
+  const probeTree = tinyTree("w1", slots);
+  const probeParts = partsWith(["h-old", "h-new", "s-old", "s-new"], { "h-new": ["s-old"] });
+  const cur = build({ hg: "h-old", stock: "s-old" });
+  const prop = build({ hg: "h-new", stock: "s-new" });
+  const all = new Set(["hg", "stock"]);
+  const v = (t: ReadonlySet<string>) => appliedSelection(cur, prop, t, probeTree, probeParts);
+  const t = (path: string, ticked: ReadonlySet<string>) =>
+    toggleChange(path, cur, prop, ticked, probeTree, probeParts);
+
+  it("unticking the stock unticks the handguard that needs it gone", () => {
+    expect(v(all).rows.get("stock")).toEqual({
+      landed: true,
+      disabled: false,
+      note: "makes room for the new Handguard",
+    });
+    const next = t("stock", all);
+    expect([...next]).toEqual([]);
+    const after = v(next);
+    expect(after.build.attachments).toEqual({ hg: "h-old", stock: "s-old" });
+    expect(conflictsOf(slots, probeParts, after.build)).toEqual([]);
+    expect(after.rows.get("hg")).toEqual({
+      landed: false,
+      disabled: false,
+      note: "conflicts with s-old",
+    });
+    expect(after.landed).toBe(0);
+  });
+
+  it("re-ticking the handguard re-ticks the stock", () => {
+    const back = t("hg", t("stock", all));
+    expect([...back].sort()).toEqual(["hg", "stock"]);
+    expect(v(back).build.attachments).toEqual(prop.attachments);
+  });
+
+  it("unticking the handguard alone keeps the new stock", () => {
+    const next = t("hg", all);
+    expect([...next]).toEqual(["stock"]);
+    expect(v(next).build.attachments).toEqual({ hg: "h-old", stock: "s-new" });
+    expect(v(next).rows.get("hg")?.note).toBeNull();
+  });
+
+  it("follows a chain: a needs b's old part gone, b needs c's", () => {
+    const chain = ["a", "b", "c"].map((s) => ({
+      nameId: s,
+      name: s.toUpperCase(),
+      items: [`${s}-old`, `${s}-new`],
+    }));
+    const tr = tinyTree("w1", chain);
+    const ps = partsWith(["a-old", "a-new", "b-old", "b-new", "c-old", "c-new"], {
+      "a-new": ["b-old"],
+      "c-old": ["b-new"],
+    });
+    const c0 = build({ a: "a-old", b: "b-old", c: "c-old" });
+    const p0 = build({ a: "a-new", b: "b-new", c: "c-new" });
+    const tg = (path: string, ticked: ReadonlySet<string>) =>
+      toggleChange(path, c0, p0, ticked, tr, ps);
+    expect([...tg("a", new Set())].sort()).toEqual(["a", "b", "c"]);
+    expect([...tg("c", new Set(["a", "b", "c"]))]).toEqual([]);
+    expect([...tg("b", new Set(["a", "b", "c"]))]).toEqual(["c"]);
+  });
+
+  // The captured M4A1 proposal's shape: the new barrel clashes with the old handguard, and the
+  // new handguard with the old barrel's gas block, which goes only with the old barrel.
+  const cycle = [
+    {
+      nameId: "barrel",
+      name: "Barrel",
+      items: [
+        ["b-old", [{ nameId: "gas", name: "Gas block", required: true, items: ["g-old"] }]],
+        ["b-new", [{ nameId: "gas", name: "Gas block", required: true, items: ["g-new"] }]],
+      ] as const,
+    },
+    { nameId: "hg", name: "Handguard", items: ["h-old", "h-new"] },
+  ];
+  const cycleTree = tinyTree("w1", cycle);
+  const cycleParts = partsWith(["b-old", "b-new", "g-old", "g-new", "h-old", "h-new"], {
+    "b-new": ["h-old"],
+    "h-new": ["g-old"],
+  });
+  const cc = build({ barrel: "b-old", "barrel/gas": "g-old", hg: "h-old" });
+  const cp = build({ barrel: "b-new", "barrel/gas": "g-new", hg: "h-new" });
+  const callTicked = new Set(["barrel", "barrel/gas", "hg"]);
+  const ct = (path: string, ticked: ReadonlySet<string>) =>
+    toggleChange(path, cc, cp, ticked, cycleTree, cycleParts);
+  const cv = (ticked: ReadonlySet<string>) =>
+    appliedSelection(cc, cp, ticked, cycleTree, cycleParts);
+
+  it("ticks and unticks two changes that each clear the other's clash together", () => {
+    expect([...ct("barrel", callTicked)]).toEqual([]);
+    expect([...ct("hg", callTicked)]).toEqual([]);
+    expect(cv(callTicked).rows.get("barrel")?.note).toBe("makes room for the new Handguard");
+    expect(cv(callTicked).rows.get("hg")?.note).toBe("makes room for the new Barrel");
+    // Ticking the handguard brings the barrel, through the old gas block it has to take off.
+    expect([...ct("hg", new Set())].sort()).toEqual(["barrel", "barrel/gas", "hg"]);
+    expect(cv(new Set()).rows.get("hg")?.note).toBe("conflicts with g-old");
+  });
+
+  it("unticks a required change's new parent part rather than leave its slot empty", () => {
+    // The new barrel's required gas block clashes with the current stock.
+    const tr = tinyTree("w1", [
+      cycle[0] as Parameters<typeof tinyTree>[1][number],
+      { nameId: "stock", name: "Stock", items: ["s-old", "s-new"] },
+    ]);
+    const ps = partsWith(["b-old", "b-new", "g-old", "g-new", "s-old", "s-new"], {
+      "g-new": ["s-old"],
+    });
+    const c0 = build({ barrel: "b-old", "barrel/gas": "g-old", stock: "s-old" });
+    const p0 = build({ barrel: "b-new", "barrel/gas": "g-new", stock: "s-new" });
+    const next = toggleChange("stock", c0, p0, new Set(["barrel", "barrel/gas", "stock"]), tr, ps);
+    expect([...next]).toEqual([]);
+    const after = resolveBuild(tr, appliedSelection(c0, p0, next, tr, ps).build.attachments, ps);
+    expect(after.missingRequired).toEqual([]);
+    expect(after.conflicts).toEqual([]);
+  });
+
+  it("leaves a clash the current build already has to the build, not to the ticks", () => {
+    const ps = partsWith(["h-old", "h-new", "s-old", "s-new"], { "s-old": ["h-old"] });
+    const p0 = build({ hg: "h-old", stock: "s-new" });
+    const next = toggleChange("stock", cur, p0, new Set(["stock"]), probeTree, ps);
+    expect([...next]).toEqual([]);
+    expect(appliedSelection(cur, p0, next, probeTree, ps).rows.get("stock")?.note).toBeNull();
   });
 });

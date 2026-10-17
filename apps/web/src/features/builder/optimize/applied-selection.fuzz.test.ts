@@ -3,6 +3,7 @@ import {
   partsById,
   resolveBuild,
   type AttachablePart,
+  type BuildConflict,
   type BuildV6,
   type WeaponTree,
 } from "@tarkov/data";
@@ -102,35 +103,76 @@ const asBuild = (attachments: Record<string, string>): BuildV6 => ({
   createdAt: "2026-04-22T00:00:00Z",
 });
 
-function partsOf(roots: readonly Node[]) {
+/**
+ * Every part on `roots`. A part the proposal fits clashes, now and then, with one the current
+ * build has (`conflictingItems`) or blocks a slot (`conflictingSlotIds`, tinyTree's
+ * `owner:nameId` ids), so the walk meets the pairs a partial apply could leave on the weapon
+ * together. Clashes inside the proposal are taken back out: a solver result never holds one.
+ * The current build may.
+ */
+function partsOf(
+  rng: Rng,
+  roots: readonly Node[],
+  tree: WeaponTree,
+  current: Readonly<Record<string, string>>,
+  proposed: Readonly<Record<string, string>>,
+) {
   const ids = new Set<string>();
-  const walk = (node: Node) =>
+  const slotIds = new Set<string>();
+  const walk = (owner: string) => (node: Node) => {
+    slotIds.add(`${owner}:${node.nameId}`);
     node.items.forEach((item) => {
       ids.add(item.id);
-      item.kids.forEach(walk);
+      item.kids.forEach(walk(item.id));
     });
-  roots.forEach(walk);
-  return partsById(
-    [...ids].map((id): AttachablePart => ({
-      id,
-      name: id,
-      shortName: id,
-      iconLink: "https://assets.tarkov.dev/x.webp",
-      weight: 0,
-      types: ["mods"],
-      minLevelForFlea: null,
-      properties: {
-        propertiesType: "ItemPropertiesWeaponMod",
-        ergonomics: 0,
-        recoilModifier: 0,
-        accuracyModifier: 0,
-        velocity: 0,
-      },
-      buyFor: [],
-      conflictingItems: [],
-      conflictingSlotIds: [],
-    })),
+  };
+  roots.forEach(walk("w"));
+  const olds = Object.values(current);
+  const slots = [...slotIds];
+  const clashes = new Map(
+    [...ids].map((id) => [id, { items: [] as string[], slots: [] as string[] }]),
   );
+  for (const id of Object.values(proposed)) {
+    if (olds.length > 0 && rng.next() < 0.3) clashes.get(id)!.items.push(rng.pick(olds));
+    if (rng.next() < 0.08) clashes.get(id)!.slots.push(rng.pick(slots));
+  }
+  const make = () =>
+    partsById(
+      [...ids].map((id): AttachablePart => ({
+        id,
+        name: id,
+        shortName: id,
+        iconLink: "https://assets.tarkov.dev/x.webp",
+        weight: 0,
+        types: ["mods"],
+        minLevelForFlea: null,
+        properties: {
+          propertiesType: "ItemPropertiesWeaponMod",
+          ergonomics: 0,
+          recoilModifier: 0,
+          accuracyModifier: 0,
+          velocity: 0,
+        },
+        buyFor: [],
+        conflictingItems: [...clashes.get(id)!.items],
+        conflictingSlotIds: [...clashes.get(id)!.slots],
+      })),
+    );
+  for (;;) {
+    const parts = make();
+    const inside = resolveBuild(tree, proposed, parts).conflicts;
+    if (inside.length === 0) return parts;
+    for (const c of inside) {
+      for (const [x, y] of [
+        [c.a, c.b],
+        [c.b, c.a],
+      ] as const) {
+        const own = clashes.get(x.itemId)!;
+        own.items = own.items.filter((i) => i !== y.itemId);
+        own.slots = own.slots.filter((sl) => sl !== c.slotId);
+      }
+    }
+  }
 }
 
 const parentOf = (path: string): string | null => {
@@ -153,23 +195,24 @@ function* cases(seed: number): Generator<Case> {
     const roots = ["x", "y", "z"].map((name) => randomSlot(rng, name, 1, ids));
     const current = randomBuild(rng, roots, false);
     const proposed = randomBuild(rng, roots, true, current);
-    yield {
-      tree: tinyTree("w", roots.map(toSpec)),
-      parts: partsOf(roots),
-      current: asBuild(current),
-      proposed: asBuild(proposed),
-      rng,
-    };
+    const tree = tinyTree("w", roots.map(toSpec));
+    const parts = partsOf(rng, roots, tree, current, proposed);
+    yield { tree, parts, current: asBuild(current), proposed: asBuild(proposed), rng };
   }
 }
 
 describe("appliedSelection, on random trees and toggle walks", () => {
   it.each(SEEDS)("shows what Apply does, seed %i", (seed) => {
     let checked = 0;
+    let coupled = 0;
     let caseNo = 0;
     for (const { tree, parts, current, proposed, rng } of cases(seed)) {
       caseNo++;
-      const currentOn = resolveBuild(tree, current.attachments, parts).attachments;
+      const currentResolved = resolveBuild(tree, current.attachments, parts);
+      const currentOn = currentResolved.attachments;
+      const clashKey = (c: BuildConflict) =>
+        [c.kind, c.a.path, c.a.itemId, c.b.path, c.b.itemId, c.slotId ?? ""].join("|");
+      const currentClashes = new Set(currentResolved.conflicts.map(clashKey));
       const proposedOn = resolveBuild(tree, proposed.attachments, parts).attachments;
       let ticked: ReadonlySet<string> = new Set(
         appliedSelection(current, proposed, new Set(), tree, parts).rows.keys(),
@@ -195,14 +238,27 @@ describe("appliedSelection, on random trees and toggle walks", () => {
           } else {
             // No dead clicks: toggling an enabled row flips what Apply does there.
             const next = toggleChange(path, current, proposed, ticked, tree, parts);
-            const after = appliedSelection(current, proposed, next, tree, parts).rows.get(path);
-            expect(after?.landed, where).toBe(!row.landed);
+            const afterView = appliedSelection(current, proposed, next, tree, parts);
+            expect(afterView.rows.get(path)?.landed, where).toBe(!row.landed);
+            if (row.note?.startsWith("makes room") || row.note?.startsWith("conflicts with")) {
+              // The note says toggling this row moves another: it does.
+              coupled++;
+              const moved = [...afterView.rows].filter(
+                ([p, r]) => p !== path && r.landed !== view.rows.get(p)?.landed,
+              );
+              expect(moved.length, where).toBeGreaterThan(0);
+            }
           }
           if (row.note?.startsWith("left empty")) {
             expect(on[path], where).toBeUndefined();
             expect(currentOn[path], where).toBeDefined();
           }
           checked++;
+        }
+
+        // Apply never puts two parts together that clash, unless the current build has them.
+        for (const c of resolved.conflicts) {
+          expect(currentClashes.has(clashKey(c)), `${at}, clash ${clashKey(c)}`).toBe(true);
         }
 
         // Apply never empties a required slot the current build filled (under the same part)
@@ -231,5 +287,7 @@ describe("appliedSelection, on random trees and toggle walks", () => {
     }
     // The walk exercised rows, not only empty diffs.
     expect(checked).toBeGreaterThan(500);
+    // ...and rows whose toggle clears or brings back a clash.
+    expect(coupled, "coupled rows").toBeGreaterThan(50);
   });
 });
