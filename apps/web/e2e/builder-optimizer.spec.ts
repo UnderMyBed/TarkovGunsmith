@@ -62,6 +62,19 @@ const proposal = (page: Page) => page.getByRole("region", { name: "Proposal" });
 /** How many slots `min-recoil` changes on the M4A1 Carbine preset, over the captured document. */
 const OPTIMIZER_CARBINE_CHANGED_SLOTS = 12;
 
+/**
+ * The changes still ticked after unticking that proposal's barrel: the barrel takes its gas
+ * block and the suppressor below it, and the handguard (with its lower handguard and that one's
+ * foregrip) goes too, because the new handguard clashes with the old barrel's gas block.
+ */
+const OPTIMIZER_CARBINE_KEPT_WITHOUT_BARREL = 6;
+
+/**
+ * The parts on the build those six changes make: the Carbine preset's 12, less the magazine,
+ * the rear sight and the old stock's buttstock the changes take off, plus the new stock's.
+ */
+const OPTIMIZER_CARBINE_ATTACHED_WITHOUT_BARREL = 10;
+
 test.describe("builder optimize mode", () => {
   test("run, untick a change by keyboard, apply the rest; the build shares and survives a reload", async ({
     page,
@@ -146,6 +159,46 @@ test.describe("builder optimize mode", () => {
       await expect(page.getByText(/^Conflict · /)).toHaveCount(0);
     });
   }
+
+  test("unticking a change that clears a conflict unticks what needs it, so Apply has no conflict", async ({
+    page,
+  }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    await pickWeapon(page);
+    await choosePreset(page, /Carbine/);
+    await expectPreset(page, /Carbine/);
+
+    // On the captured data the proposal swaps the barrel and the handguard, and each new part
+    // clashes with an old one the other change takes off: the new A2 barrel with the old M4
+    // handguard, the new RIS II handguard with the old barrel's front-sight gas block.
+    await openOptimizer(page);
+    await page.getByRole("button", { name: "Run", exact: true }).click();
+    await expect(proposal(page)).toContainText(
+      `${OPTIMIZER_CARBINE_CHANGED_SLOTS} of ${OPTIMIZER_CARBINE_CHANGED_SLOTS} ticked`,
+      { timeout: 15_000 },
+    );
+    const barrel = slotRow(page, "mod_reciever/mod_barrel");
+    const handguard = slotRow(page, "mod_reciever/mod_handguard");
+    await expect(barrel).toHaveAttribute("aria-label", /makes room for the new Handguard/);
+
+    await barrel.focus();
+    await page.keyboard.press("Space");
+    await expect(barrel).toHaveAttribute("aria-checked", "false");
+    await expect(handguard).toHaveAttribute("aria-checked", "false");
+    await expect(handguard).toHaveAttribute(
+      "aria-label",
+      /conflicts with M4A1 front sight with gas block/,
+    );
+    await expect(proposal(page)).toContainText(
+      `${OPTIMIZER_CARBINE_KEPT_WITHOUT_BARREL} of ${OPTIMIZER_CARBINE_CHANGED_SLOTS} ticked`,
+    );
+
+    await proposal(page).getByRole("button", { name: "Apply ticked changes" }).click();
+    await expect(page).not.toHaveURL(/\?view=optimize/);
+    await expect(attached(page, OPTIMIZER_CARBINE_ATTACHED_WITHOUT_BARREL)).toBeVisible();
+    await expect(page.getByText(/^Conflict · /)).toHaveCount(0);
+    await expect(page.getByText(/^Incomplete · /)).toHaveCount(0);
+  });
 
   test("a run can be cancelled, and the page answers while it runs", async ({ page }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
