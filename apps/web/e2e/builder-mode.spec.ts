@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { fixtureBuildableWeaponCount } from "./upstream-fixtures.js";
+import { openProgression, pickWeapon, progressionPanel, weaponPicker } from "./builder-helpers.js";
 
 /**
  * The Builder's mode (#241): a first visit is theorycraft, with every weapon open and a prompt
@@ -21,11 +22,16 @@ test.use({ playerProfile: "fresh" });
  */
 const ELCAN = /^ELCAN SpecterDR 1x\/4x scope(?! \()/;
 
-function weaponPicker(page: Page) {
-  return page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
+/**
+ * The weapon count at the head of the picker's list, read with the list open: "N weapons" in
+ * theorycraft, "N weapons available on your profile" in progression.
+ */
+async function expectWeaponCount(page: Page, text: string, timeout?: number): Promise<void> {
+  await weaponPicker(page).click();
+  await expect(page.getByText(text, { exact: true })).toBeVisible(
+    timeout === undefined ? undefined : { timeout },
+  );
+  await page.keyboard.press("Escape");
 }
 
 /** The ELCAN option in the M4A1's receiver scope slot, the slot opened. */
@@ -37,11 +43,11 @@ async function elcanOption(page: Page) {
 }
 
 async function pickM4A1(page: Page): Promise<void> {
-  await weaponPicker(page).selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+  await pickWeapon(page);
   await expect(page.locator('details[data-slot-path="mod_reciever"]')).toBeVisible();
 }
 
-const modeButton = (page: Page, name: "Theorycraft" | "Progression") =>
+const modeButton = (page: Page, name: "Theorycraft" | "My progression…") =>
   page.getByRole("group", { name: "Builder mode" }).getByRole("button", { name });
 
 test.describe("Builder mode", () => {
@@ -51,18 +57,25 @@ test.describe("Builder mode", () => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
 
+    // The prompt is on the page from the first paint, not behind the panel.
     await expect(page.getByText("Set your progression")).toBeVisible();
     await expect(modeButton(page, "Theorycraft")).toHaveAttribute("aria-pressed", "true");
+    await openProgression(page);
+    const panel = progressionPanel(page);
     for (const ll of ["LL1", "LL2", "LL3", "LL4"]) {
-      await expect(page.getByRole("button", { name: ll, exact: true })).toBeVisible();
+      await expect(panel.getByRole("button", { name: ll, exact: true })).toBeVisible();
     }
-    await expect(page.getByRole("button", { name: /Import from TarkovTracker/ })).toBeVisible();
+    await expect(panel.getByRole("button", { name: /Import from TarkovTracker/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0);
 
     const all = fixtureBuildableWeaponCount();
-    await expect(page.getByText(`${all} weapons`, { exact: true })).toBeVisible();
-    // The placeholder plus one option per weapon, none of them locked.
-    await expect(weaponPicker(page).locator("option")).toHaveCount(all + 1);
-    await expect(weaponPicker(page).locator("option", { hasText: "Locked" })).toHaveCount(0);
+    await expectWeaponCount(page, `${all} weapons`);
+    // One option per weapon, none of them locked.
+    await weaponPicker(page).click();
+    await expect(page.getByRole("option")).toHaveCount(all);
+    await expect(page.getByRole("option", { name: /Locked/ })).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     await pickM4A1(page);
     const elcan = await elcanOption(page);
@@ -74,23 +87,21 @@ test.describe("Builder mode", () => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
 
-    await page.getByRole("button", { name: "LL2", exact: true }).click();
+    await openProgression(page);
+    await progressionPanel(page).getByRole("button", { name: "LL2", exact: true }).click();
+    await expect(progressionPanel(page)).toHaveCount(0);
 
-    const gated = page.getByText(
-      `${fixtureBuildableWeaponCount()} weapons available on your profile`,
-      {
-        exact: true,
-      },
-    );
-    await expect(gated).toBeVisible();
+    const gated = `${fixtureBuildableWeaponCount()} weapons available on your profile`;
+    await expectWeaponCount(page, gated);
     await expect(page.getByText("Set your progression")).toHaveCount(0);
-    await expect(modeButton(page, "Progression")).toHaveAttribute("aria-pressed", "true");
+    await expect(modeButton(page, "My progression…")).toHaveAttribute("aria-pressed", "true");
     await pickM4A1(page);
     await expect((await elcanOption(page)).getByText("Locked")).toBeVisible();
 
     await page.reload({ waitUntil: "networkidle" });
-    await expect(gated).toBeVisible({ timeout: 15_000 });
-    await expect(modeButton(page, "Progression")).toHaveAttribute("aria-pressed", "true");
+    await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
+    await expectWeaponCount(page, gated);
+    await expect(modeButton(page, "My progression…")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText("Set your progression")).toHaveCount(0);
     // The reload restores the build from its draft; the part stays locked under LL2.
     await expect((await elcanOption(page)).getByText("Locked")).toBeVisible();
@@ -101,25 +112,32 @@ test.describe("Builder mode", () => {
   }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
-    await page.getByRole("button", { name: "LL2", exact: true }).click();
-    await expect(modeButton(page, "Progression")).toHaveAttribute("aria-pressed", "true");
+    await openProgression(page);
+    await progressionPanel(page).getByRole("button", { name: "LL2", exact: true }).click();
+    await expect(modeButton(page, "My progression…")).toHaveAttribute("aria-pressed", "true");
 
     await modeButton(page, "Theorycraft").click();
-    const all = page.getByText(`${fixtureBuildableWeaponCount()} weapons`, { exact: true });
-    await expect(all).toBeVisible();
+    const all = `${fixtureBuildableWeaponCount()} weapons`;
+    await expectWeaponCount(page, all);
 
     await page.reload({ waitUntil: "networkidle" });
-    await expect(all).toBeVisible({ timeout: 15_000 });
+    await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
+    await expectWeaponCount(page, all);
     await expect(modeButton(page, "Theorycraft")).toHaveAttribute("aria-pressed", "true");
 
     // With a profile set, theorycraft offers the way back to it, never a one-click profile
-    // that would overwrite it. The LL2 profile is still there to switch back to.
-    await expect(page.getByRole("button", { name: "LL2", exact: true })).toHaveCount(0);
-    await page.getByRole("button", { name: "Back to your progression" }).click();
+    // that would overwrite it: no prompt on the page. "My progression…" switches straight
+    // back to the LL2 profile, and its panel then offers no one-click profiles either.
+    await expect(page.getByText("Set your progression")).toHaveCount(0);
+    await modeButton(page, "My progression…").click();
+    await expect(modeButton(page, "My progression…")).toHaveAttribute("aria-pressed", "true");
+    await expectWeaponCount(
+      page,
+      `${fixtureBuildableWeaponCount()} weapons available on your profile`,
+    );
+    await openProgression(page);
     await expect(
-      page.getByText(`${fixtureBuildableWeaponCount()} weapons available on your profile`, {
-        exact: true,
-      }),
-    ).toBeVisible();
+      progressionPanel(page).getByRole("button", { name: "LL2", exact: true }),
+    ).toHaveCount(0);
   });
 });

@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { openProgression, pickWeapon, progressionPanel, weaponPicker } from "./builder-helpers.js";
 
 /**
  * Handing a build from the Builder to Compare (#258): in progression the Builder's profile
@@ -13,13 +14,6 @@ test.use({ playerProfile: "fresh" });
 /** Peacekeeper LL3 only in the captures: open in theorycraft, locked on LL2 (see builder-mode). */
 const ELCAN = /^ELCAN SpecterDR 1x\/4x scope(?! \()/;
 
-function weaponPicker(page: Page) {
-  return page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-}
-
 /** The ELCAN option in the receiver scope slot under `root`, the slot opened. */
 async function elcanOption(root: Locator) {
   await root.locator('details[data-slot-path="mod_reciever"] > summary').first().click();
@@ -31,15 +25,18 @@ async function elcanOption(root: Locator) {
 /** Pick the M4A1 in the Builder and return its cost line once prices are in. */
 async function builderCost(page: Page): Promise<string> {
   await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
-  await weaponPicker(page).selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
-  const cost = page.getByTestId("build-cost").locator("span.tabular-nums");
+  await pickWeapon(page);
+  const cost = page.getByTestId("build-cost").locator("dd").first();
   await expect(cost).toBeVisible({ timeout: 15_000 });
   return (await cost.textContent()) ?? "";
 }
 
 async function handOffBothSides(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Compare ↔" }).click();
   await page.getByRole("button", { name: "Compare", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Compare this build" })
+    .getByRole("button", { name: "Compare", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/builder\/compare$/);
 }
 
@@ -52,7 +49,8 @@ test.describe("Compare handoff", () => {
   test("in progression, both sides show the Builder's price and lock state", async ({ page }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
-    await page.getByRole("button", { name: "LL2", exact: true }).click();
+    await openProgression(page);
+    await progressionPanel(page).getByRole("button", { name: "LL2", exact: true }).click();
 
     const cost = await builderCost(page);
     expect(cost).toMatch(/^₽/);

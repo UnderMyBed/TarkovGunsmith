@@ -1,29 +1,31 @@
 // apps/web/src/features/builder/builder-page.tsx
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { presetAvailability, useProgression, useTasks, type BuildV6 } from "@tarkov/data";
-import { QuestNameProvider } from "./quest-names.js";
-import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
-import { Button, Card, CardContent } from "@tarkov/ui";
+import { Button } from "@tarkov/ui";
+import { useWorkbenchChrome } from "../../site-chrome.js";
 import { adaptWeapon } from "../data-adapters/adapters.js";
-import { ProfileEditor } from "./profile-editor.js";
-import { ModeBar } from "./mode-bar.js";
-import { applySyncedProfile } from "./synced-profile.js";
-import { BuildHeader } from "./build-header.js";
-import { CompareFromBuildDialog } from "./compare/compare-from-build-dialog.js";
-import { OptimizeView } from "./optimize/optimize-view.js";
-import { useSaveMetadata } from "./useSaveMetadata.js";
-import { useBuilderState } from "./useBuilderState.js";
-import { useShareBuild } from "./useShareBuild.js";
-import { useCompareHandoff } from "./useCompareHandoff.js";
-import { UpstreamDriftBanner } from "./upstream-drift-banner.js";
-import { SnapshotBanner } from "./snapshot-banner.js";
-import { WeaponPanel } from "./weapon-panel.js";
-import { ModsPanel } from "./mods-panel.js";
-import { PresetPicker } from "./preset-picker.js";
-import { SpecPanel } from "./spec-panel.js";
+import { BuildPanel } from "./build-panel.js";
 import { writeDraft, type DraftBuild } from "./build-draft.js";
+import { CompareFromBuildDialog } from "./compare/compare-from-build-dialog.js";
+import { DetailsPanel } from "./details-panel.js";
+import { ModeSwitch } from "./mode-switch.js";
+import { OptimizeView } from "./optimize/optimize-view.js";
+import { PresetSelect } from "./preset-select.js";
+import { ProgressionPanel, ProgressionStatus } from "./progression-panel.js";
+import { QuestNameProvider } from "./quest-names.js";
+import { SnapshotBanner } from "./snapshot-banner.js";
+import { StatStrip } from "./stat-strip.js";
+import { applySyncedProfile } from "./synced-profile.js";
+import { UpstreamDriftBanner } from "./upstream-drift-banner.js";
+import { useBuilderState } from "./useBuilderState.js";
+import { useCompareHandoff } from "./useCompareHandoff.js";
+import { useSaveMetadata } from "./useSaveMetadata.js";
+import { useShareBuild } from "./useShareBuild.js";
+import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
+import { WeaponPicker } from "./weapon-picker.js";
+import { WorkbenchBar } from "./workbench-bar.js";
 
 export interface BuilderPageProps {
   /**
@@ -40,7 +42,7 @@ export interface BuilderPageProps {
   draftKey?: string;
   /** Called after an edit has been written to {@link draftKey}. */
   onDraftWritten?: () => void;
-  /** Offered as "New build" in the header: discards this build and starts an empty one. */
+  /** Offered as "New build" in the Details panel: discards this build and starts an empty one. */
   onNewBuild?: () => void;
 }
 
@@ -73,6 +75,7 @@ export function BuilderPage({
   onNewBuild,
 }: BuilderPageProps = {}) {
   const navigate = useNavigate();
+  useWorkbenchChrome();
 
   const progression = useProgression();
   const { profile, setProfile, mode } = progression;
@@ -122,6 +125,8 @@ export function BuilderPage({
     build: builder.selectedWeapon ? builder.currentBuild : null,
   });
 
+  const sharedId = shareBuild.shareUrl?.split("/").pop() ?? null;
+
   const compareHandoff = useCompareHandoff({
     build: builder.currentBuild,
     gate: builder.gate,
@@ -131,145 +136,181 @@ export function BuilderPage({
     void navigate({ to: ".", search: (s) => ({ ...s, view: "optimize" as const }) });
   const handleExitOptimizer = () =>
     void navigate({ to: ".", search: (s) => ({ ...s, view: "editor" as const }) });
-  const handleEditProfile = () => {
-    handleExitOptimizer();
-    requestAnimationFrame(() => {
-      document
-        .querySelector("[data-profile-editor]")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  };
+  const [progressionOpen, setProgressionOpen] = useState(false);
+  const busyNoteId = useId();
+  const busyId = sync.state === "syncing" ? busyNoteId : undefined;
+  const openProgression = () => setProgressionOpen(true);
+
+  const weapon = builder.selectedWeapon;
 
   return (
     <QuestNameProvider>
-      <div className="flex flex-col gap-6">
-        <BuildHeader
-          name={saveMeta.buildName}
-          description={saveMeta.buildDescription}
-          onNameChange={saveMeta.setBuildName}
-          onDescriptionChange={saveMeta.setBuildDescription}
-          currentSpec={builder.spec}
+      <WorkbenchBar
+        picker={
+          <WeaponPicker
+            isLoading={builder.isLoading}
+            weaponOptions={builder.weaponOptions}
+            weaponId={builder.weaponId}
+            onWeaponChange={builder.handleWeaponChange}
+            mode={mode}
+          />
+        }
+        modeSwitch={
+          <ModeSwitch progression={progression} onOpenPanel={openProgression} busyId={busyId} />
+        }
+        onCompare={weapon ? compareHandoff.open : undefined}
+        share={
+          weapon
+            ? {
+                onShare: () => {
+                  builder.commit();
+                  shareBuild.share();
+                },
+                isSaving: shareBuild.isSaving,
+                saveFailed: shareBuild.saveFailed,
+                blocked: shareBuild.blocked,
+                sharedId,
+              }
+            : undefined
+        }
+      />
+      {weapon && builder.spec && (
+        <StatStrip
+          spec={builder.spec}
           stockSpec={builder.stockSpec}
-          weaponName={builder.selectedWeapon?.shortName ?? builder.selectedWeapon?.name ?? null}
-          weaponId={builder.weaponId || null}
-          modCount={builder.attachedCount}
-          missingRequired={builder.selectedWeapon ? builder.missingRequired : []}
-          conflicts={builder.conflicts}
-          sharedId={shareBuild.shareUrl?.split("/").pop() ?? null}
-          onCompare={builder.selectedWeapon ? compareHandoff.open : undefined}
-          onOptimize={builder.selectedWeapon ? handleOpenOptimizer : undefined}
-          onNewBuild={
-            onNewBuild &&
-            (builder.weaponId !== "" || saveMeta.buildName || saveMeta.buildDescription)
-              ? onNewBuild
-              : undefined
-          }
+          prices={builder.prices}
+          buildPrice={builder.buildPrice}
+          boughtAs={boughtAs}
+          nameOf={nameOf}
+          onOptimize={view === "editor" ? handleOpenOptimizer : undefined}
         />
-        <CompareFromBuildDialog
-          open={compareHandoff.isOpen}
-          onClose={compareHandoff.close}
-          onConfirm={(result) => {
-            builder.commit();
-            compareHandoff.confirm(result);
-          }}
-        />
+      )}
+      <ProgressionPanel
+        open={progressionOpen}
+        onClose={() => setProgressionOpen(false)}
+        progression={progression}
+        sync={sync}
+        busyId={busyId}
+      />
+      <CompareFromBuildDialog
+        open={compareHandoff.isOpen}
+        onClose={compareHandoff.close}
+        onConfirm={(result) => {
+          builder.commit();
+          compareHandoff.confirm(result);
+        }}
+      />
 
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 pb-8 pt-4 sm:px-6">
+        <ProgressionStatus
+          progression={progression}
+          sync={sync}
+          onOpenPanel={openProgression}
+          busyId={busyId}
+        />
         {view === "editor" ? (
           <>
             {notice}
             {builder.upstreamDriftInfo && <UpstreamDriftBanner {...builder.upstreamDriftInfo} />}
-
-            <ModeBar progression={progression} sync={sync} />
-
             <SnapshotBanner
               snapshot={initialBuild?.profileSnapshot}
               onUseSnapshot={setProfile}
               mode={mode}
             />
 
-            <div data-profile-editor>
-              <ProfileEditor profile={profile} onChange={setProfile} sync={sync} />
-            </div>
-
             {builder.error && (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-[var(--color-destructive)]">
-                    Failed to load data: {builder.error.message}
-                  </p>
-                </CardContent>
-              </Card>
+              <p
+                role="alert"
+                className="rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-destructive)]"
+              >
+                Failed to load data: {builder.error.message}
+              </p>
             )}
 
-            <WeaponPanel
-              isLoading={builder.isLoading}
-              weaponOptions={builder.weaponOptions}
-              weaponId={builder.weaponId}
-              onWeaponChange={builder.handleWeaponChange}
-              mode={mode}
-              hasSelectedWeapon={Boolean(builder.selectedWeapon)}
-              onShare={() => {
-                builder.commit();
-                shareBuild.share();
-              }}
-              isSaving={shareBuild.isSaving}
-              saveFailed={shareBuild.saveFailed}
-              shareBlocked={shareBuild.blocked}
-              embedProfileOnSave={saveMeta.embedProfileOnSave}
-              onEmbedProfileOnSaveChange={saveMeta.setEmbedProfileOnSave}
-              dataAsOf={builder.dataAsOf}
-              prices={builder.prices}
-              buildPrice={builder.buildPrice}
-              boughtAs={boughtAs}
-              nameOf={nameOf}
-            />
-
-            {builder.selectedWeapon && (
-              <>
-                {builder.tree.data && (
-                  // Keyed by weapon so a pending "Replace" prompt never outlives its weapon.
-                  <PresetPicker
-                    key={builder.weaponId}
-                    presets={weaponPresets}
-                    tree={builder.tree.data}
-                    known={builder.partsById}
+            <div className="flex flex-wrap items-start gap-4">
+              <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
+                {weapon ? (
+                  <BuildPanel
+                    tree={builder.tree}
                     attachments={builder.attachments}
-                    getAvailability={(id) => {
-                      const preset = weaponPresets.find((p) => p.id === id);
-                      return preset ? presetAvailability(preset, builder.gate) : null;
-                    }}
+                    attachedCount={builder.attachedCount}
+                    onAttach={builder.handleAttach}
+                    getAvailability={(id) => builder.availabilityById.get(id) ?? null}
                     mode={mode}
-                    onApply={builder.applyPreset}
+                    getConflict={builder.getConflict}
+                    getFittedConflict={builder.getFittedConflict}
+                    orphaned={builder.orphaned}
+                    modNames={builder.modNamesById}
+                    onDismissOrphaned={builder.clearOrphaned}
+                    missingRequired={builder.missingRequired}
+                    conflicts={builder.conflicts}
+                    presets={
+                      builder.tree.data && (
+                        // Keyed by weapon so a pending "Replace" prompt never outlives its weapon.
+                        <PresetSelect
+                          key={builder.weaponId}
+                          presets={weaponPresets}
+                          tree={builder.tree.data}
+                          known={builder.partsById}
+                          attachments={builder.attachments}
+                          getAvailability={(id) => {
+                            const preset = weaponPresets.find((p) => p.id === id);
+                            return preset ? presetAvailability(preset, builder.gate) : null;
+                          }}
+                          mode={mode}
+                          onApply={builder.applyPreset}
+                        />
+                      )
+                    }
                   />
+                ) : (
+                  <section
+                    aria-label="Build"
+                    className="rounded-[var(--radius-panel)] border border-dashed border-[var(--color-border-strong)] px-4 py-10 text-center"
+                  >
+                    <h2 className="text-base font-bold">No weapon selected</h2>
+                    <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+                      Pick one in the weapon search above, or press{" "}
+                      <kbd className="rounded-[var(--radius)] border border-[var(--color-border-strong)] px-1.5 font-mono text-12">
+                        /
+                      </kbd>{" "}
+                      to jump to it.
+                    </p>
+                  </section>
                 )}
-                <ModsPanel
-                  tree={builder.tree}
-                  attachments={builder.attachments}
-                  attachedCount={builder.attachedCount}
-                  onAttach={builder.handleAttach}
-                  getAvailability={(id) => builder.availabilityById.get(id) ?? null}
-                  mode={mode}
-                  getConflict={builder.getConflict}
-                  getFittedConflict={builder.getFittedConflict}
-                  orphaned={builder.orphaned}
-                  modNames={builder.modNamesById}
-                  onDismissOrphaned={builder.clearOrphaned}
+              </div>
+              <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-4 lg:max-w-[460px]">
+                <DetailsPanel
+                  name={saveMeta.buildName}
+                  description={saveMeta.buildDescription}
+                  onNameChange={saveMeta.setBuildName}
+                  onDescriptionChange={saveMeta.setBuildDescription}
+                  spec={weapon ? builder.spec : null}
+                  magazine={builder.magazine}
+                  embedProfile={
+                    weapon && mode === "progression"
+                      ? {
+                          checked: saveMeta.embedProfileOnSave,
+                          onChange: saveMeta.setEmbedProfileOnSave,
+                        }
+                      : undefined
+                  }
+                  onNewBuild={
+                    onNewBuild &&
+                    (builder.weaponId !== "" || saveMeta.buildName || saveMeta.buildDescription)
+                      ? onNewBuild
+                      : undefined
+                  }
+                  dataAsOf={builder.dataAsOf}
+                  prices={builder.prices}
                 />
-
-                {builder.spec && (
-                  <SpecPanel
-                    weaponShortName={builder.selectedWeapon.shortName}
-                    spec={builder.spec}
-                    magazine={builder.magazine}
-                  />
-                )}
-              </>
-            )}
+              </div>
+            </div>
           </>
-        ) : builder.selectedWeapon && builder.tree.data && builder.spec ? (
+        ) : weapon && builder.tree.data && builder.spec ? (
           <OptimizeView
-            weapon={adaptWeapon(builder.selectedWeapon)}
-            weaponItem={builder.selectedWeapon}
+            weapon={adaptWeapon(weapon)}
+            weaponItem={weapon}
             slotTree={builder.tree.data}
             parts={builder.parts}
             gate={builder.gate}
@@ -285,17 +326,15 @@ export function BuilderPage({
               handleExitOptimizer();
             }}
             onExit={handleExitOptimizer}
-            onEditProfile={handleEditProfile}
+            onEditProfile={openProgression}
           />
         ) : (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm">Pick a weapon in the editor before running the optimizer.</p>
-              <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
-                ← Back to editor
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+            <p className="text-sm">Pick a weapon in the editor before running the optimizer.</p>
+            <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
+              ← Back to editor
+            </Button>
+          </div>
         )}
 
         {shareBuild.shareUrl && (

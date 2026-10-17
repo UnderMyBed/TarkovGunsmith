@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { pickWeapon } from "./builder-helpers.js";
 
 /**
  * Browser half of GitHub issue #174 — keyboard and screen-reader correctness.
@@ -84,12 +85,7 @@ test.describe("Builder slot tree arrow keys", () => {
     page,
   }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
-    const picker = page
-      .locator("select")
-      .filter({ has: page.locator('option:has-text("Select weapon")') })
-      .first();
-    await expect(picker).toBeVisible({ timeout: 15_000 });
-    await picker.selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+    await pickWeapon(page);
 
     const fit = async (path: string, name: RegExp) => {
       const region = page.locator(`details[data-slot-path="${path}"]`);

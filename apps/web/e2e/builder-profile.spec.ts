@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { openProgression } from "./builder-helpers.js";
 
 /**
  * End-to-end coverage for the PMC level control on the progression profile.
@@ -15,8 +16,12 @@ import { test, expect } from "./upstream.js";
 // at level 1" is the first thing it asserts — so it opts out and starts from DEFAULT_PROFILE.
 test.use({ playerProfile: "fresh" });
 
-/** The editor lives behind a <details> that is collapsed on first paint. */
+/**
+ * The editor lives in the progression panel, behind a <details> that is collapsed when the
+ * panel opens.
+ */
 async function openProfileEditor(page: Page): Promise<void> {
+  await openProgression(page);
   const summary = page.getByText(/^(Edit profile|Override manually)/);
   await expect(summary).toBeVisible({ timeout: 15_000 });
   await summary.click();

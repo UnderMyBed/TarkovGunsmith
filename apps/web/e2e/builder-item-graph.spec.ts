@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { choosePreset, pickWeapon } from "./builder-helpers.js";
 
 /**
  * The Builder's item graph on the captured M4A1 (#213 #214 #215): a barrel is a real part whose
@@ -9,21 +10,13 @@ import { test, expect } from "./upstream.js";
  */
 
 async function pickM4A1(page: Page) {
-  const picker = page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-  await expect(picker).toBeVisible({ timeout: 15_000 });
-  await picker.selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+  await pickWeapon(page);
   await startEmpty(page);
 }
 
 /** New builds start from the weapon's default preset; these tests build from an empty weapon. */
 async function startEmpty(page: Page): Promise<void> {
-  await page
-    .getByRole("group", { name: "Presets" })
-    .getByRole("button", { name: /^Empty/ })
-    .click();
+  await choosePreset(page, /^Empty/);
   await expect(page.getByText("0 attached", { exact: true })).toBeVisible();
 }
 

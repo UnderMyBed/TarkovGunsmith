@@ -5,6 +5,7 @@ import {
   OPTIMIZER_CHANGED_SLOTS,
   STRONGEST_OPTIMIZED_RECOIL_CELL,
 } from "./upstream.js";
+import { choosePreset, pickFirstWeapon as pickFirst, stat } from "./builder-helpers.js";
 
 /**
  * Guards the recoil unit contract end-to-end against the captured upstream document.
@@ -25,27 +26,14 @@ import {
  */
 
 async function pickFirstWeapon(page: Page): Promise<string | null> {
-  const picker = page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-  await expect(picker).toBeVisible({ timeout: 15_000 });
-  await expect
-    .poll(async () => await picker.locator("option").count(), { timeout: 15_000 })
-    .toBeGreaterThan(1);
-  const value = await picker.locator("option").nth(1).getAttribute("value");
-  if (!value) return null;
-  await picker.selectOption(value);
+  const name = await pickFirst(page);
   await startEmpty(page);
-  return value;
+  return name || null;
 }
 
 /** New builds start from the weapon's default preset; these tests build from an empty weapon. */
 async function startEmpty(page: Page): Promise<void> {
-  await page
-    .getByRole("group", { name: "Presets" })
-    .getByRole("button", { name: /^Empty/ })
-    .click();
+  await choosePreset(page, /^Empty/);
   await expect(page.getByText("0 attached", { exact: true })).toBeVisible();
 }
 
@@ -57,7 +45,7 @@ test.describe("recoil is expressed as a percentage", () => {
 
     // Drive the optimizer rather than hand-clicking slots: min-recoil is its
     // default objective, so whatever it accepts is a genuine reduction.
-    await page.getByRole("button", { name: /◇ Optimize/i }).click();
+    await page.getByRole("button", { name: "Optimize", exact: true }).click();
     await expect(page).toHaveURL(/\?view=optimize/);
     await page.getByRole("button", { name: /Re-run optimization/i }).click();
 
@@ -79,13 +67,17 @@ test.describe("recoil is expressed as a percentage", () => {
     await page.getByRole("button", { name: /Accept all/ }).click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
 
-    // BuildHeader's Recoil V / Recoil H delta badges. `formatPercent` blanks
+    // The stat strip's vertical and horizontal recoil deltas. `formatPercent` blanks
     // anything under 0.5%, which is exactly what the 100x error produced.
     await expect
       .poll(
         async () => {
-          const texts = await page.locator("div.font-mono").allTextContents();
-          return texts.filter((t) => /^[−+]\d+%( better| worse)?$/.test(t.trim())).length;
+          const texts = await Promise.all(
+            ["Vertical recoil", "Horizontal recoil"].map((label) =>
+              stat(page, label).locator("dd").nth(1).textContent(),
+            ),
+          );
+          return texts.filter((t) => /[−+]\d+%( better| worse)?$/.test((t ?? "").trim())).length;
         },
         { timeout: 10_000 },
       )

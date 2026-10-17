@@ -8,6 +8,10 @@ import { createTestClient } from "../test/test-client.js";
 import { createTestBuilderData } from "../test/test-builder-data.js";
 import { SnapshotVersionError, type BuilderDataSource } from "@tarkov/data";
 import { DRAFT_KEY } from "../features/builder/build-draft.js";
+import { pickWeapon, weaponCombobox } from "../test/pick-weapon.js";
+
+/** The route fixtures' one weapon, as the picker names it. */
+const M4A1_NAME = "Colt M4A1 5.56x45 assault rifle";
 
 // `BuilderPage` was 512 lines / 12 useState / 45 hook calls in one function body, and these
 // tests were written as the behaviour net that made decomposing it safe.
@@ -28,48 +32,27 @@ afterEach(() => {
   localStorage.clear();
 });
 
-/**
- * The "Spec" card's description is `<code>{shortName}</code> with {modCount} mods` — the
- * short name lives in a child `<code>`, so its parent's own text nodes never contain the
- * full sentence and the default single-node `getByText` match fails ("text is broken up by
- * multiple elements"). Match on the element's full `textContent` instead.
- */
-function withNormalizedText(expected: string) {
-  return (_: string, node: Element | null) =>
-    node?.textContent?.replace(/\s+/g, " ").trim() === expected;
+/** A stat's value: the `<dd>` after its `<dt>`, in the stat strip or the Details panel. */
+function stat(label: string): HTMLElement {
+  return screen.getByText(label, { selector: "dt" }).nextElementSibling as HTMLElement;
 }
 
-/**
- * The weapon picker is one of MANY `role="combobox"` elements on this page once the
- * ProfileEditor mounts (a `<select>` per trader for its loyalty level) — find it by its
- * distinguishing feature (an empty-value `<option>`, "Loading…"/"Select weapon…") rather
- * than by role alone.
- */
-function findWeaponSelect(): HTMLSelectElement {
-  const combos = screen.getAllByRole<HTMLSelectElement>("combobox");
-  const found = combos.find((el) => el.querySelector('option[value=""]'));
-  if (!found) throw new Error("weapon <select> not found among comboboxes");
-  return found;
-}
+const presetSelect = () => screen.getByRole<HTMLSelectElement>("combobox", { name: "Preset" });
+const selectedPreset = () => presetSelect().selectedOptions[0]?.textContent ?? "";
+const presetOption = (name: RegExp) =>
+  within(presetSelect()).getByRole<HTMLOptionElement>("option", { name });
 
 /**
- * Wait for the weapon <select> to finish loading, select the fixture M4A1 (which starts from
- * its default preset: the muzzle and the stock), then clear it with "Empty".
+ * Pick the fixture M4A1 (which starts from its default preset: the muzzle and the stock), then
+ * clear it with the Empty preset.
  */
 async function selectFixtureWeapon(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByText("1 weapons available on your profile");
-  const weaponSelect = findWeaponSelect();
-  await waitFor(() => expect(weaponSelect).not.toBeDisabled());
-  await user.selectOptions(weaponSelect, "w-m4a1");
+  await pickWeapon(user);
   // Slot tree only appears once useWeaponTree resolves.
   await screen.findByText("2 attached", { exact: true });
-  await user.click(presetChip(/^Empty/));
+  await user.selectOptions(presetSelect(), presetOption(/^Empty/));
   await screen.findByText("0 attached", { exact: true });
-  return weaponSelect;
-}
-
-function presetChip(name: RegExp): HTMLElement {
-  return within(screen.getByRole("group", { name: "Presets" })).getByRole("button", { name });
 }
 
 describe("/builder", () => {
@@ -77,15 +60,12 @@ describe("/builder", () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
     await screen.findByText("1 weapons available on your profile");
-    const weaponSelect = findWeaponSelect();
-    await waitFor(() => expect(weaponSelect).not.toBeDisabled());
-    await user.selectOptions(weaponSelect, "w-m4a1");
+    await pickWeapon(user);
 
     expect(await screen.findByText("2 attached", { exact: true })).toBeInTheDocument();
-    expect(presetChip(/^M4A1 Default/)).toHaveAttribute("aria-pressed", "true");
-    expect(presetChip(/^M4A1 Stock/)).toHaveAttribute("aria-pressed", "false");
+    expect(selectedPreset()).toMatch(/^M4A1 Default \(default\)/);
     // Progression mode: the other preset says what it needs.
-    expect(within(presetChip(/^M4A1 Stock/)).getByText("mechanic LL2")).toBeInTheDocument();
+    expect(presetOption(/^M4A1 Stock/)).toHaveTextContent("Locked · mechanic LL2");
   });
 
   it("lists the fixture weapon as available, then loads its slot tree + stock spec on selection", async () => {
@@ -104,14 +84,12 @@ describe("/builder", () => {
     expect(screen.getByText("Muzzle")).toBeInTheDocument();
     expect(screen.getByText("Stock")).toBeInTheDocument();
     // Stock spec (no mods attached yet).
-    expect(screen.getByText(withNormalizedText("M4A1 with 0 mods"))).toBeInTheDocument();
+    expect(stat("Mods attached")).toHaveTextContent("0");
     // The bare gun item's own stats, as upstream publishes them, not an assembled weapon's:
     // #213 shipped from a fixture that gave the receiver 3.4 kg and 47 ergonomics.
-    const stat = (label: string) =>
-      screen.getByText(label, { selector: "dt" }).nextElementSibling as HTMLElement;
-    expect(stat("Ergonomics")).toHaveTextContent("48.0");
-    expect(stat("Vert. recoil")).toHaveTextContent("119.0");
-    expect(stat("Horiz. recoil")).toHaveTextContent("342.0");
+    expect(stat("Ergonomics")).toHaveTextContent(/^48$/);
+    expect(stat("Vertical recoil")).toHaveTextContent(/^119$/);
+    expect(stat("Horizontal recoil")).toHaveTextContent(/^342$/);
     expect(stat("Weight")).toHaveTextContent("0.75 kg");
   });
 
@@ -139,7 +117,7 @@ describe("/builder", () => {
     await user.click(muzzleButton);
 
     expect(await screen.findByText("1 attached")).toBeInTheDocument();
-    expect(screen.getByText(withNormalizedText("M4A1 with 1 mod"))).toBeInTheDocument();
+    expect(stat("Mods attached")).toHaveTextContent("1");
   });
 
   it("shares the current build: POSTs it, shows the copied-URL toast, and writes to the clipboard", async () => {
@@ -171,20 +149,23 @@ describe("/builder", () => {
     // Assert on the mock we created, not on navigator.clipboard.writeText — reading the
     // method back off the object detaches it, which `no-unbound-method` correctly flags.
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("/builder/abcdefgh"));
+    // The workbench bar marks the build shared.
+    expect(screen.getByText("Shared")).toBeInTheDocument();
   });
 
-  it("opens the optimizer from the header once a weapon is picked, and round-trips back to the editor", async () => {
+  it("opens the optimizer from the stat strip once a weapon is picked, and round-trips back to the editor", async () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
     await selectFixtureWeapon(user);
 
-    await user.click(screen.getByRole("button", { name: /Optimize/ }));
+    await user.click(screen.getByRole("button", { name: "Optimize" }));
 
     // OptimizeView (a separate, already-tested feature component) mounted — its own heading
     // proves BuilderPage's view="optimize" branch rendered it with a ready weapon/tree/spec.
     expect(await screen.findByText(/Optimizer/)).toBeInTheDocument();
-    // The editor's own "Weapon" picker card is gone while the optimizer is showing.
-    expect(screen.queryByText("1 weapons available on your profile")).not.toBeInTheDocument();
+    // The editor's Build panel is gone while the optimizer is showing, and so is Optimize.
+    expect(screen.queryByRole("region", { name: "Build" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Optimize" })).not.toBeInTheDocument();
   });
 
   it("falls back to a prompt when the optimizer is opened with no weapon selected, and returns to the editor", async () => {
@@ -197,8 +178,8 @@ describe("/builder", () => {
 
     await user.click(screen.getByRole("button", { name: /Back to editor/ }));
 
-    // Back in the editor view — the weapon picker card is back.
-    expect(await screen.findByText("1 weapons available on your profile")).toBeInTheDocument();
+    // Back in the editor view: the empty Build panel says what to do.
+    expect(await screen.findByText("No weapon selected")).toBeInTheDocument();
   });
 
   it("opens the compare-from-build dialog and hands off to /builder/compare on confirm", async () => {
@@ -206,14 +187,24 @@ describe("/builder", () => {
     const { router } = await renderRoute("/builder");
     await selectFixtureWeapon(user);
 
-    await user.click(screen.getByRole("button", { name: "Compare ↔" }));
-    expect(screen.getByText("Compare this build")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Compare" }));
+    const dialog = screen.getByRole("dialog", { name: "Compare this build" });
 
     // Default mode is "Clone current build into both sides" — confirm it.
-    await user.click(screen.getByRole("button", { name: "Compare" }));
+    await user.click(within(dialog).getByRole("button", { name: "Compare" }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe("/builder/compare"));
     expect(screen.queryByText("Compare this build")).not.toBeInTheDocument();
+  });
+
+  it("offers Compare as a link to the Compare page before a weapon is picked", async () => {
+    await renderRoute("/builder");
+    await screen.findByText("No weapon selected");
+    expect(screen.getByRole("link", { name: "Compare" })).toHaveAttribute(
+      "href",
+      "/builder/compare",
+    );
+    expect(screen.queryByRole("button", { name: "Share build" })).not.toBeInTheDocument();
   });
 
   it("surfaces a data error when the items resource fails to load", async () => {
@@ -229,10 +220,8 @@ describe("/builder on a first visit", () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
     await screen.findByText("1 weapons");
-    expect(screen.getByText("Set your progression")).toBeInTheDocument();
-    const weaponSelect = findWeaponSelect();
-    await waitFor(() => expect(weaponSelect).not.toBeDisabled());
-    await user.selectOptions(weaponSelect, "w-m4a1");
+    expect(screen.getByText("Set your progression.")).toBeInTheDocument();
+    await pickWeapon(user);
     await screen.findByText("2 attached", { exact: true });
 
     // The Peacekeeper LL3 stock is open in theorycraft, and the toggle is not offered there.
@@ -242,41 +231,41 @@ describe("/builder on a first visit", () => {
     expect(within(stockButton).queryByText("Locked")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Show all items")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "LL1" }));
+    await user.click(screen.getByRole("button", { name: "My progression…" }));
+    const panel = screen.getByRole("dialog", { name: "Your progression" });
+    await user.click(within(panel).getByRole("button", { name: "LL1" }));
     await screen.findByText("1 weapons available on your profile");
     expect(within(stockButton).getByText("Locked")).toBeInTheDocument();
   });
 });
 
 describe("/builder draft", () => {
-  async function pickWeapon(user: ReturnType<typeof userEvent.setup>) {
+  async function pickFixture(user: ReturnType<typeof userEvent.setup>) {
     await screen.findByText("1 weapons available on your profile");
-    const weaponSelect = findWeaponSelect();
-    await waitFor(() => expect(weaponSelect).not.toBeDisabled());
-    await user.selectOptions(weaponSelect, "w-m4a1");
+    await pickWeapon(user);
     await screen.findByText("2 attached", { exact: true });
   }
 
   it("restores the build after the page is opened again", async () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
-    await pickWeapon(user);
+    await pickFixture(user);
     await user.click(
       screen.getByRole("button", { name: /AR-15 Colt USGI A2 5.56x45 flash hider/ }),
     );
-    await user.type(screen.getByPlaceholderText("Build name (optional)"), "Night raid");
+    await user.type(screen.getByLabelText("Build name"), "Night raid");
     cleanup();
 
     await renderRoute("/builder");
     expect(await screen.findByDisplayValue("Night raid")).toBeInTheDocument();
-    await waitFor(() => expect(findWeaponSelect()).toHaveValue("w-m4a1"));
+    await waitFor(() => expect(weaponCombobox()).toHaveValue(M4A1_NAME));
     expect(await screen.findByText("2 attached", { exact: true })).toBeInTheDocument();
   });
 
   it("opening the page with a draft writes nothing", async () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
-    await pickWeapon(user);
+    await pickFixture(user);
     const stored = localStorage.getItem(DRAFT_KEY);
     expect(stored).not.toBeNull();
     cleanup();
@@ -290,7 +279,7 @@ describe("/builder draft", () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
     expect(screen.queryByRole("button", { name: "New build" })).not.toBeInTheDocument();
-    await pickWeapon(user);
+    await pickFixture(user);
 
     await user.click(screen.getByRole("button", { name: "New build" }));
     await user.click(screen.getByRole("button", { name: "Keep this build" }));
@@ -315,7 +304,7 @@ describe("/builder draft", () => {
     expect(error).not.toHaveBeenCalled();
     expect(localStorage.getItem(DRAFT_KEY)).toBe("{not json");
 
-    await pickWeapon(user);
+    await pickFixture(user);
     expect(localStorage.getItem(DRAFT_KEY)).toContain('"weaponId":"w-m4a1"');
   });
 });

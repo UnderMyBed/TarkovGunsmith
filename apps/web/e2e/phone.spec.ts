@@ -1,6 +1,7 @@
 import type { ConsoleMessage, Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { ROUTES } from "./routes.js";
+import { expectPreset, pickWeapon, stat } from "./builder-helpers.js";
 
 /**
  * The site at phone width (the `phone` project in `playwright.config.ts`: 390 × 844, touch,
@@ -13,7 +14,6 @@ import { ROUTES } from "./routes.js";
  */
 
 const PHONE_WIDTH = 390;
-const M4A1_LABEL = "Colt M4A1 5.56x45 assault rifle";
 
 function captureConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -27,21 +27,6 @@ function captureConsoleErrors(page: Page): string[] {
 /** How wide the page's content is, in CSS px. More than {@link PHONE_WIDTH} scrolls sideways. */
 function contentWidth(page: Page): Promise<number> {
   return page.evaluate(() => document.documentElement.scrollWidth);
-}
-
-function weaponPicker(page: Page) {
-  return page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-}
-
-function stat(page: Page, label: string) {
-  return page
-    .locator("dl > div")
-    .filter({ has: page.locator("dt").getByText(label, { exact: true }) })
-    .locator("dd")
-    .first();
 }
 
 test.describe("phone width", () => {
@@ -62,15 +47,10 @@ test.describe("phone width", () => {
   test("the Builder picks a weapon, applies its preset and changes a part", async ({ page }) => {
     const errors = captureConsoleErrors(page);
     await page.goto("/builder", { waitUntil: "networkidle" });
-    await weaponPicker(page).selectOption({ label: M4A1_LABEL });
-    const presets = page.getByRole("group", { name: "Presets" });
-    await expect(presets.getByRole("button", { name: /^M4A1 Carbine/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-      { timeout: 15_000 },
-    );
-    await expect(stat(page, "Fire rate")).toHaveText("800 rpm");
-    await expect(stat(page, "Capacity")).toHaveText("30 rds");
+    await pickWeapon(page);
+    await expectPreset(page, /^M4A1 Carbine/);
+    await expect(stat(page, "Fire rate").locator("dd").first()).toHaveText("800 rpm");
+    await expect(stat(page, "Capacity").locator("dd").first()).toHaveText("30 rds");
 
     // Swap the STANAG for the PMAG by touch: open the magazine slot and tap the part.
     const magazine = page.locator('[data-slot-path="mod_magazine"]');
@@ -81,13 +61,10 @@ test.describe("phone width", () => {
       })
       .tap();
     await expect(magazine.locator("> summary")).toContainText("PMAG 30 GEN M3");
-    await expect(presets.getByRole("button", { name: /^M4A1 Carbine/ })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    await expectPreset(page, /^Custom parts$/, 5_000);
 
-    // Once a weapon is picked, the preset chips, the build header's toolbar and the slot rows
-    // must still fit a 390 px screen (issue #265).
+    // Once a weapon is picked, the workbench bar, the stat strip and the slot rows must still
+    // fit a 390 px screen (issue #265).
     expect(await contentWidth(page), "the Builder scrolls sideways").toBeLessThanOrEqual(
       PHONE_WIDTH,
     );

@@ -1,6 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { upstreamFixtureBody } from "./upstream-fixtures.js";
+import { pickWeapon, weaponPicker } from "./builder-helpers.js";
 
 /**
  * Live prices (#212): a Web Worker fetches upstream's `items` document and posts back only the
@@ -11,16 +12,9 @@ import { upstreamFixtureBody } from "./upstream-fixtures.js";
 const ITEMS = "https://json.tarkov.dev/regular/items";
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
 
-function weaponPicker(page: Page) {
-  return page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-}
-
 async function pickM4A1(page: Page): Promise<void> {
   await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
-  await weaponPicker(page).selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+  await pickWeapon(page);
   await expect(page.locator('details[data-slot-path="mod_reciever"]')).toBeVisible();
 }
 
@@ -56,7 +50,7 @@ test.describe("Builder prices", () => {
     // Until prices arrive the build has no cost, and a budget cannot be checked.
     await expect(page.getByText("Prices loading…", { exact: true })).toBeVisible();
     await expect(page.getByTestId("build-cost")).toHaveCount(0);
-    await page.getByRole("button", { name: /◇ Optimize/i }).click();
+    await page.getByRole("button", { name: "Optimize", exact: true }).click();
     const budget = page.getByLabel("Budget");
     await expect(budget).toBeDisabled();
     await expect(budget).toHaveAttribute("placeholder", "Budget needs prices");
@@ -73,7 +67,7 @@ test.describe("Builder prices", () => {
     // The seeded build is exactly the M4A1 Carbine preset, so it costs the preset's own flea
     // price and nothing more: its parts come with it.
     await expect(page.getByTestId("build-cost")).toHaveText(
-      "Build cost₽26,666bought as M4A1 Carbine",
+      "Cost₽26,666as the M4A1 Carbine preset",
     );
   });
 

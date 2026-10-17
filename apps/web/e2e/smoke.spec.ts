@@ -2,6 +2,7 @@ import type { APIRequestContext, Page, ConsoleMessage } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { fixtureBuildableWeaponCount } from "./upstream-fixtures.js";
 import { ROUTES } from "./routes.js";
+import { openProgression, pickFirstWeapon } from "./builder-helpers.js";
 import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with { type: "json" };
 
 /**
@@ -12,8 +13,8 @@ import fixtureProgression from "./fixtures/tarkovtracker-progression.json" with 
  */
 
 /**
- * Placeholder option + one per buildable weapon in the capture (signal pistols and cartridges
- * are excluded). `<option value="">Select weapon…</option>`.
+ * A Compare side's weapon <select>: its placeholder option plus one per buildable weapon in the
+ * capture (signal pistols and cartridges are excluded).
  */
 const WEAPON_OPTION_COUNT = fixtureBuildableWeaponCount() + 1;
 
@@ -136,49 +137,24 @@ test.describe("smoke — builder interaction", () => {
   /**
    * Regression guard for the reported Builder runtime error: selecting a
    * weapon should not throw, crash the tree, or surface a console error.
-   * Picks the first real option in the Weapon <select> and waits for the
-   * Mods card (which only renders once tree.data is loaded).
+   * Picks the first weapon the picker lists and waits for the slot tree
+   * (which only renders once tree.data is loaded).
    */
   test("selecting a weapon renders the slot tree without errors", async ({ page }) => {
     const { errors } = captureConsoleErrors(page);
     await page.goto("/builder", { waitUntil: "networkidle" });
 
-    // Find the Weapon dropdown. The label text "Weapon" is unique on /builder.
-    const select = page
-      .locator("select")
-      .filter({ has: page.locator('option:has-text("Select weapon")') })
-      .first();
-    await expect(select).toBeVisible({ timeout: 15_000 });
+    await pickFirstWeapon(page);
 
-    // Wait until the weapon list has loaded (more than just the placeholder).
-    await expect
-      .poll(async () => (await select.locator("option").count()) > 1, {
-        timeout: 15_000,
-      })
-      .toBe(true);
-
-    // Grab the second option (first real weapon; index 0 is the placeholder).
-    const firstWeaponValue = await select.locator("option").nth(1).getAttribute("value");
-    expect(firstWeaponValue, "expected at least one weapon option").toBeTruthy();
-    await select.selectOption(firstWeaponValue);
-
-    // After selection the Mods card appears with "Loading slot tree…" then the
-    // tree. Assert one of the downstream elements renders without the page
-    // throwing a console error along the way.
-    await expect(page.getByText(/Mods|slot tree/i).first()).toBeVisible({ timeout: 20_000 });
+    // After selection the Build panel shows "Loading slot tree…" then the tree. Assert the
+    // tree renders without the page throwing a console error along the way.
+    await expect(page.locator("details[data-slot-path]").first()).toBeVisible({ timeout: 20_000 });
 
     // Fail loudly on GraphQL / network errors rendered as card text. The recent
     // WeaponTree parse-error bug surfaced here, not in the console.
     await expect(
       page.getByText(/couldn.?t load slot tree|failed to load|graphql error/i),
     ).toHaveCount(0);
-
-    // Arc 4: weapon silhouette backdrop should render (CDN image on md:+).
-    // Set viewport wide enough that the md: breakpoint applies (default Tailwind
-    // md: is 768px).
-    await page.setViewportSize({ width: 1200, height: 900 });
-    const silhouette = page.locator("img[src*='-base-image.webp']");
-    await expect(silhouette.first()).toBeVisible({ timeout: 5_000 });
 
     expect(
       errors,
@@ -446,7 +422,8 @@ test.describe("smoke — TarkovTracker import", () => {
 
     await page.goto("/builder", { waitUntil: "networkidle" });
 
-    // Switch to Advanced mode.
+    // Open the progression panel and switch to Advanced mode.
+    await openProgression(page);
     await page.getByRole("button", { name: /^Advanced$/ }).click();
 
     // Open the Connect popover.
@@ -518,23 +495,7 @@ test.describe("smoke — slot-tree keyboard nav", () => {
     const { errors } = captureConsoleErrors(page);
     await page.goto("/builder", { waitUntil: "networkidle" });
 
-    // Find and wait for the weapon <select> (same pattern as builder-interaction
-    // smoke tests — filter by the "Select weapon" placeholder option).
-    const weaponPicker = page
-      .locator("select")
-      .filter({ has: page.locator('option:has-text("Select weapon")') })
-      .first();
-    await expect(weaponPicker).toBeVisible({ timeout: 15_000 });
-    await expect
-      .poll(async () => (await weaponPicker.locator("option").count()) > 1, {
-        timeout: 15_000,
-      })
-      .toBe(true);
-
-    // Select the first real weapon (index 0 is the placeholder).
-    const firstWeaponValue = await weaponPicker.locator("option").nth(1).getAttribute("value");
-    expect(firstWeaponValue, "expected at least one weapon option").toBeTruthy();
-    await weaponPicker.selectOption(firstWeaponValue);
+    await pickFirstWeapon(page);
 
     // Wait for the slot tree to render — at least two slot summaries must appear
     // so ArrowDown has somewhere to go.

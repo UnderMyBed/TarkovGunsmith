@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { openProgression, pickWeapon, progressionPanel } from "./builder-helpers.js";
 
 /**
  * Quest gating (#224), on the captures. Peacekeeper sells the Magpul PRS GEN3 stock at LL3
@@ -33,12 +34,7 @@ async function seedProfile(page: Page, mode: "basic" | "advanced"): Promise<void
 }
 
 async function openBufferTubeStockSlot(page: Page) {
-  const picker = page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-  await expect(picker).toBeEnabled({ timeout: 15_000 });
-  await picker.selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+  await pickWeapon(page);
   // The buffer tube's own stock slot sits inside the collapsed stock slot.
   await page.locator('details[data-slot-path="mod_stock"] > summary').click();
   const slot = page.locator('details[data-slot-path="mod_stock/mod_stock_000"]');
@@ -59,7 +55,8 @@ test.describe("quest gating", () => {
     await expect(pill).toHaveAttribute("title", "Assumes I Need More Power is complete");
     await expect(option.getByText("Locked")).toHaveCount(0);
 
-    await page.getByText("Edit profile").click();
+    await openProgression(page);
+    await progressionPanel(page).getByText("Edit profile").click();
     await expect(
       page.getByText(
         "Basic checks trader loyalty only. A quest-locked trader offer counts as unlocked once you reach its loyalty level.",
@@ -77,7 +74,8 @@ test.describe("quest gating", () => {
     await expect(option.getByText("Locked")).toBeVisible();
     await expect(option.getByText("Quest: I Need More Power")).toBeVisible();
 
-    await page.getByText("Edit profile").click();
+    await openProgression(page);
+    await progressionPanel(page).getByText("Edit profile").click();
     // The captures hold three quests that gate gear, and the editor lists exactly those.
     await expect(page.getByText("— 0 of 3 complete")).toBeVisible();
     const quests = page.locator("ul").filter({ has: page.getByLabel("I Need More Power") });

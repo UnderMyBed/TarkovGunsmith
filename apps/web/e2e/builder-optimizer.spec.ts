@@ -5,6 +5,12 @@ import {
   OPTIMIZER_ACCURACY_CHANGED_SLOTS,
   OPTIMIZER_CHANGED_SLOTS,
 } from "./upstream.js";
+import {
+  choosePreset,
+  expectPreset,
+  pickFirstWeapon as pickFirst,
+  pickWeapon,
+} from "./builder-helpers.js";
 
 /**
  * End-to-end coverage for the optimizer-first view.
@@ -19,30 +25,14 @@ import {
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 async function pickFirstWeapon(page: Page): Promise<string | null> {
-  // Several <select> elements render on /builder (profile trader-LL selects in
-  // a collapsed <details> above). Filter to the one with the "Select weapon"
-  // option so we hit the real weapon picker.
-  const picker = page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-  await expect(picker).toBeVisible({ timeout: 15_000 });
-  await expect
-    .poll(async () => await picker.locator("option").count(), { timeout: 15_000 })
-    .toBeGreaterThan(1);
-  const value = await picker.locator("option").nth(1).getAttribute("value");
-  if (!value) return null;
-  await picker.selectOption(value);
+  const name = await pickFirst(page);
   await startEmpty(page);
-  return value;
+  return name || null;
 }
 
 /** New builds start from the weapon's default preset; these tests build from an empty weapon. */
 async function startEmpty(page: Page): Promise<void> {
-  await page
-    .getByRole("group", { name: "Presets" })
-    .getByRole("button", { name: /^Empty/ })
-    .click();
+  await choosePreset(page, /^Empty/);
   await expect(page.getByText("0 attached", { exact: true })).toBeVisible();
 }
 
@@ -52,7 +42,7 @@ test.describe("builder optimizer diff view", () => {
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: /◇ Optimize/i }).click();
+    await page.getByRole("button", { name: "Optimize", exact: true }).click();
     await expect(page).toHaveURL(/\?view=optimize/);
     await expect(page.getByRole("heading", { name: /Optimizer/i })).toBeVisible();
     await expect(page.getByText(/Run the solver/i)).toBeVisible();
@@ -93,7 +83,7 @@ test.describe("builder optimizer diff view", () => {
         "the captured document must offer a weapon on the seeded profile",
       ).toBeTruthy();
 
-      await page.getByRole("button", { name: /◇ Optimize/i }).click();
+      await page.getByRole("button", { name: "Optimize", exact: true }).click();
       await page.getByRole("radio", { name: label }).check();
       await page.getByRole("button", { name: /Re-run optimization/i }).click();
       await expect
@@ -128,7 +118,7 @@ test.describe("builder optimizer diff view", () => {
       return served;
     });
 
-    await page.getByRole("button", { name: /◇ Optimize/i }).click();
+    await page.getByRole("button", { name: "Optimize", exact: true }).click();
     await page.getByRole("button", { name: /Re-run optimization/i }).click();
     const running = page.getByRole("status", { name: "Optimizer running" });
     await expect(running).toBeVisible();
@@ -170,7 +160,7 @@ test.describe("builder optimizer diff view", () => {
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: /◇ Optimize/i }).click();
+    await page.getByRole("button", { name: "Optimize", exact: true }).click();
     const budget = page.getByLabel("Budget");
     await expect(budget).toBeEnabled({ timeout: 15_000 });
     await budget.fill("1");
@@ -193,23 +183,13 @@ test.describe("builder optimizer diff view", () => {
     page,
   }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
-    const picker = page
-      .locator("select")
-      .filter({ has: page.locator('option:has-text("Select weapon")') })
-      .first();
-    await expect
-      .poll(async () => await picker.locator("option").count(), { timeout: 15_000 })
-      .toBeGreaterThan(1);
-    await picker.selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+    await pickWeapon(page);
     await expect(page.getByText(/^[1-9]\d* attached$/)).toBeVisible();
     // The SOPMOD II preset fills slots below optional ones; the default preset does not.
-    const sopmod = page.getByRole("group", { name: "Presets" }).getByRole("button", {
-      name: /^M4A1 SOPMOD II/,
-    });
-    await sopmod.click();
-    await expect(sopmod).toHaveAttribute("aria-pressed", "true");
+    await choosePreset(page, /^M4A1 SOPMOD II/);
+    await expectPreset(page, /^M4A1 SOPMOD II/);
 
-    await page.getByRole("button", { name: /◇ Optimize/i }).click();
+    await page.getByRole("button", { name: "Optimize", exact: true }).click();
     const tree = page.getByRole("list", { name: "Pinned slots" });
     await expect(page.getByText("Nothing pinned")).toBeVisible();
 
@@ -285,7 +265,7 @@ test.describe("builder optimizer diff view", () => {
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: /◇ Optimize/i }).click();
+    await page.getByRole("button", { name: "Optimize", exact: true }).click();
     await expect(page).toHaveURL(/\?view=optimize/);
 
     await page.getByRole("button", { name: /Back to builder editor/ }).click();

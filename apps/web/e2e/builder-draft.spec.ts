@@ -1,6 +1,13 @@
 import type { ConsoleMessage, Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { fixturePresetPartCount } from "./upstream-fixtures.js";
+import {
+  choosePreset,
+  M4A1_LABEL,
+  pickWeapon,
+  presetOption,
+  weaponPicker,
+} from "./builder-helpers.js";
 
 /**
  * The in-progress build survives a reload (#221): `/builder` keeps it in `tg:builder-draft`,
@@ -9,7 +16,6 @@ import { fixturePresetPartCount } from "./upstream-fixtures.js";
  */
 
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
-const M4A1_LABEL = "Colt M4A1 5.56x45 assault rifle";
 const CARBINE = "5af08cf886f774223c269184";
 const DRAFT_KEY = "tg:builder-draft";
 let CARBINE_PARTS: number;
@@ -20,13 +26,6 @@ test.beforeAll(async () => {
 
 function attached(page: Page, count: number) {
   return page.getByText(`${count} attached`, { exact: true });
-}
-
-function weaponPicker(page: Page) {
-  return page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
 }
 
 function consoleErrors(page: Page): string[] {
@@ -42,14 +41,14 @@ test.describe("Builder draft", () => {
   test("a reload restores the build, and New build clears it", async ({ page }) => {
     const errors = consoleErrors(page);
     await page.goto("/builder", { waitUntil: "networkidle" });
-    await weaponPicker(page).selectOption({ label: M4A1_LABEL });
+    await pickWeapon(page);
     await expect(attached(page, CARBINE_PARTS)).toBeVisible({ timeout: 15_000 });
-    await page.getByPlaceholder("Build name (optional)").fill("Night raid");
+    await page.getByLabel("Build name").fill("Night raid");
 
     await page.reload({ waitUntil: "networkidle" });
     await expect(attached(page, CARBINE_PARTS)).toBeVisible({ timeout: 15_000 });
-    await expect(weaponPicker(page)).toHaveValue(M4A1);
-    await expect(page.getByPlaceholder("Build name (optional)")).toHaveValue("Night raid");
+    await expect(weaponPicker(page)).toHaveValue(M4A1_LABEL);
+    await expect(page.getByLabel("Build name")).toHaveValue("Night raid");
 
     await page.getByRole("button", { name: "New build" }).click();
     await page.getByRole("button", { name: "Discard" }).click();
@@ -93,11 +92,10 @@ test.describe("Builder draft", () => {
       }),
     );
     await page.goto("/builder/abcd2348", { waitUntil: "networkidle" });
-    const presets = page.getByRole("group", { name: "Presets" });
-    await expect(presets.getByRole("button", { name: /^Empty/ })).toBeVisible({ timeout: 15_000 });
+    await expect(presetOption(page, /^Empty/)).toHaveCount(1, { timeout: 15_000 });
     await expect(attached(page, 2)).toBeVisible();
 
-    await presets.getByRole("button", { name: /^Empty/ }).click();
+    await choosePreset(page, /^Empty/);
     await page.getByRole("button", { name: "Replace" }).click();
     await expect(attached(page, 0)).toBeVisible();
     await expect(page.getByText("Edited from the shared build")).toBeVisible();

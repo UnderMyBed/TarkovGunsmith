@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ItemAvailability, WeaponPreset } from "@tarkov/data";
 import { tinyTree } from "../../test/tiny-tree.js";
-import { PresetPicker, type PresetPickerProps } from "./preset-picker.js";
+import { PresetSelect, type PresetSelectProps } from "./preset-select.js";
 
 afterEach(() => cleanup());
 
@@ -61,8 +61,8 @@ const KNOWN = new Map(
   ].map((id) => [id, { conflictingItems: [], conflictingSlotIds: [] }]),
 );
 
-function Picker(props: Omit<PresetPickerProps, "tree" | "known">) {
-  return <PresetPicker tree={TREE} known={KNOWN} {...props} />;
+function Picker(props: Omit<PresetSelectProps, "tree" | "known">) {
+  return <PresetSelect tree={TREE} known={KNOWN} {...props} />;
 }
 
 // What `presetAvailability` reads at LL1 for the Carbine: Peacekeeper's LL2 barter.
@@ -75,41 +75,51 @@ const CARBINE_LOCKED: ItemAvailability = {
   preset: { id: CARBINE.id, normalizedName: "colt-m4a1-556x45-assault-rifle-carbine" },
 };
 
-const chip = (name: RegExp) => screen.getByRole("button", { name });
+const select = () => screen.getByRole<HTMLSelectElement>("combobox", { name: "Preset" });
+const selected = () => select().selectedOptions[0]?.textContent;
+const option = (name: RegExp) => screen.getByRole<HTMLOptionElement>("option", { name });
+const choose = (name: RegExp) =>
+  fireEvent.change(select(), { target: { value: option(name).value } });
 
-describe("PresetPicker", () => {
+describe("PresetSelect", () => {
   it("renders nothing for a weapon without presets", () => {
     const { container } = render(<Picker presets={[]} attachments={{}} onApply={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("lists every preset and an empty build, marking the default and the current one", () => {
+  it("lists every preset and an empty build, marking the default and selecting the current one", () => {
     render(<Picker presets={PRESETS} attachments={CARBINE.attachments} onApply={vi.fn()} />);
-    expect(chip(/M4A1 Carbine/)).toHaveAttribute("aria-pressed", "true");
-    expect(chip(/M4A1 Carbine/)).toHaveTextContent("Default");
-    expect(chip(/M4A1 SOPMOD II/)).toHaveAttribute("aria-pressed", "false");
-    expect(chip(/Empty/)).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "M4A1 Carbine (default)",
+      "M4A1 SOPMOD II",
+      "Empty",
+    ]);
+    expect(selected()).toBe("M4A1 Carbine (default)");
   });
 
   it("applies a preset at once when the build matches a preset", () => {
     const onApply = vi.fn();
     render(<Picker presets={PRESETS} attachments={{}} onApply={onApply} />);
-    expect(chip(/Empty/)).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(chip(/M4A1 SOPMOD II/));
+    expect(selected()).toBe("Empty");
+    choose(/M4A1 SOPMOD II/);
     expect(onApply).toHaveBeenCalledWith(SOPMOD.attachments);
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("asks before replacing parts that match no preset", () => {
+  it("reads Custom parts, and asks before replacing parts that match no preset", () => {
     const onApply = vi.fn();
     const ownWork = {
       ...CARBINE.attachments,
       mod_pistol_grip: SOPMOD.attachments.mod_pistol_grip!,
     };
     render(<Picker presets={PRESETS} attachments={ownWork} onApply={onApply} />);
+    expect(selected()).toBe("Custom parts");
+    expect(option(/Custom parts/)).toBeDisabled();
 
-    fireEvent.click(chip(/M4A1 SOPMOD II/));
+    choose(/M4A1 SOPMOD II/);
     expect(onApply).not.toHaveBeenCalled();
+    // The dropdown stays on the player's own parts until they say Replace.
+    expect(selected()).toBe("Custom parts");
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Replace your current parts with M4A1 SOPMOD II?",
     );
@@ -117,7 +127,7 @@ describe("PresetPicker", () => {
     expect(screen.queryByRole("alert")).toBeNull();
     expect(onApply).not.toHaveBeenCalled();
 
-    fireEvent.click(chip(/Empty/));
+    choose(/Empty/);
     fireEvent.click(screen.getByRole("button", { name: "Replace" }));
     expect(onApply).toHaveBeenCalledWith({});
     expect(screen.queryByRole("alert")).toBeNull();
@@ -127,38 +137,50 @@ describe("PresetPicker", () => {
     const reordered = Object.fromEntries(Object.entries(CARBINE.attachments).reverse());
     expect(Object.keys(reordered)).not.toEqual(Object.keys(CARBINE.attachments));
     render(<Picker presets={PRESETS} attachments={reordered} onApply={vi.fn()} />);
-    expect(chip(/M4A1 Carbine/)).toHaveAttribute("aria-pressed", "true");
+    expect(selected()).toBe("M4A1 Carbine (default)");
   });
 
-  it("ignores a stale key no slot shows, so it neither hides the chip nor asks", () => {
+  it("ignores a stale key no slot shows, so it neither hides the match nor asks", () => {
     const onApply = vi.fn();
     // A part left under a slot the build does not show (its parent is gone) is not on the gun.
     const stale = { ...CARBINE.attachments, "mod_stock/mod_stock": "5a33cae9c4a28232980eb086" };
     render(<Picker presets={PRESETS} attachments={stale} onApply={onApply} />);
-    expect(chip(/M4A1 Carbine/)).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(chip(/M4A1 SOPMOD II/));
+    expect(selected()).toBe("M4A1 Carbine (default)");
+    choose(/M4A1 SOPMOD II/);
     expect(screen.queryByRole("alert")).toBeNull();
     expect(onApply).toHaveBeenCalledWith(SOPMOD.attachments);
   });
 
-  it("shows why a preset is locked, and still applies it", () => {
+  it("says how each preset can be bought, why one is locked, and still applies it", () => {
     const onApply = vi.fn();
+    const SOPMOD_BY_TRADER: ItemAvailability = {
+      available: true,
+      kind: "trader",
+      traderNormalizedName: "peacekeeper",
+      minLevel: 1,
+      priceRUB: 60_000,
+      assumedQuest: null,
+      preset: { id: SOPMOD.id, normalizedName: "colt-m4a1-556x45-assault-rifle-sopmod-ii" },
+    };
     render(
       <Picker
         presets={PRESETS}
         attachments={{}}
-        getAvailability={(id) => (id === CARBINE.id ? CARBINE_LOCKED : null)}
+        getAvailability={(id) => (id === CARBINE.id ? CARBINE_LOCKED : SOPMOD_BY_TRADER)}
         onApply={onApply}
       />,
     );
-    expect(chip(/M4A1 Carbine/)).toHaveTextContent("peacekeeper LL2 barter");
-    expect(chip(/M4A1 Carbine/)).toHaveTextContent("Locked");
-    expect(chip(/M4A1 SOPMOD II/)).not.toHaveTextContent("Locked");
-    fireEvent.click(chip(/M4A1 Carbine/));
+    expect(option(/M4A1 Carbine/)).toHaveTextContent(
+      "M4A1 Carbine (default) · Locked · peacekeeper LL2 barter",
+    );
+    expect(option(/M4A1 SOPMOD II/)).toHaveTextContent("M4A1 SOPMOD II · LL1");
+    // Locked is said, never enforced: the preset can still be chosen.
+    expect(option(/M4A1 Carbine/)).toBeEnabled();
+    choose(/M4A1 Carbine/);
     expect(onApply).toHaveBeenCalledWith(CARBINE.attachments);
   });
 
-  it("in theorycraft, shows a preset nothing sells neither dimmed nor Locked", () => {
+  it("in theorycraft, says nothing of a preset nothing sells; progression says it is locked", () => {
     const noSources: ItemAvailability = { available: false, reason: "no-sources" };
     const { rerender } = render(
       <Picker
@@ -169,10 +191,7 @@ describe("PresetPicker", () => {
         onApply={vi.fn()}
       />,
     );
-    expect(chip(/M4A1 Carbine/)).not.toHaveTextContent("Locked");
-    expect(chip(/M4A1 Carbine/)).not.toHaveTextContent("No sources");
-    // Dimming has no accessible signal; its class is the only observable.
-    expect(chip(/M4A1 Carbine/)).not.toHaveClass("opacity-60");
+    expect(option(/M4A1 Carbine/)).toHaveTextContent(/^M4A1 Carbine \(default\)$/);
 
     rerender(
       <Picker
@@ -183,7 +202,8 @@ describe("PresetPicker", () => {
         onApply={vi.fn()}
       />,
     );
-    expect(chip(/M4A1 Carbine/)).toHaveTextContent("Locked");
-    expect(chip(/M4A1 Carbine/)).toHaveClass("opacity-60");
+    expect(option(/M4A1 Carbine/)).toHaveTextContent(
+      "M4A1 Carbine (default) · Locked · No sources",
+    );
   });
 });
