@@ -131,19 +131,22 @@ function barrelExtremes(parts: ReadonlyMap<string, AttachablePart>): BarrelExtre
  * deviation factor, a the summed `accuracyModifier`. That is a product, so no exact additive
  * delta exists without the running C and a, which this function is not given. It returns a
  * looser one that is still a lower bound. Over the remaining slots C can only grow (every
- * `centerOfImpact` is ≥ 0) and a grows by at most A = `sumAccuracy`, so with C_r, a_r, D_r the
- * running values:
+ * `centerOfImpact` is ≥ 0) and a grows by at most A = `sumAccuracy`. A can be negative (a
+ * pinned slot offers only its pinned part, and a pinned suppressor's is −0.05); using
+ * A⁺ = max(A, 0) in its place only loosens the bound, and keeps the bracket below non-negative.
+ * With C_r, a_r, D_r the running values:
  *
- *   final − running ≥ K·D_lo·C_r·(1 − a_r − A) − K·D_hi·C_r·(1 − a_r)
- *                   = −K·C_r·((D_hi − D_lo)(1 − a_r) + D_lo·A)
- *                   ≥ −K·C_hi·(2(D_hi − D_lo) + D_lo·A)
+ *   final − running ≥ K·D_lo·C_r·(1 − a_r − A⁺) − K·D_hi·C_r·(1 − a_r)
+ *                   = −K·C_r·((D_hi − D_lo)(1 − a_r) + D_lo·A⁺)
+ *                   ≥ −K·C_hi·(2(D_hi − D_lo) + D_lo·A⁺)
  *
  * where D_lo / D_hi are D at the smallest and largest `deviationMax` in reach (D grows with
- * it), and C_hi = the weapon's `centerOfImpact` + the largest barrel's. That last step rests
- * on three facts about the data, each measured on the live document: a build mounts at most
- * one barrel (the only part type with a `centerOfImpact`; `pnpm verify:upstream` checks every
- * weapon), and |a| stays below 1 (per part, live -0.05..0.1), so 1 − a_r ≤ 2 and
- * 1 − a_r − A ≥ 0.
+ * it), and C_hi = the weapon's `centerOfImpact` + the largest barrel's anywhere in the catalog.
+ * The last step needs the bracket non-negative and C_r ≤ C_hi, which rest on facts about the
+ * data, each measured on the live document: a build mounts at most one barrel (the only part
+ * type with a `centerOfImpact`; `pnpm verify:upstream` checks every weapon), and every SUM of
+ * accuracy modifiers a build can reach lies in (−1, 1), so 1 − a_r ≤ 2 and 1 − a_r − A⁺ ≥ 0.
+ * Per part the live range is −0.05..0.1.
  */
 function accuracyBound(
   weapon: BallisticWeapon,
@@ -155,7 +158,7 @@ function accuracyBound(
   const lo = barrelDeviation(weapon.deviationCurve, minDeviationMax);
   const hi = barrelDeviation(weapon.deviationCurve, maxDeviationMax);
   const maxCenter = weapon.centerOfImpact + maxCenterOfImpact;
-  return -moaPerCm * maxCenter * (2 * (hi - lo) + lo * sumAccuracy);
+  return -moaPerCm * maxCenter * (2 * (hi - lo) + lo * Math.max(sumAccuracy, 0));
 }
 
 function bestContribution(

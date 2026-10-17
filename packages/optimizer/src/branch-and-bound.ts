@@ -97,9 +97,7 @@ function dfs(
     if (
       best.value === null ||
       leafScore < best.value.score ||
-      // v8 ignore next — unreachable with tight bound + `>=` pruning;
-      // kept as a safety net for future looser heuristics. See
-      // tieBreakBetter's docblock.
+      // Never true today: see tieBreakBetter.
       (leafScore === best.value.score && tieBreakBetter(runningPrice, attachments, best.value))
     ) {
       best.value = {
@@ -210,11 +208,13 @@ function singleItemScore(objective: Objective, item: AttachablePart | null): num
   }
 }
 
-// Defensive tie-break for identical-score leaves. With the current tight
-// linear lower bound and `>=` pruning, equal-score sibling branches are
-// always pruned BEFORE reaching a leaf — so these helpers are structurally
-// unreachable today. They remain as a safety net for future objectives /
-// loose bounds that could legitimately produce score ties at leaves.
+// Tie-break for identical-score leaves: the cheaper build, then the lower
+// stable key. Unreachable for every objective, however loose its bound: the
+// pruning step before a leaf has no slots remaining, so its bound is exactly
+// 0, and `>=` prunes a candidate whose leaf score equals the best before the
+// leaf is visited. Kept so that a change to that pruning step (a `>` instead
+// of `>=`, or a bound check skipped at the last slot) still ranks ties
+// deterministically.
 /* v8 ignore start */
 function tieBreakBetter(
   newPrice: number,
