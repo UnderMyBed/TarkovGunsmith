@@ -499,6 +499,7 @@ describe("buildBuilderSnapshot on drift", () => {
     m4Slots[1]!.name = "";
     m4Slots[2]!.filters = { allowed: m4Slots[2]!.filters!.allowedItems };
     m4Slots[3]!.id = 7;
+    m4Slots[4]!.required = "true";
     (m4Slots as unknown[]).push(null);
     (items[PM]!.properties as Record<string, unknown>).slots = { mod_magazine: {} };
     const at = `items/${M4A1}: properties.slots`;
@@ -507,6 +508,7 @@ describe("buildBuilderSnapshot on drift", () => {
       `${at}[1].name is not a non-empty string`,
       `${at}[2].filters.allowedItems is not an array`,
       `${at}[3].id is not a non-empty string`,
+      `${at}[4].required is not a boolean`,
       `${at}[${m4Slots.length - 1}] is not an object`,
       `items/${PM}: properties.slots is not an array`,
       // With those slots gone, the weapons' presets no longer place.
