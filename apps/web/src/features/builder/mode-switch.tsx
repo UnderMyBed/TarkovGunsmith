@@ -27,6 +27,8 @@ export interface ModeSwitchProps {
 export function ModeSwitch({ progression, onOpenPanel, busyId }: ModeSwitchProps): ReactElement {
   const { mode, hasProfile, setMode } = progression;
   const busy = busyId !== undefined;
+  // "My progression…" switches straight back to a profile set aside; otherwise it opens the panel.
+  const opensPanel = !(mode === "theorycraft" && hasProfile);
   const half = (pressed: boolean) =>
     cn(
       "h-11 px-3.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50",
@@ -54,12 +56,13 @@ export function ModeSwitch({ progression, onOpenPanel, busyId }: ModeSwitchProps
       <button
         type="button"
         aria-pressed={mode === "progression"}
+        aria-haspopup={opensPanel ? "dialog" : undefined}
         disabled={busy}
         aria-describedby={busyId}
         className={half(mode === "progression")}
         onClick={() => {
-          if (mode === "theorycraft" && hasProfile) setMode("progression");
-          else onOpenPanel();
+          if (opensPanel) onOpenPanel();
+          else setMode("progression");
         }}
       >
         My progression…

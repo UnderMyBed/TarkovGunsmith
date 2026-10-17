@@ -36,6 +36,7 @@ describe("ModeSwitch", () => {
 
   it("opens the panel when there is no profile to switch to", async () => {
     const { setMode, onOpenPanel } = renderSwitch("theorycraft", false);
+    expect(progression()).toHaveAttribute("aria-haspopup", "dialog");
     await userEvent.setup().click(progression());
     expect(onOpenPanel).toHaveBeenCalledOnce();
     expect(setMode).not.toHaveBeenCalled();
@@ -43,6 +44,7 @@ describe("ModeSwitch", () => {
 
   it("switches straight back to a profile already set", async () => {
     const { setMode, onOpenPanel } = renderSwitch("theorycraft", true);
+    expect(progression()).not.toHaveAttribute("aria-haspopup");
     await userEvent.setup().click(progression());
     expect(setMode).toHaveBeenCalledWith("progression");
     expect(onOpenPanel).not.toHaveBeenCalled();
@@ -51,6 +53,7 @@ describe("ModeSwitch", () => {
   it("opens the panel to edit the profile when already in progression, and switches to theorycraft", async () => {
     const user = userEvent.setup();
     const { setMode, onOpenPanel } = renderSwitch("progression", true);
+    expect(progression()).toHaveAttribute("aria-haspopup", "dialog");
     await user.click(progression());
     expect(onOpenPanel).toHaveBeenCalledOnce();
     await user.click(theorycraft());

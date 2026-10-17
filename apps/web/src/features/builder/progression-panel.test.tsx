@@ -18,7 +18,14 @@ import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
 // The profile editor has its own tests (`profile-editor.test.tsx`) and reads the quest list
 // through the data provider; here it is only something the panel holds.
 vi.mock("./profile-editor.js", () => ({
-  ProfileEditor: () => <p>Profile editor</p>,
+  ProfileEditor: ({ sync }: { sync: { reSync: () => Promise<void> } }) => (
+    <>
+      <p>Profile editor</p>
+      <button type="button" onClick={() => void sync.reSync()}>
+        Editor re-sync
+      </button>
+    </>
+  ),
 }));
 
 const PROFILE_KEY = "tg:player-profile";
@@ -363,5 +370,28 @@ describe("the progression controls in theorycraft with a profile set", () => {
     expect(screen.queryByText("Set your progression.")).not.toBeInTheDocument();
     expect(latestProfile().traders.jaeger).toBe(3);
     expect(window.localStorage.getItem(MODE_KEY)).toBe("theorycraft");
+  });
+});
+
+describe("the progression controls when a re-sync fails with a profile set", () => {
+  it("say so on the page once the panel is closed", async () => {
+    window.localStorage.setItem(PROFILE_KEY, JSON.stringify(DEFAULT_PROFILE));
+    window.localStorage.setItem(MODE_KEY, "progression");
+    window.localStorage.setItem("tg:tarkovtracker-token", "tok-123");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 429 })));
+    render(<Harness />);
+
+    openPanel();
+    await act(async () => {
+      fireEvent.click(within(panel()).getByRole("button", { name: "Editor re-sync" }));
+      fireEvent.click(within(panel()).getByRole("button", { name: "Done" }));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(await screen.findByText(/rate-limiting/)).toBeInTheDocument();
+    // The profile and the mode stand: only the sync failed.
+    expect(screen.getByTestId("mode")).toHaveTextContent("progression");
+    expect(screen.queryByText("Set your progression.")).not.toBeInTheDocument();
   });
 });

@@ -21,8 +21,9 @@ export interface ProgressionStatusProps {
  *
  * With no profile set, the first visit's prompt: everything is unlocked, and the progression
  * panel is one click away. An import started there and still under way, failed, or left
- * after a reload shows its progress, its error and its Re-sync here too. While any sync is in
- * flight, the note the disabled mode controls point at.
+ * after a reload shows its progress, its error and its Re-sync here too. A failed sync shows
+ * here whether or not a profile is set. While any sync is in flight, the note the disabled
+ * mode controls point at.
  */
 export function ProgressionStatus({
   progression,
@@ -30,9 +31,13 @@ export function ProgressionStatus({
   onOpenPanel,
   busyId,
 }: ProgressionStatusProps): ReactElement | null {
-  const firstImport =
-    !progression.hasProfile && sync.state !== "disconnected" && sync.state !== "synced";
-  if (progression.hasProfile && busyId === undefined) return null;
+  // A first import shows its progress here. Any failed sync shows here too: with a profile set,
+  // a re-sync started in the panel can fail after the panel is closed, and the banner inside the
+  // panel would then say so to no one.
+  const banner =
+    (!progression.hasProfile && sync.state !== "disconnected" && sync.state !== "synced") ||
+    sync.state === "error";
+  if (progression.hasProfile && busyId === undefined && !banner) return null;
   return (
     <div className="flex flex-col gap-2">
       {!progression.hasProfile && (
@@ -54,7 +59,7 @@ export function ProgressionStatus({
           </Button>
         </div>
       )}
-      {firstImport && <TarkovTrackerSyncBanner sync={sync} />}
+      {banner && <TarkovTrackerSyncBanner sync={sync} />}
       {busyId !== undefined && (
         <p id={busyId} role="status" className="text-xs text-[var(--color-muted-foreground)]">
           Importing from TarkovTracker…
