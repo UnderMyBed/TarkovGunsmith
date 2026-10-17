@@ -127,3 +127,34 @@ describe("BuildHeader accuracy", () => {
     expect(row.querySelector("span")).toBeNull();
   });
 });
+
+describe("BuildHeader flags", () => {
+  const base = {
+    name: "",
+    description: "",
+    onNameChange: () => {},
+    onDescriptionChange: () => {},
+    currentSpec: null,
+    stockSpec: null,
+  };
+
+  it("flags an incomplete build, naming the empty required slots", () => {
+    render(<BuildHeader {...base} missingRequired={["Barrel", "Gas block"]} />);
+    const pill = screen.getByText(/Incomplete/);
+    expect(pill).toHaveTextContent("Incomplete · 2 required empty");
+    expect(pill).toHaveAttribute("title", "Required slots empty: Barrel, Gas block");
+  });
+
+  it("flags clashing parts, listing each pair", () => {
+    render(<BuildHeader {...base} conflicts={["ADAR stock × M4SS"]} />);
+    const pill = screen.getByText(/Conflict/);
+    expect(pill).toHaveTextContent("Conflict · 1");
+    expect(pill).toHaveAttribute("title", "ADAR stock × M4SS");
+  });
+
+  it("shows neither for a complete build with no clash", () => {
+    render(<BuildHeader {...base} />);
+    expect(screen.queryByText(/Incomplete/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Conflict/)).not.toBeInTheDocument();
+  });
+});

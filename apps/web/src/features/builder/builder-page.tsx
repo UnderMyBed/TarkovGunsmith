@@ -109,6 +109,8 @@ export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPa
         weaponName={builder.selectedWeapon?.shortName ?? builder.selectedWeapon?.name ?? null}
         weaponId={builder.weaponId || null}
         modCount={builder.attachedCount}
+        missingRequired={builder.selectedWeapon ? builder.missingRequired : []}
+        conflicts={builder.conflicts}
         sharedId={shareBuild.shareUrl?.split("/").pop() ?? null}
         onCompare={builder.selectedWeapon ? compareHandoff.open : undefined}
         onOptimize={builder.selectedWeapon ? handleOpenOptimizer : undefined}
@@ -189,6 +191,7 @@ export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPa
                 onAttach={builder.handleAttach}
                 getAvailability={(id) => builder.availabilityById.get(id) ?? null}
                 getConflict={builder.getConflict}
+                getFittedConflict={builder.getFittedConflict}
                 orphaned={builder.orphaned}
                 modNames={builder.modNamesById}
                 onDismissOrphaned={builder.clearOrphaned}

@@ -26,7 +26,7 @@ import { Card, CardContent, SectionTitle, WeaponSilhouette } from "@tarkov/ui";
 import { adaptMod, adaptWeapon } from "../../data-adapters/adapters.js";
 import { SlotTree } from "../slot-tree.js";
 import { OrphanedBanner } from "../orphaned-banner.js";
-import { conflictReasonFor } from "../conflict-reason.js";
+import { conflictReasonFor, fittedConflictReasonFor } from "../conflict-reason.js";
 
 export interface CompareSideProps {
   /** Display label for this column (A = left, B = right). */
@@ -73,6 +73,18 @@ export function CompareSide({
   const getConflict = useMemo(
     () => (tree.data && attachments ? conflictReasonFor(tree.data, attachments, byId) : undefined),
     [tree.data, attachments, byId],
+  );
+
+  const resolved = useMemo(
+    () =>
+      ctx && build && ctx.tree.weaponId === build.weaponId
+        ? resolveBuild(ctx.tree, build.attachments, byId)
+        : null,
+    [ctx, build, byId],
+  );
+  const getFittedConflict = useMemo(
+    () => fittedConflictReasonFor(resolved?.conflicts ?? [], (id) => byId.get(id)?.shortName ?? id),
+    [resolved, byId],
   );
 
   const weaponOptions = useMemo(() => {
@@ -225,6 +237,7 @@ export function CompareSide({
                   onAttach={handleAttach}
                   getAvailability={getAvailability}
                   getConflict={getConflict}
+                  getFittedConflict={getFittedConflict}
                   diff={diff ?? undefined}
                 />
               )}
@@ -237,8 +250,9 @@ export function CompareSide({
 }
 
 /**
- * The section-title count: parts on the weapon, never stale keys under a removed part. A
- * non-empty build needs its slot tree to know which keys those are.
+ * The section-title meta: parts on the weapon, never stale keys under a removed part, then
+ * "incomplete" when a required slot is empty and "conflict" when two fitted parts clash. Both
+ * need the build's slot tree.
  */
 function attachedMeta(
   build: BuildV6 | null,
@@ -247,8 +261,15 @@ function attachedMeta(
   parts: ReadonlyMap<string, AttachablePart>,
 ): string {
   if (!build) return "empty";
+  if (tree?.weaponId === build.weaponId) {
+    const r = resolveBuild(tree, build.attachments, parts);
+    return [
+      `${r.placed.length} attached`,
+      ...(r.missingRequired.length > 0 ? ["incomplete"] : []),
+      ...(r.conflicts.length > 0 ? ["conflict"] : []),
+    ].join(" · ");
+  }
   if (Object.keys(build.attachments).length === 0) return "0 attached";
-  if (tree) return `${resolveBuild(tree, build.attachments, parts).placed.length} attached`;
   return treeError ? "slot tree unavailable" : "loading";
 }
 

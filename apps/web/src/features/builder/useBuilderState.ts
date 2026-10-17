@@ -29,7 +29,7 @@ import {
 import type { MountedMagazine } from "@tarkov/data";
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import { adaptMod, adaptWeapon, mountedMagazine } from "../data-adapters/adapters.js";
-import { conflictReasonFor } from "./conflict-reason.js";
+import { conflictReasonFor, fittedConflictReasonFor } from "./conflict-reason.js";
 import { priceBuild, pricesStatus, type PricesStatus } from "./build-price.js";
 
 /**
@@ -91,6 +91,12 @@ export interface UseBuilderStateResult {
   modNamesById: Record<string, string>;
   /** Why a part cannot go at a slot path given the current build, or `null`. */
   getConflict: (path: string, itemId: string) => string | null;
+  /** For a fitted part, which fitted part it clashes with, or `null`. */
+  getFittedConflict: (path: string) => string | null;
+  /** Labels of the required slots the build leaves empty. */
+  missingRequired: readonly string[];
+  /** One line per pair of fitted parts that clash, by short name: "ADAR stock × M4SS". */
+  conflicts: readonly string[];
   availabilityById: Map<string, ReturnType<typeof itemAvailability>>;
 
   spec: WeaponSpec | null;
@@ -237,6 +243,12 @@ export function useBuilderState({
     [tree.data, attachments, byId],
   );
 
+  const shortNameOf = (id: string) => byId.get(id)?.shortName ?? id;
+  const getFittedConflict = useMemo(
+    () => fittedConflictReasonFor(resolved?.conflicts ?? [], (id) => byId.get(id)?.shortName ?? id),
+    [resolved, byId],
+  );
+
   const weaponPresets = presets.data?.[weaponId] ?? NO_PRESETS;
   const buildPrice = useMemo(
     () =>
@@ -290,6 +302,11 @@ export function useBuilderState({
     acceptOptimized,
     modNamesById,
     getConflict,
+    getFittedConflict,
+    missingRequired: resolved?.missingRequired.map((slot) => slot.label) ?? [],
+    conflicts:
+      resolved?.conflicts.map((c) => `${shortNameOf(c.a.itemId)} × ${shortNameOf(c.b.itemId)}`) ??
+      [],
     availabilityById,
 
     spec,
