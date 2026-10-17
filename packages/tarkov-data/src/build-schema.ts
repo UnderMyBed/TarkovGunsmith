@@ -41,6 +41,14 @@ export const BuildV2 = z.object({
 
 export type BuildV2 = z.infer<typeof BuildV2>;
 
+/**
+ * The most quests a profile's `completedQuests` holds. Above upstream's whole task list (504 on
+ * 2026-10-16), so no real list fails to parse: a stored profile that fails is reset to the
+ * default, and a saved build that fails no longer loads. Loosening it is safe; tightening it
+ * is a persisted schema change.
+ */
+export const COMPLETED_QUESTS_CAP = 1024;
+
 export const PlayerProfile = z.object({
   mode: z.enum(["basic", "advanced"]),
   traders: z.object({
@@ -72,7 +80,7 @@ export const PlayerProfile = z.object({
    * not a claim about the game cap.
    */
   level: z.number().int().min(1).max(99).default(1),
-  completedQuests: z.array(z.string().min(1)).max(256).optional(),
+  completedQuests: z.array(z.string().min(1)).max(COMPLETED_QUESTS_CAP).optional(),
 });
 
 export type PlayerProfile = z.infer<typeof PlayerProfile>;

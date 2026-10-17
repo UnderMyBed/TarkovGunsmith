@@ -3,9 +3,18 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ItemAvailability, WeaponTree } from "@tarkov/data";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  buildBuilderSnapshot,
+  staticBuilderDataSource,
+  TarkovDataProvider,
+  type ItemAvailability,
+  type TarkovJsonClient,
+  type WeaponTree,
+} from "@tarkov/data";
 import { tinyTree, type SlotSpec } from "../../test/tiny-tree.js";
 import { SlotTree } from "./slot-tree.js";
+import { QuestNameProvider } from "./quest-names.js";
 
 afterEach(() => cleanup());
 
@@ -87,6 +96,7 @@ const AVAILABLE_TRADER: ItemAvailability = {
   minLevel: 1,
   priceRUB: 3000,
   preset: null,
+  assumedQuest: null,
 };
 const AVAILABLE_FLEA: ItemAvailability = { available: true, kind: "flea", priceRUB: 4500 };
 
@@ -319,6 +329,7 @@ describe("SlotTree — availability", () => {
         priceRUB: 11406,
         barterId: "6ad1e5fdef48f022220a3f0c3",
         preset: null,
+        assumedQuest: null,
       }),
     });
     const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
@@ -377,7 +388,8 @@ describe("SlotTree — availability", () => {
         payment: "cash",
         preset: null,
       },
-      "Quest: gunsmith-master-part-1",
+      // Outside a QuestNameProvider no name is known; the slug is never shown.
+      "Quest",
     ],
     [
       "a flea-market player-level gate",
@@ -599,5 +611,77 @@ describe("SlotTree — arrow-key navigation", () => {
     muzzle.focus();
     await user.keyboard("x");
     expect(muzzle).toHaveFocus();
+  });
+});
+
+describe("SlotTree — quests", () => {
+  /** A Builder snapshot whose task list names one quest, as the snapshot's gating list does. */
+  function renderWithQuests(getAvailability: (id: string) => ItemAvailability | null) {
+    const { snapshot, prices } = buildBuilderSnapshot(
+      {
+        items: { items: { stamp: { id: "stamp", updated: "2026-10-16T00:00:00.000Z" } } },
+        tasks: { tasks: {} },
+        traders: {},
+        barters: [],
+      },
+      "fixtures",
+    );
+    const builderData = staticBuilderDataSource(
+      {
+        ...snapshot,
+        tasks: [
+          {
+            id: "5a03296886f774569778596a",
+            name: "I Need More Power",
+            normalizedName: "i-need-more-power",
+            kappaRequired: false,
+            trader: { normalizedName: "peacekeeper" },
+          },
+        ],
+      },
+      prices,
+    );
+    const noClient: TarkovJsonClient = {
+      fetchResource: (resource) => Promise.reject(new Error(`unexpected fetch of ${resource}`)),
+    };
+    return render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TarkovDataProvider client={noClient} builderData={builderData}>
+          <QuestNameProvider>
+            <SlotTree
+              tree={DEFAULT_TREE}
+              attachments={{}}
+              onAttach={vi.fn()}
+              getAvailability={getAvailability}
+            />
+          </QuestNameProvider>
+        </TarkovDataProvider>
+      </QueryClientProvider>,
+    );
+  }
+
+  it("marks an option whose quest basic mode assumes, and names the quest", async () => {
+    renderWithQuests(() => ({
+      ...AVAILABLE_TRADER,
+      minLevel: 3,
+      assumedQuest: "i-need-more-power",
+    }));
+    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
+    const pill = within(option).getByText("LL3 · QUEST");
+    expect(await within(option).findByTitle("Assumes I Need More Power is complete")).toBe(pill);
+  });
+
+  it("names a missing quest by its display name, never its slug", async () => {
+    renderWithQuests(() => ({
+      available: false,
+      reason: "quest-required",
+      questNormalizedName: "i-need-more-power",
+      traderNormalizedName: "peacekeeper",
+      payment: "cash",
+      preset: null,
+    }));
+    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
+    expect(await within(option).findByText("Quest: I Need More Power")).toBeInTheDocument();
+    expect(within(option).queryByText(/i-need-more-power/)).not.toBeInTheDocument();
   });
 });

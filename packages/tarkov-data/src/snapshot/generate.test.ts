@@ -6,11 +6,13 @@ import {
   buildBuilderSnapshot,
   fetchSnapshotDocuments,
   floorProblems,
+  gatingQuestProblems,
   SnapshotDriftError,
   type SnapshotDocuments,
 } from "./generate.js";
 import { snapshotPartCatalog, snapshotWeaponList } from "./views.js";
 import { UPSTREAM_FLOORS } from "./limits.js";
+import { COMPLETED_QUESTS_CAP } from "../build-schema.js";
 import type { Barter } from "../queries/barters.js";
 import type { ItemsDocument } from "../queries/documents.js";
 import type { PriceTable } from "../prices/table.js";
@@ -67,8 +69,8 @@ describe("buildBuilderSnapshot over the captured documents", () => {
       .map((i) => i.updated ?? "")
       .sort()
       .at(-1);
-    expect(snapshot).toMatchObject({ schema: 3, source: "fixtures", dataAsOf: newest });
-    expect(prices).toMatchObject({ schema: 3, source: "fixtures", dataAsOf: newest });
+    expect(snapshot).toMatchObject({ schema: 4, source: "fixtures", dataAsOf: newest });
+    expect(prices).toMatchObject({ schema: 4, source: "fixtures", dataAsOf: newest });
   });
 
   it("keeps buildable weapons only, sorted by id", async () => {
@@ -134,10 +136,23 @@ describe("buildBuilderSnapshot over the captured documents", () => {
     expect(snapshot.ingredientNames).not.toHaveProperty(M4A1);
   });
 
-  it("joins tasks to their trader and keeps every trader", async () => {
-    const { snapshot } = buildBuilderSnapshot(await docs(), "fixtures");
-    expect(snapshot.tasks.map((t) => t.normalizedName)).toContain("gunsmith-m4a1");
-    for (const task of snapshot.tasks) expect(task.trader.normalizedName).not.toBe("");
+  it("keeps exactly the tasks that gate an offer, joined to their trader, and every trader", async () => {
+    const input = await docs();
+    const { snapshot } = buildBuilderSnapshot(input, "fixtures");
+    // The captures hold 7 tasks; 3 of them gate an offer on a captured part.
+    expect(Object.keys(input.tasks.tasks)).toHaveLength(7);
+    expect(snapshot.tasks.map((t) => [t.normalizedName, t.trader.normalizedName])).toEqual([
+      ["gunsmith-master-part-7", "mechanic"],
+      ["i-need-more-power", "peacekeeper"],
+      ["night-sweep", "skier"],
+    ]);
+    const gating = new Set(
+      Object.values(snapshot.offers)
+        .flat()
+        .flatMap((o) => (o.kind !== "flea" && o.vendor.taskUnlock ? [o.vendor.taskUnlock] : []))
+        .map((q) => q.normalizedName),
+    );
+    expect([...gating].sort()).toEqual(snapshot.tasks.map((t) => t.normalizedName));
     expect(snapshot.traders.map((t) => t.normalizedName)).toEqual(
       expect.arrayContaining(["prapor", "ref", "fence"]),
     );
@@ -599,6 +614,7 @@ describe("buildBuilderSnapshot from upstream", () => {
     const all = Object.values(snapshot.offers).flat();
     const presetOffers = all.filter((o) => o.kind !== "flea" && o.preset !== undefined).length;
     const barterOffers = all.filter((o) => o.kind === "barter").length;
+    const questOffers = all.filter((o) => o.kind !== "flea" && o.vendor.taskUnlock !== null).length;
     const note = "rows went unrecognised";
     const input = await docs();
     expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual([
@@ -607,10 +623,12 @@ describe("buildBuilderSnapshot from upstream", () => {
       `floors: presetOffers ${presetOffers}, below the floor of ${UPSTREAM_FLOORS.presetOffers}; ${note}`,
       `floors: presetWeapons ${Object.keys(snapshot.presets).length}, below the floor of ${UPSTREAM_FLOORS.presetWeapons}; ${note}`,
       `floors: presets ${Object.values(snapshot.presets).flat().length}, below the floor of ${UPSTREAM_FLOORS.presets}; ${note}`,
+      `floors: questOffers ${questOffers}, below the floor of ${UPSTREAM_FLOORS.questOffers}; ${note}`,
       `floors: weapons ${snapshot.weapons.length}, below the floor of ${UPSTREAM_FLOORS.weapons}; ${note}`,
     ]);
     expect(presetOffers).toBeGreaterThan(0);
     expect(barterOffers).toBeGreaterThan(0);
+    expect(questOffers).toBe(3);
   });
 });
 
@@ -622,6 +640,7 @@ describe("floorProblems", () => {
     barterOffers: 304,
     presets: 399,
     presetWeapons: 164,
+    questOffers: 90,
   };
   it("passes live-sized counts, and counts exactly at a floor", () => {
     expect(floorProblems(live)).toEqual([]);
@@ -631,6 +650,16 @@ describe("floorProblems", () => {
   it("names each count below its floor", () => {
     expect(floorProblems({ ...live, parts: 0 })).toEqual([
       `floors: parts 0, below the floor of ${UPSTREAM_FLOORS.parts}; rows went unrecognised`,
+    ]);
+  });
+});
+
+describe("gatingQuestProblems", () => {
+  it("passes up to a profile's completedQuests cap and names a count above it", () => {
+    expect(gatingQuestProblems(71)).toEqual([]);
+    expect(gatingQuestProblems(COMPLETED_QUESTS_CAP)).toEqual([]);
+    expect(gatingQuestProblems(4, 3)).toEqual([
+      "tasks: 4 quests gate an offer, more than a profile can record (3)",
     ]);
   });
 });

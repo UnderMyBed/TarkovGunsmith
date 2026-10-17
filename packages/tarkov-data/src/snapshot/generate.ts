@@ -33,6 +33,7 @@ import {
   type SnapshotWeapon,
 } from "./types.js";
 import { UPSTREAM_FLOORS } from "./limits.js";
+import { COMPLETED_QUESTS_CAP } from "../build-schema.js";
 
 /** The translated upstream documents a snapshot is built from. */
 export interface SnapshotDocuments {
@@ -167,6 +168,16 @@ export function floorProblems(
 }
 
 /**
+ * A problem when more quests gate offers than a profile's `completedQuests` can hold: past
+ * that, a player could not record every quest the Builder asks about.
+ */
+export function gatingQuestProblems(count: number, cap: number = COMPLETED_QUESTS_CAP): string[] {
+  return count > cap
+    ? [`tasks: ${count} quests gate an offer, more than a profile can record (${cap})`]
+    : [];
+}
+
+/**
  * Problems with one reached owner's raw slots. The slot graph reads slots leniently — a slot
  * without a `nameId` or `allowedItems` simply offers nothing, one without a boolean `required`
  * is optional — so a renamed slot field would otherwise ship a Builder with empty slots, slot
@@ -203,7 +214,8 @@ function slotShapeProblems(ownerId: string, raw: unknown): string[] {
  * documents.
  *
  * Strict for everything the snapshot holds or derives from: every trader and task, and their
- * names; every buildable weapon; every part a weapon's slots reach, its `conflictingSlotIds`
+ * names (only the tasks that gate an offer are kept, and no more of them than a profile can
+ * record); every buildable weapon; every part a weapon's slots reach, its `conflictingSlotIds`
  * and `updated`; the slots of every reached item (`id`, `nameId`, `name`, `required`,
  * `filters.allowedItems`); every preset's `baseItem`, and the `normalizedName` of each preset
  * of a snapshot item; every buildable weapon's presets, which must place into the slot graph
@@ -391,6 +403,18 @@ export function buildBuilderSnapshot(
   const offers = new Map<string, UnpricedOffer[]>();
   for (const { id } of [...weapons, ...parts]) offers.set(id, collect(items[id]));
 
+  // The quests a profile can mark done are the ones that gate an offer here; nothing else in
+  // the snapshot reads a task.
+  const gatingQuests = new Set<string>();
+  for (const list of offers.values()) {
+    for (const offer of list) {
+      if (offer.kind !== "flea" && offer.vendor.taskUnlock !== null) {
+        gatingQuests.add(offer.vendor.taskUnlock.normalizedName);
+      }
+    }
+  }
+  gatingQuestProblems(gatingQuests.size).forEach(fail);
+
   // Every buildable weapon's presets, placed into the same slot graph. A preset that fails
   // its schema or cannot be placed, and a weapon without exactly one default, is drift: a
   // weapon silently left without its presets would start new builds empty.
@@ -465,6 +489,7 @@ export function buildBuilderSnapshot(
       barterOffers: all.filter((o) => o.kind === "barter").length,
       presets: Object.values(presets).flat().length,
       presetWeapons: Object.keys(presets).length,
+      questOffers: all.filter((o) => o.kind !== "flea" && o.vendor.taskUnlock !== null).length,
     };
     for (const problem of floorProblems(counts)) fail(problem);
   }
@@ -484,7 +509,9 @@ export function buildBuilderSnapshot(
     ingredientNames: sortedRecord(ingredientNames),
     traders: traders.sort(byId),
     // Stable sort, so tasks sharing a normalizedName keep the document's order.
-    tasks: tasks.sort((a, b) => compareStrings(a.normalizedName, b.normalizedName)),
+    tasks: tasks
+      .filter((t) => gatingQuests.has(t.normalizedName))
+      .sort((a, b) => compareStrings(a.normalizedName, b.normalizedName)),
   };
   const prices: BuilderPrices = {
     schema: BUILDER_SNAPSHOT_SCHEMA,

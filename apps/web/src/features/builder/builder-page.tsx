@@ -2,6 +2,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
 import { presetAvailability, useProfile, useTasks, type BuildV6 } from "@tarkov/data";
+import { QuestNameProvider } from "./quest-names.js";
 import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
 import { Button, Card, CardContent } from "@tarkov/ui";
 import { adaptWeapon } from "../data-adapters/adapters.js";
@@ -55,7 +56,12 @@ export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPa
 
   const [profile, setProfile] = useProfile();
   const tasks = useTasks();
-  const sync = useTarkovTrackerSync({ profile, onChange: setProfile, tasks: tasks.data });
+  const sync = useTarkovTrackerSync({
+    profile,
+    onChange: setProfile,
+    tasks: tasks.data,
+    tasksError: tasks.error,
+  });
 
   const saveMeta = useSaveMetadata(initialBuild?.name, initialBuild?.description);
 
@@ -98,159 +104,161 @@ export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPa
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <BuildHeader
-        name={saveMeta.buildName}
-        description={saveMeta.buildDescription}
-        onNameChange={saveMeta.setBuildName}
-        onDescriptionChange={saveMeta.setBuildDescription}
-        currentSpec={builder.spec}
-        stockSpec={builder.stockSpec}
-        weaponName={builder.selectedWeapon?.shortName ?? builder.selectedWeapon?.name ?? null}
-        weaponId={builder.weaponId || null}
-        modCount={builder.attachedCount}
-        missingRequired={builder.selectedWeapon ? builder.missingRequired : []}
-        conflicts={builder.conflicts}
-        sharedId={shareBuild.shareUrl?.split("/").pop() ?? null}
-        onCompare={builder.selectedWeapon ? compareHandoff.open : undefined}
-        onOptimize={builder.selectedWeapon ? handleOpenOptimizer : undefined}
-      />
-      <CompareFromBuildDialog
-        open={compareHandoff.isOpen}
-        onClose={compareHandoff.close}
-        onConfirm={compareHandoff.confirm}
-      />
-
-      {view === "editor" ? (
-        <>
-          {notice}
-          {builder.upstreamDriftInfo && <UpstreamDriftBanner {...builder.upstreamDriftInfo} />}
-
-          <SnapshotBanner snapshot={initialBuild?.profileSnapshot} onUseSnapshot={setProfile} />
-
-          <div data-profile-editor>
-            <ProfileEditor profile={profile} onChange={setProfile} sync={sync} />
-          </div>
-
-          {builder.error && (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-[var(--color-destructive)]">
-                  Failed to load data: {builder.error.message}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          <WeaponPanel
-            isLoading={builder.isLoading}
-            weaponOptions={builder.weaponOptions}
-            weaponId={builder.weaponId}
-            onWeaponChange={builder.handleWeaponChange}
-            showAllWeapons={builder.showAllWeapons}
-            onShowAllWeaponsChange={builder.setShowAllWeapons}
-            hasSelectedWeapon={Boolean(builder.selectedWeapon)}
-            onShare={shareBuild.share}
-            isSaving={shareBuild.isSaving}
-            saveFailed={shareBuild.saveFailed}
-            shareBlocked={shareBuild.blocked}
-            embedProfileOnSave={saveMeta.embedProfileOnSave}
-            onEmbedProfileOnSaveChange={saveMeta.setEmbedProfileOnSave}
-            dataAsOf={builder.dataAsOf}
-            prices={builder.prices}
-            buildPrice={builder.buildPrice}
-            boughtAs={boughtAs}
-            nameOf={nameOf}
-          />
-
-          {builder.selectedWeapon && (
-            <>
-              {builder.tree.data && (
-                // Keyed by weapon so a pending "Replace" prompt never outlives its weapon.
-                <PresetPicker
-                  key={builder.weaponId}
-                  presets={weaponPresets}
-                  tree={builder.tree.data}
-                  known={builder.partsById}
-                  attachments={builder.attachments}
-                  getAvailability={
-                    builder.showAllWeapons
-                      ? undefined
-                      : (id) => {
-                          const preset = weaponPresets.find((p) => p.id === id);
-                          return preset ? presetAvailability(preset, profile) : null;
-                        }
-                  }
-                  onApply={builder.applyPreset}
-                />
-              )}
-              <ModsPanel
-                tree={builder.tree}
-                attachments={builder.attachments}
-                attachedCount={builder.attachedCount}
-                onAttach={builder.handleAttach}
-                getAvailability={(id) => builder.availabilityById.get(id) ?? null}
-                getConflict={builder.getConflict}
-                getFittedConflict={builder.getFittedConflict}
-                orphaned={builder.orphaned}
-                modNames={builder.modNamesById}
-                onDismissOrphaned={builder.clearOrphaned}
-              />
-
-              {builder.spec && (
-                <SpecPanel
-                  weaponShortName={builder.selectedWeapon.shortName}
-                  spec={builder.spec}
-                  magazine={builder.magazine}
-                />
-              )}
-            </>
-          )}
-        </>
-      ) : builder.selectedWeapon && builder.tree.data && builder.spec ? (
-        <OptimizeView
-          weapon={adaptWeapon(builder.selectedWeapon)}
-          weaponItem={builder.selectedWeapon}
-          slotTree={builder.tree.data}
-          parts={builder.parts}
-          profile={profile}
-          gate={builder.gate}
-          presets={weaponPresets}
-          pricesReady={builder.prices.state === "ready"}
-          sync={sync}
-          currentAttachments={builder.attachments}
-          currentBuild={builder.currentBuild}
-          currentStats={builder.spec}
-          currentPrice={builder.buildPrice}
-          onAccept={(build) => {
-            builder.acceptOptimized(build.attachments);
-            handleExitOptimizer();
-          }}
-          onExit={handleExitOptimizer}
-          onEditProfile={handleEditProfile}
+    <QuestNameProvider>
+      <div className="flex flex-col gap-6">
+        <BuildHeader
+          name={saveMeta.buildName}
+          description={saveMeta.buildDescription}
+          onNameChange={saveMeta.setBuildName}
+          onDescriptionChange={saveMeta.setBuildDescription}
+          currentSpec={builder.spec}
+          stockSpec={builder.stockSpec}
+          weaponName={builder.selectedWeapon?.shortName ?? builder.selectedWeapon?.name ?? null}
+          weaponId={builder.weaponId || null}
+          modCount={builder.attachedCount}
+          missingRequired={builder.selectedWeapon ? builder.missingRequired : []}
+          conflicts={builder.conflicts}
+          sharedId={shareBuild.shareUrl?.split("/").pop() ?? null}
+          onCompare={builder.selectedWeapon ? compareHandoff.open : undefined}
+          onOptimize={builder.selectedWeapon ? handleOpenOptimizer : undefined}
         />
-      ) : (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm">Pick a weapon in the editor before running the optimizer.</p>
-            <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
-              ← Back to editor
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+        <CompareFromBuildDialog
+          open={compareHandoff.isOpen}
+          onClose={compareHandoff.close}
+          onConfirm={compareHandoff.confirm}
+        />
 
-      {shareBuild.shareUrl && (
-        <div
-          role="status"
-          className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg"
-        >
-          <div className="text-sm font-medium">Build URL copied</div>
-          <code className="mt-1 block max-w-xs truncate text-xs text-[var(--color-muted-foreground)]">
-            {shareBuild.shareUrl}
-          </code>
-        </div>
-      )}
-    </div>
+        {view === "editor" ? (
+          <>
+            {notice}
+            {builder.upstreamDriftInfo && <UpstreamDriftBanner {...builder.upstreamDriftInfo} />}
+
+            <SnapshotBanner snapshot={initialBuild?.profileSnapshot} onUseSnapshot={setProfile} />
+
+            <div data-profile-editor>
+              <ProfileEditor profile={profile} onChange={setProfile} sync={sync} />
+            </div>
+
+            {builder.error && (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-[var(--color-destructive)]">
+                    Failed to load data: {builder.error.message}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            <WeaponPanel
+              isLoading={builder.isLoading}
+              weaponOptions={builder.weaponOptions}
+              weaponId={builder.weaponId}
+              onWeaponChange={builder.handleWeaponChange}
+              showAllWeapons={builder.showAllWeapons}
+              onShowAllWeaponsChange={builder.setShowAllWeapons}
+              hasSelectedWeapon={Boolean(builder.selectedWeapon)}
+              onShare={shareBuild.share}
+              isSaving={shareBuild.isSaving}
+              saveFailed={shareBuild.saveFailed}
+              shareBlocked={shareBuild.blocked}
+              embedProfileOnSave={saveMeta.embedProfileOnSave}
+              onEmbedProfileOnSaveChange={saveMeta.setEmbedProfileOnSave}
+              dataAsOf={builder.dataAsOf}
+              prices={builder.prices}
+              buildPrice={builder.buildPrice}
+              boughtAs={boughtAs}
+              nameOf={nameOf}
+            />
+
+            {builder.selectedWeapon && (
+              <>
+                {builder.tree.data && (
+                  // Keyed by weapon so a pending "Replace" prompt never outlives its weapon.
+                  <PresetPicker
+                    key={builder.weaponId}
+                    presets={weaponPresets}
+                    tree={builder.tree.data}
+                    known={builder.partsById}
+                    attachments={builder.attachments}
+                    getAvailability={
+                      builder.showAllWeapons
+                        ? undefined
+                        : (id) => {
+                            const preset = weaponPresets.find((p) => p.id === id);
+                            return preset ? presetAvailability(preset, profile) : null;
+                          }
+                    }
+                    onApply={builder.applyPreset}
+                  />
+                )}
+                <ModsPanel
+                  tree={builder.tree}
+                  attachments={builder.attachments}
+                  attachedCount={builder.attachedCount}
+                  onAttach={builder.handleAttach}
+                  getAvailability={(id) => builder.availabilityById.get(id) ?? null}
+                  getConflict={builder.getConflict}
+                  getFittedConflict={builder.getFittedConflict}
+                  orphaned={builder.orphaned}
+                  modNames={builder.modNamesById}
+                  onDismissOrphaned={builder.clearOrphaned}
+                />
+
+                {builder.spec && (
+                  <SpecPanel
+                    weaponShortName={builder.selectedWeapon.shortName}
+                    spec={builder.spec}
+                    magazine={builder.magazine}
+                  />
+                )}
+              </>
+            )}
+          </>
+        ) : builder.selectedWeapon && builder.tree.data && builder.spec ? (
+          <OptimizeView
+            weapon={adaptWeapon(builder.selectedWeapon)}
+            weaponItem={builder.selectedWeapon}
+            slotTree={builder.tree.data}
+            parts={builder.parts}
+            profile={profile}
+            gate={builder.gate}
+            presets={weaponPresets}
+            pricesReady={builder.prices.state === "ready"}
+            sync={sync}
+            currentAttachments={builder.attachments}
+            currentBuild={builder.currentBuild}
+            currentStats={builder.spec}
+            currentPrice={builder.buildPrice}
+            onAccept={(build) => {
+              builder.acceptOptimized(build.attachments);
+              handleExitOptimizer();
+            }}
+            onExit={handleExitOptimizer}
+            onEditProfile={handleEditProfile}
+          />
+        ) : (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm">Pick a weapon in the editor before running the optimizer.</p>
+              <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
+                ← Back to editor
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {shareBuild.shareUrl && (
+          <div
+            role="status"
+            className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg"
+          >
+            <div className="text-sm font-medium">Build URL copied</div>
+            <code className="mt-1 block max-w-xs truncate text-xs text-[var(--color-muted-foreground)]">
+              {shareBuild.shareUrl}
+            </code>
+          </div>
+        )}
+      </div>
+    </QuestNameProvider>
   );
 }

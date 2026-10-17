@@ -438,8 +438,9 @@ test.describe("smoke — TarkovTracker import", () => {
     await page.getByPlaceholder("Paste token").fill("fake-token");
     await page.getByRole("button", { name: "Connect" }).last().click();
 
-    // Banner should populate with the fixture's player level + a non-zero quest count.
-    const banner = page.getByText(/TARKOVTRACKER · \d+ QUESTS · PMC LV 25/);
+    // The progression completes "I Need More Power", one of the captures' 3 quests that gate
+    // gear, plus two the snapshot does not hold.
+    const banner = page.getByText("TARKOVTRACKER · 1/3 GEAR QUESTS · PMC LV 25");
     await expect(banner).toBeVisible({ timeout: 10_000 });
 
     expect(errors, `Console errors on TarkovTracker connect:\n${errors.join("\n")}`).toEqual([]);

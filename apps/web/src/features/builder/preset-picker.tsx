@@ -8,6 +8,7 @@ import {
 } from "@tarkov/data";
 import { Button, Card, CardContent, Pill } from "@tarkov/ui";
 import { AvailabilityPill, formatRequirement } from "./slot-tree.js";
+import { useQuestName } from "./quest-names.js";
 
 export interface PresetPickerProps {
   /** One weapon's presets, the default first (`selectWeaponPresets` order). */
@@ -59,6 +60,7 @@ export function PresetPicker({
   onApply,
 }: PresetPickerProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const questName = useQuestName();
   if (presets.length === 0) return null;
 
   const options: Option[] = [
@@ -111,7 +113,7 @@ export function PresetPicker({
                 {option.isDefault && <Pill tone="muted">Default</Pill>}
                 {availability?.available === false && (
                   <span className="text-10 normal-case text-[var(--color-paper-dim)]">
-                    {formatRequirement(availability)}
+                    {formatRequirement(availability, questName)}
                   </span>
                 )}
                 <AvailabilityPill availability={availability} />

@@ -19,6 +19,7 @@ import {
   type BuildPair,
 } from "@tarkov/data";
 import type { LoadedPair } from "./known-parts.js";
+import { QuestNameProvider } from "../quest-names.js";
 import { shareBlockedReason } from "../useShareBuild.js";
 import { CompareToolbar } from "./compare-toolbar.js";
 import { CompareStatDelta } from "./compare-stat-delta.js";
@@ -274,54 +275,56 @@ export function CompareWorkspace({
   const canClone = canSwap;
 
   return (
-    <div className="flex flex-col gap-4">
-      <CompareToolbar
-        dirty={draft.state.dirty}
-        pairId={pairId}
-        canSwap={canSwap}
-        canClone={canClone}
-        isSaving={save.isPending || fork.isPending}
-        saveError={save.error ?? fork.error}
-        saveBlocked={saveBlocked}
-        onSave={handleSave}
-        onSaveAsNew={handleSaveAsNew}
-        onSwap={draft.swap}
-        onCloneLeftToRight={draft.cloneLeftToRight}
-        onCloneRightToLeft={draft.cloneRightToLeft}
-      />
-
-      {gameDataError !== null && (
-        <p role="alert" className="text-sm text-[var(--color-destructive)]">
-          Failed to load data: {gameDataError}
-        </p>
-      )}
-
-      <CompareStatDelta left={leftSpec} right={rightSpec} />
-
-      <CompareProgressionRow
-        left={{ price: leftPrice, gated: draft.state.leftProfile !== undefined }}
-        right={{ price: rightPrice, gated: draft.state.rightProfile !== undefined }}
-        prices={pricesStatus(livePrices)}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <CompareSide
-          label="A"
-          sectionIndex={1}
-          build={draft.state.left}
-          profile={draft.state.leftProfile}
-          diff={diff}
-          onBuildChange={(b: BuildV6 | null) => draft.setSide("left", b)}
+    <QuestNameProvider>
+      <div className="flex flex-col gap-4">
+        <CompareToolbar
+          dirty={draft.state.dirty}
+          pairId={pairId}
+          canSwap={canSwap}
+          canClone={canClone}
+          isSaving={save.isPending || fork.isPending}
+          saveError={save.error ?? fork.error}
+          saveBlocked={saveBlocked}
+          onSave={handleSave}
+          onSaveAsNew={handleSaveAsNew}
+          onSwap={draft.swap}
+          onCloneLeftToRight={draft.cloneLeftToRight}
+          onCloneRightToLeft={draft.cloneRightToLeft}
         />
-        <CompareSide
-          label="B"
-          sectionIndex={2}
-          build={draft.state.right}
-          profile={draft.state.rightProfile}
-          diff={diff}
-          onBuildChange={(b: BuildV6 | null) => draft.setSide("right", b)}
+
+        {gameDataError !== null && (
+          <p role="alert" className="text-sm text-[var(--color-destructive)]">
+            Failed to load data: {gameDataError}
+          </p>
+        )}
+
+        <CompareStatDelta left={leftSpec} right={rightSpec} />
+
+        <CompareProgressionRow
+          left={{ price: leftPrice, gated: draft.state.leftProfile !== undefined }}
+          right={{ price: rightPrice, gated: draft.state.rightProfile !== undefined }}
+          prices={pricesStatus(livePrices)}
         />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CompareSide
+            label="A"
+            sectionIndex={1}
+            build={draft.state.left}
+            profile={draft.state.leftProfile}
+            diff={diff}
+            onBuildChange={(b: BuildV6 | null) => draft.setSide("left", b)}
+          />
+          <CompareSide
+            label="B"
+            sectionIndex={2}
+            build={draft.state.right}
+            profile={draft.state.rightProfile}
+            diff={diff}
+            onBuildChange={(b: BuildV6 | null) => draft.setSide("right", b)}
+          />
+        </div>
       </div>
-    </div>
+    </QuestNameProvider>
   );
 }

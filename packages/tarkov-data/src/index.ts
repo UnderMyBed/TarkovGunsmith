@@ -199,7 +199,6 @@ export type { SlotNodeForMigration } from "./build-migrations.js";
 // Progression gating
 export { itemAvailability } from "./item-availability.js";
 export type { AvailabilityInput, ItemAvailability, TraderPayment } from "./item-availability.js";
-export { MARQUEE_QUEST_NORMALIZED_NAMES } from "./marquee-quests.js";
 export { isProfileTrader, tradersSchema } from "./queries/traders.js";
 export type { TraderListItem } from "./queries/traders.js";
 export { tasksSchema } from "./queries/tasks.js";

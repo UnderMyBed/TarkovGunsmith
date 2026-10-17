@@ -6,6 +6,7 @@ import {
   type SlotDiffMap,
 } from "@tarkov/data";
 import { Pill, focusRing } from "@tarkov/ui";
+import { useQuestName, type QuestName } from "./quest-names.js";
 
 // ---------- Keyboard navigation handler ----------
 
@@ -165,6 +166,7 @@ function SlotRow({
   getConflict?: (path: string, itemId: string) => string | null;
   getFittedConflict?: (path: string) => string | null;
 }) {
+  const questName = useQuestName();
   const selectedId = attachments[slot.path] ?? null;
   const selectedItem = selectedId ? slot.allowedItems.find((i) => i.id === selectedId) : null;
   // The attached part's own slots, expanded on demand from the graph — barrels, scopes and
@@ -267,7 +269,9 @@ function SlotRow({
                 const conflict = isSelected ? null : (getConflict?.(slot.path, item.id) ?? null);
                 const dim = conflict !== null || (!showAll && availability?.available === false);
                 const requirementLabel =
-                  availability && !availability.available ? formatRequirement(availability) : null;
+                  availability && !availability.available
+                    ? formatRequirement(availability, questName)
+                    : null;
                 return (
                   <li key={item.id}>
                     <button
@@ -329,9 +333,19 @@ function SlotRow({
 // ---------- AvailabilityPill ----------
 
 export function AvailabilityPill({ availability }: { availability: ItemAvailability | null }) {
+  const questName = useQuestName();
   if (!availability) return null;
   if (availability.available) {
-    return <Pill tone="reliable">{availabilityShortLabel(availability) ?? "OK"}</Pill>;
+    const assumed =
+      availability.kind === "flea" || availability.assumedQuest === null
+        ? null
+        : (questName(availability.assumedQuest) ?? "a quest");
+    return (
+      <Pill tone="reliable" title={assumed === null ? undefined : `Assumes ${assumed} is complete`}>
+        {availabilityShortLabel(availability) ?? "OK"}
+        {assumed !== null && " · QUEST"}
+      </Pill>
+    );
   }
   return <Pill tone="marginal">LOCKED</Pill>;
 }
@@ -345,13 +359,15 @@ function availabilityShortLabel(a: ItemAvailability): string | null {
   return null;
 }
 
-export function formatRequirement(a: ItemAvailability): string {
+export function formatRequirement(a: ItemAvailability, questName: QuestName): string {
   if (a.available) return "";
   switch (a.reason) {
     case "trader-ll-required":
       return `${a.traderNormalizedName} LL${a.minLevel}${a.payment === "barter" ? " barter" : ""}`;
-    case "quest-required":
-      return `Quest: ${a.questNormalizedName}`;
+    case "quest-required": {
+      const name = questName(a.questNormalizedName);
+      return name === undefined ? "Quest" : `Quest: ${name}`;
+    }
     case "untracked-trader":
       return `${a.traderNormalizedName} LL${a.minLevel} (not in profile)`;
     case "flea-level-required":

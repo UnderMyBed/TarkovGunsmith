@@ -31,7 +31,7 @@ describe("mapRawToProfile", () => {
     expect(result.profile.flea).toBe(true);
     expect(result.meta.questCount).toBe(3);
     expect(result.meta.playerLevel).toBe(25);
-    expect(result.meta.unmappedCount).toBe(0);
+    expect(result.meta.questTotal).toBe(3);
   });
 
   it("sets flea=false when playerLevel < 20", () => {
@@ -64,16 +64,18 @@ describe("mapRawToProfile", () => {
     expect(result.profile.completedQuests).toEqual(["debut"]);
   });
 
-  it("reports unmappedCount when a TarkovTracker id has no tarkov.dev match", () => {
+  it("keeps only the given quests, so a veteran's other completions never reach the profile", () => {
+    // 300 completions TarkovTracker knows and the snapshot does not, plus one it does.
+    const others = Array.from({ length: 300 }, (_, i) => ({
+      id: `other-${String(i)}`,
+      complete: true,
+    }));
     const raw: RawProgression = {
       ...(rawFixture as RawProgression),
-      tasksProgress: [
-        { id: "5ac23c6186f7741247042bad", complete: true },
-        { id: "000000000000000000000000", complete: true },
-      ],
+      tasksProgress: [{ id: "5ac23c6186f7741247042bad", complete: true }, ...others],
     };
     const result = mapRawToProfile(raw, TASKS);
     expect(result.profile.completedQuests).toEqual(["gunsmith-part-1"]);
-    expect(result.meta.unmappedCount).toBe(1);
+    expect(result.meta).toMatchObject({ questCount: 1, questTotal: 3 });
   });
 });
