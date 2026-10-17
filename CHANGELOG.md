@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.22.2...v1.23.0) (2026-10-17)
+
+
+### Features
+
+* **ui:** Graphite palette and type rules (redesign 1/5) ([#282](https://github.com/UnderMyBed/TarkovGunsmith/issues/282)) ([37aa0ad](https://github.com/UnderMyBed/TarkovGunsmith/commit/37aa0adfe49988536dd104fe7cb9e9d19870b21f))
+
 ## [1.22.2](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.22.1...v1.22.2) (2026-10-17)
 
 
