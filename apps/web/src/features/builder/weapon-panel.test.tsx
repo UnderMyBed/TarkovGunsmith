@@ -21,8 +21,7 @@ function props(overrides: Partial<WeaponPanelProps> = {}): WeaponPanelProps {
     weaponOptions: [],
     weaponId: "",
     onWeaponChange: () => {},
-    showAllWeapons: false,
-    onShowAllWeaponsChange: () => {},
+    mode: "progression",
     hasSelectedWeapon: false,
     onShare: () => {},
     isSaving: false,
@@ -144,5 +143,20 @@ describe("WeaponPanel", () => {
     render(<WeaponPanel {...props({ hasSelectedWeapon: true, shareBlocked: reason })} />);
     expect(screen.getByRole("button", { name: "Share build" })).toBeDisabled();
     expect(screen.getByText("Dismiss orphaned parts to share this build")).toBeInTheDocument();
+  });
+
+  it("lists every weapon in theorycraft, and offers the profile embed only in progression", () => {
+    const theorycraft = props({
+      mode: "theorycraft",
+      hasSelectedWeapon: true,
+      weaponOptions: [option("ak", "AK-74N", null), option(M4A1, "M4A1", null)],
+    });
+    const { rerender } = render(<WeaponPanel {...theorycraft} />);
+    expect(screen.getByText("2 weapons")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Embed my progression snapshot/)).not.toBeInTheDocument();
+
+    rerender(<WeaponPanel {...theorycraft} mode="progression" />);
+    expect(screen.getByText("2 weapons available on your profile")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Embed my progression snapshot/)).toBeInTheDocument();
   });
 });

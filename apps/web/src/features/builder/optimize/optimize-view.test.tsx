@@ -95,7 +95,6 @@ describe("OptimizeView", () => {
         weaponItem={weaponItem}
         slotTree={slotTree}
         parts={parts}
-        profile={profile}
         gate={profile}
         presets={[]}
         pricesReady
@@ -128,7 +127,6 @@ describe("OptimizeView", () => {
         weaponItem={weaponItem}
         slotTree={slotTree}
         parts={parts}
-        profile={profile}
         gate={profile}
         presets={[]}
         pricesReady
@@ -164,7 +162,6 @@ describe("OptimizeView", () => {
         weaponItem={weaponItem}
         slotTree={slotTree}
         parts={parts}
-        profile={profile}
         gate={profile}
         presets={[]}
         pricesReady

@@ -28,6 +28,20 @@ describe("describeBuildPrice", () => {
       "Can't be bought: M4A1",
     );
   });
+
+  it("says when another way to buy the build, with a price not known, may cost less", () => {
+    expect(
+      describeBuildPrice(
+        {
+          status: "priced",
+          totalRUB: 55_000,
+          presetId: "p-default",
+          cheaperUnpriced: { presetId: null, knownRUB: 38_000, unpriced: ["grip"] },
+        },
+        nameOf,
+      ),
+    ).toBe("₽55,000; may cost less bought another way (no price for Grip)");
+  });
 });
 
 describe("totalOf / formatRub", () => {

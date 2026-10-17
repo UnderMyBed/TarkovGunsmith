@@ -39,15 +39,13 @@ function sync(state: "disconnected" | "syncing" | "synced" | "error"): UseTarkov
 
 describe("ProfileReadout", () => {
   it("shows MANUAL meta and disables RE-IMPORT when disconnected", () => {
-    render(
-      <ProfileReadout profile={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />,
-    );
+    render(<ProfileReadout gate={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />);
     expect(screen.getByText(/MANUAL/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /RE-IMPORT/ })).toBeDisabled();
   });
 
   it("shows TARKOVTRACKER · Nh AGO and enables RE-IMPORT when synced", () => {
-    render(<ProfileReadout profile={profile} sync={sync("synced")} onEditProfile={vi.fn()} />);
+    render(<ProfileReadout gate={profile} sync={sync("synced")} onEditProfile={vi.fn()} />);
     expect(screen.getByText(/TARKOVTRACKER · 2H AGO/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /RE-IMPORT/ })).toBeEnabled();
   });
@@ -56,7 +54,7 @@ describe("ProfileReadout", () => {
     const reSyncMock = vi.fn();
     const s = sync("synced");
     s.reSync = reSyncMock;
-    render(<ProfileReadout profile={profile} sync={s} onEditProfile={vi.fn()} />);
+    render(<ProfileReadout gate={profile} sync={s} onEditProfile={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /RE-IMPORT/ }));
     expect(reSyncMock).toHaveBeenCalled();
   });
@@ -64,21 +62,26 @@ describe("ProfileReadout", () => {
   it("calls onEditProfile when EDIT PROFILE link clicked", () => {
     const onEditProfile = vi.fn();
     render(
-      <ProfileReadout
-        profile={profile}
-        sync={sync("disconnected")}
-        onEditProfile={onEditProfile}
-      />,
+      <ProfileReadout gate={profile} sync={sync("disconnected")} onEditProfile={onEditProfile} />,
     );
     fireEvent.click(screen.getByRole("button", { name: /EDIT PROFILE/ }));
     expect(onEditProfile).toHaveBeenCalled();
   });
 
   it("renders all 7 trader rows with level values", () => {
-    render(
-      <ProfileReadout profile={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />,
-    );
+    render(<ProfileReadout gate={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />);
     expect(screen.getByText(/PRAPOR/)).toBeInTheDocument();
     expect(screen.getByText(/JAEGER/)).toBeInTheDocument();
+  });
+
+  it("names theorycraft, with every gate open, and offers to set a progression", () => {
+    const onEditProfile = vi.fn();
+    render(<ProfileReadout gate={null} sync={sync("synced")} onEditProfile={onEditProfile} />);
+    expect(screen.getByText("THEORYCRAFT")).toBeInTheDocument();
+    expect(screen.getByText(/Every trader, flea offer and quest open/i)).toBeInTheDocument();
+    expect(screen.queryByText("PMC LEVEL")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /RE-IMPORT/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /SET PROGRESSION/ }));
+    expect(onEditProfile).toHaveBeenCalledOnce();
   });
 });

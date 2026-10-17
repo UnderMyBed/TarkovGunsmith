@@ -28,10 +28,13 @@ async function slotRows(page: Page): Promise<[string, string][]> {
 }
 
 test.describe("Builder weapon picker and slot labels", () => {
-  test.describe("on a fresh profile", () => {
+  test.describe("on a fresh profile in progression", () => {
     test.use({ playerProfile: "fresh" });
 
     test("a shared build of a locked weapon keeps it selected, marked locked", async ({ page }) => {
+      // A fresh profile lands in theorycraft, where nothing is locked; the locked current
+      // weapon (#222) is a progression state, so this visitor chose progression on LL1.
+      await page.addInitScript(() => window.localStorage.setItem("tg:builder-mode", "progression"));
       await page.route("**/api/builds/abcd2348", (route) =>
         route.fulfill({
           status: 200,
@@ -52,9 +55,7 @@ test.describe("Builder weapon picker and slot labels", () => {
       await expect(picker.locator("option:checked")).toHaveText(
         `${M4A1_LABEL} — LOCKED · peacekeeper LL2 barter`,
       );
-      await expect(
-        page.getByLabel("Show all weapons (including locked by profile)"),
-      ).not.toBeChecked();
+      await expect(page.getByRole("button", { name: "Progression", pressed: true })).toBeVisible();
     });
   });
 

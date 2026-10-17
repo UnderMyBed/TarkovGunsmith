@@ -130,6 +130,8 @@ describe("useTarkovTrackerSync — the quest list loads after the progression", 
       level: 30,
       flea: true,
     });
+    // A progression parked for the task list keeps what started it.
+    expect(onChange.mock.calls[0]![1]).toBe("connect");
 
     // A later task-list change does not replay the finished sync.
     rerender({ list: [...tasks] });
@@ -147,6 +149,18 @@ describe("useTarkovTrackerSync — the quest list loads after the progression", 
     );
     return { onChange, ...rendered };
   }
+
+  it("says a sync was a connect or a re-sync, so only a connect is applied as a choice", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => Promise.resolve(ok())),
+    );
+    const { result, onChange } = renderWith({ list: tasks });
+
+    await act(() => result.current.connect("tt-token"));
+    await act(() => result.current.reSync());
+    expect(onChange.mock.calls.map((call) => call[1] as unknown)).toEqual(["connect", "resync"]);
+  });
 
   it("drops a progression that arrives after disconnect: no profile write, no synced", async () => {
     let answer: (r: Response) => void = () => undefined;

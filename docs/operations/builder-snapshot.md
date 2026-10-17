@@ -145,12 +145,14 @@ preset as the listing's player-level gate (`flea`), or `null` when upstream flag
 
 Choosing a weapon starts a new build from one of them:
 
-- With "Show all weapons" on, the default.
-- Otherwise, the default if the profile can buy it; else the cheapest preset the profile can
-  buy (known price first, then short name, then id); else, when it can buy none, the default,
-  which the preset picker shows locked with what it needs.
+- In theorycraft mode, the default.
+- In progression mode, the default if the profile can buy it; else the cheapest preset the
+  profile can buy (known price first, then short name, then id); else, when it can buy none,
+  the default, which the preset picker shows locked with what it needs. A weapon chosen before
+  live prices arrive is seeded again once they do, unless the build was edited in between.
 
-A Compare side always starts from the default. A weapon without presets starts empty. Loading
+A Compare side starts under its own mode: progression on the profile it carries, else
+theorycraft. A weapon without presets starts empty. Loading
 a saved build, a v1 link or a comparison never applies a preset, and applying a preset from the
 picker leaves a loaded build's orphaned parts listed until they are dismissed.
 

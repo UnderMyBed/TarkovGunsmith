@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_PROFILE, type PlayerProfile } from "./build-schema.js";
 import {
   buildPriceUnder,
-  builderMode,
   priceGate,
   priceUnder,
   weaponPaths,
@@ -51,10 +50,8 @@ const part = (id: string, ...buyFor: BuyForEntry[]): PricedPart => ({
 const DEFAULT: OfferPreset = { id: "p-default", normalizedName: "gun-default" };
 const FANCY: OfferPreset = { id: "p-fancy", normalizedName: "gun-fancy" };
 
-describe("builderMode / priceGate", () => {
-  it("maps Show all to theorycraft, and theorycraft to no gate", () => {
-    expect(builderMode(true)).toBe("theorycraft");
-    expect(builderMode(false)).toBe("progression");
+describe("priceGate", () => {
+  it("is no gate in theorycraft, and the profile in progression", () => {
     expect(priceGate("theorycraft", LL4)).toBeNull();
     expect(priceGate("progression", LL4)).toBe(LL4);
   });
@@ -192,6 +189,43 @@ describe("buildPriceUnder", () => {
       status: "priced",
       totalRUB: 55_000,
       presetId: DEFAULT.id,
+    });
+  });
+
+  it("names a path with an unknown price whose known prices already sum to less", () => {
+    // The receiver is cheap and the preset is fully priced, but the grip the receiver needs
+    // has no price: the preset's ₽55,000 is a real total, not certainly the least.
+    const unpricedGrip = part("grip", cash("prapor", 1, null));
+    const cheapGun = {
+      ...weapon,
+      buyFor: [cash("mechanic", 1, 30_000), cash("prapor", 1, 55_000, DEFAULT)],
+    };
+    expect(
+      buildPriceUnder(LL4, { weapon: cheapGun, parts: [stock, unpricedGrip], presets }),
+    ).toEqual({
+      status: "priced",
+      totalRUB: 55_000,
+      presetId: DEFAULT.id,
+      cheaperUnpriced: { presetId: null, knownRUB: 38_000, unpriced: ["grip"] },
+    });
+
+    // Of two such paths, the one whose known prices sum to less: a ₽10,000 preset that comes
+    // with the stock, against the ₽38,000 receiver.
+    const withFancy = {
+      ...cheapGun,
+      buyFor: [...cheapGun.buyFor, cash("prapor", 1, 10_000, FANCY)],
+    };
+    const fancy = { id: FANCY.id, attachments: { s: "stock" } };
+    expect(
+      buildPriceUnder(LL4, {
+        weapon: withFancy,
+        parts: [stock, unpricedGrip],
+        presets: [...presets, fancy],
+      }),
+    ).toMatchObject({
+      status: "priced",
+      totalRUB: 55_000,
+      cheaperUnpriced: { presetId: FANCY.id, knownRUB: 10_000, unpriced: ["grip"] },
     });
   });
 

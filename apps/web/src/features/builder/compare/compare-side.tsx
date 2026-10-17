@@ -35,7 +35,10 @@ export interface CompareSideProps {
   sectionIndex: number;
   /** Current build for this side, or null if the user hasn't picked a weapon yet. */
   build: BuildV6 | null;
-  /** Profile used for availability gating (falls back to builder default when unset). */
+  /**
+   * The side's own profile: with one the side is in progression on it (pills, seed, price);
+   * without one, theorycraft.
+   */
   profile: PlayerProfile | undefined;
   /** Per-slot diff statuses from `slotDiff` — undefined/null skips diff highlighting. */
   diff: SlotDiffMap | null;
@@ -124,14 +127,8 @@ export function CompareSide({
       onBuildChange(null);
       return;
     }
-    // A new weapon starts from its default preset. Compare lists every weapon, which is the
-    // Builder's show-all (theorycraft) mode, and theorycraft reads no profile. A loaded pair
-    // never comes through here.
-    const seed = seedAttachments(
-      presets.data?.[newWeaponId] ?? [],
-      "theorycraft",
-      profile ?? DEFAULT_PROFILE,
-    );
+    // A loaded pair never comes through here.
+    const seed = sideSeed(presets.data?.[newWeaponId] ?? [], profile);
     const action: BuildAction = { type: "changeWeapon", weaponId: newWeaponId, seed };
     onBuildChange(
       build
@@ -297,4 +294,18 @@ export function computeSideSpec(
     adaptWeapon(weapon),
     placed.map((e) => adaptMod(e.part)),
   );
+}
+
+/**
+ * The attachments a new weapon on a Compare side starts with, under the side's own mode:
+ * progression on the profile the side carries, theorycraft (the default preset, no profile
+ * read) without one.
+ */
+export function sideSeed(
+  presets: Parameters<typeof seedAttachments>[0],
+  profile: PlayerProfile | undefined,
+): Record<string, string> {
+  return profile === undefined
+    ? seedAttachments(presets, "theorycraft", DEFAULT_PROFILE)
+    : seedAttachments(presets, "progression", profile);
 }
