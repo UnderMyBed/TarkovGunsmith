@@ -9,6 +9,7 @@
  */
 import {
   answerOptimizeRequest,
+  UNREADABLE_REQUEST,
   type OptimizeReply,
   type OptimizeRequest,
 } from "./optimize-protocol.js";
@@ -16,6 +17,7 @@ import {
 /** The worker global, as far as this file uses it. The app's `lib` is DOM, not WebWorker. */
 interface OptimizerWorkerScope {
   onmessage: ((event: MessageEvent<OptimizeRequest>) => void) | null;
+  onmessageerror: (() => void) | null;
   postMessage(reply: OptimizeReply): void;
 }
 
@@ -24,3 +26,6 @@ const scope = self as unknown as OptimizerWorkerScope;
 scope.onmessage = (event) => {
   answerOptimizeRequest(event.data, (reply) => scope.postMessage(reply));
 };
+
+// A request that cannot be deserialised never reaches onmessage: answer it, or the page waits.
+scope.onmessageerror = () => scope.postMessage(UNREADABLE_REQUEST);

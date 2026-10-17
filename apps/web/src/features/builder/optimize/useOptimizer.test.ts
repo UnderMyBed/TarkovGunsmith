@@ -23,7 +23,11 @@ function fakeWorker(post: (request: OptimizeRequest) => void = () => {}) {
   return worker;
 }
 
-const request = { objective: "max-ergonomics" } as unknown as OptimizeRequest;
+const pins = new Map([["muzzle", "brake"]]);
+const request = {
+  objective: "max-ergonomics",
+  constraints: { pinnedSlots: pins },
+} as unknown as OptimizeRequest;
 const timeout: OptimizationResult = { ok: false, reason: "timeout" };
 
 function setup(...workers: ReturnType<typeof fakeWorker>[]) {
@@ -37,13 +41,19 @@ describe("useOptimizer", () => {
   it("posts the request, reports progress, then the result with the objective it ran", () => {
     const worker = fakeWorker();
     const { result } = setup(worker);
-    vi.spyOn(Date, "now").mockReturnValue(1_000);
+    const now = vi.spyOn(Date, "now").mockReturnValue(1_000);
     act(() => result.current.run(request));
     expect(worker.postMessage).toHaveBeenCalledWith(request);
     expect(result.current.state).toBe("running");
-    expect(result.current.progress).toEqual({ nodes: 0, startedAt: 1_000 });
-    act(() => worker.reply({ type: "progress", nodes: 12 }));
-    expect(result.current.progress).toEqual({ nodes: 12, startedAt: 1_000 });
+    // No clock until the worker starts solving: its boot is not the solver's time.
+    expect(result.current.progress).toEqual({ nodes: 0, startedAt: null });
+    now.mockReturnValue(1_300);
+    act(() => worker.reply({ type: "progress", nodes: 0, elapsedMs: 0 }));
+    expect(result.current.progress).toEqual({ nodes: 0, startedAt: 1_300 });
+    now.mockReturnValue(1_800);
+    act(() => worker.reply({ type: "progress", nodes: 12, elapsedMs: 480 }));
+    // The first report set the clock; later ones only count.
+    expect(result.current.progress).toEqual({ nodes: 12, startedAt: 1_300 });
     act(() => worker.reply({ type: "result", result: timeout }));
     expect(result.current).toMatchObject({
       state: "done",
@@ -51,6 +61,8 @@ describe("useOptimizer", () => {
       objective: "max-ergonomics",
       progress: undefined,
     });
+    // The pins the run was sent, kept with its result.
+    expect(result.current.pins).toBe(pins);
     expect(worker.terminate).toHaveBeenCalled();
   });
 
@@ -123,7 +135,7 @@ describe("useOptimizer", () => {
     act(() => result.current.run({ ...request, objective: "min-weight" }));
     expect(first.terminate).toHaveBeenCalled();
     act(() => first.reply({ type: "result", result: timeout }));
-    act(() => first.reply({ type: "progress", nodes: 5 }));
+    act(() => first.reply({ type: "progress", nodes: 5, elapsedMs: 10 }));
     expect(result.current.state).toBe("running");
     expect(result.current.progress?.nodes).toBe(0);
     act(() => second.reply({ type: "result", result: timeout }));

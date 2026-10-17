@@ -1,6 +1,13 @@
 import { adaptMod, itemAvailability, partsById, resolveBuild, type BuildV6 } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
-import { cheapestBuild, diagnose, rub, unknownPriceVerdict, unpricedPins } from "./diagnose.js";
+import {
+  cheapestBuild,
+  diagnose,
+  KEEPS_PINS,
+  rub,
+  unknownPriceVerdict,
+  unpricedPins,
+} from "./diagnose.js";
 import { pinReport } from "./pins.js";
 import { buildProblem, UNKNOWN_PRICE, type Problem } from "./problem.js";
 import { SolveTimeout } from "./relaxed.js";
@@ -34,6 +41,7 @@ function refuseBudget(
       refusal: {
         ok: false,
         reason: "infeasible-budget",
+        cause: "unpriced",
         message: `No ${name} you can get has a known price, so no build can be shown to fit a budget.`,
       },
     };
@@ -44,21 +52,23 @@ function refuseBudget(
       refusal: {
         ok: false,
         reason: "infeasible-budget",
+        cause: "over-budget",
         message: `The cheapest ${name} you can get costs ${rub(cheapest)}, over the ${rub(budgetRub)} budget.`,
       },
     };
   }
-  const pinned = [...unpricedPins(problem).keys()].some(
-    (path) => problem.rootSlots.find((s) => s.nameId === path) !== undefined,
+  const pinned = [...unpricedPins(problem).keys()].filter((path) =>
+    problem.rootSlots.some((s) => s.nameId === path),
   );
-  if (!pinned) return null;
+  if (pinned.length === 0) return null;
   return {
     byPins: true,
     refusal: {
       ok: false,
       reason: "infeasible-budget",
-      message:
-        "No complete build that keeps your pins has a known price on this profile, so none can be shown to fit a budget.",
+      cause: "pins",
+      paths: pinned,
+      message: KEEPS_PINS,
     },
   };
 }

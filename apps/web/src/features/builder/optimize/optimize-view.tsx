@@ -279,7 +279,7 @@ export function OptimizeView({
               failure={failure}
               error={optimizer.error}
               theorycraft={gate === null}
-              pinnedSlots={state.pinnedSlots}
+              pinnedSlots={optimizer.pins ?? state.pinnedSlots}
               nameOf={nameOf}
               timeoutMs={OPTIMIZER_TIMEOUT_MS}
               onRunWithoutBudget={() => changeAndRun({ type: "SET_BUDGET", value: "" })}

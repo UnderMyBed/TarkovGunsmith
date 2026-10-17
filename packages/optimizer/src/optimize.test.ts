@@ -424,6 +424,7 @@ describe("optimize — what it refuses", () => {
     expect(run({ budgetRub: 9_999 })).toEqual({
       ok: false,
       reason: "infeasible-budget",
+      cause: "over-budget",
       message: "The cheapest TR you can get costs ₽10,000, over the ₽9,999 budget.",
     });
   });
@@ -436,6 +437,7 @@ describe("optimize — what it refuses", () => {
     expect(run({ weaponItem: unpriced, budgetRub: 50_000 })).toEqual({
       ok: false,
       reason: "infeasible-budget",
+      cause: "unpriced",
       message: "No TR you can get has a known price, so no build can be shown to fit a budget.",
     });
   });
@@ -529,12 +531,14 @@ describe("optimize — why no build exists", () => {
     expect(run({ slotTree: stockRequired, budgetRub: 11_000 })).toEqual({
       ok: false,
       reason: "infeasible-budget",
+      cause: "over-budget",
       message: "The cheapest complete build costs ₽12,200, over the ₽11,000 budget.",
     });
     const unpricedStock = [...SMALL_MODS.slice(0, 3), part("stock_standard", { price: null })];
     expect(run({ slotTree: stockRequired, parts: unpricedStock, budgetRub: 50_000 })).toEqual({
       ok: false,
       reason: "infeasible-budget",
+      cause: "unpriced",
       message:
         "No complete build has a known price on this profile, so none can be shown to fit a budget.",
     });
@@ -707,8 +711,13 @@ describe("optimize — why no build exists", () => {
 
   // #260 review: another part nobody pinned has no price on every build too.
   it("does not blame a pin when unpinning it still leaves every build unpriced", () => {
-    const keepsPins =
-      "No complete build that keeps your pins has a known price on this profile, so none can be shown to fit a budget.";
+    const pinnedOrNot = {
+      ok: false,
+      reason: "infeasible-budget",
+      cause: "unpriced",
+      message:
+        "Pinned or not, no complete build has a known price on this profile, so none can be shown to fit a budget.",
+    };
     // Below the weapon: the upper's required rail takes only a part nobody prices.
     const nested = tree([
       {
@@ -738,7 +747,7 @@ describe("optimize — why no build exists", () => {
         pins: { "receiver/foregrip": "fg" },
         budgetRub: 50_000,
       }),
-    ).toEqual({ ok: false, reason: "infeasible-budget", message: keepsPins });
+    ).toEqual(pinnedOrNot);
     // On the weapon's own slot, where the budget is refused before any search.
     const root = tree([
       { nameId: "muzzle", items: ["m"] },
@@ -747,11 +756,12 @@ describe("optimize — why no build exists", () => {
     const rootParts = [part("m", { price: null }), part("s", { price: null })];
     expect(
       run({ slotTree: root, parts: rootParts, pins: { muzzle: "m" }, budgetRub: 50_000 }),
-    ).toEqual({ ok: false, reason: "infeasible-budget", message: keepsPins });
+    ).toEqual(pinnedOrNot);
     // With no pins at all, the profile is the cause.
     expect(run({ slotTree: root, parts: rootParts, budgetRub: 50_000 })).toEqual({
       ok: false,
       reason: "infeasible-budget",
+      cause: "unpriced",
       message:
         "No complete build has a known price on this profile, so none can be shown to fit a budget.",
     });
@@ -763,15 +773,119 @@ describe("optimize — why no build exists", () => {
     const parts = [part("s", { price: "unsold" })];
     expect(run({ slotTree, parts, pins: { stock: "s" }, budgetRub: 50_000 })).toMatchObject({
       reason: "infeasible-budget",
-      message: /keeps your pins/,
+      cause: "unpriced",
+      message: /^Pinned or not/,
     });
+  });
+
+  // #266 review (b, case d): a priced pin forces a required part nobody prices.
+  it("names the pins to lift when other pins, not unpriced ones, leave every build unpriced", () => {
+    const slotTree = tree([
+      {
+        nameId: "a",
+        items: [["pa", [{ nameId: "c", required: true, items: ["uc"] }]], "pa2"],
+      },
+      { nameId: "m", items: ["um", "m2"] },
+      { nameId: "extra", items: ["pa2"] },
+    ]);
+    const parts = [
+      part("pa", { price: 100 }),
+      part("pa2", { price: 100 }),
+      part("uc", { price: null }),
+      part("um", { price: null }),
+      part("m2", { price: 100 }),
+    ];
+    // The unpriced pin on m is not enough: pa still forces uc. Lifting the pin on a is. The
+    // build of known price leaves `extra` empty too, so that pin is no obstacle.
+    expect(
+      run({ slotTree, parts, budgetRub: 50_000, pins: { a: "pa", m: "um", extra: null } }),
+    ).toEqual({
+      ok: false,
+      reason: "infeasible-budget",
+      cause: "pins",
+      paths: ["a", "m"],
+      message:
+        "No complete build that keeps your pins has a known price on this profile, so none can be shown to fit a budget.",
+    });
+    expect(run({ slotTree, parts, budgetRub: 50_000, pins: { a: "pa" } })).toMatchObject({
+      cause: "pins",
+      paths: ["a"],
+    });
+  });
+
+  // #266 review (b, cases c/c'): a preset of unknown price that comes with the pinned part.
+  it("does not count a preset of unknown price as pricing a pinned part", () => {
+    const slotTree = tree([
+      {
+        nameId: "handguard",
+        required: true,
+        items: [["hg1", [{ nameId: "foregrip", items: ["fg", "fg2"] }]]],
+      },
+    ]);
+    const parts = [part("hg1", { price: 100 }), part("fg", { price: null }), part("fg2")];
+    const preset = { id: "P1", normalizedName: "p1" };
+    const weaponItem = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: [
+        SMALL_WEAPON_ITEM.buyFor![0]!,
+        { ...SMALL_WEAPON_ITEM.buyFor![0]!, priceRUB: null, preset },
+      ],
+    };
+    const presets = [{ id: "P1", attachments: { handguard: "hg1", "handguard/foregrip": "fg" } }];
+    const pins = { "handguard/foregrip": "fg" };
+    expect(run({ slotTree, parts, weaponItem, presets, pins, budgetRub: 50_000 })).toEqual({
+      ok: false,
+      reason: "pinned-unpriced",
+      itemIds: ["fg"],
+      message: "No price you can pay is known for fg. Unpin it or clear the budget.",
+    });
+    // On the weapon's own slot, where the budget is refused before any search.
+    const root = tree([{ nameId: "muzzle", items: ["m", "m2"] }]);
+    expect(
+      run({
+        slotTree: root,
+        parts: [part("m", { price: null }), part("m2")],
+        weaponItem,
+        presets: [{ id: "P1", attachments: { muzzle: "m" } }],
+        pins: { muzzle: "m" },
+        budgetRub: 50_000,
+      }),
+    ).toMatchObject({ reason: "pinned-unpriced", itemIds: ["m"] });
+  });
+
+  // #266 review (a): a second unpriced pin on a path the freed build does not have.
+  it("names only the unpriced pins the build of known price has a slot for", () => {
+    const slotTree = tree([
+      { nameId: "S", items: ["p", "p2"] },
+      {
+        nameId: "receiver",
+        required: true,
+        items: ["u", ["u2", [{ nameId: "y", items: ["q", "q2"] }]]],
+      },
+    ]);
+    const parts = [
+      part("p", { price: null }),
+      part("p2", { price: 500 }),
+      part("u", { price: 100 }),
+      part("u2", { price: 900 }),
+      part("q", { price: null }),
+      part("q2", { price: 50 }),
+    ];
+    expect(
+      run({ slotTree, parts, pins: { S: "p", "receiver/y": "q" }, budgetRub: 50_000 }),
+    ).toMatchObject({ reason: "pinned-unpriced", itemIds: ["p"] });
   });
 
   it("keeps a pinned-part refusal when asking whether any build exists runs out of time", () => {
     vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValue(10_000);
     expect(
       run({ profile: fleaOff, budgetRub: 50_000, pins: { muzzle: "muzzle_brake" } }),
-    ).toMatchObject({ reason: "infeasible-budget", message: /keeps your pins/ });
+    ).toMatchObject({
+      reason: "infeasible-budget",
+      cause: "pins",
+      paths: ["muzzle"],
+      message: /keeps your pins/,
+    });
   });
 
   it("keeps a budget refusal when asking whether any build exists runs out of time", () => {

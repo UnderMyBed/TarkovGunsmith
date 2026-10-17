@@ -115,13 +115,42 @@ export type OptimizationResult =
       readonly message: string;
     }
   | {
-      /** No complete build fits the budget, or none can be shown to. */
+      /**
+       * No complete build fits the budget: the cheapest one, or the gun alone, costs more.
+       * Only a larger budget, or none, helps.
+       */
       readonly ok: false;
       readonly reason: "infeasible-budget";
+      readonly cause: "over-budget";
       readonly message: string;
     }
   | {
-      /** Under a budget, pinned parts whose price under the profile is not known. */
+      /**
+       * No complete build that keeps the pins has a known price, so none can be shown to fit
+       * the budget. Lifting the pins at `paths` gives one that does — or, when the run ran
+       * out of time finding out, `paths` are pins every build that keeps them leaves unpriced.
+       */
+      readonly ok: false;
+      readonly reason: "infeasible-budget";
+      readonly cause: "pins";
+      readonly paths: readonly string[];
+      readonly message: string;
+    }
+  | {
+      /**
+       * No complete build has a known price on this profile, pinned or not (or the gun has
+       * none), so none can be shown to fit a budget. A bigger budget does not help.
+       */
+      readonly ok: false;
+      readonly reason: "infeasible-budget";
+      readonly cause: "unpriced";
+      readonly message: string;
+    }
+  | {
+      /**
+       * Under a budget, pinned parts whose price under the profile is not known: unpinning
+       * these (and only these) gives a build of known price.
+       */
       readonly ok: false;
       readonly reason: "pinned-unpriced";
       readonly itemIds: readonly string[];

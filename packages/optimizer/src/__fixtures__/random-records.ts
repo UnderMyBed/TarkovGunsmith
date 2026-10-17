@@ -397,7 +397,7 @@ export function judge(
 
 /**
  * The pinned paths whose part has no price the profile can pay and comes with no way to buy
- * the gun: the pins that can leave a build's price unknown.
+ * the gun at a known price: the pins that can leave a build's price unknown.
  */
 export function unpricedPinPaths(c: RecordsCase): Set<string> {
   const gate = c.input.constraints.profile;
@@ -406,7 +406,10 @@ export function unpricedPinPaths(c: RecordsCase): Set<string> {
   for (const [at, pin] of c.input.constraints.pinnedSlots) {
     const part = pin === null ? undefined : c.catalog.get(pin);
     if (part === undefined || priceUnder(gate, part) !== null) continue;
-    if (paths.some((path) => (path.covers.get(pin!) ?? 0) > 0)) continue;
+    // A way to buy the gun prices the part only when its own price is known.
+    const priced = (path: (typeof paths)[number]) =>
+      path.availability.priceRUB !== null && (path.covers.get(pin!) ?? 0) > 0;
+    if (paths.some(priced)) continue;
     found.add(at);
   }
   return found;

@@ -20,8 +20,11 @@ export function OptimizeRunning({ progress, timeoutMs, onCancel }: RunningProps)
     const id = setInterval(() => setNow(Date.now()), 100);
     return () => clearInterval(id);
   }, []);
-  const elapsed = Math.max(0, now - progress.startedAt);
   const n = progress.nodes;
+  const clock =
+    progress.startedAt === null
+      ? "Starting the solver"
+      : `${(Math.max(0, now - progress.startedAt) / 1000).toFixed(1)} s of ${seconds(timeoutMs)}`;
   return (
     <Card
       variant="bracket"
@@ -31,8 +34,7 @@ export function OptimizeRunning({ progress, timeoutMs, onCancel }: RunningProps)
     >
       <span className="font-display text-base tracking-wide">SOLVING</span>
       <span className="font-mono text-xs uppercase tracking-18 text-[var(--color-muted-foreground)]">
-        {(elapsed / 1000).toFixed(1)} s of {seconds(timeoutMs)} · {n} candidate{" "}
-        {n === 1 ? "build" : "builds"} checked
+        {clock} · {n} candidate {n === 1 ? "build" : "builds"} checked
       </span>
       <Button className="ml-auto" variant="secondary" size="sm" onClick={onCancel}>
         CANCEL
@@ -48,7 +50,7 @@ interface OutcomeProps {
   error: Error | undefined;
   /** Whether the run read no profile: nothing a profile change could reach. */
   theorycraft: boolean;
-  /** The form's pins, path → part id or `null` (empty): what an UNPIN button removes. */
+  /** The pins the run was sent, path → part id or `null` (empty): what UNPIN names. */
   pinnedSlots: ReadonlyMap<string, string | null>;
   /** A part's display name. */
   nameOf: (id: string) => string;
@@ -161,12 +163,42 @@ function describe({
         actions: editProfile,
       };
     case "infeasible-budget":
-      return {
-        heading: "OVER BUDGET",
-        message: failure.message,
-        hint: "Raise the budget, or run without one.",
-        actions: withoutBudget,
-      };
+      switch (failure.cause) {
+        case "over-budget":
+          return {
+            heading: "OVER BUDGET",
+            message: failure.message,
+            hint: "Raise the budget, or run without one.",
+            actions: withoutBudget,
+          };
+        case "pins":
+          return {
+            heading: "NO KNOWN PRICE",
+            message: failure.message,
+            hint: "Unpin slots, or run without a budget.",
+            actions: (
+              <>
+                {failure.paths.map((path) => unpin([path], pinLabel(path)))}
+                {withoutBudget}
+              </>
+            ),
+          };
+        case "unpriced":
+          return {
+            heading: "NO KNOWN PRICE",
+            message: failure.message,
+            hint: theorycraft
+              ? "Run without a budget."
+              : "Run without a budget, or change the profile to reach parts with a known price.",
+            actions: (
+              <>
+                {withoutBudget}
+                {editProfile}
+              </>
+            ),
+          };
+      }
+      break;
     case "pinned-unpriced": {
       const ids = new Set(failure.itemIds);
       const paths = [...pinnedSlots]
@@ -196,8 +228,8 @@ function describe({
         heading: "NO BUILD FITS TOGETHER",
         message: failure.message,
         hint: theorycraft
-          ? "Unpin slots, or pick another weapon."
-          : "Unpin slots, or change the profile to reach other parts.",
+          ? "Pick another weapon."
+          : "Change the profile to reach other parts, or pick another weapon.",
         actions: editProfile,
       };
   }
