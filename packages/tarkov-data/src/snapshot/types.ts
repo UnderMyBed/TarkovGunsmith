@@ -13,7 +13,7 @@ import type { WeaponPreset } from "../queries/presets.js";
  * {@link BuilderPrices}: the snapshot ships in the same deploy as the code that reads it, so
  * the only reader that can ever see a different version is a tab opened before a deploy.
  */
-export const BUILDER_SNAPSHOT_SCHEMA = 3;
+export const BUILDER_SNAPSHOT_SCHEMA = 4;
 
 /** Where a snapshot's documents came from: live `json.tarkov.dev`, or the committed captures. */
 export type SnapshotSource = "upstream" | "fixtures";
@@ -68,6 +68,10 @@ export interface BuilderSnapshot {
   readonly ingredientNames: Readonly<Record<string, string>>;
   /** Every trader, including the ones the profile does not track. */
   readonly traders: readonly TraderListItem[];
+  /**
+   * The tasks that gate an offer above, sorted by `normalizedName`: the quests a profile can
+   * mark done. Every other upstream task is left out.
+   */
   readonly tasks: readonly TaskListItem[];
 }
 

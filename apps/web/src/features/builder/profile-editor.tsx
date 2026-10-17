@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactElement } from "react";
 import type { PlayerProfile, TaskListItem } from "@tarkov/data";
-import { useTasks, MARQUEE_QUEST_NORMALIZED_NAMES } from "@tarkov/data";
+import { useTasks } from "@tarkov/data";
 import {
   Button,
   Card,
@@ -41,12 +41,20 @@ const TRADER_LABELS: Record<(typeof TRADER_KEYS)[number], string> = {
   jaeger: "Jaeger",
 };
 
-type QuestFilter = "all" | "marquee" | "incomplete";
+type QuestFilter = "all" | "incomplete";
+
+/** What each mode checks, shown under the mode toggle. */
+const MODE_COPY = {
+  basic:
+    "Basic checks trader loyalty only. A quest-locked trader offer counts as unlocked once you reach its loyalty level.",
+  advanced:
+    "Advanced also checks quests. Tick the ones you've completed, or import them from TarkovTracker.",
+} as const;
 
 /**
  * `new Set(completedQuests ?? [])` built a fresh Set on every render regardless of
  * whether `completedQuests` had actually changed. Every consumer that put that Set in
- * a `useMemo` dependency array (visibleTasks, marqueeDoneCount below) therefore
+ * a `useMemo` dependency array (visibleTasks, doneCount below) therefore
  * recomputed on every render too — the memoisation was a no-op. Memoising the Set
  * itself, keyed on the array reference, is what makes those downstream memos real.
  */
@@ -63,30 +71,27 @@ export function useTaskList(data: readonly TaskListItem[] | undefined): readonly
 export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): ReactElement {
   const tasks = useTasks();
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [filter, setFilter] = useState<QuestFilter>("marquee");
+  const [filter, setFilter] = useState<QuestFilter>("all");
   const [search, setSearch] = useState("");
 
-  const marqueeSet = useMemo(() => new Set<string>(MARQUEE_QUEST_NORMALIZED_NAMES), []);
   const completedSet = useCompletedQuestSet(profile.completedQuests);
 
+  // The snapshot's tasks are the quests that gate an offer, so this is the whole list.
   const allTasks = useTaskList(tasks.data);
   const visibleTasks = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return allTasks
-      .filter((t) => {
-        if (filter === "marquee" && !marqueeSet.has(t.normalizedName)) return false;
-        if (filter === "incomplete" && completedSet.has(t.normalizedName)) return false;
-        if (q.length > 0 && !t.name.toLowerCase().includes(q)) return false;
-        return true;
-      })
-      .slice(0, 200);
-  }, [allTasks, filter, search, marqueeSet, completedSet]);
+    return allTasks.filter((t) => {
+      if (filter === "incomplete" && completedSet.has(t.normalizedName)) return false;
+      if (q.length > 0 && !t.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [allTasks, filter, search, completedSet]);
 
-  const marqueeDoneCount = useMemo(
-    () => Array.from(marqueeSet).filter((slug) => completedSet.has(slug)).length,
-    [marqueeSet, completedSet],
+  // Only quests that gate gear count; a stored quest that gates nothing stays stored.
+  const doneCount = useMemo(
+    () => allTasks.filter((t) => completedSet.has(t.normalizedName)).length,
+    [allTasks, completedSet],
   );
-  const totalDoneCount = completedSet.size;
 
   function setMode(mode: "basic" | "advanced"): void {
     onChange({ ...profile, mode });
@@ -125,6 +130,9 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
             <CardDescription>
               Dims mods you can&apos;t acquire yet and shows the blocking requirement.
             </CardDescription>
+            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+              {MODE_COPY[profile.mode]}
+            </p>
           </div>
           <div className="flex gap-1 rounded-[var(--radius)] border p-1">
             <Button
@@ -224,9 +232,9 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">
-                    Quests{" "}
+                    Quests that unlock gear{" "}
                     <span className="text-xs font-normal text-[var(--color-muted-foreground)]">
-                      — {totalDoneCount} complete
+                      — {doneCount} of {allTasks.length} complete
                     </span>
                   </span>
                   {tasks.isLoading && (
@@ -246,10 +254,6 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
                   {(
                     [
                       ["all", "All"],
-                      [
-                        "marquee",
-                        `Marquee (${marqueeDoneCount}/${MARQUEE_QUEST_NORMALIZED_NAMES.length})`,
-                      ],
                       ["incomplete", "Incomplete"],
                     ] as const
                   ).map(([key, label]) => (
@@ -269,7 +273,7 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
                 </div>
                 {tasks.error && (
                   <span className="text-xs text-[var(--color-muted-foreground)]">
-                    Couldn&apos;t load quest list — toggles still work against cached slugs.
+                    Couldn&apos;t load the quest list. Reload the page.
                   </span>
                 )}
                 <ul className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">

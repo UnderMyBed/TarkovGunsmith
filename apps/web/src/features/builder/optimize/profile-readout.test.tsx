@@ -22,8 +22,8 @@ function sync(state: "disconnected" | "syncing" | "synced" | "error"): UseTarkov
           state,
           lastSyncedAt: Date.now() - 2 * 3600_000,
           questCount: 50,
+          questTotal: 71,
           playerLevel: 20,
-          unmappedCount: 0,
         }
       : state === "error"
         ? { state, kind: "network" as const, message: "offline" }

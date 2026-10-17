@@ -10,6 +10,7 @@ import {
   PlayerProfile,
   DEFAULT_PROFILE,
   CURRENT_BUILD_VERSION,
+  COMPLETED_QUESTS_CAP,
 } from "./build-schema.js";
 
 const validV1 = {
@@ -287,6 +288,24 @@ describe("BuildV6", () => {
 
   it("parses a valid v6 payload", () => {
     expect(BuildV6.parse(v6base).version).toBe(6);
+  });
+
+  it("loads a shared build whose profileSnapshot lists 300 completed quests", () => {
+    const completedQuests = Array.from({ length: 300 }, (_, i) => `quest-${String(i)}`);
+    const parsed = Build.parse({
+      ...v6base,
+      profileSnapshot: { ...DEFAULT_PROFILE, mode: "advanced", completedQuests },
+    });
+    expect(parsed.version === 6 && parsed.profileSnapshot?.completedQuests).toEqual(
+      completedQuests,
+    );
+    const over = Array.from({ length: COMPLETED_QUESTS_CAP + 1 }, (_, i) => `q${String(i)}`);
+    expect(
+      BuildV6.safeParse({
+        ...v6base,
+        profileSnapshot: { ...DEFAULT_PROFILE, completedQuests: over },
+      }).success,
+    ).toBe(false);
   });
 
   it("carries v4's name/description and v3's profileSnapshot forward", () => {

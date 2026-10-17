@@ -41,6 +41,8 @@ const ERROR_COPY: Record<string, string> = {
   network: "Can't reach TarkovTracker. Your local profile is unchanged — try Re-sync in a minute.",
   "shape-mismatch":
     "TarkovTracker changed its API shape. This tool needs an update — please file an issue.",
+  "quest-list":
+    "The quest list didn't load, so your progression can't be applied. Reload the page.",
 };
 
 export function TarkovTrackerSyncBanner({
@@ -95,13 +97,12 @@ export function TarkovTrackerSyncBanner({
   }
 
   if (detail.state === "synced") {
-    const unmapped = detail.unmappedCount > 0 ? ` · ${detail.unmappedCount} UNMAPPED` : "";
     return (
       <Shell tone="amber">
         <div className="flex flex-col gap-0.5 text-xs">
           <span className="font-mono uppercase tracking-wider text-[var(--color-primary)]">
-            ▲ TARKOVTRACKER · {detail.questCount} QUESTS · PMC LV {detail.playerLevel}
-            {unmapped}
+            ▲ TARKOVTRACKER · {detail.questCount}/{detail.questTotal} GEAR QUESTS · PMC LV{" "}
+            {detail.playerLevel}
           </span>
           <span className="text-[var(--color-muted-foreground)]">
             Last sync {relativeTime(detail.lastSyncedAt)}. Trader LLs not synced — set manually.
