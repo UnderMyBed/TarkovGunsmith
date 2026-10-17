@@ -200,59 +200,84 @@ test.describe("builder optimizer diff view", () => {
     await expect
       .poll(async () => await picker.locator("option").count(), { timeout: 15_000 })
       .toBeGreaterThan(1);
-    await picker.selectOption(await picker.locator("option").nth(1).getAttribute("value"));
-    // A new build starts from the weapon's default preset: parts nested a few levels deep.
+    await picker.selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
     await expect(page.getByText(/^[1-9]\d* attached$/)).toBeVisible();
+    // The SOPMOD II preset fills slots below optional ones; the default preset does not.
+    const sopmod = page.getByRole("group", { name: "Presets" }).getByRole("button", {
+      name: /^M4A1 SOPMOD II/,
+    });
+    await sopmod.click();
+    await expect(sopmod).toHaveAttribute("aria-pressed", "true");
 
     await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
     const tree = page.getByRole("list", { name: "Pinned slots" });
     await expect(page.getByText("Nothing pinned")).toBeVisible();
 
-    // The first nested slot that holds a part, and the slot that owns it.
-    const nested = tree.locator('li[data-slot-path*="/"]').filter({
-      has: page.getByRole("radio", { name: "LOCK", disabled: false }),
-    });
-    const child = nested.first();
-    const childPath = (await child.getAttribute("data-slot-path"))!;
-    const parentPath = childPath.split("/").slice(0, -1).join("/");
-    const parent = tree.locator(`li[data-slot-path="${parentPath}"]`);
-    const childGroup = child.getByRole("radiogroup");
-    const childName = ((await childGroup.getAttribute("aria-label")) ?? "").replace(/ pin$/, "");
-    const parentName = (
-      (await parent.getByRole("radiogroup").getAttribute("aria-label")) ?? ""
-    ).replace(/ pin$/, "");
+    // A nested slot that holds a part, under a slot that may be left empty: the pair the
+    // emptying has to be shown on. The captured build must have one.
+    const row = (path: string) => tree.locator(`li[data-slot-path="${path}"]`);
+    const enabled = async (path: string, choice: string) =>
+      await row(path).getByRole("radio", { name: choice }).isEnabled();
+    const paths = await tree
+      .locator("li[data-slot-path]")
+      .evaluateAll((lis) => lis.map((li) => li.getAttribute("data-slot-path")!));
+    let childPath: string | undefined;
+    let parentPath: string | undefined;
+    for (const path of paths.filter((p) => p.includes("/"))) {
+      if (!(await enabled(path, "LOCK"))) continue;
+      const segments = path.split("/");
+      for (let i = segments.length - 1; i >= 1 && parentPath === undefined; i--) {
+        const above = segments.slice(0, i).join("/");
+        if (await enabled(above, "EMPTY")) parentPath = above;
+      }
+      if (parentPath !== undefined) {
+        childPath = path;
+        break;
+      }
+    }
+    expect(
+      childPath,
+      "the SOPMOD II preset needs a filled slot below an optional one",
+    ).toBeTruthy();
+    const child = row(childPath!);
+    const parent = row(parentPath!);
+    const labelOf = async (path: string) =>
+      ((await row(path).getByRole("radiogroup").getAttribute("aria-label")) ?? "").replace(
+        / pin$/,
+        "",
+      );
 
-    await childGroup.getByRole("radio", { name: "LOCK" }).check({ force: true });
+    await child.getByRole("radio", { name: "LOCK" }).check({ force: true });
     await expect(page.getByText("1 slot pinned")).toBeVisible();
 
-    // Emptying the parent takes the nested lock with it, in view.
-    const parentEmpty = parent.getByRole("radio", { name: "EMPTY" });
-    if (await parentEmpty.isEnabled()) {
-      await parentEmpty.check({ force: true });
-      await expect(tree.locator(`li[data-slot-path="${childPath}"]`)).toHaveCount(0);
-      await expect(page.getByText("1 slot pinned")).toBeVisible();
-      await parent.getByRole("radio", { name: "FREE" }).check({ force: true });
-      await expect(
-        tree.locator(`li[data-slot-path="${childPath}"]`).getByRole("radio", { name: "FREE" }),
-      ).toBeChecked();
-      await expect(page.getByText("Nothing pinned")).toBeVisible();
-      await tree
-        .locator(`li[data-slot-path="${childPath}"]`)
-        .getByRole("radio", { name: "LOCK" })
-        .check({ force: true });
-    }
+    // EMPTY asks first, then takes the nested lock with it, in view.
+    await parent.getByRole("radio", { name: "EMPTY" }).click({ force: true });
+    await expect(parent.getByRole("radio", { name: "EMPTY" })).not.toBeChecked();
+    const ask = parent.getByRole("group", { name: `Empty ${await labelOf(parentPath!)}` });
+    await expect(ask).toContainText("clears 1 pin below it.");
+    await expect(child).toHaveCount(1);
+    await ask.getByRole("button", { name: "EMPTY IT" }).click();
+    await expect(child).toHaveCount(0);
+    await expect(page.getByText("1 slot pinned")).toBeVisible();
+    await parent.getByRole("radio", { name: "FREE" }).check({ force: true });
+    await expect(child.getByRole("radio", { name: "FREE" })).toBeChecked();
+    await expect(page.getByText("Nothing pinned")).toBeVisible();
 
-    // Lock the parent too, so the nested path exists in every build the solver may return.
-    await parent.getByRole("radio", { name: "LOCK" }).check({ force: true });
-    await expect(page.getByText("2 slots pinned")).toBeVisible();
+    // Lock the child and every slot above it, so its path exists in every build the solver
+    // may return.
+    const segments = childPath!.split("/");
+    const chain = segments.map((_, i) => segments.slice(0, i + 1).join("/"));
+    for (const path of chain)
+      await row(path).getByRole("radio", { name: "LOCK" }).check({ force: true });
+    await expect(page.getByText(`${chain.length} slots pinned`)).toBeVisible();
     await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
 
     const report = page.getByRole("region", { name: "Pins" });
-    await expect(report).toContainText("2 KEPT", { timeout: 15_000 });
-    await expect(report.getByRole("listitem").filter({ hasText: /^KEPT/ })).toHaveText([
-      new RegExp(`^KEPT${escape(parentName)}`),
-      new RegExp(`^KEPT${escape(parentName)} › ${escape(childName)}`),
-    ]);
+    await expect(report).toContainText(`${chain.length} KEPT`, { timeout: 15_000 });
+    const labels = await Promise.all(chain.map(labelOf));
+    await expect(report.getByRole("listitem").filter({ hasText: /^KEPT/ })).toHaveText(
+      labels.map((_, i) => new RegExp(`^KEPT${escape(labels.slice(0, i + 1).join(" › "))}`)),
+    );
   });
 
   test("← EDITOR discards and returns to editor without merging", async ({ page }) => {
