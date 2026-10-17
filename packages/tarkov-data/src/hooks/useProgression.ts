@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PlayerProfile, DEFAULT_PROFILE } from "../build-schema.js";
 import type { BuilderMode } from "../preset-seed.js";
 
@@ -215,6 +215,22 @@ export function useProgression(): Progression {
   const setMode = useCallback((next: BuilderMode) => {
     setModeState(next);
     store(MODE_STORAGE_KEY, next);
+  }, []);
+
+  // Another tab setting the profile or the mode writes the same keys; follow it, so a prompt
+  // this tab still shows cannot overwrite the profile the other tab just set. The event fires
+  // only in the tabs that did not write.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== STORAGE_KEY && event.key !== MODE_STORAGE_KEY) {
+        return;
+      }
+      setProfileState(resolveInitialProfile());
+      setHasProfile(resolveHasProfile());
+      setModeState(resolveInitialMode());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   const updateProfile = useCallback((next: PlayerProfile) => {

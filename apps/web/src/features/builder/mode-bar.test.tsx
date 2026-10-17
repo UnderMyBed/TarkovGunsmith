@@ -7,6 +7,7 @@ import {
   FLEA_UNLOCK_LEVEL,
   useProgression,
   type PlayerProfile,
+  type TaskListItem,
 } from "@tarkov/data";
 import { ModeBar } from "./mode-bar.js";
 import { applySyncedProfile } from "./synced-profile.js";
@@ -31,12 +32,12 @@ function latestProfile(): PlayerProfile {
  * The bar over the real `useProgression` and `useTarkovTrackerSync`, wired as `BuilderPage`
  * wires them, so what it sets is what persists.
  */
-function Harness() {
+function Harness({ tasks = [] }: { tasks?: TaskListItem[] }) {
   const progression = useProgression();
   const sync = useTarkovTrackerSync({
     profile: progression.profile,
     onChange: (next, cause) => applySyncedProfile(progression, next, cause),
-    tasks: [],
+    tasks,
   });
   return (
     <>
@@ -119,6 +120,58 @@ describe("ModeBar on a first visit", () => {
     expect(screen.getByText("Set your progression")).toBeInTheDocument();
     expect(window.localStorage.getItem(PROFILE_KEY)).toBeNull();
     expect(window.localStorage.getItem(MODE_KEY)).toBeNull();
+  });
+});
+
+describe("ModeBar re-syncing a first import that failed", () => {
+  // The captures' quest that gates the PRS stock (`quest-gating.spec.ts`), completed.
+  const TASKS: TaskListItem[] = [
+    {
+      id: "5a03296886f774569778596a",
+      name: "I Need More Power",
+      normalizedName: "i-need-more-power",
+      kappaRequired: false,
+      trader: { normalizedName: "peacekeeper" },
+    },
+  ];
+  const PROGRESSION = {
+    tasksProgress: [{ id: "5a03296886f774569778596a", complete: true }],
+    taskObjectivesProgress: [],
+    hideoutModulesProgress: [],
+    hideoutPartsProgress: [],
+    displayName: "SyncUser",
+    userId: "sync",
+    playerLevel: 30,
+    gameEdition: 1,
+    pmcFaction: "USEC",
+  };
+
+  it("applies the re-sync as the first import: advanced, quests read, progression", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response("", { status: 429 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(PROGRESSION), { status: 200 })),
+    );
+    render(<Harness tasks={TASKS} />);
+    await importToken("tok-123");
+    expect(await screen.findByText(/rate-limiting/)).toBeInTheDocument();
+    expect(screen.getByTestId("mode")).toHaveTextContent("theorycraft");
+    expect(window.localStorage.getItem(PROFILE_KEY)).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Re-sync" }));
+      await Promise.resolve();
+    });
+
+    await screen.findByText("progression");
+    expect(latestProfile()).toMatchObject({
+      mode: "advanced",
+      completedQuests: ["i-need-more-power"],
+      level: 30,
+    });
+    expect(window.localStorage.getItem(MODE_KEY)).toBe("progression");
   });
 });
 

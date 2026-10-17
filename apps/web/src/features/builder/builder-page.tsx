@@ -235,6 +235,7 @@ export function BuilderPage({
                       const preset = weaponPresets.find((p) => p.id === id);
                       return preset ? presetAvailability(preset, builder.gate) : null;
                     }}
+                    mode={mode}
                     onApply={builder.applyPreset}
                   />
                 )}

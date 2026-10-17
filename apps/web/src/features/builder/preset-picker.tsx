@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   resolveBuild,
+  type BuilderMode,
   type ConflictFields,
   type ItemAvailability,
   type WeaponPreset,
@@ -9,6 +10,7 @@ import {
 import { Button, Card, CardContent, Pill } from "@tarkov/ui";
 import { AvailabilityPill, formatRequirement } from "./slot-tree.js";
 import { useQuestName } from "./quest-names.js";
+import { shownAvailability } from "./shown-availability.js";
 
 export interface PresetPickerProps {
   /** One weapon's presets, the default first (`selectWeaponPresets` order). */
@@ -21,6 +23,11 @@ export interface PresetPickerProps {
   attachments: Readonly<Record<string, string>>;
   /** How the Builder's gate can buy each preset; in theorycraft, every gate open. */
   getAvailability?: (presetId: string) => ItemAvailability | null;
+  /**
+   * The Builder's mode. In theorycraft a preset nothing sells is shown neither dimmed nor
+   * LOCKED (`shownAvailability`); progression shows what blocks it. Defaults to progression.
+   */
+  mode?: BuilderMode;
   /** Replaces the build's attachments wholesale. */
   onApply: (attachments: Readonly<Record<string, string>>) => void;
 }
@@ -57,6 +64,7 @@ export function PresetPicker({
   known,
   attachments,
   getAvailability,
+  mode = "progression",
   onApply,
 }: PresetPickerProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -98,7 +106,9 @@ export function PresetPicker({
           <span className="mr-2 text-sm text-[var(--color-muted-foreground)]">Presets:</span>
           {options.map((option) => {
             const availability =
-              option === EMPTY_OPTION ? null : (getAvailability?.(option.id) ?? null);
+              option === EMPTY_OPTION
+                ? null
+                : shownAvailability(mode, getAvailability?.(option.id) ?? null);
             const isCurrent = option === current;
             return (
               <Button

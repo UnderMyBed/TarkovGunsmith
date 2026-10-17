@@ -35,8 +35,6 @@ const MODE_LABEL: Record<BuilderMode, string> = {
 export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
   const { profile, hasProfile, setProfile, mode, setMode } = progression;
   const [popoverOpen, setPopoverOpen] = useState(false);
-  // Set once the user starts an import here, so its progress and any failure show here too.
-  const [importing, setImporting] = useState(false);
 
   const toggle = (
     <div
@@ -124,7 +122,9 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
         <Button type="button" size="sm" variant="ghost" onClick={() => setPopoverOpen(true)}>
           ▲ Import from TarkovTracker
         </Button>
-        {importing && (sync.state === "syncing" || sync.state === "error") && (
+        {/* An import under way, or one that failed or was left after a reload: its progress,
+            its error and its Re-sync show here, where it was started. */}
+        {sync.state !== "disconnected" && sync.state !== "synced" && (
           <div className="w-full">
             <TarkovTrackerSyncBanner sync={sync} />
           </div>
@@ -136,7 +136,6 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
         onClose={() => setPopoverOpen(false)}
         onConnect={(token) => {
           setPopoverOpen(false);
-          setImporting(true);
           // Nothing is written until the import succeeds: a bad token leaves a first visit
           // in theorycraft with no profile stored.
           void sync.connect(token);

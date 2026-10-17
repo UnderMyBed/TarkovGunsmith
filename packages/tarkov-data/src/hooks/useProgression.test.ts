@@ -394,6 +394,68 @@ describe("useProgression: updateProfile", () => {
   });
 });
 
+describe("useProgression across tabs", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => window.localStorage.clear());
+
+  /** What another tab's write looks like here: the value stored, then a `storage` event. */
+  function writeFromAnotherTab(key: string, value: string | null) {
+    if (value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, value);
+    window.dispatchEvent(new StorageEvent("storage", { key, newValue: value }));
+  }
+
+  it("follows a profile another tab sets: the profile, that one is set, and progression", () => {
+    const { result } = renderHook(() => useProgression());
+    expect(result.current).toMatchObject({ hasProfile: false, mode: "theorycraft" });
+
+    const ll4 = loyaltyProfile(4, DEFAULT_PROFILE);
+    act(() => {
+      writeFromAnotherTab(STORAGE_KEY, JSON.stringify(ll4));
+      writeFromAnotherTab(MODE_KEY, "progression");
+    });
+    expect(result.current.profile).toEqual(ll4);
+    expect(result.current.hasProfile).toBe(true);
+    expect(result.current.mode).toBe("progression");
+  });
+
+  it("follows a mode switch another tab makes, and a storage clear", () => {
+    window.localStorage.setItem(STORAGE_KEY, STORED_PROFILE);
+    const { result } = renderHook(() => useProgression());
+    act(() => writeFromAnotherTab(MODE_KEY, "theorycraft"));
+    expect(result.current.mode).toBe("theorycraft");
+
+    act(() => {
+      window.localStorage.clear();
+      window.dispatchEvent(new StorageEvent("storage", { key: null }));
+    });
+    expect(result.current).toMatchObject({
+      profile: DEFAULT_PROFILE,
+      hasProfile: false,
+      mode: "theorycraft",
+    });
+  });
+
+  it("stops listening once unmounted", () => {
+    const remove = vi.spyOn(window, "removeEventListener");
+    const { unmount } = renderHook(() => useProgression());
+    unmount();
+    expect(remove).toHaveBeenCalledWith("storage", expect.any(Function));
+    remove.mockRestore();
+  });
+
+  it("ignores another key", () => {
+    window.localStorage.setItem(STORAGE_KEY, STORED_PROFILE);
+    const { result } = renderHook(() => useProgression());
+    const before = result.current.profile;
+    act(() => {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PROFILE));
+      window.dispatchEvent(new StorageEvent("storage", { key: "tg:builder-draft" }));
+    });
+    expect(result.current.profile).toBe(before);
+  });
+});
+
 describe("loyaltyProfile", () => {
   const ADVANCED = {
     ...DEFAULT_PROFILE,

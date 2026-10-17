@@ -3,6 +3,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { BuilderMode, ItemAvailability, WeaponTree } from "@tarkov/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { SlotTree } from "./slot-tree.js";
+import { shownAvailability } from "./shown-availability.js";
 import { OrphanedBanner } from "./orphaned-banner.js";
 
 export interface ModsPanelProps {
@@ -49,12 +50,7 @@ export function ModsPanel({
 }: ModsPanelProps) {
   const [showAll, setShowAll] = useState(false);
   const theorycraft = mode === "theorycraft";
-  // A part no source sells is the only one an open gate leaves unavailable; in theorycraft it
-  // carries no pill rather than LOCKED. Every available part keeps its pill.
-  const availabilityOf = (itemId: string): ItemAvailability | null => {
-    const availability = getAvailability(itemId);
-    return theorycraft && availability?.available === false ? null : availability;
-  };
+  const availabilityOf = (itemId: string) => shownAvailability(mode, getAvailability(itemId));
 
   return (
     <Card>

@@ -154,4 +154,33 @@ describe("PresetPicker", () => {
     fireEvent.click(chip(/M4A1 Carbine/));
     expect(onApply).toHaveBeenCalledWith(CARBINE.attachments);
   });
+
+  it("in theorycraft, shows a preset nothing sells neither dimmed nor LOCKED", () => {
+    const noSources: ItemAvailability = { available: false, reason: "no-sources" };
+    const { rerender } = render(
+      <Picker
+        presets={PRESETS}
+        attachments={{}}
+        getAvailability={() => noSources}
+        mode="theorycraft"
+        onApply={vi.fn()}
+      />,
+    );
+    expect(chip(/M4A1 Carbine/)).not.toHaveTextContent("LOCKED");
+    expect(chip(/M4A1 Carbine/)).not.toHaveTextContent("No sources");
+    // Dimming has no accessible signal; its class is the only observable.
+    expect(chip(/M4A1 Carbine/)).not.toHaveClass("opacity-60");
+
+    rerender(
+      <Picker
+        presets={PRESETS}
+        attachments={{}}
+        getAvailability={() => noSources}
+        mode="progression"
+        onApply={vi.fn()}
+      />,
+    );
+    expect(chip(/M4A1 Carbine/)).toHaveTextContent("LOCKED");
+    expect(chip(/M4A1 Carbine/)).toHaveClass("opacity-60");
+  });
 });

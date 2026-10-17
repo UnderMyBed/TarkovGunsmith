@@ -19,6 +19,13 @@ describe("applySyncedProfile", () => {
     expect(result.current.profile).toEqual({ ...IMPORTED, mode: "advanced" });
   });
 
+  it("applies a re-sync with no profile set yet as the first import it is", () => {
+    const { result } = renderHook(() => useProgression());
+    act(() => applySyncedProfile(result.current, IMPORTED, "resync"));
+    expect(result.current.mode).toBe("progression");
+    expect(result.current.profile).toEqual({ ...IMPORTED, mode: "advanced" });
+  });
+
   it("lets a re-sync that lands after a switch to theorycraft refresh the profile only", () => {
     const { result } = renderHook(() => useProgression());
     act(() => result.current.setProfile(DEFAULT_PROFILE));
