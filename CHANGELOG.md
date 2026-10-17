@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.17.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.17.0...v1.17.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* Builder item graph — every part type, lazy slot graph, conflicts ([#213](https://github.com/UnderMyBed/TarkovGunsmith/issues/213) [#214](https://github.com/UnderMyBed/TarkovGunsmith/issues/214) [#215](https://github.com/UnderMyBed/TarkovGunsmith/issues/215)) ([#240](https://github.com/UnderMyBed/TarkovGunsmith/issues/240)) ([bad1c48](https://github.com/UnderMyBed/TarkovGunsmith/commit/bad1c48d537efd85de50aaf2baf73db203d441c2))
+* **data:** count preset and barter offers in availability; drop signal flares ([#237](https://github.com/UnderMyBed/TarkovGunsmith/issues/237)) ([4b9dd32](https://github.com/UnderMyBed/TarkovGunsmith/commit/4b9dd32cbeea308f20324ec6c92cfe3e7f9a7590))
+* **deps:** bump jsonpath-plus from 10.4.0 to 11.2.1 ([#206](https://github.com/UnderMyBed/TarkovGunsmith/issues/206)) ([a9d425e](https://github.com/UnderMyBed/TarkovGunsmith/commit/a9d425e65e4d0c8b9ae655f54e3bd369bd543386))
+
 ## [1.17.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.16.2...v1.17.0) (2026-10-16)
 
 
