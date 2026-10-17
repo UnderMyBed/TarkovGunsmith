@@ -7,7 +7,6 @@ import {
   useWeaponPresets,
   useWeaponTree,
   applyBuildAction,
-  builderMode,
   itemAvailability,
   partsById,
   priceGate,
@@ -17,6 +16,7 @@ import {
   type AttachablePart,
   type BuildAction,
   type BuildContext,
+  type BuilderMode,
   type BuildPrice,
   type BuildState,
   type BuildV6,
@@ -34,8 +34,8 @@ import { priceBuild, pricesStatus, type PricesStatus } from "./build-price.js";
 
 /**
  * A weapon the picker lists. `lockedBy` is set only on the current weapon when the profile
- * cannot obtain it and the picker is filtered to available weapons: it stays listed so the
- * picker still names what is on screen.
+ * cannot obtain it in progression mode: it stays listed so the picker still names what is on
+ * screen.
  */
 export type WeaponOption = WeaponListItem & {
   readonly lockedBy: Extract<ReturnType<typeof itemAvailability>, { available: false }> | null;
@@ -50,8 +50,13 @@ export interface UseBuilderStateArgs {
    * attachment on the weapon, the rest in `orphaned`. `undefined` for a new build.
    */
   initialBuild: BuildV6 | undefined;
-  /** Needed for availability gating (weapon list filter, per-mod LOCKED pills). */
+  /** The player's profile: what gates everything in progression mode. */
   profile: PlayerProfile;
+  /**
+   * Theorycraft opens every gate; progression gates weapons, parts, presets and prices by
+   * {@link profile}. Every one of them reads the one gate this makes.
+   */
+  mode: BuilderMode;
   /** Save metadata — folded into `currentBuild` alongside the weapon/mod state below. */
   buildName: string;
   buildDescription: string;
@@ -65,9 +70,10 @@ export interface UseBuilderStateResult {
   weaponOptions: WeaponOption[];
   weaponId: string;
   handleWeaponChange: (weaponId: string) => void;
-  showAllWeapons: boolean;
-  setShowAllWeapons: (show: boolean) => void;
-  /** Whose gates price the build: the profile, or `null` in theorycraft (show all). */
+  /**
+   * Whose gates apply: the profile in progression, `null` in theorycraft. The weapon list,
+   * the part pills, the preset picker, the price and the optimizer all read this one value.
+   */
   gate: PriceGate;
   selectedWeapon: WeaponListItem | undefined;
   /** The selected weapon's presets, priced, default first. */
@@ -97,6 +103,7 @@ export interface UseBuilderStateResult {
   missingRequired: readonly string[];
   /** One line per pair of fitted parts that clash, by short name: "ADAR stock × M4SS". */
   conflicts: readonly string[];
+  /** Every part's availability under {@link gate}. */
   availabilityById: Map<string, ReturnType<typeof itemAvailability>>;
 
   spec: WeaponSpec | null;
@@ -124,6 +131,7 @@ export interface UseBuilderStateResult {
 export function useBuilderState({
   initialBuild,
   profile,
+  mode,
   buildName,
   buildDescription,
   embedProfileOnSave,
@@ -140,9 +148,11 @@ export function useBuilderState({
     orphaned: [...(initialBuild?.orphaned ?? [])],
   }));
   const { weaponId, attachments, orphaned } = build;
-  const [showAllWeapons, setShowAllWeapons] = useState(false);
-  const mode = builderMode(showAllWeapons);
   const gate = priceGate(mode, profile);
+  const prices = pricesStatus(livePrices);
+  // The weapon a new build was seeded for before live prices arrived, in progression mode,
+  // where the seed reads them. Cleared by any edit: only an untouched seed is redone.
+  const [pendingSeed, setPendingSeed] = useState<string | null>(null);
 
   const tree = useWeaponTree(weaponId);
   const byId = useMemo(() => partsById(catalog.data ?? []), [catalog.data]);
@@ -154,20 +164,23 @@ export function useBuilderState({
   // The reducer throws on an action it refuses (no tree yet, a slot that does not take the
   // part). Applying it here, in the caller's event handler as each Compare side does, keeps
   // that throw out of a state updater, where React would raise it during render.
-  const dispatch = (action: BuildAction) => setBuild(applyBuildAction(build, action, ctx));
+  const dispatch = (action: BuildAction) => {
+    setBuild(applyBuildAction(build, action, ctx));
+    setPendingSeed(null);
+  };
 
   const weaponAvailabilityById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof itemAvailability>>();
     for (const w of weapons.data ?? []) {
-      map.set(w.id, itemAvailability(w, profile));
+      map.set(w.id, itemAvailability(w, gate));
     }
     return map;
-  }, [weapons.data, profile]);
+  }, [weapons.data, gate]);
 
   const weaponOptions = useMemo((): WeaponOption[] => {
     if (!weapons.data) return [];
     const sorted = [...weapons.data].sort((a, b) => a.name.localeCompare(b.name));
-    if (showAllWeapons) return sorted.map((w) => ({ ...w, lockedBy: null }));
+    if (gate === null) return sorted.map((w) => ({ ...w, lockedBy: null }));
     const out: WeaponOption[] = [];
     for (const w of sorted) {
       const availability = weaponAvailabilityById.get(w.id);
@@ -177,7 +190,7 @@ export function useBuilderState({
       }
     }
     return out;
-  }, [weapons.data, weaponAvailabilityById, showAllWeapons, weaponId]);
+  }, [weapons.data, weaponAvailabilityById, gate, weaponId]);
 
   const selectedWeapon = useMemo(
     () => weapons.data?.find((w) => w.id === weaponId),
@@ -200,10 +213,10 @@ export function useBuilderState({
   const availabilityById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof itemAvailability>>();
     for (const m of catalog.data ?? []) {
-      map.set(m.id, itemAvailability(m, profile));
+      map.set(m.id, itemAvailability(m, gate));
     }
     return map;
-  }, [catalog.data, profile]);
+  }, [catalog.data, gate]);
 
   const spec = useMemo(() => {
     if (!selectedWeapon) return null;
@@ -236,9 +249,10 @@ export function useBuilderState({
       toBuildPayload(build, {
         name: buildName,
         description: buildDescription,
-        ...(embedProfileOnSave ? { profile } : {}),
+        // A theorycraft build was not made under the profile, so it never carries one.
+        ...(embedProfileOnSave && gate !== null ? { profile: gate } : {}),
       }),
-    [build, buildName, buildDescription, embedProfileOnSave, profile],
+    [build, buildName, buildDescription, embedProfileOnSave, gate],
   );
 
   const getConflict = useMemo(
@@ -261,11 +275,26 @@ export function useBuilderState({
     [catalog.data, gate, selectedWeapon, treeData, attachments, byId, weaponPresets],
   );
 
-  // A new build starts from the weapon's preset; loading a saved build never comes through
-  // here, so a shared build is never re-seeded. Show-all is theorycraft until #241.
+  // A new build starts from the weapon's preset; loading a saved build or restoring a draft
+  // never comes through here, so neither is ever seeded. In progression the seed reads live
+  // prices: chosen before they arrive, it is redone once they do, unless edited since.
   function handleWeaponChange(newWeaponId: string) {
     const seed = seedAttachments(presets.data?.[newWeaponId] ?? [], mode, profile);
     dispatch({ type: "changeWeapon", weaponId: newWeaponId, seed });
+    if (mode === "progression" && prices.state === "loading") setPendingSeed(newWeaponId);
+  }
+
+  // Adjusted during render rather than in an effect, so the redone seed is what first paints
+  // with the prices. A switch to theorycraft drops it: that seed reads no prices. A failed
+  // price fetch keeps the seed made without them, and the prices line says why.
+  if (pendingSeed !== null && (mode !== "progression" || prices.state !== "loading")) {
+    setPendingSeed(null);
+    if (mode === "progression" && prices.state === "ready" && weaponId === pendingSeed) {
+      const seed = seedAttachments(presets.data?.[pendingSeed] ?? [], mode, profile);
+      setBuild(
+        applyBuildAction(build, { type: "changeWeapon", weaponId: pendingSeed, seed }, null),
+      );
+    }
   }
 
   // Replacing a part carries over what still fits on the new one; emptying drops its subtree.
@@ -285,8 +314,6 @@ export function useBuilderState({
     weaponOptions,
     weaponId,
     handleWeaponChange,
-    showAllWeapons,
-    setShowAllWeapons,
     gate,
     selectedWeapon,
     weaponPresets,
@@ -317,7 +344,7 @@ export function useBuilderState({
     stockSpec,
     currentBuild,
     buildPrice,
-    prices: pricesStatus(livePrices),
+    prices,
 
     upstreamDriftInfo,
     dataAsOf: snapshot.data?.dataAsOf ?? null,

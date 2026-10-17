@@ -1,18 +1,26 @@
 // @vitest-environment jsdom
 //
-// The whole file runs under jsdom now, not just the `useProfile` hook tests below —
+// The whole file runs under jsdom now, not just the `useProgression` hook tests below —
 // `parseStoredProfile` doesn't care about the environment, and splitting it into a second
 // file just to get jsdom for the hook would separate two things that are about the same
 // piece of behaviour.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import { parseStoredProfile, resolveInitialProfile, useProfile } from "./useProfile.js";
+import {
+  FLEA_UNLOCK_LEVEL,
+  loyaltyProfile,
+  parseStoredProfile,
+  resolveInitialMode,
+  resolveInitialProfile,
+  resolveMode,
+  useProgression,
+} from "./useProgression.js";
 import { DEFAULT_PROFILE } from "../build-schema.js";
 
 /**
  * Rehydration guard for `localStorage["tg:player-profile"]`.
  *
- * `useProfile` falls back to `DEFAULT_PROFILE` on any parse failure and reports nothing,
+ * `useProgression` falls back to `DEFAULT_PROFILE` on any parse failure and reports nothing,
  * so a schema change that makes an existing stored profile unparseable doesn't error —
  * it silently deletes the user's trader LLs and their whole completed-quest list. These
  * tests exist to make that failure mode loud at build time instead.
@@ -155,7 +163,7 @@ describe("resolveInitialProfile", () => {
   });
 });
 
-describe("useProfile", () => {
+describe("useProgression: the profile", () => {
   beforeEach(() => window.localStorage.clear());
   afterEach(() => {
     vi.restoreAllMocks();
@@ -163,25 +171,25 @@ describe("useProfile", () => {
   });
 
   it("initializes to DEFAULT_PROFILE when nothing is stored", () => {
-    const { result } = renderHook(() => useProfile());
-    expect(result.current[0]).toEqual(DEFAULT_PROFILE);
+    const { result } = renderHook(() => useProgression());
+    expect(result.current.profile).toEqual(DEFAULT_PROFILE);
   });
 
   it("rehydrates from an existing localStorage value on mount", () => {
     const stored = { ...DEFAULT_PROFILE, level: 42, flea: true };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 
-    const { result } = renderHook(() => useProfile());
-    expect(result.current[0]).toEqual(stored);
+    const { result } = renderHook(() => useProgression());
+    expect(result.current.profile).toEqual(stored);
   });
 
   it("setProfile updates the returned state and persists to localStorage", () => {
-    const { result } = renderHook(() => useProfile());
+    const { result } = renderHook(() => useProgression());
     const next = { ...DEFAULT_PROFILE, level: 10, flea: true };
 
-    act(() => result.current[1](next));
+    act(() => result.current.setProfile(next));
 
-    expect(result.current[0]).toEqual(next);
+    expect(result.current.profile).toEqual(next);
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual(next);
   });
 
@@ -190,24 +198,162 @@ describe("useProfile", () => {
       throw new Error("QuotaExceededError");
     });
 
-    const { result } = renderHook(() => useProfile());
+    const { result } = renderHook(() => useProgression());
     const next = { ...DEFAULT_PROFILE, level: 7 };
 
     // Must not throw out of the state update despite the write failing underneath.
-    expect(() => act(() => result.current[1](next))).not.toThrow();
-    expect(result.current[0]).toEqual(next);
+    expect(() => act(() => result.current.setProfile(next))).not.toThrow();
+    expect(result.current.profile).toEqual(next);
   });
 
   it("falls back to DEFAULT_PROFILE when localStorage.getItem itself throws on mount", () => {
     // Distinct from parseStoredProfile's own internal catch (malformed JSON, schema
     // mismatch): this is `window.localStorage.getItem` throwing synchronously, e.g. a
-    // browser that blocks storage access entirely. useProfile wraps that call in its own
+    // browser that blocks storage access entirely. useProgression wraps that call in its own
     // try/catch specifically because parseStoredProfile can't see it — it never runs.
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("storage blocked");
     });
 
-    const { result } = renderHook(() => useProfile());
-    expect(result.current[0]).toEqual(DEFAULT_PROFILE);
+    const { result } = renderHook(() => useProgression());
+    expect(result.current.profile).toEqual(DEFAULT_PROFILE);
+  });
+});
+
+const MODE_KEY = "tg:builder-mode";
+const STORED_PROFILE = JSON.stringify({ ...DEFAULT_PROFILE, level: 12 });
+
+describe("resolveMode", () => {
+  it("is theorycraft on a first visit: nothing stored", () => {
+    expect(resolveMode(null, null)).toBe("theorycraft");
+    expect(resolveMode(null, "")).toBe("theorycraft");
+  });
+
+  it("is progression for a profile stored before the mode existed", () => {
+    expect(resolveMode(null, STORED_PROFILE)).toBe("progression");
+  });
+
+  it("treats a stored profile that does not parse as no profile", () => {
+    expect(resolveMode(null, "{not json")).toBe("theorycraft");
+    expect(resolveMode(null, JSON.stringify({ mode: "basic" }))).toBe("theorycraft");
+  });
+
+  it("lets a stored mode win either way", () => {
+    expect(resolveMode("theorycraft", STORED_PROFILE)).toBe("theorycraft");
+    expect(resolveMode("progression", null)).toBe("progression");
+  });
+
+  it("ignores a stored mode it does not know", () => {
+    expect(resolveMode("show-all", STORED_PROFILE)).toBe("progression");
+    expect(resolveMode("show-all", null)).toBe("theorycraft");
+  });
+});
+
+describe("resolveInitialMode", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it("reads both keys", () => {
+    expect(resolveInitialMode()).toBe("theorycraft");
+    window.localStorage.setItem(STORAGE_KEY, STORED_PROFILE);
+    expect(resolveInitialMode()).toBe("progression");
+    window.localStorage.setItem(MODE_KEY, "theorycraft");
+    expect(resolveInitialMode()).toBe("theorycraft");
+  });
+
+  it("is theorycraft when localStorage cannot be read", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    expect(resolveInitialMode()).toBe("theorycraft");
+  });
+
+  it("is theorycraft when window is undefined", () => {
+    const realWindow = globalThis.window;
+    // @ts-expect-error -- simulating an environment with no `window`, e.g. SSR.
+    delete globalThis.window;
+    try {
+      expect(resolveInitialMode()).toBe("theorycraft");
+    } finally {
+      globalThis.window = realWindow;
+    }
+  });
+});
+
+describe("useProgression: the mode", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it("starts in theorycraft on a first visit and writes nothing", () => {
+    const { result } = renderHook(() => useProgression());
+    expect(result.current.mode).toBe("theorycraft");
+    expect(window.localStorage.getItem(MODE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it("starts in progression for a returning visitor with a stored profile", () => {
+    window.localStorage.setItem(STORAGE_KEY, STORED_PROFILE);
+    const { result } = renderHook(() => useProgression());
+    expect(result.current.mode).toBe("progression");
+  });
+
+  it("switches to progression when a profile is set, and keeps it", () => {
+    const { result } = renderHook(() => useProgression());
+    act(() => result.current.setProfile(loyaltyProfile(2, DEFAULT_PROFILE)));
+    expect(result.current.mode).toBe("progression");
+    expect(window.localStorage.getItem(MODE_KEY)).toBe("progression");
+
+    const reloaded = renderHook(() => useProgression());
+    expect(reloaded.result.current.mode).toBe("progression");
+    expect(reloaded.result.current.profile.traders.peacekeeper).toBe(2);
+  });
+
+  it("persists a switch back to theorycraft over a stored profile", () => {
+    window.localStorage.setItem(STORAGE_KEY, STORED_PROFILE);
+    const { result } = renderHook(() => useProgression());
+    act(() => result.current.setMode("theorycraft"));
+    expect(result.current.mode).toBe("theorycraft");
+
+    const reloaded = renderHook(() => useProgression());
+    expect(reloaded.result.current.mode).toBe("theorycraft");
+    expect(reloaded.result.current.profile.level).toBe(12);
+  });
+
+  it("still switches when localStorage.setItem throws", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+    const { result } = renderHook(() => useProgression());
+    expect(() => act(() => result.current.setMode("progression"))).not.toThrow();
+    expect(result.current.mode).toBe("progression");
+  });
+});
+
+describe("loyaltyProfile", () => {
+  const ADVANCED = {
+    ...DEFAULT_PROFILE,
+    mode: "advanced" as const,
+    completedQuests: ["setup"],
+  };
+
+  it("sets every trader to the level, with the PMC level and flea that go with it", () => {
+    expect(loyaltyProfile(1, DEFAULT_PROFILE)).toEqual(DEFAULT_PROFILE);
+    const ll2 = loyaltyProfile(2, DEFAULT_PROFILE);
+    expect(new Set(Object.values(ll2.traders))).toEqual(new Set([2]));
+    expect(ll2).toMatchObject({ level: FLEA_UNLOCK_LEVEL, flea: true });
+    expect(loyaltyProfile(3, DEFAULT_PROFILE)).toMatchObject({ level: 30, flea: true });
+    expect(loyaltyProfile(4, DEFAULT_PROFILE)).toMatchObject({ level: 40, flea: true });
+  });
+
+  it("keeps the profile's mode and completed quests", () => {
+    const ll4 = loyaltyProfile(4, ADVANCED);
+    expect(ll4.mode).toBe("advanced");
+    expect(ll4.completedQuests).toEqual(["setup"]);
   });
 });

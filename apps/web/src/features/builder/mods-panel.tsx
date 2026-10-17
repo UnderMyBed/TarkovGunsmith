@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import type { ItemAvailability, WeaponTree } from "@tarkov/data";
+import type { BuilderMode, ItemAvailability, WeaponTree } from "@tarkov/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { SlotTree } from "./slot-tree.js";
 import { OrphanedBanner } from "./orphaned-banner.js";
@@ -11,7 +11,10 @@ export interface ModsPanelProps {
   /** Parts on the weapon (`useBuilderState`'s `attachedCount`), not raw attachment keys. */
   attachedCount: number;
   onAttach: (path: string, itemId: string | null) => void;
+  /** Each part's availability under the Builder's gate (`useBuilderState`'s `gate`). */
   getAvailability: (itemId: string) => ItemAvailability | null;
+  /** In theorycraft every gate is open, so there is nothing locked to show or dim. */
+  mode: BuilderMode;
   /** See `SlotTree`'s `getConflict`. */
   getConflict: (path: string, itemId: string) => string | null;
   /** See `SlotTree`'s `getFittedConflict`. */
@@ -22,9 +25,9 @@ export interface ModsPanelProps {
 }
 
 /**
- * The "Mods" card: slot tree + orphaned-mod banner. Owns the "Show all items" toggle locally
- * — nothing outside this panel reads it, so unlike `showAllWeapons` (which feeds the weapon
- * list filter one level up) it doesn't need to live in `useBuilderState`.
+ * The "Mods" card: slot tree + orphaned-mod banner. Owns the "Show all items" toggle locally:
+ * it only sets how strongly a part the profile cannot get is dimmed, which is not a mode and
+ * nothing outside this panel reads. It is offered in progression only.
  */
 export function ModsPanel({
   tree,
@@ -32,6 +35,7 @@ export function ModsPanel({
   attachedCount,
   onAttach,
   getAvailability,
+  mode,
   getConflict,
   getFittedConflict,
   orphaned,
@@ -56,14 +60,16 @@ export function ModsPanel({
               {tree.data && `${attachedCount} attached`}
             </CardDescription>
           </div>
-          <label className="flex items-center gap-2 text-xs">
-            <input
-              type="checkbox"
-              checked={showAll}
-              onChange={(e) => setShowAll(e.target.checked)}
-            />
-            <span>Show all items</span>
-          </label>
+          {mode === "progression" && (
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={showAll}
+                onChange={(e) => setShowAll(e.target.checked)}
+              />
+              <span>Show all items</span>
+            </label>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

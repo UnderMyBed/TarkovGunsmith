@@ -1,7 +1,10 @@
 import { useState, useCallback } from "react";
 import { PlayerProfile, DEFAULT_PROFILE } from "../build-schema.js";
+import type { BuilderMode } from "../preset-seed.js";
 
 const STORAGE_KEY = "tg:player-profile";
+/** Where the Builder's mode is kept, beside the profile it decides whether to apply. */
+const MODE_STORAGE_KEY = "tg:builder-mode";
 
 /**
  * Parse one raw localStorage string into a profile, falling back to `DEFAULT_PROFILE`
@@ -30,7 +33,7 @@ export function parseStoredProfile(raw: string | null): PlayerProfile {
  * Mirrors the threshold `tarkovtracker/mapping.ts` uses to derive `flea` from a real level.
  * Both are unverified against the live game and should move together if either moves.
  */
-const FLEA_UNLOCK_LEVEL = 20;
+export const FLEA_UNLOCK_LEVEL = 20;
 
 /**
  * Carry a pre-`level` profile's own assertion forward instead of contradicting it.
@@ -62,8 +65,8 @@ function seedLegacyLevel(raw: unknown, profile: PlayerProfile): PlayerProfile {
 }
 
 /**
- * Resolve the profile `useProfile` should start with: `DEFAULT_PROFILE` when there is no
- * `window` to read from (SSR — this app doesn't ship one today, but the guard is here for
+ * Resolve the profile {@link useProgression} should start with: `DEFAULT_PROFILE` when there
+ * is no `window` to read from (SSR — this app doesn't ship one today, but the guard is here for
  * whichever environment runs this hook), otherwise whatever `parseStoredProfile` makes of
  * `localStorage`, with `DEFAULT_PROFILE` as the fallback if reading localStorage itself
  * throws (disabled / blocked by policy — distinct from `parseStoredProfile`'s own catch,
@@ -87,28 +90,112 @@ export function resolveInitialProfile(): PlayerProfile {
 }
 
 /**
- * Reactive player profile backed by `localStorage["tg:player-profile"]`.
+ * The Builder's mode from what is stored: the stored mode when there is one; otherwise
+ * `progression` when a profile is stored that parses, since only the user setting a profile
+ * ever writes one; otherwise `theorycraft`, the first visit.
  *
- * Returns a `[profile, setProfile]` tuple. Writes are synchronous to state
- * and best-effort to localStorage (a quota-exceeded or storage-disabled error
- * is swallowed so the app still works; the profile just won't persist across
- * reloads in that browser).
- *
- * On mount, rehydrates from localStorage through `PlayerProfile.parse` so a
- * corrupted or version-mismatched stored value falls back to DEFAULT_PROFILE
- * rather than throwing.
+ * A profile stored before the mode existed therefore lands in progression with nothing
+ * written, and one that does not parse (which `parseStoredProfile` resets to the default)
+ * counts as no profile.
  */
-export function useProfile(): [PlayerProfile, (next: PlayerProfile) => void] {
-  const [profile, setProfileState] = useState<PlayerProfile>(resolveInitialProfile);
+export function resolveMode(rawMode: string | null, rawProfile: string | null): BuilderMode {
+  if (rawMode === "theorycraft" || rawMode === "progression") return rawMode;
+  if (rawProfile === null || rawProfile === "") return "theorycraft";
+  try {
+    return PlayerProfile.safeParse(JSON.parse(rawProfile)).success ? "progression" : "theorycraft";
+  } catch {
+    return "theorycraft";
+  }
+}
 
-  const setProfile = useCallback((next: PlayerProfile) => {
-    setProfileState(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // localStorage quota or disabled — profile persists only for the session.
-    }
+/** {@link resolveMode} over `localStorage`; `theorycraft` when it cannot be read. */
+export function resolveInitialMode(): BuilderMode {
+  if (typeof window === "undefined") return "theorycraft";
+  try {
+    return resolveMode(
+      window.localStorage.getItem(MODE_STORAGE_KEY),
+      window.localStorage.getItem(STORAGE_KEY),
+    );
+  } catch {
+    return "theorycraft";
+  }
+}
+
+/** A trader loyalty level the one-click profiles set. */
+export type LoyaltyLevel = 1 | 2 | 3 | 4;
+
+/** PMC level and flea access for each one-click loyalty profile. */
+const LOYALTY_PROFILE: Record<LoyaltyLevel, { level: number; flea: boolean }> = {
+  1: { level: 1, flea: false },
+  2: { level: FLEA_UNLOCK_LEVEL, flea: true },
+  3: { level: 30, flea: true },
+  4: { level: 40, flea: true },
+};
+
+/**
+ * `base` with every trader at `ll`, and the PMC level and flea access that go with it. The
+ * profile's mode (basic or advanced) and its completed quests are kept.
+ */
+export function loyaltyProfile(ll: LoyaltyLevel, base: PlayerProfile): PlayerProfile {
+  return {
+    ...base,
+    traders: {
+      prapor: ll,
+      therapist: ll,
+      skier: ll,
+      peacekeeper: ll,
+      mechanic: ll,
+      ragman: ll,
+      jaeger: ll,
+    },
+    ...LOYALTY_PROFILE[ll],
+  };
+}
+
+export interface Progression {
+  readonly profile: PlayerProfile;
+  /** Sets the profile, and with it progression mode: a profile set is a profile applied. */
+  readonly setProfile: (next: PlayerProfile) => void;
+  readonly mode: BuilderMode;
+  readonly setMode: (next: BuilderMode) => void;
+}
+
+function store(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // localStorage quota or disabled — the value persists only for the session.
+  }
+}
+
+/**
+ * The player's profile, backed by `localStorage["tg:player-profile"]`, and the Builder's mode,
+ * backed by `localStorage["tg:builder-mode"]`.
+ *
+ * The first visit is theorycraft; setting a profile switches to progression; the mode is a
+ * toggle either way after that. See {@link resolveMode} for a returning visitor. Writes are
+ * synchronous to state and best-effort to localStorage.
+ *
+ * On mount, rehydrates the profile through `PlayerProfile.parse`, so a corrupted or
+ * version-mismatched stored value falls back to DEFAULT_PROFILE rather than throwing.
+ */
+export function useProgression(): Progression {
+  const [profile, setProfileState] = useState<PlayerProfile>(resolveInitialProfile);
+  const [mode, setModeState] = useState<BuilderMode>(resolveInitialMode);
+
+  const setMode = useCallback((next: BuilderMode) => {
+    setModeState(next);
+    store(MODE_STORAGE_KEY, next);
   }, []);
 
-  return [profile, setProfile];
+  const setProfile = useCallback(
+    (next: PlayerProfile) => {
+      setProfileState(next);
+      store(STORAGE_KEY, JSON.stringify(next));
+      setMode("progression");
+    },
+    [setMode],
+  );
+
+  return { profile, setProfile, mode, setMode };
 }

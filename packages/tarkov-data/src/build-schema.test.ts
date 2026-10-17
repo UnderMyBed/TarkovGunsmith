@@ -247,7 +247,7 @@ describe("PlayerProfile.level", () => {
   };
 
   // The guard that matters: every profile written to localStorage or embedded in a shared
-  // build before this field existed has no `level`. If this ever fails, `useProfile`'s
+  // build before this field existed has no `level`. If this ever fails, `useProgression`'s
   // catch-and-fall-back swallows it and silently wipes the user's trader LLs and quests.
   it("defaults to 1 on a stored profile that predates the field", () => {
     const parsed = PlayerProfile.parse(levellessProfile);

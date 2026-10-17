@@ -4,7 +4,6 @@ import {
   type AttachablePart,
   type BuildPrice,
   type BuildV6,
-  type PlayerProfile,
   type PriceGate,
   type PricedPreset,
   type WeaponListItem,
@@ -34,7 +33,6 @@ export interface OptimizeViewProps {
   weaponItem: WeaponListItem;
   slotTree: WeaponTree;
   parts: readonly AttachablePart[];
-  profile: PlayerProfile;
   /** Whose gates the search and prices read: the profile, or `null` in theorycraft. */
   gate: PriceGate;
   /** The weapon's presets, priced: a build bought as one does not pay for its parts twice. */
@@ -84,7 +82,6 @@ export function OptimizeView({
   weaponItem,
   slotTree,
   parts,
-  profile,
   gate,
   presets,
   pricesReady,
@@ -253,7 +250,7 @@ export function OptimizeView({
             slotTree={slotTree}
             pricesReady={pricesReady}
           />
-          <ProfileReadout profile={profile} sync={sync} onEditProfile={onEditProfile} />
+          <ProfileReadout gate={gate} sync={sync} onEditProfile={onEditProfile} />
           <Button onClick={handleRun} disabled={optimizer.state === "running"}>
             RE-RUN OPTIMIZATION
           </Button>

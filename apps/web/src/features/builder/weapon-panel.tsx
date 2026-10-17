@@ -1,4 +1,4 @@
-import type { BuildPrice } from "@tarkov/data";
+import type { BuilderMode, BuildPrice } from "@tarkov/data";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { describeBuildPrice, type PricesStatus } from "./build-price.js";
 import { PricesLine } from "./prices-line.js";
@@ -11,8 +11,8 @@ export interface WeaponPanelProps {
   weaponOptions: readonly WeaponOption[];
   weaponId: string;
   onWeaponChange: (weaponId: string) => void;
-  showAllWeapons: boolean;
-  onShowAllWeaponsChange: (showAll: boolean) => void;
+  /** Theorycraft lists every weapon; progression, those the profile can get. */
+  mode: BuilderMode;
   /** True once a weapon is selected — gates the share controls. */
   hasSelectedWeapon: boolean;
   onShare: () => void;
@@ -20,6 +20,7 @@ export interface WeaponPanelProps {
   saveFailed: boolean;
   /** Why the build cannot be shared as it stands, or `null`. */
   shareBlocked?: string | null;
+  /** Offered in progression only: a theorycraft build was not made under the profile. */
   embedProfileOnSave: boolean;
   onEmbedProfileOnSaveChange: (embed: boolean) => void;
   /** When the Builder's data was taken from upstream (ISO 8601), once it has loaded. */
@@ -44,16 +45,16 @@ const DATA_DATE = new Intl.DateTimeFormat("en-GB", {
 const META = "font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]";
 
 /**
- * The "Weapon" card: picker + profile-filtered availability toggle, plus (once a weapon is
- * selected) the share-build action and its progression-embed option.
+ * The "Weapon" card: the picker, every weapon in theorycraft and those the profile can get in
+ * progression, plus (once a weapon is selected) the share-build action and, in progression, its
+ * profile-embed option.
  */
 export function WeaponPanel({
   isLoading,
   weaponOptions,
   weaponId,
   onWeaponChange,
-  showAllWeapons,
-  onShowAllWeaponsChange,
+  mode,
   hasSelectedWeapon,
   onShare,
   isSaving,
@@ -76,7 +77,9 @@ export function WeaponPanel({
         <CardDescription>
           {isLoading
             ? "Loading…"
-            : `${availableCount} weapons ${showAllWeapons ? "(all)" : "available on your profile"}`}
+            : mode === "theorycraft"
+              ? `${availableCount} weapons`
+              : `${availableCount} weapons available on your profile`}
         </CardDescription>
         {dataAsOf !== null && (
           <p className={META}>
@@ -101,14 +104,6 @@ export function WeaponPanel({
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
-          <input
-            type="checkbox"
-            checked={showAllWeapons}
-            onChange={(e) => onShowAllWeaponsChange(e.target.checked)}
-          />
-          <span>Show all weapons (including locked by profile)</span>
-        </label>
         {hasSelectedWeapon && buildPrice !== null && prices.state === "ready" && (
           <p className="flex flex-wrap items-baseline gap-x-2 text-sm" data-testid="build-cost">
             <span className={META}>Build cost</span>
@@ -133,14 +128,16 @@ export function WeaponPanel({
                 </span>
               )}
             </div>
-            <label className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
-              <input
-                type="checkbox"
-                checked={embedProfileOnSave}
-                onChange={(e) => onEmbedProfileOnSaveChange(e.target.checked)}
-              />
-              <span>Embed my progression snapshot in the shared URL</span>
-            </label>
+            {mode === "progression" && (
+              <label className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
+                <input
+                  type="checkbox"
+                  checked={embedProfileOnSave}
+                  onChange={(e) => onEmbedProfileOnSaveChange(e.target.checked)}
+                />
+                <span>Embed my progression snapshot in the shared URL</span>
+              </label>
+            )}
           </div>
         )}
       </CardContent>

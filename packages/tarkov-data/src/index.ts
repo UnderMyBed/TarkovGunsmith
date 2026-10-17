@@ -155,13 +155,14 @@ export type {
   FetchedAtStore,
   PriceWorker,
 } from "./snapshot/source.js";
-export { buildPriceUnder, builderMode, priceGate, priceUnder, weaponPaths } from "./price-under.js";
+export { buildPriceUnder, priceGate, priceUnder, weaponPaths } from "./price-under.js";
 export type {
   BuildPrice,
   BuildPriceInput,
   PresetContents,
   PricedPart,
   PriceGate,
+  UnpricedPath,
   WeaponPath,
 } from "./price-under.js";
 export { useBuilderSnapshot } from "./hooks/useBuilderSnapshot.js";
@@ -205,7 +206,8 @@ export { tasksSchema } from "./queries/tasks.js";
 export type { TaskListItem } from "./queries/tasks.js";
 export { useTraders } from "./hooks/useTraders.js";
 export { useTasks } from "./hooks/useTasks.js";
-export { useProfile } from "./hooks/useProfile.js";
+export { FLEA_UNLOCK_LEVEL, loyaltyProfile, useProgression } from "./hooks/useProgression.js";
+export type { LoyaltyLevel, Progression } from "./hooks/useProgression.js";
 
 // Presets
 export { presetRecordSchema, selectWeaponPreset, selectWeaponPresets } from "./queries/presets.js";

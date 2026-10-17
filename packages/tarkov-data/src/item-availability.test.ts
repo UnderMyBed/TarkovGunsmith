@@ -289,7 +289,7 @@ describe("itemAvailability — trader-offer edge cases", () => {
   it("treats a missing completedQuests list as no completions, even in advanced mode", () => {
     // `(profile.completedQuests ?? []).includes(...)` — every other advanced-mode test in
     // this file sets `completedQuests` explicitly. A profile that predates the field (see
-    // `hooks/useProfile.ts`'s legacy-rehydration path) can reach here without one.
+    // `hooks/useProgression.ts`'s legacy-rehydration path) can reach here without one.
     const advancedNoQuestsField: PlayerProfile = { ...baseProfile, mode: "advanced" };
     const result = itemAvailability(
       mod({ buyFor: [traderOffer("mechanic", 1, 500, "gunsmith-part-1")] }),

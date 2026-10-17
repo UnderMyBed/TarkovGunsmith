@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { afterEach, describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderRoute } from "../test/render-route.js";
@@ -14,6 +14,11 @@ import { DRAFT_KEY } from "../features/builder/build-draft.js";
 // These tests drive it through the REAL `/builder` route (real router, real fetchers,
 // real Zod schemas) rather than importing `BuilderPage` directly, so `useNavigate` /
 // `Route.useSearch` work exactly as they do in production.
+
+// The behaviour these tests protect is gating on DEFAULT_PROFILE, which is progression mode: a
+// visitor who chose progression without changing the profile. A first visit is theorycraft;
+// `/builder on a first visit` below covers that.
+beforeEach(() => localStorage.setItem("tg:builder-mode", "progression"));
 
 afterEach(() => {
   cleanup();
@@ -88,8 +93,7 @@ describe("/builder", () => {
     await renderRoute("/builder");
 
     // DEFAULT_PROFILE is all-LL1/no-flea; the fixture weapon needs Prapor LL1, so it shows
-    // up under the default "available on your profile" filter without touching "Show all
-    // weapons" first.
+    // up under progression's "available on your profile" filter.
     await waitFor(() =>
       expect(screen.getByText("1 weapons available on your profile")).toBeInTheDocument(),
     );
@@ -181,9 +185,7 @@ describe("/builder", () => {
     await user.click(screen.getByRole("button", { name: /Back to editor/ }));
 
     // Back in the editor view — the weapon picker card is back.
-    expect(
-      await screen.findByText(/weapons? (available on your profile|\(all\))/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("1 weapons available on your profile")).toBeInTheDocument();
   });
 
   it("opens the compare-from-build dialog and hands off to /builder/compare on confirm", async () => {
@@ -204,6 +206,30 @@ describe("/builder", () => {
   it("surfaces a data error when the items resource fails to load", async () => {
     await renderRoute("/builder", { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load data:/)).toBeInTheDocument();
+  });
+});
+
+describe("/builder on a first visit", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("opens in theorycraft, every gate open, with the progression prompt", async () => {
+    const user = userEvent.setup();
+    await renderRoute("/builder");
+    await screen.findByText("1 weapons");
+    expect(screen.getByText("Set your progression")).toBeInTheDocument();
+    const weaponSelect = findWeaponSelect();
+    await waitFor(() => expect(weaponSelect).not.toBeDisabled());
+    await user.selectOptions(weaponSelect, "w-m4a1");
+    await screen.findByText("2 attached", { exact: true });
+
+    // The Mechanic LL2 stock is open in theorycraft, and the toggle is not offered there.
+    const stockButton = screen.getByRole("button", { name: /Magpul CTR carbine stock/ });
+    expect(within(stockButton).queryByText("LOCKED")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Show all items")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "LL1" }));
+    await screen.findByText("1 weapons available on your profile");
+    expect(within(stockButton).getByText("LOCKED")).toBeInTheDocument();
   });
 });
 

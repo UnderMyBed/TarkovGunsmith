@@ -1,10 +1,14 @@
 import type { ReactElement } from "react";
-import type { PlayerProfile } from "@tarkov/data";
+import type { PriceGate } from "@tarkov/data";
 import { Button, SectionTitle } from "@tarkov/ui";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
 
 export interface ProfileReadoutProps {
-  profile: PlayerProfile;
+  /**
+   * The gate the optimizer searches under (`useBuilderState`'s `gate`): the profile in
+   * progression, `null` in theorycraft. Read here so the readout names what the search used.
+   */
+  gate: PriceGate;
   sync: UseTarkovTrackerSyncResult;
   onEditProfile: () => void;
 }
@@ -41,11 +45,31 @@ function formatRelativeTime(then: number, now = Date.now()): string {
   return `${days}D AGO`;
 }
 
-export function ProfileReadout({
+export function ProfileReadout({ gate, sync, onEditProfile }: ProfileReadoutProps): ReactElement {
+  if (gate === null) {
+    return (
+      <div className="flex flex-col gap-2">
+        <SectionTitle index={3} title="Profile" />
+        <div className="font-mono text-10 uppercase tracking-20 text-[var(--color-muted-foreground)]">
+          THEORYCRAFT
+        </div>
+        <p className="font-mono text-10 uppercase text-[var(--color-foreground)]">
+          Every trader, flea offer and quest open
+        </p>
+        <Button size="sm" variant="ghost" onClick={onEditProfile}>
+          SET PROGRESSION ▸
+        </Button>
+      </div>
+    );
+  }
+  return <ProgressionReadout profile={gate} sync={sync} onEditProfile={onEditProfile} />;
+}
+
+function ProgressionReadout({
   profile,
   sync,
   onEditProfile,
-}: ProfileReadoutProps): ReactElement {
+}: Omit<ProfileReadoutProps, "gate"> & { profile: NonNullable<PriceGate> }): ReactElement {
   const isSynced = sync.detail.state === "synced";
   const isSyncing = sync.detail.state === "syncing";
   // RE-IMPORT calls `sync.reSync()`, which needs a stored token — every state except

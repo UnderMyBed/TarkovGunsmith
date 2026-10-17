@@ -30,6 +30,10 @@ let weaponsQuery: {
 let treeQuery: { data: unknown; isLoading: boolean; error: Error | null } = idleQuery;
 let catalogQuery: { data: AttachablePart[] | undefined; isLoading: boolean; error: Error | null } =
   idleQuery;
+// Live prices: loading (`idleQuery`) until a test sets them ready or failed.
+let pricesQuery: { data: { asOf: string } | undefined; isLoading: boolean; error: Error | null } =
+  idleQuery;
+const PRICES_READY = { data: { asOf: "2026-10-17T00:00:00.000Z" }, isLoading: false, error: null };
 vi.mock("@tarkov/data", async () => {
   const actual = await vi.importActual<typeof TarkovData>("@tarkov/data");
   return {
@@ -39,7 +43,7 @@ vi.mock("@tarkov/data", async () => {
     usePartCatalog: () => catalogQuery,
     useWeaponTree: () => treeQuery,
     useWeaponPresets: () => presetsQuery,
-    useLivePrices: () => idleQuery,
+    useLivePrices: () => pricesQuery,
   };
 });
 
@@ -49,6 +53,7 @@ afterEach(() => {
   weaponsQuery = idleQuery;
   treeQuery = idleQuery;
   catalogQuery = idleQuery;
+  pricesQuery = idleQuery;
 });
 
 const WEAPON = "w-m4a1";
@@ -121,6 +126,7 @@ function args(overrides: Partial<UseBuilderStateArgs> = {}): UseBuilderStateArgs
   return {
     initialBuild: undefined,
     profile: FLEA_PROFILE,
+    mode: "progression",
     buildName: "",
     buildDescription: "",
     embedProfileOnSave: false,
@@ -143,25 +149,27 @@ describe("useBuilderState and presets", () => {
     expect(result.current.attachments).toEqual(kept);
   });
 
-  it("seeds the default when every weapon is shown (theorycraft), whatever it costs", () => {
+  it("seeds the default in theorycraft, whatever it costs", () => {
     presetsQuery = { data: PRESETS, isLoading: false, error: null };
-    const { result } = renderHook(() => useBuilderState(args()));
-    act(() => result.current.setShowAllWeapons(true));
+    const { result } = renderHook(() => useBuilderState(args({ mode: "theorycraft" })));
     act(() => result.current.handleWeaponChange(WEAPON));
     expect(result.current.weaponId).toBe(WEAPON);
     expect(result.current.attachments).toEqual(DEFAULT.attachments);
   });
 
-  it("prices under the profile, and under no gate once every weapon is shown", () => {
-    const { result } = renderHook(() => useBuilderState(args()));
+  it("gates by the profile in progression, and by nothing in theorycraft", () => {
+    let mode: UseBuilderStateArgs["mode"] = "progression";
+    const { result, rerender } = renderHook(() => useBuilderState(args({ mode })));
     expect(result.current.gate).toBe(FLEA_PROFILE);
-    act(() => result.current.setShowAllWeapons(true));
+    mode = "theorycraft";
+    rerender();
     expect(result.current.gate).toBeNull();
     expect(result.current.prices).toEqual({ state: "loading" });
   });
 
   it("seeds the cheapest preset the profile can buy when the default is locked", () => {
     presetsQuery = { data: PRESETS, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
     const { result } = renderHook(() => useBuilderState(args()));
     act(() => result.current.handleWeaponChange(WEAPON));
     expect(result.current.attachments).toEqual(PRAPOR.attachments);
@@ -248,10 +256,12 @@ describe("useBuilderState weapon options", () => {
   const LOCKED = weapon(WEAPON, "M4A1", [trader("mechanic", 4, 90_000, WEAPON)]);
   const OTHER_LOCKED = weapon("w-other", "HK 416A5", [trader("peacekeeper", 4, 99_000, "x")]);
 
-  function render(initialWeaponId: string) {
+  function render(initialWeaponId: string, mode: UseBuilderStateArgs["mode"] = "progression") {
     weaponsQuery = { data: [OTHER_LOCKED, LOCKED, OPEN], isLoading: false, error: null };
     const initialBuild = initialWeaponId ? saved(initialWeaponId) : undefined;
-    return renderHook(() => useBuilderState(args({ initialBuild, profile: DEFAULT_PROFILE })));
+    return renderHook(() =>
+      useBuilderState(args({ initialBuild, profile: DEFAULT_PROFILE, mode })),
+    );
   }
 
   it("keeps the current weapon listed, with its requirement, when the profile cannot buy it", () => {
@@ -272,13 +282,140 @@ describe("useBuilderState weapon options", () => {
     expect(render("w-open").result.current.weaponOptions.map((w) => w.id)).toEqual(["w-open"]);
   });
 
-  it("marks nothing when every weapon is shown", () => {
-    const { result } = render(WEAPON);
-    act(() => result.current.setShowAllWeapons(true));
+  it("lists every weapon and marks nothing in theorycraft", () => {
+    const { result } = render(WEAPON, "theorycraft");
     expect(result.current.weaponOptions.map((w) => [w.id, w.lockedBy])).toEqual([
       ["w-open", null],
       ["w-other", null],
       [WEAPON, null],
     ]);
+  });
+});
+
+// Before live prices arrive every price is unknown: the flea preset counts as buyable at an
+// unknown price, and the unknown-price presets order by short name, so "flea" is picked over
+// "prapor". Once prices arrive the Prapor preset is the cheaper one.
+const UNPRICED = {
+  [WEAPON]: [
+    DEFAULT,
+    preset("flea", false, FLEA.attachments, [{ ...flea(90_000), priceRUB: null }]),
+    preset("prapor", false, PRAPOR.attachments, [
+      { ...trader("prapor", 1, 0, "prapor"), priceRUB: null },
+    ]),
+  ],
+};
+
+describe("useBuilderState seeding before live prices arrive", () => {
+  it("redoes a progression seed made before prices once they arrive", () => {
+    presetsQuery = { data: UNPRICED, isLoading: false, error: null };
+    const { result, rerender } = renderHook(() => useBuilderState(args()));
+    act(() => result.current.handleWeaponChange(WEAPON));
+    expect(result.current.attachments).toEqual(FLEA.attachments);
+
+    presetsQuery = { data: PRESETS, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender();
+    expect(result.current.weaponId).toBe(WEAPON);
+    expect(result.current.attachments).toEqual(PRAPOR.attachments);
+  });
+
+  it("never overwrites an edit made before prices arrive", () => {
+    presetsQuery = { data: UNPRICED, isLoading: false, error: null };
+    treeQuery = {
+      data: tinyTree(WEAPON, [
+        { nameId: "mod_muzzle", items: ["mod-muzzle"] },
+        { nameId: "mod_stock", items: ["mod-stock"] },
+      ]),
+      isLoading: false,
+      error: null,
+    };
+    catalogQuery = { data: [part("mod-muzzle"), part("mod-stock")], isLoading: false, error: null };
+    const { result, rerender } = renderHook(() => useBuilderState(args()));
+    act(() => result.current.handleWeaponChange(WEAPON));
+    act(() => result.current.handleAttach("mod_muzzle", "mod-muzzle"));
+    const edited = result.current.attachments;
+    expect(edited).toEqual({ mod_stock: "mod-stock", mod_muzzle: "mod-muzzle" });
+
+    presetsQuery = { data: PRESETS, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender();
+    expect(result.current.attachments).toEqual(edited);
+  });
+
+  it.each([
+    ["a loaded shared build", saved(WEAPON, { mod_muzzle: "mod-muzzle" })],
+    ["a restored draft", saved(WEAPON, {}, ["gone"])],
+  ])("never seeds %s, before or after prices arrive", (_, initialBuild) => {
+    presetsQuery = { data: UNPRICED, isLoading: false, error: null };
+    const { result, rerender } = renderHook(() => useBuilderState(args({ initialBuild })));
+    expect(result.current.attachments).toEqual(initialBuild.attachments);
+
+    presetsQuery = { data: PRESETS, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender();
+    expect(result.current.attachments).toEqual(initialBuild.attachments);
+    expect(result.current.orphaned).toEqual(initialBuild.orphaned);
+  });
+
+  it("keeps the seed made without prices when they fail", () => {
+    presetsQuery = { data: UNPRICED, isLoading: false, error: null };
+    const { result, rerender } = renderHook(() => useBuilderState(args()));
+    act(() => result.current.handleWeaponChange(WEAPON));
+
+    pricesQuery = { data: undefined, isLoading: false, error: new Error("prices down") };
+    rerender();
+    expect(result.current.attachments).toEqual(FLEA.attachments);
+
+    // A later success does not resurrect it.
+    presetsQuery = { data: PRESETS, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender();
+    expect(result.current.attachments).toEqual(FLEA.attachments);
+  });
+
+  it("does not wait for prices in theorycraft, whose seed reads none", () => {
+    presetsQuery = { data: UNPRICED, isLoading: false, error: null };
+    const { result, rerender } = renderHook(() => useBuilderState(args({ mode: "theorycraft" })));
+    act(() => result.current.handleWeaponChange(WEAPON));
+    expect(result.current.attachments).toEqual(DEFAULT.attachments);
+
+    presetsQuery = { data: PRESETS, isLoading: false, error: null };
+    pricesQuery = PRICES_READY;
+    rerender();
+    expect(result.current.attachments).toEqual(DEFAULT.attachments);
+  });
+});
+
+describe("useBuilderState gate", () => {
+  const STOCK = {
+    ...part("mod-stock"),
+    buyFor: [trader("mechanic", 4, 9_000, "x")],
+    types: ["mods"],
+  } as unknown as AttachablePart;
+
+  it("gives every part its availability under the gate the price uses", () => {
+    catalogQuery = { data: [STOCK], isLoading: false, error: null };
+    let mode: UseBuilderStateArgs["mode"] = "progression";
+    const { result, rerender } = renderHook(() =>
+      useBuilderState(args({ mode, profile: DEFAULT_PROFILE })),
+    );
+    expect(result.current.availabilityById.get("mod-stock")).toMatchObject({ available: false });
+    mode = "theorycraft";
+    rerender();
+    expect(result.current.availabilityById.get("mod-stock")).toMatchObject({
+      available: true,
+      priceRUB: 9_000,
+    });
+  });
+
+  it("embeds the profile in a saved build only in progression", () => {
+    let mode: UseBuilderStateArgs["mode"] = "progression";
+    const { result, rerender } = renderHook(() =>
+      useBuilderState(args({ mode, embedProfileOnSave: true })),
+    );
+    expect(result.current.currentBuild.profileSnapshot).toEqual(FLEA_PROFILE);
+    mode = "theorycraft";
+    rerender();
+    expect(result.current.currentBuild.profileSnapshot).toBeUndefined();
   });
 });

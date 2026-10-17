@@ -66,7 +66,7 @@ export const PlayerProfile = z.object({
    * 778 of the 1,638 weapon mods in the live document have one (615 at 20, 163 at 25).
    * Only bites when `flea` is true; a player without flea access is blocked earlier.
    *
-   * `.default(1)` is load-bearing, not a convenience. `hooks/useProfile.ts` rehydrates
+   * `.default(1)` is load-bearing, not a convenience. `hooks/useProgression.ts` rehydrates
    * from localStorage through `PlayerProfile.parse` inside a try/catch that falls back to
    * `DEFAULT_PROFILE`. A required-without-default field would make every profile stored
    * before this change fail to parse and silently reset — wiping the user's trader LLs

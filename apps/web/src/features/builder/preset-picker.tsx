@@ -19,7 +19,7 @@ export interface PresetPickerProps {
   known: ReadonlyMap<string, ConflictFields>;
   /** The build's current attachments. */
   attachments: Readonly<Record<string, string>>;
-  /** Whether the profile can buy each preset. Omitted in theorycraft mode. */
+  /** How the Builder's gate can buy each preset; in theorycraft, every gate open. */
   getAvailability?: (presetId: string) => ItemAvailability | null;
   /** Replaces the build's attachments wholesale. */
   onApply: (attachments: Readonly<Record<string, string>>) => void;

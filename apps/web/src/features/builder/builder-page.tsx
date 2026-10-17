@@ -2,12 +2,13 @@
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
 import { useEffect, useRef } from "react";
-import { presetAvailability, useProfile, useTasks, type BuildV6 } from "@tarkov/data";
+import { presetAvailability, useProgression, useTasks, type BuildV6 } from "@tarkov/data";
 import { QuestNameProvider } from "./quest-names.js";
 import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
 import { Button, Card, CardContent } from "@tarkov/ui";
 import { adaptWeapon } from "../data-adapters/adapters.js";
 import { ProfileEditor } from "./profile-editor.js";
+import { ModeBar } from "./mode-bar.js";
 import { BuildHeader } from "./build-header.js";
 import { CompareFromBuildDialog } from "./compare/compare-from-build-dialog.js";
 import { OptimizeView } from "./optimize/optimize-view.js";
@@ -72,7 +73,8 @@ export function BuilderPage({
 }: BuilderPageProps = {}) {
   const navigate = useNavigate();
 
-  const [profile, setProfile] = useProfile();
+  const progression = useProgression();
+  const { profile, setProfile, mode } = progression;
   const tasks = useTasks();
   const sync = useTarkovTrackerSync({
     profile,
@@ -86,6 +88,7 @@ export function BuilderPage({
   const builder = useBuilderState({
     initialBuild,
     profile,
+    mode,
     buildName: saveMeta.buildName,
     buildDescription: saveMeta.buildDescription,
     embedProfileOnSave: saveMeta.embedProfileOnSave,
@@ -169,7 +172,13 @@ export function BuilderPage({
             {notice}
             {builder.upstreamDriftInfo && <UpstreamDriftBanner {...builder.upstreamDriftInfo} />}
 
-            <SnapshotBanner snapshot={initialBuild?.profileSnapshot} onUseSnapshot={setProfile} />
+            <ModeBar progression={progression} sync={sync} />
+
+            <SnapshotBanner
+              snapshot={initialBuild?.profileSnapshot}
+              onUseSnapshot={setProfile}
+              mode={mode}
+            />
 
             <div data-profile-editor>
               <ProfileEditor profile={profile} onChange={setProfile} sync={sync} />
@@ -190,8 +199,7 @@ export function BuilderPage({
               weaponOptions={builder.weaponOptions}
               weaponId={builder.weaponId}
               onWeaponChange={builder.handleWeaponChange}
-              showAllWeapons={builder.showAllWeapons}
-              onShowAllWeaponsChange={builder.setShowAllWeapons}
+              mode={mode}
               hasSelectedWeapon={Boolean(builder.selectedWeapon)}
               onShare={shareBuild.share}
               isSaving={shareBuild.isSaving}
@@ -216,14 +224,10 @@ export function BuilderPage({
                     tree={builder.tree.data}
                     known={builder.partsById}
                     attachments={builder.attachments}
-                    getAvailability={
-                      builder.showAllWeapons
-                        ? undefined
-                        : (id) => {
-                            const preset = weaponPresets.find((p) => p.id === id);
-                            return preset ? presetAvailability(preset, profile) : null;
-                          }
-                    }
+                    getAvailability={(id) => {
+                      const preset = weaponPresets.find((p) => p.id === id);
+                      return preset ? presetAvailability(preset, builder.gate) : null;
+                    }}
                     onApply={builder.applyPreset}
                   />
                 )}
@@ -233,6 +237,7 @@ export function BuilderPage({
                   attachedCount={builder.attachedCount}
                   onAttach={builder.handleAttach}
                   getAvailability={(id) => builder.availabilityById.get(id) ?? null}
+                  mode={mode}
                   getConflict={builder.getConflict}
                   getFittedConflict={builder.getFittedConflict}
                   orphaned={builder.orphaned}
@@ -256,7 +261,6 @@ export function BuilderPage({
             weaponItem={builder.selectedWeapon}
             slotTree={builder.tree.data}
             parts={builder.parts}
-            profile={profile}
             gate={builder.gate}
             presets={weaponPresets}
             pricesReady={builder.prices.state === "ready"}
