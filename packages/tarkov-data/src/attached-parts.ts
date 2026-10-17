@@ -37,24 +37,30 @@ export function withAttachment(
   return next;
 }
 
+/** The ids that exist upstream: the part catalog by id, or the items document's ids. */
+export interface KnownItems {
+  has(itemId: string): boolean;
+}
+
 /**
  * The attachments actually on the weapon: keys whose slot the build shows (see
  * {@link visibleSlots}) and whose slot accepts the item, in pre-order.
  *
- * A key under an empty or replaced parent, or an item its slot no longer allows, is left out,
- * matching what the slot tree displays. An item no slot in the document allows at all is kept:
- * that is an id gone upstream, which {@link attachedParts} reports as missing.
+ * A key under an empty or replaced parent, or an item its slot does not allow, is left out,
+ * matching what the slot tree displays. The one exception is an id `known` does not hold at all:
+ * that is a part gone upstream, kept so {@link attachedParts} can report it as missing. A part
+ * that exists but no slot allows (most cartridges, placeholder magazines) is not on the weapon.
  */
 export function mountedAttachments(
   tree: WeaponTree,
   attachments: Readonly<Record<string, string>>,
+  known: KnownItems,
 ): Record<string, string> {
   const mounted: Record<string, string> = {};
   for (const slot of visibleSlots(tree, attachments)) {
     const itemId = attachments[slot.path];
     if (itemId === undefined) continue;
-    const known = tree.graph.itemNames[itemId] !== undefined;
-    if (known && !slot.allowedItemIds.has(itemId)) continue;
+    if (!slot.allowedItemIds.has(itemId) && known.has(itemId)) continue;
     mounted[slot.path] = itemId;
   }
   return mounted;
@@ -76,7 +82,7 @@ export function attachedParts(
 ): AttachedParts {
   const entries: AttachedPartEntry[] = [];
   const missing: { path: string; itemId: string }[] = [];
-  for (const [path, itemId] of Object.entries(mountedAttachments(tree, attachments))) {
+  for (const [path, itemId] of Object.entries(mountedAttachments(tree, attachments, byId))) {
     const part = byId.get(itemId);
     if (part === undefined) missing.push({ path, itemId });
     else entries.push({ path, part });

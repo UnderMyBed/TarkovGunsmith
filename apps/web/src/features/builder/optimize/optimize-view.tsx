@@ -160,13 +160,14 @@ export function OptimizeView({
         proposed.build,
         new Set(rows.map((r) => r.slotId)),
         slotTree,
+        byId,
       ),
     );
   }
 
   function handleAcceptSelected(): void {
     if (!proposed) return;
-    onAccept(buildFromSelection(currentBuild, proposed.build, selected, slotTree));
+    onAccept(buildFromSelection(currentBuild, proposed.build, selected, slotTree, byId));
   }
 
   function handleDiscard(): void {

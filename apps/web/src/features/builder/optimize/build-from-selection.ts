@@ -1,30 +1,52 @@
-import { mountedAttachments, withAttachment, type BuildV6, type WeaponTree } from "@tarkov/data";
+import { mountedAttachments, type BuildV6, type KnownItems, type WeaponTree } from "@tarkov/data";
 
 /**
  * The current build with the selected optimizer rows applied.
  *
- * Rows apply parents first, and each change drops what was beneath the replaced part (see
- * `withAttachment`), so an accepted barrel brings only the gas block and muzzle rows accepted
- * with it. A row accepted without its parent row lands under the current parent only if that
- * part has the slot and allows the item; otherwise it is dropped rather than saved as a key
- * nothing displays.
+ * Rows are the slot paths whose mounted part differs between the two builds (`slotDiff`). Every
+ * other path holds the same part on both sides, so it is kept whichever side its parent comes
+ * from: a gas block the proposal kept under its new barrel survives accepting the barrel. For a
+ * changed path:
+ * - selected: the proposal's part (or empty, if the proposal empties it);
+ * - deselected, beneath a selected row: dropped. Its current part belonged to the part being
+ *   replaced, and a same-named slot on the new part is a different slot;
+ * - deselected otherwise: the current part stays.
+ *
+ * The result keeps only what then mounts (`mountedAttachments`): a part accepted under a parent
+ * the user kept lands only if that parent has the slot and allows it.
  */
 export function buildFromSelection(
   current: BuildV6,
   proposed: BuildV6,
   selected: ReadonlySet<string>,
   tree: WeaponTree,
+  parts: KnownItems,
 ): BuildV6 {
-  const depth = (path: string) => path.split("/").length;
-  let merged: Record<string, string> = { ...current.attachments };
-  for (const path of [...selected].sort((a, b) => depth(a) - depth(b))) {
-    merged = withAttachment(merged, path, proposed.attachments[path] ?? null);
+  const currentOn = mountedAttachments(tree, current.attachments, parts);
+  const proposedOn = mountedAttachments(tree, proposed.attachments, parts);
+  const changed = (path: string) => currentOn[path] !== proposedOn[path];
+  const replaced = (path: string) => selected.has(path) && changed(path);
+  const underReplaced = (path: string) => {
+    const segments = path.split("/");
+    for (let i = 1; i < segments.length; i++) {
+      if (replaced(segments.slice(0, i).join("/"))) return true;
+    }
+    return false;
+  };
+
+  const merged: Record<string, string> = {};
+  for (const path of new Set([...Object.keys(currentOn), ...Object.keys(proposedOn)])) {
+    let itemId: string | undefined;
+    if (!changed(path)) itemId = currentOn[path];
+    else if (selected.has(path)) itemId = proposedOn[path];
+    else if (!underReplaced(path)) itemId = currentOn[path];
+    if (itemId !== undefined) merged[path] = itemId;
   }
-  merged = mountedAttachments(tree, merged);
+  const attachments = mountedAttachments(tree, merged, parts);
   return {
     version: 6,
     weaponId: current.weaponId,
-    attachments: merged,
+    attachments,
     orphaned: current.orphaned,
     createdAt: current.createdAt,
     ...(current.name !== undefined ? { name: current.name } : {}),

@@ -112,6 +112,7 @@ export async function fetchOgRowsForBuild(
   const attachments = mountedAttachments(
     selectWeaponTree(doc, args.weaponId, slotGraphFor(doc)),
     args.attachments,
+    { has: (id) => doc.items[id] !== undefined },
   );
 
   const resolveOffers = (item: unknown) => resolveBuyFor(item, traders, tasks);

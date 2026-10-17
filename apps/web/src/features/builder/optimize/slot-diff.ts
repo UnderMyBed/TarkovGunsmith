@@ -72,8 +72,8 @@ export function slotDiff(
   slotTree: WeaponTree,
   parts: ReadonlyMap<string, AttachablePart>,
 ): readonly ChangedRow[] {
-  const currentOn = mountedAttachments(slotTree, current);
-  const proposedOn = mountedAttachments(slotTree, proposed);
+  const currentOn = mountedAttachments(slotTree, current, parts);
+  const proposedOn = mountedAttachments(slotTree, proposed, parts);
   const rows: ChangedRow[] = [];
   // Every slot either build shows, so a change deep under a barrel or handguard gets its real
   // slot name.
