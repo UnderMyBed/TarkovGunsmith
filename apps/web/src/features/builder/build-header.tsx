@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { WeaponSpec } from "@tarkov/ballistics";
 import {
   Button,
@@ -35,6 +36,8 @@ export interface BuildHeaderProps {
   onCompare?: () => void;
   /** When provided, renders an "Optimize ⚙" action in the header. */
   onOptimize?: () => void;
+  /** When provided, renders "New build", which asks before discarding this build. */
+  onNewBuild?: () => void;
 }
 
 export function BuildHeader({
@@ -52,7 +55,9 @@ export function BuildHeader({
   sharedId,
   onCompare,
   onOptimize,
+  onNewBuild,
 }: BuildHeaderProps) {
+  const [confirmingNew, setConfirmingNew] = useState(false);
   return (
     <Card variant="bracket" className="relative overflow-hidden">
       {weaponId && (
@@ -113,9 +118,32 @@ export function BuildHeader({
                 ◇ OPTIMIZE
               </Button>
             )}
+            {onNewBuild && (
+              <Button variant="ghost" size="sm" onClick={() => setConfirmingNew(true)}>
+                New build
+              </Button>
+            )}
             {sharedId && <Stamp tone="amber">SHARED</Stamp>}
           </div>
         </CardHeader>
+        {onNewBuild && confirmingNew && (
+          <div role="alert" className="flex flex-wrap items-center gap-2 px-5 pt-3 text-sm">
+            <span>Discard this build and start a new one?</span>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => {
+                setConfirmingNew(false);
+                onNewBuild();
+              }}
+            >
+              Discard
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setConfirmingNew(false)}>
+              Keep this build
+            </Button>
+          </div>
+        )}
         <CardContent className="flex flex-col gap-4">
           <input
             type="text"

@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useMatchRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { BuilderPage } from "../features/builder/builder-page.js";
+import { DraftBuilderPage } from "../features/builder/draft-builder-page.js";
 
 const builderSearchSchema = z.object({
   view: z.enum(["editor", "optimize"]).optional(),
@@ -19,9 +19,9 @@ export const Route = createFileRoute("/builder")({
  * parent must render an `<Outlet />` for them to mount. For the bare
  * `/builder` URL there is no matching child and we render the page itself.
  *
- * `BuilderPage` itself lives in `features/builder/builder-page.tsx`, not here — see that
- * file's header comment for why keeping it out of the route file matters for
- * `autoCodeSplitting`.
+ * The page (`DraftBuilderPage`, around `BuilderPage`) lives in `features/builder/`, not
+ * here — see `builder-page.tsx`'s header comment for why keeping it out of the route file
+ * matters for `autoCodeSplitting`.
  */
 function BuilderRouteLayout() {
   const matchRoute = useMatchRoute();
@@ -29,5 +29,5 @@ function BuilderRouteLayout() {
   // with no child segments. Any deeper URL falls through to the `<Outlet />`.
   const isExactBuilder = matchRoute({ to: "/builder" });
   const search = Route.useSearch();
-  return isExactBuilder ? <BuilderPage view={search.view} /> : <Outlet />;
+  return isExactBuilder ? <DraftBuilderPage view={search.view} /> : <Outlet />;
 }

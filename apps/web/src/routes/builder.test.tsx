@@ -5,6 +5,7 @@ import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderRoute } from "../test/render-route.js";
 import { createTestClient } from "../test/test-client.js";
+import { DRAFT_KEY } from "../features/builder/build-draft.js";
 
 // `BuilderPage` was 512 lines / 12 useState / 45 hook calls in one function body, and these
 // tests were written as the behaviour net that made decomposing it safe.
@@ -15,6 +16,9 @@ import { createTestClient } from "../test/test-client.js";
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  // The page keeps its build in localStorage: each test starts without one.
+  localStorage.clear();
 });
 
 /**
@@ -198,5 +202,75 @@ describe("/builder", () => {
   it("surfaces a data error when the items resource fails to load", async () => {
     await renderRoute("/builder", { client: createTestClient({ errorResources: ["items"] }) });
     expect(await screen.findByText(/Failed to load data:/)).toBeInTheDocument();
+  });
+});
+
+describe("/builder draft", () => {
+  async function pickWeapon(user: ReturnType<typeof userEvent.setup>) {
+    await screen.findByText("1 weapons available on your profile");
+    const weaponSelect = findWeaponSelect();
+    await waitFor(() => expect(weaponSelect).not.toBeDisabled());
+    await user.selectOptions(weaponSelect, "w-m4a1");
+    await screen.findByText("2 attached", { exact: true });
+  }
+
+  it("restores the build after the page is opened again", async () => {
+    const user = userEvent.setup();
+    await renderRoute("/builder");
+    await pickWeapon(user);
+    await user.click(screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ }));
+    await user.type(screen.getByPlaceholderText("Build name (optional)"), "Night raid");
+    cleanup();
+
+    await renderRoute("/builder");
+    expect(await screen.findByDisplayValue("Night raid")).toBeInTheDocument();
+    await waitFor(() => expect(findWeaponSelect()).toHaveValue("w-m4a1"));
+    expect(await screen.findByText("2 attached", { exact: true })).toBeInTheDocument();
+  });
+
+  it("opening the page with a draft writes nothing", async () => {
+    const user = userEvent.setup();
+    await renderRoute("/builder");
+    await pickWeapon(user);
+    const stored = localStorage.getItem(DRAFT_KEY);
+    expect(stored).not.toBeNull();
+    cleanup();
+
+    await renderRoute("/builder");
+    await screen.findByText("2 attached", { exact: true });
+    expect(localStorage.getItem(DRAFT_KEY)).toBe(stored);
+  });
+
+  it("New build asks first, then discards the draft and empties the builder", async () => {
+    const user = userEvent.setup();
+    await renderRoute("/builder");
+    expect(screen.queryByRole("button", { name: "New build" })).not.toBeInTheDocument();
+    await pickWeapon(user);
+
+    await user.click(screen.getByRole("button", { name: "New build" }));
+    await user.click(screen.getByRole("button", { name: "Keep this build" }));
+    expect(screen.getByText("2 attached", { exact: true })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "New build" }));
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+    expect(await screen.findByText("NO WEAPON SELECTED")).toBeInTheDocument();
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
+  it("an unreadable draft gives an empty builder, warns once, and stays until an edit", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error");
+    localStorage.setItem(DRAFT_KEY, "{not json");
+    const user = userEvent.setup();
+    await renderRoute("/builder");
+
+    await screen.findByText("1 weapons available on your profile");
+    expect(screen.getByText("NO WEAPON SELECTED")).toBeInTheDocument();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(error).not.toHaveBeenCalled();
+    expect(localStorage.getItem(DRAFT_KEY)).toBe("{not json");
+
+    await pickWeapon(user);
+    expect(localStorage.getItem(DRAFT_KEY)).toContain('"weaponId":"w-m4a1"');
   });
 });

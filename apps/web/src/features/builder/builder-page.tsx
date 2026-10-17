@@ -1,6 +1,7 @@
 // apps/web/src/features/builder/builder-page.tsx
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
+import { useEffect, useRef } from "react";
 import { presetAvailability, useProfile, useTasks, type BuildV6 } from "@tarkov/data";
 import { QuestNameProvider } from "./quest-names.js";
 import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
@@ -20,6 +21,7 @@ import { WeaponPanel } from "./weapon-panel.js";
 import { ModsPanel } from "./mods-panel.js";
 import { PresetPicker } from "./preset-picker.js";
 import { SpecPanel } from "./spec-panel.js";
+import { writeDraft, type DraftBuild } from "./build-draft.js";
 
 export interface BuilderPageProps {
   /**
@@ -29,6 +31,15 @@ export interface BuilderPageProps {
   initialBuild?: BuildV6;
   notice?: React.ReactNode;
   view?: "editor" | "optimize";
+  /**
+   * Where the build is kept across reloads (`build-draft.ts`). Written on the first edit and
+   * every one after; opening the page writes nothing. Omitted, nothing is kept.
+   */
+  draftKey?: string;
+  /** Called after an edit has been written to {@link draftKey}. */
+  onDraftWritten?: () => void;
+  /** Offered as "New build" in the header: discards this build and starts an empty one. */
+  onNewBuild?: () => void;
 }
 
 /**
@@ -51,7 +62,14 @@ export interface BuilderPageProps {
  * both route files import it as a normal (non-route) dependency, which the splitter treats
  * like any other lazy-chunk-eligible import.
  */
-export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPageProps = {}) {
+export function BuilderPage({
+  initialBuild,
+  notice,
+  view = "editor",
+  draftKey,
+  onDraftWritten,
+  onNewBuild,
+}: BuilderPageProps = {}) {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useProfile();
@@ -72,6 +90,18 @@ export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPa
     buildDescription: saveMeta.buildDescription,
     embedProfileOnSave: saveMeta.embedProfileOnSave,
   });
+
+  useDraftWriter(
+    draftKey,
+    {
+      weaponId: builder.weaponId,
+      attachments: builder.attachments,
+      orphaned: builder.orphaned,
+      name: saveMeta.buildName,
+      description: saveMeta.buildDescription,
+    },
+    onDraftWritten,
+  );
 
   const weaponPresets = builder.weaponPresets;
   const nameOf = (id: string): string =>
@@ -121,6 +151,12 @@ export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPa
           sharedId={shareBuild.shareUrl?.split("/").pop() ?? null}
           onCompare={builder.selectedWeapon ? compareHandoff.open : undefined}
           onOptimize={builder.selectedWeapon ? handleOpenOptimizer : undefined}
+          onNewBuild={
+            onNewBuild &&
+            (builder.weaponId !== "" || saveMeta.buildName || saveMeta.buildDescription)
+              ? onNewBuild
+              : undefined
+          }
         />
         <CompareFromBuildDialog
           open={compareHandoff.isOpen}
@@ -261,4 +297,26 @@ export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPa
       </div>
     </QuestNameProvider>
   );
+}
+
+/**
+ * Write the build to `key` whenever it differs from what is already there: the build the page
+ * opened with counts as already there, so opening a page (a draft restored, a shared build
+ * loaded, or a corrupt draft ignored) writes nothing, and a corrupt value is only replaced by
+ * an edit.
+ */
+function useDraftWriter(
+  key: string | undefined,
+  draft: DraftBuild,
+  onWritten: (() => void) | undefined,
+): void {
+  // The build as one string: the effect below runs when it changes, and writes it as it was.
+  const serialized = JSON.stringify(draft);
+  const written = useRef(serialized);
+  useEffect(() => {
+    if (key === undefined || written.current === serialized) return;
+    written.current = serialized;
+    writeDraft(key, JSON.parse(serialized) as DraftBuild);
+    onWritten?.();
+  }, [key, serialized, onWritten]);
 }

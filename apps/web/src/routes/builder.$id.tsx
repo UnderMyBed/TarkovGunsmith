@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { loadSavedBuild, useBuilderSnapshot, useLoadBuild, LoadBuildError } from "@tarkov/data";
 import {
   Button,
@@ -12,6 +12,7 @@ import {
   Skeleton,
 } from "@tarkov/ui";
 import { BuilderPage } from "../features/builder/builder-page.js";
+import { clearDraft, readDraft, sharedDraftKey } from "../features/builder/build-draft.js";
 
 const builderIdSearchSchema = z.object({
   view: z.enum(["editor", "optimize"]).optional(),
@@ -32,6 +33,23 @@ function LoadedBuilderPage() {
   const build = useMemo(
     () => (query.data && snapshot.data ? loadSavedBuild(query.data, snapshot.data) : null),
     [query.data, snapshot.data],
+  );
+  // Edits to this shared build, kept under its own key so a reload or an evicted tab returns
+  // to them. Read through the same load as the shared build. The author's embedded profile
+  // stays the shared build's: a draft records the build alone.
+  const draftKey = sharedDraftKey(id);
+  const [stored, setStored] = useState(() => readDraft(draftKey));
+  const [edited, setEdited] = useState(stored !== null);
+  const [generation, setGeneration] = useState(0);
+  const draft = useMemo(
+    () =>
+      stored && snapshot.data && build
+        ? {
+            ...loadSavedBuild(stored, snapshot.data),
+            ...(build.profileSnapshot ? { profileSnapshot: build.profileSnapshot } : {}),
+          }
+        : null,
+    [stored, snapshot.data, build],
   );
 
   if (query.isLoading || snapshot.isLoading) {
@@ -81,7 +99,36 @@ function LoadedBuilderPage() {
     </Card>
   );
 
-  return <BuilderPage initialBuild={build} notice={notice} view={view} />;
+  const revert = () => {
+    clearDraft(draftKey);
+    setStored(null);
+    setEdited(false);
+    setGeneration((g) => g + 1);
+  };
+
+  return (
+    <BuilderPage
+      key={generation}
+      initialBuild={draft ?? build}
+      notice={
+        <>
+          {notice}
+          {edited && (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted-foreground)]">
+              <span>Edited from the shared build</span>
+              <span aria-hidden>·</span>
+              <Button variant="ghost" size="sm" onClick={revert}>
+                Revert
+              </Button>
+            </div>
+          )}
+        </>
+      }
+      view={view}
+      draftKey={draftKey}
+      onDraftWritten={() => setEdited(true)}
+    />
+  );
 }
 
 function LoadErrorCard({ error, id, onRetry }: { error: Error; id: string; onRetry: () => void }) {
@@ -127,7 +174,7 @@ function LoadErrorCard({ error, id, onRetry }: { error: Error; id: string; onRet
             </Button>
           )}
           <Link to="/builder" className="text-sm underline underline-offset-4 hover:opacity-80">
-            Start a fresh build →
+            Open the builder →
           </Link>
         </CardContent>
       </Card>
