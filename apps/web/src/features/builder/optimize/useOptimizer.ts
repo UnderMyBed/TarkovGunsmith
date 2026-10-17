@@ -8,8 +8,11 @@ export type OptimizerState = "idle" | "running" | "done" | "error";
 export interface OptimizerProgress {
   /** Candidate builds the solver has checked so far. */
   readonly nodes: number;
-  /** When the run started (`Date.now()`), for the elapsed time the running panel shows. */
-  readonly startedAt: number;
+  /**
+   * When the solver started (`Date.now()` on this thread), from the worker's first report, so
+   * elapsed time is the span its time limit measures; `null` until the worker reports.
+   */
+  readonly startedAt: number | null;
 }
 
 export interface UseOptimizerReturn {
@@ -17,6 +20,8 @@ export interface UseOptimizerReturn {
   result: OptimizationResult | undefined;
   /** The objective the current run or result was run with: the form may have moved on. */
   objective: Objective | undefined;
+  /** The pins the current run or result was run with: the form may have moved on. */
+  pins: ReadonlyMap<string, string | null> | undefined;
   /** While running: how far the run has got. */
   progress: OptimizerProgress | undefined;
   error: Error | undefined;
@@ -32,6 +37,7 @@ interface Snapshot {
   readonly state: OptimizerState;
   readonly result?: OptimizationResult;
   readonly objective?: Objective;
+  readonly pins?: ReadonlyMap<string, string | null>;
   readonly progress?: OptimizerProgress;
   readonly error?: Error;
 }
@@ -62,10 +68,10 @@ export function useOptimizer(
   const run = useCallback(
     (input: OptimizeRequest) => {
       stop();
-      const objective = input.objective;
+      const ran = { objective: input.objective, pins: input.constraints.pinnedSlots };
       const fail = (error: Error) => {
         stop();
-        setSnapshot({ state: "error", objective, error });
+        setSnapshot({ state: "error", ...ran, error });
       };
       let worker: OptimizerWorker;
       try {
@@ -75,8 +81,8 @@ export function useOptimizer(
         return;
       }
       current.current = worker;
-      const startedAt = Date.now();
-      setSnapshot({ state: "running", objective, progress: { nodes: 0, startedAt } });
+      let startedAt: number | null = null;
+      setSnapshot({ state: "running", ...ran, progress: { nodes: 0, startedAt } });
       // A superseded or cancelled worker is terminated, but a reply it posted first may
       // still be queued: only the current worker's replies count.
       const mine = () => current.current === worker;
@@ -84,14 +90,15 @@ export function useOptimizer(
         if (!mine()) return;
         const reply = event.data;
         if (reply.type === "progress") {
-          setSnapshot({ state: "running", objective, progress: { nodes: reply.nodes, startedAt } });
+          startedAt ??= Date.now() - reply.elapsedMs;
+          setSnapshot({ state: "running", ...ran, progress: { nodes: reply.nodes, startedAt } });
           return;
         }
         stop();
         setSnapshot(
           reply.type === "result"
-            ? { state: "done", objective, result: reply.result }
-            : { state: "error", objective, error: new Error(reply.message) },
+            ? { state: "done", ...ran, result: reply.result }
+            : { state: "error", ...ran, error: new Error(reply.message) },
         );
       };
       worker.onerror = (event: ErrorEvent) => {
@@ -124,6 +131,7 @@ export function useOptimizer(
     state: snapshot.state,
     result: snapshot.result,
     objective: snapshot.objective,
+    pins: snapshot.pins,
     progress: snapshot.state === "running" ? snapshot.progress : undefined,
     error: snapshot.error,
     run,

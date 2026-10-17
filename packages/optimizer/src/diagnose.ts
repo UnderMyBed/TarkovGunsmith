@@ -1,4 +1,4 @@
-import type { AttachablePart, SlotDef, WeaponTree } from "@tarkov/data";
+import { slotAtPath, type AttachablePart, type SlotDef, type WeaponTree } from "@tarkov/data";
 import { UNKNOWN_PRICE, type Problem, type SolverPart } from "./problem.js";
 import type { Found } from "./search.js";
 import { solve } from "./solve.js";
@@ -82,6 +82,7 @@ export function diagnose(
       return {
         ok: false,
         reason: "infeasible-budget",
+        cause: "over-budget",
         message: `The cheapest complete build costs ${rub(price)}, over the ${rub(problem.budget)} budget.`,
       };
     }
@@ -131,11 +132,20 @@ export function diagnose(
   };
 }
 
+/** The refusal for builds that keep the pins having no known price. */
+export const KEEPS_PINS =
+  "No complete build that keeps your pins has a known price on this profile, so none can be shown to fit a budget.";
+
 /**
- * Why no build that keeps the pins has a known price, when none does. The pins are named only
- * when they are the reason: the cheapest build with every unpriced pin dropped has a known
- * price. Otherwise some part the user did not pin has no known price on every build too, and
- * unpinning would not help.
+ * Why no build that keeps the pins has a known price, when none does, by what the user can
+ * change:
+ *
+ * 1. pinned parts nobody prices: the cheapest build with those pins dropped has a known price.
+ *    Named are the ones that build has a slot for — the rest hold nowhere on it, so they are
+ *    no obstacle and stay;
+ * 2. other pins: a build of known price exists with no pins at all. Named are the pins the
+ *    cheapest such build breaks — lifting them lets it stand;
+ * 3. otherwise the profile: pinned or not, no complete build has a known price.
  */
 export function unknownPriceVerdict(
   problem: Problem,
@@ -150,30 +160,67 @@ export function unknownPriceVerdict(
     const freed = cheapestBuild({ ...problem, pins }, tree, catalog, deadline);
     // A pinned part skips the availability gate, so with its pin dropped there may be no build.
     if (freed !== null && freed.point.price < UNKNOWN_PRICE) {
-      return pinnedUnpriced([...new Set(unpriced.values())], catalog);
+      const needed = [...unpriced].filter(([path, id]) => holdsOn(tree, freed, path, id, catalog));
+      return pinnedUnpriced([...new Set(needed.map(([, id]) => id))], catalog);
+    }
+  }
+  if (problem.pins.size > 0) {
+    const free = cheapestBuild({ ...problem, pins: new Map() }, tree, catalog, deadline);
+    if (free !== null && free.point.price < UNKNOWN_PRICE) {
+      const broken = [...problem.pins]
+        .filter(([path, id]) => holdsOn(tree, free, path, id, catalog))
+        .filter(([path, id]) => (free.attachments[path] ?? null) !== id)
+        .map(([path]) => path);
+      return {
+        ok: false,
+        reason: "infeasible-budget",
+        cause: "pins",
+        paths: broken,
+        message: KEEPS_PINS,
+      };
     }
   }
   return {
     ok: false,
     reason: "infeasible-budget",
+    cause: "unpriced",
     message:
       problem.pins.size > 0
-        ? "No complete build that keeps your pins has a known price on this profile, so none can be shown to fit a budget."
+        ? "Pinned or not, no complete build has a known price on this profile, so none can be shown to fit a budget."
         : "No complete build has a known price on this profile, so none can be shown to fit a budget.",
   };
 }
 
 /**
+ * Whether the pin `path` → `id` would bind `found`: the build has a slot at that path and the
+ * slot can do what the pin asks — take the part, or (for `null`) be left empty.
+ */
+function holdsOn(
+  tree: WeaponTree,
+  found: Found,
+  path: string,
+  id: string | null,
+  catalog: ReadonlyMap<string, AttachablePart>,
+): boolean {
+  const slot = slotAtPath(tree, found.attachments, path);
+  if (slot === null) return false;
+  return id === null ? !slot.required : slot.allowedItemIds.has(id) && catalog.has(id);
+}
+
+/**
  * The pins, path → part, whose part has no price the profile can pay and comes with no way to
- * buy the gun, at a path some build has and whose slot there takes the part: the pins that can
- * leave a build's price unknown.
+ * buy the gun at a known price, at a path some build has and whose slot there takes the part:
+ * the pins that can leave a build's price unknown. A preset of unknown price that comes with
+ * the part does not price it: a build bought that way has no known price either.
  */
 export function unpricedPins(problem: Problem): Map<string, string> {
   const found = new Map<string, string>();
   for (const [path, id] of problem.pins) {
     const part = id === null ? undefined : problem.parts.get(id);
     if (part === undefined || part.price < UNKNOWN_PRICE) continue;
-    if (problem.paths.some((p) => (p.covers.get(part.id) ?? 0) > 0)) continue;
+    if (problem.paths.some((p) => p.price < UNKNOWN_PRICE && (p.covers.get(part.id) ?? 0) > 0)) {
+      continue;
+    }
     if (slotsAt(problem, path).some((slot) => slot.allowedItemIds.includes(part.id))) {
       found.set(path, part.id);
     }

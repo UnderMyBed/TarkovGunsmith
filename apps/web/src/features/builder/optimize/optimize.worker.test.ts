@@ -13,11 +13,21 @@ describe("optimize.worker", () => {
     const posted: OptimizeReply[] = [];
     const scope: {
       onmessage: ((event: { data: OptimizeRequest }) => void) | null;
+      onmessageerror: (() => void) | null;
       postMessage: (reply: OptimizeReply) => void;
-    } = { onmessage: null, postMessage: (reply) => posted.push(reply) };
+    } = { onmessage: null, onmessageerror: null, postMessage: (reply) => posted.push(reply) };
     vi.stubGlobal("self", scope);
     await import("./optimize.worker.js");
     scope.onmessage?.({ data: { objective: "min-recoil" } as unknown as OptimizeRequest });
-    expect(posted).toEqual([{ type: "result", result: { ok: false, reason: "timeout" } }]);
+    expect(posted).toEqual([
+      { type: "progress", nodes: 0, elapsedMs: 0 },
+      { type: "result", result: { ok: false, reason: "timeout" } },
+    ]);
+    // A request it cannot read is answered too, or the page would wait on it for ever.
+    scope.onmessageerror?.();
+    expect(posted[2]).toEqual({
+      type: "error",
+      message: "The optimizer could not read this build.",
+    });
   });
 });

@@ -24,8 +24,8 @@ describe("answerOptimizeRequest", () => {
       for (let nodes = 1; nodes <= 5; nodes++) seen.onProgress!({ nodes });
       return result;
     };
-    // Nodes 1–5 checked at 0, 40, 100, 150, 250 ms.
-    const clock = [0, 40, 100, 150, 250];
+    // The solve starts at 1000 ms; nodes 1–5 are checked at +0, +40, +100, +150, +250.
+    const clock = [1000, 1000, 1040, 1100, 1150, 1250];
     const posted: OptimizeReply[] = [];
     answerOptimizeRequest(
       request,
@@ -35,9 +35,9 @@ describe("answerOptimizeRequest", () => {
     expect(seen).toMatchObject({ objective: "min-recoil", timeoutMs: 2000 });
     expect(PROGRESS_INTERVAL_MS).toBe(100);
     expect(posted).toEqual([
-      { type: "progress", nodes: 1 },
-      { type: "progress", nodes: 3 },
-      { type: "progress", nodes: 5 },
+      { type: "progress", nodes: 0, elapsedMs: 0 },
+      { type: "progress", nodes: 3, elapsedMs: 100 },
+      { type: "progress", nodes: 5, elapsedMs: 250 },
       { type: "result", result },
     ]);
   });
@@ -53,7 +53,7 @@ describe("answerOptimizeRequest", () => {
       throw "plain";
     };
     answerOptimizeRequest(request, (r) => posted.push(r));
-    expect(posted).toEqual([
+    expect(posted.filter((r) => r.type !== "progress")).toEqual([
       { type: "error", message: "the slot graph has a cycle through loop" },
       { type: "error", message: "plain" },
     ]);

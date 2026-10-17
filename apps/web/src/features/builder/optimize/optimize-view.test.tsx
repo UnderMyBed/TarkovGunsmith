@@ -243,11 +243,16 @@ describe("OptimizeView", () => {
       renderView();
       fireEvent.click(runButton());
       const running = screen.getByRole("status", { name: "Optimizer running" });
-      expect(running).toHaveTextContent("of 2 s · 0 candidate builds checked");
+      // The clock waits for the worker: its boot is not the solver's time.
+      expect(running).toHaveTextContent("Starting the solver · 0 candidate builds checked");
       expect(screen.getByText("RUNNING")).toBeInTheDocument();
-      act(() => lastWorker().onmessage?.({ data: { type: "progress", nodes: 1 } }));
+      act(() => lastWorker().onmessage?.({ data: { type: "progress", nodes: 0, elapsedMs: 0 } }));
+      expect(running).toHaveTextContent(/^SOLVING0\.\d s of 2 s · 0 candidate builds checked/);
+      act(() => lastWorker().onmessage?.({ data: { type: "progress", nodes: 1, elapsedMs: 50 } }));
       expect(running).toHaveTextContent("1 candidate build checked");
-      act(() => lastWorker().onmessage?.({ data: { type: "progress", nodes: 37 } }));
+      act(() =>
+        lastWorker().onmessage?.({ data: { type: "progress", nodes: 37, elapsedMs: 150 } }),
+      );
       expect(running).toHaveTextContent("37 candidate builds checked");
       // The form still answers while the solver works.
       fireEvent.click(screen.getByRole("radio", { name: "Max ergonomics" }));
@@ -316,6 +321,7 @@ describe("OptimizeView", () => {
       solver.result = {
         ok: false,
         reason: "infeasible-budget",
+        cause: "over-budget",
         message: "The cheapest complete build costs ₽80,000, over the ₽5,000 budget.",
       };
       fireEvent.click(runButton());
@@ -330,6 +336,63 @@ describe("OptimizeView", () => {
       await waitFor(() =>
         expect(screen.getByTestId("triptych-optimized-ergo")).toHaveTextContent("58"),
       );
+    });
+
+    it("offers to unpin the pins that leave every build unpriced", async () => {
+      const alert = await fail(
+        {
+          ok: false,
+          reason: "infeasible-budget",
+          cause: "pins",
+          paths: ["handguard"],
+          message:
+            "No complete build that keeps your pins has a known price on this profile, so none can be shown to fit a budget.",
+        },
+        { attachments: { muzzle: "m-old", handguard: "h-old" } },
+      );
+      expect(alert).toHaveTextContent("NO KNOWN PRICE");
+      expect(alert).toHaveTextContent("Unpin slots, or run without a budget.");
+      expect(alert).not.toHaveTextContent("Raise the budget");
+      expect(within(alert).getByRole("button", { name: "RUN WITHOUT A BUDGET" })).toBeVisible();
+      solver.result = undefined;
+      fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part h-old" }));
+      expect([...lastWorker().request!.constraints.pinnedSlots]).toEqual([["muzzle", "m-old"]]);
+    });
+
+    it("sends a profile with no known prices to the profile, not to a bigger budget", async () => {
+      const unpriced = {
+        ok: false,
+        reason: "infeasible-budget",
+        cause: "unpriced",
+        message:
+          "No complete build has a known price on this profile, so none can be shown to fit a budget.",
+      } as const;
+      const onEditProfile = vi.fn();
+      const alert = await fail(unpriced, { onEditProfile });
+      expect(alert).toHaveTextContent("NO KNOWN PRICE");
+      expect(alert).toHaveTextContent(
+        "Run without a budget, or change the profile to reach parts with a known price.",
+      );
+      expect(alert).not.toHaveTextContent("Raise the budget");
+      fireEvent.click(within(alert).getByRole("button", { name: "EDIT PROFILE" }));
+      expect(onEditProfile).toHaveBeenCalled();
+      cleanup();
+      const theorycraft = await fail(unpriced, { gate: null });
+      expect(theorycraft).toHaveTextContent("Run without a budget.");
+      expect(within(theorycraft).queryByRole("button", { name: "EDIT PROFILE" })).toBeNull();
+    });
+
+    it("names the pins the run used, though the form has moved on", async () => {
+      const alert = await fail({
+        ok: false,
+        reason: "pin-conflict",
+        paths: ["muzzle"],
+        message: "No complete build keeps every pin. The pins that clash: Part m-old.",
+      });
+      // The form frees the slot after the run: the outcome still names the run's pin.
+      fireEvent.click(screen.getByRole("checkbox", { name: /MUZZLE/i }));
+      expect(screen.getByRole("checkbox", { name: /MUZZLE/i })).not.toBeChecked();
+      expect(within(alert).getByRole("button", { name: "UNPIN Part m-old" })).toBeVisible();
     });
 
     it("unpins a pinned part nobody prices, leaving the slot free rather than empty", async () => {
@@ -396,7 +459,7 @@ describe("OptimizeView", () => {
       [
         "no-valid-combinations",
         "NO BUILD FITS TOGETHER",
-        "Unpin slots, or change the profile to reach other parts.",
+        "Change the profile to reach other parts, or pick another weapon.",
       ],
     ] as const) {
       it(`${reason}: shows the solver's reason and opens the profile`, async () => {
@@ -419,7 +482,7 @@ describe("OptimizeView", () => {
     for (const [reason, hint] of [
       ["weapon-unavailable", "Pick another weapon."],
       ["required-slot", "Pick another weapon."],
-      ["no-valid-combinations", "Unpin slots, or pick another weapon."],
+      ["no-valid-combinations", "Pick another weapon."],
     ] as const) {
       it(`${reason} in theorycraft: points past the profile`, async () => {
         const message = "No trader or flea listing sells the W.";

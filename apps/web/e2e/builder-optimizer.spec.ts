@@ -119,17 +119,19 @@ test.describe("builder optimizer diff view", () => {
     let release: () => void = () => {};
     const held = new Promise<void>((resolve) => (release = resolve));
     let requested = 0;
-    await page.route(/\/assets\/optimize\.worker-[^/]+\.js$/, async (route) => {
+    let served: Promise<void> = Promise.resolve();
+    await page.route(/\/assets\/optimize\.worker-[^/]+\.js$/, (route) => {
       requested++;
-      await held;
-      await route.continue();
+      served = held.then(() => route.continue());
+      return served;
     });
 
     await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
     await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
     const running = page.getByRole("status", { name: "Optimizer running" });
     await expect(running).toBeVisible();
-    await expect(running).toContainText(/of 2 s · 0 candidate builds checked/);
+    // The worker's script is held, so the solver has not started: no clock yet.
+    await expect(running).toContainText("Starting the solver · 0 candidate builds checked");
     await expect.poll(() => requested, { message: "the run starts a worker" }).toBe(1);
     await expect(page.getByText("RUNNING", { exact: true })).toBeVisible();
 
@@ -144,8 +146,15 @@ test.describe("builder optimizer diff view", () => {
     await expect(page.getByText("IDLE", { exact: true })).toBeVisible();
     await expect(page.getByText(/RUN THE SOLVER/i)).toBeVisible();
 
-    // The cancelled run never reports; a new one, on the changed objective, does.
+    // The cancelled worker was terminated before its script arrived: once the script is
+    // served, nothing reports, and the view stays IDLE with no proposal.
     release();
+    await served;
+    await expect(page.getByText("IDLE", { exact: true })).toBeVisible();
+    await expect(page.locator('[aria-label^="Accept "]')).toHaveCount(0);
+    await expect(page.getByRole("alert")).toHaveCount(0);
+
+    // A new run, on the changed objective, does report.
     await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
     await expect
       .poll(async () => await page.locator('[aria-label^="Accept "]').count(), { timeout: 15_000 })
