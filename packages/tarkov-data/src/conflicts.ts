@@ -21,10 +21,13 @@ export interface Conflict {
   readonly slotId?: string;
 }
 
+/** The two fields conflict checks read. Any {@link AttachablePart} has them. */
+export type ConflictFields = Pick<AttachablePart, "conflictingItems" | "conflictingSlotIds">;
+
 export interface ConflictContext {
   readonly tree: WeaponTree;
   readonly attachments: Readonly<Record<string, string>>;
-  readonly parts: ReadonlyMap<string, AttachablePart>;
+  readonly parts: ReadonlyMap<string, ConflictFields>;
 }
 
 /**

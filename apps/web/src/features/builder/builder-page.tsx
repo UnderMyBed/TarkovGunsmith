@@ -7,7 +7,6 @@ import { Button, Card, CardContent } from "@tarkov/ui";
 import { adaptWeapon } from "../data-adapters/adapters.js";
 import { ProfileEditor } from "./profile-editor.js";
 import { BuildHeader } from "./build-header.js";
-import { PresetPicker } from "./preset-picker.js";
 import { CompareFromBuildDialog } from "./compare/compare-from-build-dialog.js";
 import { OptimizeView } from "./optimize/optimize-view.js";
 import { useSaveMetadata } from "./useSaveMetadata.js";
@@ -178,10 +177,6 @@ export function BuilderPage({
             embedProfileOnSave={saveMeta.embedProfileOnSave}
             onEmbedProfileOnSaveChange={saveMeta.setEmbedProfileOnSave}
           />
-
-          {builder.selectedWeapon && (
-            <PresetPicker weaponId={builder.selectedWeapon.id} onApply={builder.applyPreset} />
-          )}
 
           {builder.selectedWeapon && (
             <>

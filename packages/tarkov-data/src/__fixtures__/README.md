@@ -33,6 +33,10 @@ undercuts its cash gate (Badger latch, Mechanic LL1), a barter-only scope (ELCAN
 GP-coin barter. Every item those barters require is in `items-sample.json` with its flea price,
 except GP coin, which has none upstream.
 
+Every part the three weapon presets in `items-sample.json` list (the PM default, the M4A1
+Carbine default and the M4A1 SOPMOD II) is in the capture too, so `selectWeaponPresets` places
+all three. Those parts also widen the M4A1's and PM's slot options in the e2e suite.
+
 `preset-oracle-sample.json` holds six upstream weapon presets with their base weapons and every
 part they list, captured 2026-10-16, for `preset-oracle.test.ts`: the presets' own ergonomics and
 recoil are the oracle the Builder's stat path must reproduce.
