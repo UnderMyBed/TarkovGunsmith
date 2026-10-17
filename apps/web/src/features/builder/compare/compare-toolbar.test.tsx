@@ -31,6 +31,34 @@ describe("CompareToolbar", () => {
     expect(screen.getByText("Dismiss orphaned parts to share this build")).toBeInTheDocument();
   });
 
+  it("offers one save on a saved pair, named for the new link it makes", async () => {
+    const onSave = vi.fn();
+    const onSaveAsNew = vi.fn();
+    render(
+      <CompareToolbar
+        dirty={false}
+        pairId="abc23456"
+        canSwap
+        canClone
+        isSaving={false}
+        saveError={null}
+        onEmbedProfilesChange={vi.fn()}
+        onSave={onSave}
+        onSaveAsNew={onSaveAsNew}
+        onSwap={vi.fn()}
+        onCloneLeftToRight={vi.fn()}
+        onCloneRightToLeft={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole("button", { name: /^save/i })).toHaveLength(1);
+    const save = screen.getByRole("button", { name: "Save as new link" });
+    // Nothing unsaved: the stored pair is forked, so the button stays live.
+    expect(save).toBeEnabled();
+    await userEvent.setup().click(save);
+    expect(onSaveAsNew).toHaveBeenCalledTimes(1);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it("offers the profile opt-in only when a side has a profile, and reports a change", async () => {
     const onEmbed = vi.fn();
     const props = {

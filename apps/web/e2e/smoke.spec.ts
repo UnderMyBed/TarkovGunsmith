@@ -274,8 +274,8 @@ test.describe("smoke — compare save round-trip", () => {
       timeout: 10_000,
     });
 
-    // Once we have a pairId the Save button's label flips.
-    await expect(page.getByRole("button", { name: /save changes/i })).toBeVisible({
+    // Once we have a pairId the one save button says it makes a new link.
+    await expect(page.getByRole("button", { name: "Save as new link" })).toBeVisible({
       timeout: 10_000,
     });
 
