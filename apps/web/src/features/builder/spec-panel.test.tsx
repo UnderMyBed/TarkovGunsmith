@@ -96,6 +96,22 @@ describe("SpecPanel", () => {
     expect(within(stat("Accuracy")).getByText("base 2.75 · accuracy +4%")).toBeInTheDocument();
   });
 
+  it("shows ergonomics summing below 0 as the game's 0, with the raw sum in a title", () => {
+    // 48 base − 32 − 39 from parts: −23.
+    const parts = [
+      { ...BARREL_10_3, ergonomicsDelta: -32 },
+      { ...VP09, ergonomicsDelta: -39 },
+    ];
+    render(<SpecPanel weaponShortName="M4A1" spec={weaponSpec(M4A1, parts)} magazine={null} />);
+    const value = within(stat("Ergonomics")).getByText("0.0");
+    expect(value).toHaveAttribute("title", "−23 before the game's floor at 0");
+  });
+
+  it("shows ergonomics at or above 0 as summed, with no title", () => {
+    render(<SpecPanel weaponShortName="M4A1" spec={weaponSpec(M4A1, [VP09])} magazine={null} />);
+    expect(within(stat("Ergonomics")).getByText("46.0")).not.toHaveAttribute("title");
+  });
+
   it("names the default ammo the muzzle velocity is computed for", () => {
     render(
       <SpecPanel weaponShortName="M4A1" spec={weaponSpec(M4A1, [BARREL_10_3])} magazine={STANAG} />,

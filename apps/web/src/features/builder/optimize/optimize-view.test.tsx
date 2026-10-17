@@ -559,6 +559,15 @@ describe("OptimizeView", () => {
 
 describe("objectiveDelta", () => {
   const proposed = proposal.stats;
+  it("scores max-ergonomics on the floored values the game uses", () => {
+    expect(
+      objectiveDelta(
+        "max-ergonomics",
+        { ...currentStats, ergonomics: -23 },
+        { ...proposed, ergonomics: 10 },
+      ).value,
+    ).toBe(10);
+  });
   it("scores each objective on the stat it optimises", () => {
     expect(objectiveDelta("min-recoil", currentStats, proposed)).toEqual({
       label: "RECOIL V+H",

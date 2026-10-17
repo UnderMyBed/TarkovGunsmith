@@ -32,6 +32,7 @@ import { ProfileReadout } from "./profile-readout.js";
 import { shownSlots, slotDiff, weaponChangeOf, type ChangedRow } from "./slot-diff.js";
 import { buildFromSelection } from "./build-from-selection.js";
 import { coversOf, priceBuild, totalOf } from "../build-price.js";
+import { shownErgonomics } from "../ergonomics.js";
 
 export interface OptimizeViewProps {
   weapon: BallisticWeapon;
@@ -76,7 +77,11 @@ export function objectiveDelta(
         digits: 0,
       };
     case "max-ergonomics":
-      return { label: "ERGO", value: proposed.ergonomics - current.ergonomics, digits: 0 };
+      return {
+        label: "ERGO",
+        value: shownErgonomics(proposed.ergonomics) - shownErgonomics(current.ergonomics),
+        digits: 0,
+      };
     case "min-weight":
       return { label: "WEIGHT KG", value: proposed.weight - current.weight, digits: 2 };
     case "max-accuracy":

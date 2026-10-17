@@ -10,6 +10,7 @@ import {
   StatRow,
   WeaponSilhouette,
 } from "@tarkov/ui";
+import { ergonomicsFloorNote, shownErgonomics } from "./ergonomics.js";
 
 export interface BuildHeaderProps {
   name: string;
@@ -58,6 +59,11 @@ export function BuildHeader({
   onNewBuild,
 }: BuildHeaderProps) {
   const [confirmingNew, setConfirmingNew] = useState(false);
+  // Floored on both sides: the delta is what the game's handling changes by.
+  const ergonomicsDelta =
+    currentSpec && stockSpec
+      ? shownErgonomics(currentSpec.ergonomics) - shownErgonomics(stockSpec.ergonomics)
+      : 0;
   return (
     <Card variant="bracket" className="relative overflow-hidden">
       {weaponId && (
@@ -166,14 +172,12 @@ export function BuildHeader({
             <div className="flex flex-col gap-2 border-t border-dashed border-[var(--color-border)] pt-4">
               <StatRow
                 label="ERGONOMICS"
-                stock={stockSpec.ergonomics}
-                delta={formatDelta(currentSpec.ergonomics - stockSpec.ergonomics, false)}
-                deltaDirection={deltaDirection(
-                  currentSpec.ergonomics - stockSpec.ergonomics,
-                  false,
-                )}
-                value={oneDecimal(currentSpec.ergonomics)}
-                percent={clampPercent(currentSpec.ergonomics)}
+                title={ergonomicsFloorNote(currentSpec.ergonomics)}
+                stock={shownErgonomics(stockSpec.ergonomics)}
+                delta={formatDelta(ergonomicsDelta, false)}
+                deltaDirection={deltaDirection(ergonomicsDelta, false)}
+                value={oneDecimal(shownErgonomics(currentSpec.ergonomics))}
+                percent={clampPercent(shownErgonomics(currentSpec.ergonomics))}
                 barTone="primary"
               />
               <StatRow

@@ -48,6 +48,24 @@ describe("OptimizeTriptych", () => {
     expect(getByTestId("triptych-delta-moa").className).toContain("text-[var(--color-olive)]");
   });
 
+  it("shows ergonomics below 0 as 0 with the raw sum in a title, and deltas the floored values", () => {
+    const { getByTestId } = render(
+      <OptimizeTriptych
+        current={{ ...current, ergonomics: 55 }}
+        optimized={{ ...optimized, ergonomics: -23 }}
+        priceCurrent={null}
+        priceOptimized={null}
+      />,
+    );
+    expect(getByTestId("triptych-current-ergo").textContent).toBe("55");
+    expect(getByTestId("triptych-current-ergo")).not.toHaveAttribute("title");
+    const shown = getByTestId("triptych-optimized-ergo");
+    expect(shown.textContent).toBe("0");
+    expect(shown).toHaveAttribute("title", "−23 before the game's floor at 0");
+    // 55 → 0 as the game sees it, not 55 → −23.
+    expect(getByTestId("triptych-delta-ergo").textContent).toBe("−55");
+  });
+
   it("renders — placeholders when optimized is null (idle state)", () => {
     const { getAllByText } = render(
       <OptimizeTriptych

@@ -18,6 +18,7 @@ export interface BuildCardViewModel {
   /** Total price in RUB. `null` if any part is missing price data: the pill is left off. */
   priceRub: number | null;
   stats: {
+    /** Floored at 0, as the game uses it: the plain sum of base and part deltas can go below. */
     ergo: number;
     recoilV: number;
     recoilH: number;
@@ -35,6 +36,7 @@ export interface SideViewModel {
   /** As {@link BuildCardViewModel.availability}. */
   availability: string | null;
   stats: {
+    /** As {@link BuildCardViewModel.stats}: floored at 0. */
     ergo: number;
     recoilV: number;
     recoilH: number;
