@@ -72,3 +72,19 @@ export function pricesStatus(query: {
   if (query.error !== null) return { state: "error", message: query.error.message };
   return { state: "loading" };
 }
+
+/**
+ * Item id → how many of it the preset `price` buys the weapon as comes with; empty for the
+ * receiver, or a build with no path.
+ */
+export function coversOf(
+  price: BuildPrice | null,
+  presets: readonly PricedPreset[],
+): ReadonlyMap<string, number> {
+  const covers = new Map<string, number>();
+  if (price === null || price.status === "unobtainable" || price.presetId === null) return covers;
+  const preset = presets.find((p) => p.id === price.presetId);
+  for (const id of Object.values(preset?.attachments ?? {}))
+    covers.set(id, (covers.get(id) ?? 0) + 1);
+  return covers;
+}

@@ -24,9 +24,9 @@ import { useOptimizer } from "./useOptimizer.js";
 import { OptimizeTriptych } from "./optimize-triptych.js";
 import { ModChangesTable, type TableMode } from "./mod-changes-table.js";
 import { ProfileReadout } from "./profile-readout.js";
-import { shownSlots, slotDiff, type ChangedRow } from "./slot-diff.js";
+import { shownSlots, slotDiff, weaponChangeOf, type ChangedRow } from "./slot-diff.js";
 import { buildFromSelection } from "./build-from-selection.js";
-import { priceBuild, totalOf } from "../build-price.js";
+import { coversOf, priceBuild, totalOf } from "../build-price.js";
 
 export interface OptimizeViewProps {
   weapon: BallisticWeapon;
@@ -123,10 +123,31 @@ export function OptimizeView({
 
   const byId = useMemo(() => partsById(parts), [parts]);
 
+  const optimizedPrice = useMemo(
+    () =>
+      proposed
+        ? priceBuild(gate, weaponItem, slotTree, proposed.build.attachments, byId, presets)
+        : null,
+    [proposed, gate, weaponItem, slotTree, byId, presets],
+  );
+
   const rows: readonly ChangedRow[] = useMemo(() => {
     if (!proposed) return [];
-    return slotDiff(currentAttachments, proposed.build.attachments, slotTree, byId, gate);
-  }, [proposed, currentAttachments, slotTree, byId, gate]);
+    return slotDiff(currentAttachments, proposed.build.attachments, slotTree, byId, gate, {
+      current: coversOf(currentPrice, presets),
+      proposed: coversOf(optimizedPrice, presets),
+    });
+  }, [proposed, currentAttachments, slotTree, byId, gate, currentPrice, optimizedPrice, presets]);
+
+  // When the two builds buy the weapon differently, the weapon's own change belongs to no slot:
+  // it is the rest of the cost change, shown on a line of its own.
+  const weaponChange = useMemo(
+    () =>
+      weaponChangeOf(currentPrice, optimizedPrice, rows, (id) =>
+        id === null ? weaponItem.shortName : (presets.find((p) => p.id === id)?.shortName ?? id),
+      ),
+    [currentPrice, optimizedPrice, rows, presets, weaponItem],
+  );
 
   // Default selection = all changed slots, refreshed whenever a new result arrives. Same
   // "adjust state during render" pattern as above: `setSelected` used to run in a
@@ -138,13 +159,6 @@ export function OptimizeView({
     if (proposed) setSelected(new Set(rows.map((r) => r.slotId)));
   }
 
-  const optimizedPrice = useMemo(
-    () =>
-      proposed
-        ? priceBuild(gate, weaponItem, slotTree, proposed.build.attachments, byId, presets)
-        : null,
-    [proposed, gate, weaponItem, slotTree, byId, presets],
-  );
   // Over every slot either build shows, at any depth: rows include deep slots too.
   const unchangedCount = useMemo(
     () =>
@@ -279,6 +293,7 @@ export function OptimizeView({
             scoreDelta={scoreDelta}
             mode={mode}
             unchangedCount={Math.max(0, unchangedCount)}
+            weaponChange={weaponChange}
           />
         </div>
       </div>

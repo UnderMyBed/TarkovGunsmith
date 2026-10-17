@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shownSlots, slotDiff, type ChangedRow } from "./slot-diff.js";
+import { shownSlots, slotDiff, weaponChangeOf, type ChangedRow } from "./slot-diff.js";
 import { DEFAULT_PROFILE, partsById, type AttachablePart } from "@tarkov/data";
 import { tinyTree } from "../../../test/tiny-tree.js";
 
@@ -198,5 +198,62 @@ describe("shownSlots", () => {
       "b",
       "b/y",
     ]);
+  });
+});
+
+describe("slotDiff with a preset's parts", () => {
+  it("prices a part the build's preset comes with at 0, unchanged slots taking it first", () => {
+    // Both builds carry m-old once, in an unchanged slot; the current one also in the muzzle.
+    const tree = tinyTree("w1", [
+      { nameId: "muzzle", name: "Muzzle", items: ["m-old", "m-new"] },
+      { nameId: "stock", name: "Stock", items: ["m-old"] },
+    ]);
+    const covers = new Map([["m-old", 1]]);
+    const [row] = slotDiff(
+      { muzzle: "m-old", stock: "m-old" },
+      { muzzle: "m-new", stock: "m-old" },
+      tree,
+      parts,
+      null,
+      { current: covers, proposed: covers },
+    );
+    // The preset's one m-old is the stock's on both sides, so the muzzle's is paid for.
+    expect(row).toMatchObject({ currentPrice: 10_000, proposedPrice: 22_000, priceDelta: 12_000 });
+
+    const [onlyCovered] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-new" }, tree, parts, null, {
+      current: covers,
+      proposed: new Map(),
+    });
+    expect(onlyCovered).toMatchObject({ currentPrice: 0, priceDelta: 22_000 });
+  });
+});
+
+describe("weaponChangeOf", () => {
+  const row = (priceDelta: number | null) => ({ priceDelta }) as ChangedRow;
+  const priced = (totalRUB: number, presetId: string | null) =>
+    ({ status: "priced", totalRUB, presetId }) as const;
+
+  it("is the cost change the rows leave over when the weapon is bought another way", () => {
+    expect(
+      weaponChangeOf(priced(26_666, "carbine"), priced(80_000, null), [row(10_000)], (id) =>
+        id === null ? "M4A1" : "M4A1 Carbine",
+      ),
+    ).toEqual({ from: "M4A1 Carbine", to: "M4A1", priceDelta: 43_334 });
+  });
+
+  it("is absent when both buy the weapon the same way, or either has no path", () => {
+    expect(weaponChangeOf(priced(1, "p"), priced(2, "p"), [], String)).toBeNull();
+    expect(weaponChangeOf(null, priced(2, "p"), [], String)).toBeNull();
+    expect(
+      weaponChangeOf({ status: "unobtainable", missing: ["w"] }, priced(2, "p"), [], String),
+    ).toBeNull();
+  });
+
+  it("has no price when any price it rests on is unknown", () => {
+    const unknown = { status: "unknown", knownRUB: 1, unpriced: ["x"], presetId: null } as const;
+    expect(weaponChangeOf(priced(1, "p"), unknown, [], String)?.priceDelta).toBeNull();
+    expect(
+      weaponChangeOf(priced(1, "p"), priced(5, null), [row(null)], String)?.priceDelta,
+    ).toBeNull();
   });
 });

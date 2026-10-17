@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { WeaponListItem } from "@tarkov/data";
+import type { PricedPreset, WeaponListItem } from "@tarkov/data";
 import { tinyTree } from "../../test/tiny-tree.js";
-import { describeBuildPrice, formatRub, priceBuild, pricesStatus, totalOf } from "./build-price.js";
+import {
+  coversOf,
+  describeBuildPrice,
+  formatRub,
+  priceBuild,
+  pricesStatus,
+  totalOf,
+} from "./build-price.js";
 
 const names: Record<string, string> = { gun: "M4A1", grip: "Grip", stock: "Stock" };
 const nameOf = (id: string) => names[id] ?? id;
@@ -61,5 +68,26 @@ describe("priceBuild", () => {
       status: "unobtainable",
       missing: ["w1"],
     });
+  });
+});
+
+describe("coversOf", () => {
+  const preset = {
+    id: "p",
+    attachments: { a: "stock", b: "grip", c: "stock" },
+  } as unknown as PricedPreset;
+
+  it("counts the parts of the preset the build is bought as", () => {
+    expect([...coversOf({ status: "priced", totalRUB: 1, presetId: "p" }, [preset])]).toEqual([
+      ["stock", 2],
+      ["grip", 1],
+    ]);
+  });
+
+  it("is empty for the receiver, no path, or no price yet", () => {
+    expect(coversOf({ status: "priced", totalRUB: 1, presetId: null }, [preset]).size).toBe(0);
+    expect(coversOf({ status: "unobtainable", missing: ["w"] }, [preset]).size).toBe(0);
+    expect(coversOf(null, [preset]).size).toBe(0);
+    expect(coversOf({ status: "priced", totalRUB: 1, presetId: "gone" }, [preset]).size).toBe(0);
   });
 });

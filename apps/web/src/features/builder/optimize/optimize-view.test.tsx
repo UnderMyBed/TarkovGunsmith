@@ -70,6 +70,9 @@ describe("OptimizeView", () => {
         slotTree={slotTree}
         parts={[]}
         profile={profile}
+        gate={profile}
+        presets={[]}
+        pricesReady
         sync={sync}
         currentAttachments={{ muzzle: "m-old" }}
         currentBuild={{
@@ -80,7 +83,7 @@ describe("OptimizeView", () => {
           createdAt: "2026-04-22T00:00:00Z",
         }}
         currentStats={currentStats}
-        currentPrice={10_000}
+        currentPrice={{ status: "priced", totalRUB: 10_000, presetId: null }}
         onAccept={vi.fn()}
         onExit={vi.fn()}
         onEditProfile={vi.fn()}
@@ -100,6 +103,9 @@ describe("OptimizeView", () => {
         slotTree={slotTree}
         parts={[]}
         profile={profile}
+        gate={profile}
+        presets={[]}
+        pricesReady
         sync={sync}
         currentAttachments={{ muzzle: "m-old" }}
         currentBuild={{
@@ -110,7 +116,7 @@ describe("OptimizeView", () => {
           createdAt: "2026-04-22T00:00:00Z",
         }}
         currentStats={currentStats}
-        currentPrice={10_000}
+        currentPrice={{ status: "priced", totalRUB: 10_000, presetId: null }}
         onAccept={vi.fn()}
         onExit={vi.fn()}
         onEditProfile={vi.fn()}
@@ -133,6 +139,9 @@ describe("OptimizeView", () => {
         slotTree={slotTree}
         parts={[]}
         profile={profile}
+        gate={profile}
+        presets={[]}
+        pricesReady
         sync={sync}
         currentAttachments={{ muzzle: "m-old", handguard: "h-old" }}
         currentBuild={{
@@ -143,7 +152,7 @@ describe("OptimizeView", () => {
           createdAt: "2026-04-22T00:00:00Z",
         }}
         currentStats={currentStats}
-        currentPrice={10_000}
+        currentPrice={{ status: "priced", totalRUB: 10_000, presetId: null }}
         onAccept={onAccept}
         onExit={vi.fn()}
         onEditProfile={vi.fn()}

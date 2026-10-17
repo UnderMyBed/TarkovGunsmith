@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { Button, Card, Pill } from "@tarkov/ui";
-import type { ChangedRow } from "./slot-diff.js";
+import type { ChangedRow, WeaponChange } from "./slot-diff.js";
 
 export type TableMode = "idle" | "running" | "result";
 
@@ -14,6 +14,7 @@ export interface ModChangesTableProps {
   scoreDelta: number | null;
   mode: TableMode;
   unchangedCount: number;
+  weaponChange?: WeaponChange | null;
 }
 
 function deltaClass(delta: number, lowerIsBetter: boolean): string {
@@ -45,6 +46,7 @@ export function ModChangesTable({
   scoreDelta,
   mode,
   unchangedCount,
+  weaponChange = null,
 }: ModChangesTableProps): ReactElement {
   const cols = "grid-cols-[32px_120px_1.2fr_1.2fr_56px_56px_80px]";
   const hasRows = rows.length > 0;
@@ -143,6 +145,28 @@ export function ModChangesTable({
               </span>
             </div>
           ))}
+        {isResult && weaponChange !== null && (
+          <div
+            className={`grid ${cols} items-center gap-2 border-b border-dashed border-[var(--color-border)] px-4 py-2.5`}
+            data-testid="weapon-change"
+          >
+            <span />
+            <span className="font-mono text-11 uppercase tracking-18 text-[var(--color-primary)]">
+              WEAPON
+            </span>
+            <span className="text-13 text-[var(--color-paper-dim)]">
+              bought as {weaponChange.from}
+            </span>
+            <span className="text-13 text-[var(--color-olive)]">→ bought as {weaponChange.to}</span>
+            <span />
+            <span />
+            <span
+              className={`text-right font-mono text-xs ${deltaClass(weaponChange.priceDelta ?? 0, true)}`}
+            >
+              {fmtPrice(weaponChange.priceDelta)}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2 border-t border-[var(--color-border)] px-4 py-3">
