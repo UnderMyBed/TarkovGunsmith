@@ -1,6 +1,12 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
-import { openProgression, pickWeapon, progressionPanel } from "./builder-helpers.js";
+import {
+  openProgression,
+  pickWeapon,
+  progressionPanel,
+  selectSlot,
+  partRow,
+} from "./builder-helpers.js";
 
 /**
  * Quest gating (#224), on the captures. Peacekeeper sells the Magpul PRS GEN3 stock at LL3
@@ -35,11 +41,9 @@ async function seedProfile(page: Page, mode: "basic" | "advanced"): Promise<void
 
 async function openBufferTubeStockSlot(page: Page) {
   await pickWeapon(page);
-  // The buffer tube's own stock slot sits inside the collapsed stock slot.
-  await page.locator('details[data-slot-path="mod_stock"] > summary').click();
-  const slot = page.locator('details[data-slot-path="mod_stock/mod_stock_000"]');
-  await slot.locator(":scope > summary").click();
-  return slot.getByRole("button", { name: new RegExp(PRS.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) });
+  // The buffer tube's own stock slot, nested under the stock slot.
+  await selectSlot(page, "mod_stock/mod_stock_000");
+  return partRow(page, PRS);
 }
 
 test.describe("quest gating", () => {
