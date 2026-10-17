@@ -44,8 +44,9 @@ jobs:
       - uses: actions/checkout@v7
 
       # Installs only gcx and yq, at the versions mise.toml pins, so CI and a local
-      # `mise install` run the same binaries.
-      - uses: jdx/mise-action@v5
+      # `mise install` run the same binaries. Pinned by commit, not tag: this job holds
+      # Grafana credentials. Dependabot's github-actions entry bumps the SHA and the comment.
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
         with:
           install_args: github:grafana/gcx yq
 
