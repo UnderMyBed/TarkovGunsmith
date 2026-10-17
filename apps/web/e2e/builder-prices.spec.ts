@@ -81,7 +81,7 @@ test.describe("Builder prices", () => {
     let asked = 0;
     await page.route(ITEMS, (route: Route) => {
       asked += 1;
-      return route.fulfill({ status: 503, statusText: "Service Unavailable", body: "" });
+      return route.fulfill({ status: 503, body: "" });
     });
     await page.goto("/builder");
     await pickM4A1(page);

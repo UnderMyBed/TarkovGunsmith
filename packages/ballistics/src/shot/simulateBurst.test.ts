@@ -30,8 +30,8 @@ describe("simulateBurst", () => {
   it("decreases remainingDurability monotonically across the burst", () => {
     const results = simulateBurst(m995, class4Fresh, 5, 15);
     for (let i = 1; i < results.length; i++) {
-      expect(results[i].remainingDurability).toBeLessThanOrEqual(
-        results[i - 1].remainingDurability,
+      expect(results[i]!.remainingDurability).toBeLessThanOrEqual(
+        results[i - 1]!.remainingDurability,
       );
     }
   });
@@ -39,9 +39,9 @@ describe("simulateBurst", () => {
   it("each shot's input armor reflects the previous shot's remainingDurability", () => {
     const results = simulateBurst(m995, class4Fresh, 3, 15);
     // M995 reliably penetrates Class 4 fresh, so subsequent shots see degraded armor.
-    expect(results[0].didPenetrate).toBe(true);
-    expect(results[1].remainingDurability).toBeLessThan(results[0].remainingDurability);
-    expect(results[2].remainingDurability).toBeLessThan(results[1].remainingDurability);
+    expect(results[0]!.didPenetrate).toBe(true);
+    expect(results[1]!.remainingDurability).toBeLessThan(results[0]!.remainingDurability);
+    expect(results[2]!.remainingDurability).toBeLessThan(results[1]!.remainingDurability);
   });
 
   it("returns empty array for zero shots", () => {

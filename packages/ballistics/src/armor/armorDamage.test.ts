@@ -85,7 +85,7 @@ describe("armorDamage (expected-value blend)", () => {
     const at = (p: number) => armorDamage(M995_AD, ARAMID, M995_PEN, CLASS_4, p);
     const samples = [0, 0.2, 0.4, 0.6, 0.8, 1].map(at);
     for (let i = 1; i < samples.length; i++) {
-      expect(samples[i]).toBeLessThan(samples[i - 1]);
+      expect(samples[i]).toBeLessThan(samples[i - 1]!);
     }
   });
 });

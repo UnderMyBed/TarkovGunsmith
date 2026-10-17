@@ -206,7 +206,7 @@ const PROFILES: Array<PlayerProfile | undefined> = [
 ];
 
 describe("the card's pill against the Builder's, over the captured records", () => {
-  const cases = [
+  const cases: { name: string; attachments: Readonly<Record<string, string>> }[] = [
     // A bare weapon: its own offers count. Production printed LL2 for this (#254).
     { name: "bare M4A1", attachments: {} },
     { name: "with a buffer tube", attachments: { mod_stock: BUFFER_TUBE } },

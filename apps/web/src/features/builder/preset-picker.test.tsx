@@ -102,7 +102,10 @@ describe("PresetPicker", () => {
 
   it("asks before replacing parts that match no preset", () => {
     const onApply = vi.fn();
-    const ownWork = { ...CARBINE.attachments, mod_pistol_grip: SOPMOD.attachments.mod_pistol_grip };
+    const ownWork = {
+      ...CARBINE.attachments,
+      mod_pistol_grip: SOPMOD.attachments.mod_pistol_grip!,
+    };
     render(<Picker presets={PRESETS} attachments={ownWork} onApply={onApply} />);
 
     fireEvent.click(chip(/M4A1 SOPMOD II/));

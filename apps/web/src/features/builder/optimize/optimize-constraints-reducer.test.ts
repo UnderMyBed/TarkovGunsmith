@@ -6,6 +6,10 @@ import {
   type ConstraintsState,
 } from "./optimize-constraints-reducer.js";
 import type { PlayerProfile, WeaponListItem } from "@tarkov/data";
+import { tinyTree } from "../../../test/tiny-tree.js";
+
+/** A weapon with no slots, built through the real slot-graph path. */
+const EMPTY_TREE = tinyTree("w1", []);
 
 const profile: PlayerProfile = {
   mode: "basic",
@@ -19,6 +23,7 @@ const profile: PlayerProfile = {
     jaeger: 1,
   },
   flea: true,
+  level: 15,
 };
 
 describe("constraintsReducer", () => {
@@ -152,7 +157,7 @@ describe("toOptimizerInput", () => {
         defaultAmmo: null,
       },
       weaponItem,
-      slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
+      slotTree: EMPTY_TREE,
       parts: [],
       gate: profile,
       presets: [],
@@ -183,7 +188,7 @@ describe("toOptimizerInput", () => {
         defaultAmmo: null,
       },
       weaponItem,
-      slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
+      slotTree: EMPTY_TREE,
       parts: [],
       gate: profile,
       presets: [],
@@ -202,10 +207,16 @@ describe("toOptimizerInput", () => {
         baseVerticalRecoil: 0,
         baseHorizontalRecoil: 0,
         baseWeight: 0,
-        baseAccuracy: 0,
+        centerOfImpact: 0,
+        deviationCurve: 1,
+        velocity: 0,
+        fireRate: 0,
+        effectiveDistance: 0,
+        sightingRange: 0,
+        defaultAmmo: null,
       },
       weaponItem,
-      slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
+      slotTree: EMPTY_TREE,
       parts: [],
       gate: null,
       presets: [],

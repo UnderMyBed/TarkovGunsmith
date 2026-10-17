@@ -76,6 +76,7 @@ function mod(overrides: Partial<AttachablePart> = {}): AttachablePart {
       ergonomics: 0,
       recoilModifier: 0,
       accuracyModifier: 0,
+      velocity: 0,
     },
     buyFor: [traderOffer("prapor", 1)],
     conflictingItems: [],
@@ -87,11 +88,11 @@ function mod(overrides: Partial<AttachablePart> = {}): AttachablePart {
 describe("itemAvailability", () => {
   it("returns available trader path when profile LL is high enough", () => {
     const result = itemAvailability(mod(), baseProfile);
-    expect(result.available).toBe(true);
-    if (result.available) {
-      expect(result.kind).toBe("trader");
-      expect(result.traderNormalizedName).toBe("prapor");
-    }
+    expect(result).toMatchObject({
+      available: true,
+      kind: "trader",
+      traderNormalizedName: "prapor",
+    });
   });
 
   it("returns blocked-by-LL when profile LL is too low", () => {

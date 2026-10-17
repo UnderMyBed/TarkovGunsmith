@@ -5,18 +5,12 @@
     "rootDir": ".",
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    // `@cloudflare/workers-types` so the Pages Function tests under functions/
-    // can see `PagesFunction`. Without it the handlers' exported type is an
-    // error type, and type-aware lint rules flag every call into them.
-    "types": ["node", "react", "vite/client", "@cloudflare/workers-types"],
+    // No `@cloudflare/workers-types` here: it declares a global `Element` (HTMLRewriter's)
+    // that collides with the DOM's, so `HTMLSelectElement` stops satisfying `HTMLElement`.
+    // The Pages Function tests that need `PagesFunction` live in functions/tsconfig.test.json.
+    "types": ["node", "react", "vite/client"],
     "moduleResolution": "Bundler"
   },
-  "include": [
-    "src/**/*",
-    "functions/**/*.ts",
-    "scripts/**/*.ts",
-    "vite.config.ts",
-    "vitest.config.ts"
-  ],
+  "include": ["src/**/*", "scripts/**/*.ts", "vite.config.ts", "vitest.config.ts"],
   "exclude": ["dist", "node_modules"]
 }

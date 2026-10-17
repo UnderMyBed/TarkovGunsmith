@@ -32,11 +32,30 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: /phone\.spec\.ts$/,
+    },
+    {
+      // A phone-width Chromium: the shipped routes and one core Builder flow, not the whole
+      // suite a second time. CI minutes are spend, and every other spec's subject renders the
+      // same at any width.
+      name: "phone",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 3,
+        isMobile: true,
+        hasTouch: true,
+      },
+      testMatch: /phone\.spec\.ts$/,
     },
   ],
   webServer: [
     {
-      command: `pnpm --filter @tarkov/builds-api exec wrangler dev --ip 127.0.0.1 --port ${API_PORT} --var OG_FIXTURE_BUILD_ID:abcd2345 --var OG_FIXTURE_PAIR_ID:efgh6789 --var OG_FIXTURE_V1_BUILD_ID:abcd2346 --var OG_FIXTURE_V1_PAIR_ID:efgh6782`,
+      // A fresh KV store per run, made by the shell when the server starts. The default
+      // `.wrangler/state` outlives the run, and with it builds-api's per-IP daily write
+      // counter: the suite's share and pair writes used up a day's admissions after a handful
+      // of local runs, and every later run failed with 429s. CI starts empty anyway.
+      command: `pnpm --filter @tarkov/builds-api exec wrangler dev --persist-to "$(mktemp -d -t tarkov-e2e-kv.XXXXXX)" --ip 127.0.0.1 --port ${API_PORT} --var OG_FIXTURE_BUILD_ID:abcd2345 --var OG_FIXTURE_PAIR_ID:efgh6789 --var OG_FIXTURE_V1_BUILD_ID:abcd2346 --var OG_FIXTURE_V1_PAIR_ID:efgh6782`,
       url: `http://127.0.0.1:${API_PORT}/healthz`,
       timeout: 60_000,
       reuseExistingServer: !process.env.CI,

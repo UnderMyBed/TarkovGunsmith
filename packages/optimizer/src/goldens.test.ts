@@ -141,6 +141,13 @@ describe("goldens — real weapons", () => {
     }
   }, 120_000);
 
+  // On the real M4A1, whose tree nests four slots deep with required slots and conflicts: the
+  // search order, tie-breaks and pruning must not depend on anything but the input.
+  it("is deterministic", () => {
+    const first = run("Colt M4A1", "min-recoil", LL4).result;
+    for (let i = 0; i < 3; i++) expect(run("Colt M4A1", "min-recoil", LL4).result).toEqual(first);
+  }, 120_000);
+
   it("keeps pins taken from another objective's build", () => {
     for (const name of Object.values(fixture.weapons)) {
       const ergo = valid(name, run(name, "max-ergonomics", LL4), LL4).result;

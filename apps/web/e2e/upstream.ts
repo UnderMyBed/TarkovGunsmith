@@ -19,7 +19,7 @@
  * Specs registering their own `page.route` still win: Playwright matches handlers in reverse
  * registration order, so a route added inside a test is consulted before this one.
  */
-import { test as base, expect } from "@playwright/test";
+import { test as base, expect, type Page } from "@playwright/test";
 import type { PlayerProfile } from "@tarkov/data";
 import { upstreamFixtureBody } from "./upstream-fixtures.js";
 
@@ -105,6 +105,82 @@ export const STRONGEST_OPTIMIZED_RECOIL_CELL = "−24.0";
 
 export type PlayerProfileSeed = "progressed" | "fresh";
 
+/**
+ * Install the boundary on `page`: seed the profile, answer the upstream and asset hosts, and
+ * abort and record anything else. Returns the record, which the caller must assert empty once
+ * the page is done.
+ *
+ * The `page` fixture below calls this for every spec. A spec that opens a second browser
+ * context (a fresh visitor loading a share link, say) calls it for that context's page too,
+ * so the second page is held to the same rule.
+ */
+export async function installUpstreamBoundary(
+  page: Page,
+  playerProfile: PlayerProfileSeed,
+): Promise<string[]> {
+  if (playerProfile === "progressed") {
+    await page.addInitScript(
+      ([key, value]) => {
+        window.localStorage.setItem(key, value);
+      },
+      [PROFILE_STORAGE_KEY, JSON.stringify(PROGRESSED_PROFILE)] as const,
+    );
+  }
+
+  const escaped: string[] = [];
+
+  await page.route(
+    (url) => url.hostname !== "127.0.0.1" && url.hostname !== "localhost",
+    async (route) => {
+      const url = new URL(route.request().url());
+
+      if (url.hostname === UPSTREAM_HOST) {
+        const body = upstreamFixtureBody(url.pathname.split("/").pop() ?? "");
+        if (body === null) {
+          escaped.push(`${url.href} (no capture for this resource)`);
+          await route.abort("blockedbyclient");
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          headers: { "content-type": "application/json" },
+          body,
+        });
+        return;
+      }
+
+      if (url.hostname === ASSET_HOST) {
+        await route.fulfill({
+          status: 200,
+          headers: { "content-type": "image/png" },
+          body: STUB_IMAGE,
+        });
+        return;
+      }
+
+      if (ALLOWED_LIVE_HOSTS.has(url.hostname)) {
+        await route.continue();
+        return;
+      }
+
+      escaped.push(`${route.request().method()} ${url.href}`);
+      await route.abort("blockedbyclient");
+    },
+  );
+
+  return escaped;
+}
+
+/** Fail with the escaped requests `installUpstreamBoundary` recorded, if there are any. */
+export function expectNoLiveThirdParty(escaped: readonly string[]): void {
+  expect(
+    escaped,
+    "The page reached a live third party. The pre-merge gate must fail on our code, never " +
+      "on someone else's uptime — serve it from a fixture in apps/web/e2e/upstream.ts, or " +
+      "add the host to ALLOWED_LIVE_HOSTS with a reason.",
+  ).toEqual([]);
+}
+
 export const test = base.extend<{ playerProfile: PlayerProfileSeed }>({
   playerProfile: ["progressed", { option: true }],
 
@@ -112,64 +188,9 @@ export const test = base.extend<{ playerProfile: PlayerProfileSeed }>({
   // because `react-hooks/rules-of-hooks` reads a bare `use(...)` call as the React hook of the
   // same name and rejects it outside a component. Nothing else about the fixture changes.
   page: async ({ page, playerProfile }, runTest) => {
-    if (playerProfile === "progressed") {
-      await page.addInitScript(
-        ([key, value]) => {
-          window.localStorage.setItem(key, value);
-        },
-        [PROFILE_STORAGE_KEY, JSON.stringify(PROGRESSED_PROFILE)] as const,
-      );
-    }
-
-    const escaped: string[] = [];
-
-    await page.route(
-      (url) => url.hostname !== "127.0.0.1" && url.hostname !== "localhost",
-      async (route) => {
-        const url = new URL(route.request().url());
-
-        if (url.hostname === UPSTREAM_HOST) {
-          const body = upstreamFixtureBody(url.pathname.split("/").pop() ?? "");
-          if (body === null) {
-            escaped.push(`${url.href} (no capture for this resource)`);
-            await route.abort("blockedbyclient");
-            return;
-          }
-          await route.fulfill({
-            status: 200,
-            headers: { "content-type": "application/json" },
-            body,
-          });
-          return;
-        }
-
-        if (url.hostname === ASSET_HOST) {
-          await route.fulfill({
-            status: 200,
-            headers: { "content-type": "image/png" },
-            body: STUB_IMAGE,
-          });
-          return;
-        }
-
-        if (ALLOWED_LIVE_HOSTS.has(url.hostname)) {
-          await route.continue();
-          return;
-        }
-
-        escaped.push(`${route.request().method()} ${url.href}`);
-        await route.abort("blockedbyclient");
-      },
-    );
-
+    const escaped = await installUpstreamBoundary(page, playerProfile);
     await runTest(page);
-
-    expect(
-      escaped,
-      "The page reached a live third party. The pre-merge gate must fail on our code, never " +
-        "on someone else's uptime — serve it from a fixture in apps/web/e2e/upstream.ts, or " +
-        "add the host to ALLOWED_LIVE_HOSTS with a reason.",
-    ).toEqual([]);
+    expectNoLiveThirdParty(escaped);
   },
 });
 

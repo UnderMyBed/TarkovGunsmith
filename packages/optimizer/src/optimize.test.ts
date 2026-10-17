@@ -17,7 +17,6 @@ import {
   SMALL_TREE,
 } from "./__fixtures__/small-weapon.js";
 import { tinyTree, type SlotSpec } from "./__fixtures__/tree.js";
-import { M4A1_WEAPON, M4A1_MODS, M4A1_TREE } from "./__fixtures__/m4a1-like.js";
 import type { OptimizationInput, Objective } from "./types.js";
 
 interface PartSpec {
@@ -230,12 +229,6 @@ describe("optimize — the best build", () => {
     run({ budgetRub: 1, profile: null, onProgress: (p) => failing.push(p.nodes) });
     expect(failing).toEqual(failing.map((_, i) => i + 1));
   });
-
-  it("is deterministic", () => {
-    const input = { weapon: M4A1_WEAPON, slotTree: M4A1_TREE, parts: M4A1_MODS };
-    const first = run(input);
-    for (let i = 0; i < 5; i++) expect(run(input)).toEqual(first);
-  });
 });
 
 describe("optimize — max-accuracy", () => {
@@ -320,8 +313,8 @@ describe("optimize — what it refuses", () => {
     const nobody = { ...refusal, message: "No trader or flea listing sells the TR." };
     expect(run({ weaponItem: unsold })).toEqual(nobody);
     expect(run({ weaponItem: unsold, profile: null })).toEqual(nobody);
-    // A record with no offers field at all, and a preset with none.
-    const { buyFor: _none, ...bare } = SMALL_WEAPON_ITEM;
+    // A record whose offers upstream publishes as null, and a preset with none.
+    const bare = { ...SMALL_WEAPON_ITEM, buyFor: null };
     expect(run({ weaponItem: bare, presets: [{ id: "pa", attachments: {} }] })).toEqual(nobody);
     // Only Ref sells it, by barter: no trader level a profile holds reaches him.
     const refOnly = {

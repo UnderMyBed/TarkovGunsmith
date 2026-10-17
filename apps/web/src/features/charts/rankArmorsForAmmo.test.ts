@@ -51,7 +51,7 @@ describe("rankArmorsForAmmo", () => {
     const rows = rankArmorsForAmmo(strongAmmo, armors, 30, 15);
     const shotsByArmor = Object.fromEntries(rows.map((r) => [r.armor.id, r.shotsToBreak]));
     // PACA (c3) breaks faster than Slick (c6) with M995.
-    expect(shotsByArmor.c3).toBeLessThanOrEqual(shotsByArmor.c6);
+    expect(shotsByArmor.c3).toBeLessThanOrEqual(shotsByArmor.c6!);
   });
 
   it("classification respects shot cap", () => {

@@ -122,6 +122,7 @@ const profile: PlayerProfile = {
   mode: "basic",
   traders: { prapor: 4, therapist: 3, skier: 3, peacekeeper: 2, mechanic: 3, ragman: 2, jaeger: 3 },
   flea: true,
+  level: 20,
   completedQuests: [],
 };
 const sync: UseTarkovTrackerSyncResult = {

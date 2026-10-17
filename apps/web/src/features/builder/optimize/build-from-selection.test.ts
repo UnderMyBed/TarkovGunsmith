@@ -65,7 +65,7 @@ function build(attachments: Record<string, string>): BuildV6 {
 /** Every row the optimizer view would show: its accept-all selection. */
 function allRows(current: BuildV6, proposed: BuildV6): Set<string> {
   return new Set(
-    slotDiff(current.attachments, proposed.attachments, tree, KNOWN).map((r) => r.slotId),
+    slotDiff(current.attachments, proposed.attachments, tree, KNOWN, null).map((r) => r.slotId),
   );
 }
 

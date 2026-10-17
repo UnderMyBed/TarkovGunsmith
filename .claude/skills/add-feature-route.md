@@ -16,7 +16,7 @@ Adding any new URL-addressable page to `apps/web`.
 3. Creates the page component: `apps/web/src/features/<name>/<Name>Page.tsx`.
 4. Adds a loading state and an error boundary inside the route file.
 5. Creates the Vitest component test: `apps/web/src/features/<name>/<Name>Page.test.tsx` — renders the page with mocked TanStack Query data, asserts the title and at least one interactive element.
-6. Adds the route to the `ROUTES` array in `apps/web/e2e/smoke.spec.ts` if it goes in the `__root.tsx` nav; a route with an interaction flow worth protecting also gets its own `apps/web/e2e/<name>.spec.ts`, importing `test`/`expect` from `./upstream.js` rather than `@playwright/test`.
+6. Adds the route to the `ROUTES` array in `apps/web/e2e/routes.ts` if it goes in the `__root.tsx` nav; a route with an interaction flow worth protecting also gets its own `apps/web/e2e/<name>.spec.ts`, importing `test`/`expect` from `./upstream.js` rather than `@playwright/test`.
 
 ## Conventions
 
