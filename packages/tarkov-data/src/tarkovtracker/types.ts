@@ -38,8 +38,10 @@ export interface MapResult {
     level: number;
   };
   meta: {
+    /** Completed quests among the ones given: the quests that gate an offer. */
     questCount: number;
+    /** How many quests were given, so a count reads as "x of y". */
+    questTotal: number;
     playerLevel: number;
-    unmappedCount: number;
   };
 }

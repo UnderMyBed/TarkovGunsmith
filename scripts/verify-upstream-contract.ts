@@ -47,7 +47,8 @@ import {
   fetchSnapshotDocuments,
   SnapshotDriftError,
 } from "../packages/tarkov-data/src/snapshot/generate.js";
-import { SNAPSHOT_BUDGET } from "../packages/tarkov-data/src/snapshot/limits.js";
+import { SNAPSHOT_BUDGET, UPSTREAM_FLOORS } from "../packages/tarkov-data/src/snapshot/limits.js";
+import { COMPLETED_QUESTS_CAP } from "../packages/tarkov-data/src/build-schema.js";
 import {
   snapshotPartCatalog,
   snapshotWeaponList,
@@ -460,11 +461,39 @@ async function checkBuilderSnapshot(): Promise<void> {
     `builder prices: ${kb(Buffer.byteLength(pricesText))} raw, ` +
       `${kb(edgeBrotli(pricesText))} brotli (q4); data as of ${snapshot.dataAsOf}`,
   );
+  checkQuestGating(snapshot);
   // Presets are checked against the weapons and parts the Builder actually reads: the snapshot.
   const weapons = snapshotWeaponList(snapshot, prices.prices);
   const catalog = snapshotPartCatalog(snapshot, prices.prices);
   checkPresets(documents.items, snapshot.presets, weapons, catalog);
   checkSlotGraphBounds(documents.items, weapons, catalog);
+}
+
+/**
+ * The snapshot's task list is exactly the quests its offers are gated by: the profile editor
+ * lists those, and TarkovTracker sync keeps only those. The floor on quest-gated offers and
+ * the ceiling on gating quests run inside generation.
+ */
+function checkQuestGating(snapshot: BuilderSnapshot): void {
+  const gated = Object.values(snapshot.offers)
+    .flat()
+    .flatMap((o) =>
+      o.kind !== "flea" && o.vendor.taskUnlock !== null ? [o.vendor.taskUnlock] : [],
+    );
+  const gating = new Set(gated.map((q) => q.normalizedName));
+  const listed = new Set(snapshot.tasks.map((t) => t.normalizedName));
+  const unlisted = [...gating].filter((q) => !listed.has(q));
+  const extra = [...listed].filter((q) => !gating.has(q));
+  check(
+    "snapshot/quest-gating",
+    unlisted.length === 0 && extra.length === 0,
+    `tasks and quest gates disagree: gating but not listed [${unlisted.join(", ")}], ` +
+      `listed but gating nothing [${extra.join(", ")}]`,
+  );
+  notes.push(
+    `quest gating: ${gating.size} quests gate ${gated.length} offers ` +
+      `(floor ${UPSTREAM_FLOORS.questOffers} offers; at most ${COMPLETED_QUESTS_CAP} quests)`,
+  );
 }
 
 /**

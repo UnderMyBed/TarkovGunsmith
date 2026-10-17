@@ -22,7 +22,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
 - **A build-time snapshot.** `apps/web/scripts/builder-snapshot.ts` generates
   `/data/builder-snapshot.json` on every build: buildable weapons, every part reachable through
   their slots, the slot graph, each weapon's presets placed into that graph, every offer with
-  its price left out, traders, tasks, and
+  its price left out, traders, the tasks that gate one of those offers, and
   `dataAsOf` (the newest `updated` timestamp upstream — in effect the time the snapshot was
   taken, since upstream refreshes some item every few minutes). The Builder, Compare, and the OG cards
   read it instead of the upstream documents.
@@ -43,10 +43,10 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   else, ingredients' own trader offers — are not checked, so unrelated upstream records cannot
   block a release. The lenient per-record parse paths are removed.
 - **Floors on an upstream build.** Strict parsing cannot see rows that stop being recognised: a
-  renamed `propertiesType` or `baseItem` yields a valid but gutted snapshot. A snapshot built
-  from upstream must hold at least 50 weapons, 2000 parts, 150 offers selling through a preset,
-  150 barter offers, 200 weapon presets and 80 weapons with presets, about half of live (164,
-  2335, 303, 304, 399 and 164 on 2026-10-17).
+  renamed `propertiesType`, `baseItem` or `taskUnlock` yields a valid but gutted snapshot. A
+  snapshot built from upstream must hold at least 50 weapons, 2000 parts, 150 offers selling
+  through a preset, 150 barter offers, 200 weapon presets, 80 weapons with presets and 45
+  quest-gated offers, about half of live (164, 2335, 303, 304, 399, 164 and 90 on 2026-10-17).
 - **Prices stay live in the SPA.** Offers are stored without prices. The SPA prices them from
   the raw `items` document — no translation sibling, price fields only — parsed in a Web
   Worker. Prices more than an hour old are fetched again on the next focus or page mount,
@@ -67,7 +67,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
 
 - The Builder's upstream request on a visit is the raw `items` document for prices; traders,
   tasks, barters and every translation document are gone from its critical path.
-- On the 2026-10-17 live data the snapshot, weapon presets included, is 4.0 MB raw and 269 KB
+- On the 2026-10-17 live data the snapshot, weapon presets included, is 4.0 MB raw and 255 KB
   brotli at quality 4, and parses in about 10 ms; parsing the raw items document took 36 ms.
 - Upstream drift fails a release build, listing every problem, rather than silently emptying a
   picker in production.
@@ -83,7 +83,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   unrelated. That is deliberate: the alternative ships a Builder with records missing.
 - A shared build may name a part a later snapshot no longer holds. Those ids move to the build's
   orphaned list on load rather than staying on the weapon.
-- The brotli headroom is 31 KB on the 2026-10-17 data (269 KB with the weapon presets and
+- The brotli headroom is 45 KB on the 2026-10-17 data (255 KB with the weapon presets and
   weapon stats).
   Sustained growth in parts or offers upstream will reach it and need a deliberate decision.
 - A release build depends on `json.tarkov.dev` answering. Each request times out and is retried

@@ -86,6 +86,21 @@ describe("parseStoredProfile", () => {
     expect(parseStoredProfile(stored).level).toBe(42);
   });
 
+  it("keeps a stored profile with 300 completed quests, as a TarkovTracker sync once wrote", () => {
+    const completedQuests = Array.from({ length: 300 }, (_, i) => `quest-${String(i)}`);
+    const stored = JSON.stringify({
+      ...DEFAULT_PROFILE,
+      mode: "advanced",
+      traders: { ...DEFAULT_PROFILE.traders, mechanic: 4 },
+      level: 40,
+      completedQuests,
+    });
+    const profile = parseStoredProfile(stored);
+    expect(profile.completedQuests).toEqual(completedQuests);
+    expect(profile.traders.mechanic).toBe(4);
+    expect(profile.level).toBe(40);
+  });
+
   it("falls back to DEFAULT_PROFILE when nothing is stored", () => {
     expect(parseStoredProfile(null)).toEqual(DEFAULT_PROFILE);
     expect(parseStoredProfile("")).toEqual(DEFAULT_PROFILE);

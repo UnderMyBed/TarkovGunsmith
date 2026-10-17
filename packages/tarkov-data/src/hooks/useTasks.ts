@@ -3,7 +3,10 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { TaskListItem } from "../queries/tasks.js";
 import { useBuilderData } from "../provider.js";
 
-/** Every task, from the Builder snapshot. Cached under `["tasks"]`. */
+/**
+ * The quests that gate an offer, from the Builder snapshot: the ones a profile can mark done.
+ * Cached under `["tasks"]`.
+ */
 export function useTasks(): UseQueryResult<TaskListItem[], Error> {
   const source = useBuilderData();
   return useQuery({

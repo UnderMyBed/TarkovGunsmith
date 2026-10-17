@@ -122,15 +122,64 @@ describe("itemAvailability", () => {
     }
   });
 
-  it("basic-mode profile rejects quest-gated paths even with LL satisfied", () => {
+  it("basic-mode profile assumes the quest once the offer's LL is met, and names it", () => {
     const result = itemAvailability(
       mod({ buyFor: [traderOffer("mechanic", 1, 500, "gunsmith-part-1")] }),
       baseProfile,
     );
-    expect(result.available).toBe(false);
-    if (!result.available && result.reason === "quest-required") {
-      expect(result.questNormalizedName).toBe("gunsmith-part-1");
+    expect(result).toEqual({
+      available: true,
+      kind: "trader",
+      traderNormalizedName: "mechanic",
+      minLevel: 1,
+      priceRUB: 500,
+      preset: null,
+      assumedQuest: "gunsmith-part-1",
+    });
+  });
+
+  it("basic-mode profile still reports the LL when the quest-gated offer is above it", () => {
+    const result = itemAvailability(
+      mod({ buyFor: [traderOffer("mechanic", 3, 500, "gunsmith-part-1")] }),
+      baseProfile,
+    );
+    expect(result).toMatchObject({ available: false, reason: "trader-ll-required", minLevel: 3 });
+  });
+
+  it("advanced-mode profile without the quest reports quest-required", () => {
+    const result = itemAvailability(
+      mod({ buyFor: [traderOffer("mechanic", 1, 500, "gunsmith-part-1")] }),
+      { ...baseProfile, mode: "advanced", completedQuests: ["something-else"] },
+    );
+    expect(result).toMatchObject({
+      available: false,
+      reason: "quest-required",
+      questNormalizedName: "gunsmith-part-1",
+    });
+  });
+
+  it("prefers a path that assumes no quest at an equal price, whichever comes first", () => {
+    const gated = traderOffer("mechanic", 1, 500, "gunsmith-part-1");
+    const plain = traderOffer("prapor", 1, 500);
+    for (const buyFor of [
+      [gated, plain],
+      [plain, gated],
+    ]) {
+      expect(itemAvailability(mod({ buyFor }), baseProfile)).toMatchObject({
+        traderNormalizedName: "prapor",
+        assumedQuest: null,
+      });
     }
+  });
+
+  it("takes a cheaper quest-gated path over a dearer plain one in basic mode", () => {
+    const result = itemAvailability(
+      mod({
+        buyFor: [traderOffer("prapor", 1, 900), traderOffer("mechanic", 1, 500, "gunsmith-part-1")],
+      }),
+      baseProfile,
+    );
+    expect(result).toMatchObject({ priceRUB: 500, assumedQuest: "gunsmith-part-1" });
   });
 
   it("advanced-mode profile with completed quest unlocks the path", () => {
@@ -143,7 +192,7 @@ describe("itemAvailability", () => {
       mod({ buyFor: [traderOffer("mechanic", 1, 500, "gunsmith-part-1")] }),
       advanced,
     );
-    expect(result.available).toBe(true);
+    expect(result).toMatchObject({ available: true, assumedQuest: null });
   });
 
   it("skips flea path when item is noFlea blacklisted even if profile.flea=true", () => {
@@ -363,7 +412,7 @@ describe("itemAvailability — unmet-requirement precedence", () => {
       mod({
         buyFor: [fleaOffer(3000, 20), traderOffer("mechanic", 1, 500, "gunsmith-master-part-1")],
       }),
-      { ...baseProfile, flea: true, level: 5 },
+      { ...baseProfile, mode: "advanced", flea: true, level: 5 },
     );
     expect(result.available ? null : result.reason).toBe("quest-required");
   });
@@ -384,7 +433,7 @@ describe("itemAvailability — unmet-requirement precedence", () => {
           traderOffer("mechanic", 1, 500, "gunsmith-master-part-1"),
         ],
       }),
-      { ...baseProfile, flea: true, level: 5 },
+      { ...baseProfile, mode: "advanced", flea: true, level: 5 },
     );
     expect(result.available ? null : result.reason).toBe("trader-ll-required");
   });
@@ -511,6 +560,7 @@ describe("itemAvailability — barters and preset offers", () => {
       priceRUB: 11406,
       barterId: "b1",
       preset: null,
+      assumedQuest: null,
     });
   });
 
@@ -604,7 +654,11 @@ describe("itemAvailability — barters and preset offers", () => {
   });
 
   it("names the quest alphabetically when quest gates otherwise tie", () => {
-    const profile = { ...baseProfile, traders: { ...baseProfile.traders, mechanic: 2 } };
+    const profile: PlayerProfile = {
+      ...baseProfile,
+      mode: "advanced",
+      traders: { ...baseProfile.traders, mechanic: 2 },
+    };
     const q = (name: string) => traderOffer("mechanic", 2, 1000, name);
     for (const buyFor of [
       [q("gunsmith-part-2"), q("gunsmith-part-1")],
@@ -618,7 +672,11 @@ describe("itemAvailability — barters and preset offers", () => {
   });
 
   it("prefers the cheaper quest gate over the alphabetically earlier one", () => {
-    const profile = { ...baseProfile, traders: { ...baseProfile.traders, mechanic: 2 } };
+    const profile: PlayerProfile = {
+      ...baseProfile,
+      mode: "advanced",
+      traders: { ...baseProfile.traders, mechanic: 2 },
+    };
     const cheap = traderOffer("mechanic", 2, 1000, "gunsmith-part-2");
     const dear = traderOffer("mechanic", 2, 9000, "gunsmith-part-1");
     for (const buyFor of [
@@ -766,6 +824,7 @@ describe("itemAvailability — captured documents", () => {
         id: "58414967245977598f1ad391",
         normalizedName: "makarov-pm-9x18pm-pistol-default",
       },
+      assumedQuest: null,
     });
   });
 
@@ -783,6 +842,7 @@ describe("itemAvailability — captured documents", () => {
         id: "5af08cf886f774223c269184",
         normalizedName: "colt-m4a1-556x45-assault-rifle-carbine",
       },
+      assumedQuest: null,
     });
     // At LL1 two preset barters are one level away: Peacekeeper's Carbine (60665) and
     // Mechanic's SOPMOD II (142000). The cheaper one is named — not whichever the
@@ -823,6 +883,32 @@ describe("itemAvailability — captured documents", () => {
       traderNormalizedName: "peacekeeper",
       priceRUB: 44111,
     });
+  });
+
+  it("opens the PRS GEN3 stock's quest-gated offer at Peacekeeper LL3 in basic mode only", async () => {
+    // Captured: Peacekeeper sells it at LL3 once "I Need More Power" is done; no other offer.
+    const mods = await fixturePartCatalog(fixtureClient());
+    const prs = mods.find((m) => m.id === "5d44069ca4b9361ebd26fc37")!;
+    expect(itemAvailability(prs, ll(3))).toMatchObject({
+      available: true,
+      kind: "trader",
+      traderNormalizedName: "peacekeeper",
+      minLevel: 3,
+      assumedQuest: "i-need-more-power",
+    });
+    expect(itemAvailability(prs, ll(2))).toMatchObject({
+      available: false,
+      reason: "trader-ll-required",
+    });
+    const advanced: PlayerProfile = { ...ll(3), mode: "advanced" };
+    expect(itemAvailability(prs, advanced)).toMatchObject({
+      available: false,
+      reason: "quest-required",
+      questNormalizedName: "i-need-more-power",
+    });
+    expect(
+      itemAvailability(prs, { ...advanced, completedQuests: ["i-need-more-power"] }),
+    ).toMatchObject({ available: true, assumedQuest: null });
   });
 
   it("reports a Ref-only mod as untracked instead of no-sources", async () => {

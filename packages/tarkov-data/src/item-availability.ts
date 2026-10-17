@@ -22,6 +22,11 @@ export type ItemAvailability =
       priceRUB: number | null;
       /** Set when the offer sells a preset built on this item; the price is for the preset. */
       preset: OfferPreset | null;
+      /**
+       * The quest gating the offer, when a basic-mode profile is assumed to have done it
+       * (see {@link itemAvailability}); `null` when nothing is assumed.
+       */
+      assumedQuest: string | null;
     }
   | {
       available: true;
@@ -32,6 +37,7 @@ export type ItemAvailability =
       priceRUB: number | null;
       barterId: string;
       preset: OfferPreset | null;
+      assumedQuest: string | null;
     }
   | { available: true; kind: "flea"; priceRUB: number | null }
   | {
@@ -98,6 +104,8 @@ function compareText(a: string, b: string): number {
 
 const KIND_ORDER = { trader: 0, barter: 1, flea: 2 } as const;
 
+const assumes = (sat: { assumedQuest: string | null }): boolean => sat.assumedQuest !== null;
+
 function isFleaBlacklisted(item: AvailabilityInput): boolean {
   return item.types.includes("noFlea");
 }
@@ -114,14 +122,17 @@ export type PriceGate = PlayerProfile | null;
  *
  * Walks every buyFor entry. A trader offer — cash (`TraderOffer`) or barter
  * (`TraderBarter`), the item's own or one of its presets' — is satisfied iff the profile's
- * trader LL meets `minTraderLevel` AND (no taskUnlock OR advanced-mode profile has the quest
- * marked complete). A FleaMarket offer is satisfied iff `profile.flea === true` AND the item
+ * trader LL meets `minTraderLevel` AND its quest gate, if any, is open. An advanced-mode
+ * profile opens a quest gate by listing the quest in `completedQuests`. A basic-mode profile
+ * tracks no quests: it is assumed to have done every quest gating an offer at or below its
+ * loyalty level with that trader, so once the LL is met the gate is open, and the result
+ * names the quest in `assumedQuest`. Basic mode therefore never reports `quest-required`. A FleaMarket offer is satisfied iff `profile.flea === true` AND the item
  * isn't on the `noFlea` list AND it is listed (no `unlisted` mark) AND `profile.level` meets
  * the offer's `minPlayerLevel`.
  *
  * Returns the cheapest satisfying path (by priceRUB, nulls sort last — so a priced cash
- * offer beats a barter whose cost is unknown). An exact price tie goes to trader cash, then
- * barter, then flea, then trader name, then offer id.
+ * offer beats a barter whose cost is unknown). An exact price tie goes to a path that assumes
+ * no quest, then trader cash, then barter, then flea, then trader name, then offer id.
  *
  * If nothing satisfies, returns the most-accessible unmet requirement, in this precedence
  * order:
@@ -129,7 +140,7 @@ export type PriceGate = PlayerProfile | null;
  *   1. a trader-LL gate — the one the profile is fewest levels short of, then the lowest
  *      level, then cash before barter, then the cheapest known price (nulls last), then
  *      trader name, then offer id, so the pick never depends on document order;
- *   2. a quest;
+ *   2. a quest (advanced mode only);
  *   3. the lowest flea player-level gate;
  *   4. flea-unlisted — the flea is open to the profile but nobody is selling;
  *   5. flea-locked;
@@ -156,9 +167,10 @@ export function itemAvailability(item: AvailabilityInput, profile: PriceGate): I
     minLevel: number;
     priceRUB: number | null;
     preset: OfferPreset | null;
+    assumedQuest: string | null;
   };
   type SatBarter = Omit<SatTrader, "kind"> & { kind: "barter"; barterId: string };
-  type SatFlea = { kind: "flea"; priceRUB: number | null };
+  type SatFlea = { kind: "flea"; priceRUB: number | null; assumedQuest: null };
   type Unmet = {
     traderNormalizedName: string;
     minLevel: number;
@@ -197,19 +209,21 @@ export function itemAvailability(item: AvailabilityInput, profile: PriceGate): I
             ? vendor.barterId
             : `cash:${traderName}:${preset?.id ?? "own"}`;
         const tie = { priceRUB: offer.priceRUB, offerKey };
-        const base = {
-          traderNormalizedName: traderName,
-          minLevel,
-          priceRUB: offer.priceRUB,
-          preset,
-        };
-        const sat: SatTrader | SatBarter =
-          vendor.__typename === "TraderBarter"
+        const satisfy = (assumedQuest: string | null): SatTrader | SatBarter => {
+          const base = {
+            traderNormalizedName: traderName,
+            minLevel,
+            priceRUB: offer.priceRUB,
+            preset,
+            assumedQuest,
+          };
+          return vendor.__typename === "TraderBarter"
             ? { ...base, kind: "barter", barterId: vendor.barterId }
             : { ...base, kind: "trader" };
+        };
 
         if (profile === null) {
-          satisfied.push({ sat, trader: traderName, offerKey });
+          satisfied.push({ sat: satisfy(null), trader: traderName, offerKey });
           continue;
         }
         if (!isTraderKey(traderName)) {
@@ -229,11 +243,12 @@ export function itemAvailability(item: AvailabilityInput, profile: PriceGate): I
           });
           continue;
         }
+        let assumedQuest: string | null = null;
         if (vendor.taskUnlock) {
-          const questOk =
-            profile.mode === "advanced" &&
-            (profile.completedQuests ?? []).includes(vendor.taskUnlock.normalizedName);
-          if (!questOk) {
+          const quest = vendor.taskUnlock.normalizedName;
+          // The LL check above has passed, so in basic mode the quest is assumed done.
+          if (profile.mode === "basic") assumedQuest = quest;
+          else if (!(profile.completedQuests ?? []).includes(quest)) {
             unmetQuest.push({
               questNormalizedName: vendor.taskUnlock.normalizedName,
               traderNormalizedName: traderName,
@@ -245,7 +260,7 @@ export function itemAvailability(item: AvailabilityInput, profile: PriceGate): I
             continue;
           }
         }
-        satisfied.push({ sat, trader: traderName, offerKey });
+        satisfied.push({ sat: satisfy(assumedQuest), trader: traderName, offerKey });
         break;
       }
       case "FleaMarket": {
@@ -255,7 +270,10 @@ export function itemAvailability(item: AvailabilityInput, profile: PriceGate): I
           sawUnlisted = true;
           continue;
         }
-        const fleaSat = { sat: { kind: "flea", priceRUB: offer.priceRUB } as SatFlea, trader: "" };
+        const fleaSat = {
+          sat: { kind: "flea", priceRUB: offer.priceRUB, assumedQuest: null } as SatFlea,
+          trader: "",
+        };
         if (profile === null) {
           satisfied.push({ ...fleaSat, offerKey: "flea" });
           continue;
@@ -285,11 +303,13 @@ export function itemAvailability(item: AvailabilityInput, profile: PriceGate): I
   }
 
   if (satisfied.length > 0) {
-    // Cheapest first (nulls last). Ties are broken by kind (trader, barter, flea), then
-    // trader name, then offer id, so the pick never depends on document order.
+    // Cheapest first (nulls last). Ties are broken by a path that assumes no quest, then
+    // kind (trader, barter, flea), then trader name, then offer id, so the pick never
+    // depends on document order.
     satisfied.sort(
       (a, b) =>
         byPrice(a.sat.priceRUB, b.sat.priceRUB) ||
+        Number(assumes(a.sat)) - Number(assumes(b.sat)) ||
         KIND_ORDER[a.sat.kind] - KIND_ORDER[b.sat.kind] ||
         compareText(a.trader, b.trader) ||
         compareText(a.offerKey, b.offerKey),

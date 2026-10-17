@@ -12,7 +12,7 @@
  *
  * Each floor is roughly half of live on 2026-10-17 (164 weapons, 2335 parts, 303 offers that
  * sell a weapon or part through a preset, 304 barter offers, 399 weapon presets on 164
- * weapons): low enough that ordinary churn
+ * weapons, and 90 quest-gated offers on 2026-10-16): low enough that ordinary churn
  * upstream never trips them, high enough that losing a whole class of rows always does.
  * Parts sit closer to live because a slot-graph break loses nearly all of them at once.
  */
@@ -23,16 +23,21 @@ export const UPSTREAM_FLOORS = {
   barterOffers: 150,
   presets: 200,
   presetWeapons: 80,
+  /**
+   * Trader offers and barters gated by a quest. A renamed `taskUnlock` would not fail to
+   * parse: every offer would simply lose its gate and read as unlocked.
+   */
+  questOffers: 45,
 } as const;
 
 /**
  * Size budget for `builder-snapshot.json`, which every Builder visit downloads. Brotli is
  * measured at quality 4, roughly what Cloudflare's edge serves the file at.
  *
- * - 300 KB brotli. Live data, weapon presets and stats included, measured 269 KB on 2026-10-17: 31 KB
+ * - 300 KB brotli. Live data, weapon presets and stats included, measured 255 KB on 2026-10-17: 45 KB
  *   of headroom for upstream growth before a deliberate decision is needed.
- * - 6 MB raw. What the browser parses on load: 4058 KB on 2026-10-17 (`JSON.parse` about
- *   10 ms on a desktop), 2086 KB of headroom. The raw cap guards a payload that compresses
+ * - 6 MB raw. What the browser parses on load: 3991 KB on 2026-10-17 (`JSON.parse` about
+ *   10 ms on a desktop), 2153 KB of headroom. The raw cap guards a payload that compresses
  *   well but costs parse time and memory.
  */
 export const SNAPSHOT_BUDGET = {
