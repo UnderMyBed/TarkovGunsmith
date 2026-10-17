@@ -292,6 +292,10 @@ describe("optimize — what it refuses", () => {
     };
     expect(run({ weaponItem: locked })).toEqual(refusal);
     expect(run({ weaponItem: locked, budgetRub: 50_000 })).toEqual(refusal);
+    expect(run({ weaponItem: locked, profile: null })).toEqual({
+      ...refusal,
+      message: "No trader or flea listing sells the TR.",
+    });
   });
 
   it("refuses a budget below the cheapest gun, naming its price", () => {

@@ -72,10 +72,15 @@ export function optimize(input: OptimizationInput): OptimizationResult {
   const catalog = partsById(input.parts);
   const problem = buildProblem(input, catalog);
   if (problem.paths.length === 0) {
+    const name = input.weaponItem.shortName;
     return {
       ok: false,
       reason: "weapon-unavailable",
-      message: `You can't get the ${input.weaponItem.shortName} on this profile.`,
+      // Theorycraft opens every gate, so only a weapon nothing sells is refused there.
+      message:
+        input.constraints.profile === null
+          ? `No trader or flea listing sells the ${name}.`
+          : `You can't get the ${name} on this profile.`,
     };
   }
   const budgetRub = input.constraints.budgetRub;
