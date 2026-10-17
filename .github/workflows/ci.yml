@@ -72,6 +72,10 @@ jobs:
               - 'commitlint.config.js'
               - '.prettierrc*'
               - '.nvmrc'
+              # The pinned toolchain; packages/repo-guards reads it.
+              - 'mise.toml'
+              # Grafana manifests; packages/repo-guards checks they agree with each other and the site.
+              - 'infra/grafana/**'
 
       - name: No-op for docs-only change
         if: steps.changes.outputs.code != 'true'

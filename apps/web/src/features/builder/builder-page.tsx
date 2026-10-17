@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { presetAvailability, useProgression, useTasks, type BuildV6 } from "@tarkov/data";
 import { Button } from "@tarkov/ui";
 import { useWorkbenchChrome } from "../../site-chrome.js";
+import { useModeChangedEvent } from "../../observability/track-hooks.js";
 import { adaptWeapon } from "../data-adapters/adapters.js";
 import { BuildPanel } from "./build-panel.js";
 import { writeDraft, type DraftBuild } from "./build-draft.js";
@@ -81,6 +82,7 @@ export function BuilderPage({
 
   const progression = useProgression();
   const { profile, setProfile, mode } = progression;
+  useModeChangedEvent(mode);
   const tasks = useTasks();
   const sync = useTarkovTrackerSync({
     profile,

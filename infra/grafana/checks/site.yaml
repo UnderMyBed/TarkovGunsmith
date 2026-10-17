@@ -1,0 +1,22 @@
+apiVersion: syntheticmonitoring.ext.grafana.app/v1alpha1
+kind: Check
+metadata:
+  name: tarkovgunsmith-site
+spec:
+  job: tarkovgunsmith-site
+  target: https://tarkovgunsmith.undermybed.dev/builder
+  frequency: 300000
+  timeout: 10000
+  enabled: true
+  probes:
+    - Atlanta
+  alertSensitivity: none
+  basicMetricsOnly: true
+  labels:
+    - name: project
+      value: tarkovgunsmith
+  settings:
+    http:
+      method: GET
+      validStatusCodes: [200]
+      failIfNotSSL: true

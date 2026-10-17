@@ -1,0 +1,15 @@
+apiVersion: faro.ext.grafana.app/v1alpha1
+kind: FaroApp
+metadata:
+  name: tarkovgunsmith-web
+spec:
+  name: tarkovgunsmith-web
+  appType: web
+  runtime: web-js
+  # Must equal PRODUCTION_ORIGINS in apps/web/src/observability/faro-guard.ts.
+  corsOrigins:
+    - url: https://tarkov-gunsmith-web.pages.dev
+    - url: https://tarkovgunsmith.undermybed.dev
+  settings:
+    geolocationEnabled: true
+    geolocationLevel: country

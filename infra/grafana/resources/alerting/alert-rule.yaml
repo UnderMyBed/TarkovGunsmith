@@ -1,0 +1,45 @@
+apiVersion: rules.alerting.grafana.app/v0alpha1
+kind: AlertRule
+metadata:
+  name: tarkovgunsmith-uptime
+  annotations:
+    grafana.app/folder: tarkovgunsmith
+spec:
+  title: TarkovGunsmith site or API down
+  trigger:
+    interval: 1m
+  # A is the best result each check had in the last 10 minutes: two runs at a 5-minute
+  # frequency. It is below 1 only when every one of those runs failed.
+  expressions:
+    A:
+      datasourceUID: grafanacloud-prom
+      relativeTimeRange:
+        from: 10m
+        to: "0"
+      model:
+        refId: A
+        instant: true
+        range: false
+        expr: max by (job) (max_over_time(probe_success{job=~"tarkovgunsmith-site|tarkovgunsmith-api"}[10m]))
+    B:
+      datasourceUID: __expr__
+      source: true
+      model:
+        refId: B
+        type: threshold
+        expression: A
+        conditions:
+          - evaluator:
+              type: lt
+              params: [1]
+  for: 5m
+  # A check that stops reporting pages too: no data means nothing is watching the site.
+  noDataState: Alerting
+  execErrState: Error
+  annotations:
+    summary: "{{ $labels.job }} has failed every Synthetic Monitoring run for 10 minutes"
+  # Straight to the contact point. The stack-wide notification policy is shared with another
+  # project and is never touched.
+  notificationSettings:
+    type: SimplifiedRouting
+    receiver: TarkovGunsmith email

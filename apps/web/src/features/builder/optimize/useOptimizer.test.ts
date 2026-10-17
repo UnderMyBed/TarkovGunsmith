@@ -5,8 +5,12 @@ import type { OptimizationResult } from "@tarkov/optimizer";
 import type { OptimizeReply, OptimizeRequest } from "./optimize-protocol.js";
 import type { OptimizerWorker } from "./optimizer-worker.js";
 import { useOptimizer } from "./useOptimizer.js";
+import { connectTracking, resetTrackingForTests } from "../../../observability/track.js";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  resetTrackingForTests();
+});
 
 /** A worker the test drives by hand: it records what it is sent and whether it was stopped. */
 function fakeWorker(post: (request: OptimizeRequest) => void = () => {}) {
@@ -168,5 +172,51 @@ describe("useOptimizer", () => {
     act(() => result.current.run(request));
     unmount();
     expect(worker.terminate).toHaveBeenCalled();
+  });
+
+  describe("optimizer_run", () => {
+    function tracked() {
+      const sink = vi.fn<(name: string, attributes: Record<string, string>) => void>();
+      connectTracking(sink);
+      return () =>
+        sink.mock.calls.filter(([name]) => name === "optimizer_run").map(([, attrs]) => attrs);
+    }
+
+    it("reports a finished run's objective, outcome and time, once", () => {
+      const runs = tracked();
+      const clock = vi.spyOn(performance, "now").mockReturnValue(100);
+      const worker = fakeWorker();
+      const { result } = setup(worker);
+      act(() => result.current.run(request));
+      clock.mockReturnValue(350);
+      act(() => worker.reply({ type: "result", result: timeout }));
+      act(() => result.current.reset());
+      expect(runs()).toEqual([
+        { objective: "max-ergonomics", outcome: "timeout", ms: "250", exact: "false" },
+      ]);
+    });
+
+    it("reports a cancelled run and a crashed worker", () => {
+      const runs = tracked();
+      const first = fakeWorker();
+      const second = fakeWorker();
+      const { result } = setup(first, second);
+      act(() => result.current.run(request));
+      act(() => result.current.cancel());
+      act(() => result.current.run(request));
+      act(() => second.reply({ type: "error", message: "boom" }));
+      expect(runs().map((attrs) => attrs.outcome)).toEqual(["cancelled", "error"]);
+    });
+
+    it("does not report a run superseded by a new one", () => {
+      const runs = tracked();
+      const first = fakeWorker();
+      const second = fakeWorker();
+      const { result } = setup(first, second);
+      act(() => result.current.run(request));
+      act(() => result.current.run(request));
+      act(() => second.reply({ type: "result", result: timeout }));
+      expect(runs()).toHaveLength(1);
+    });
   });
 });

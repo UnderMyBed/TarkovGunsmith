@@ -32,6 +32,7 @@ import { adaptMod, adaptWeapon, mountedMagazine } from "../data-adapters/adapter
 import { conflictReasonFor, fittedConflictReasonFor } from "./conflict-reason.js";
 import { priceBuild, pricesStatus, type PricesStatus } from "./build-price.js";
 import { usePendingSeed } from "./usePendingSeed.js";
+import { track } from "../../observability/track.js";
 
 /**
  * A weapon the picker lists. `lockedBy` is set only on the current weapon when the profile
@@ -297,6 +298,7 @@ export function useBuilderState({
     const seed = seedAttachments(presets.data?.[newWeaponId] ?? [], mode, profile);
     dispatch({ type: "changeWeapon", weaponId: newWeaponId, seed });
     pendingSeed.seeded(newWeaponId);
+    track("weapon_selected", { weaponId: newWeaponId });
   }
 
   // Replacing a part carries over what still fits on the new one; emptying drops its subtree.

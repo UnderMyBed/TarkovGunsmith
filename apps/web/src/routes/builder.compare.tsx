@@ -1,6 +1,7 @@
 // apps/web/src/routes/builder.compare.tsx
 import { createFileRoute, Outlet, useMatchRoute } from "@tanstack/react-router";
 import { CompareWorkspace } from "../features/builder/compare/compare-workspace.js";
+import { useTrackOnce } from "../observability/track-hooks.js";
 
 export const Route = createFileRoute("/builder/compare")({
   component: ComparePage,
@@ -21,6 +22,9 @@ export const Route = createFileRoute("/builder/compare")({
  */
 function ComparePage() {
   const matchRoute = useMatchRoute();
+  // Here, not in the workspace: saving a pair moves to /builder/compare/$pairId, which
+  // remounts the workspace but not this layout, and is not a second opening.
+  useTrackOnce(true, "compare_opened");
   // `fuzzy: false` → only true when the current location is exactly `/builder/compare`
   // with no child segments. Any deeper URL falls through to the `<Outlet />`.
   const isExactCompare = matchRoute({ to: "/builder/compare" });
