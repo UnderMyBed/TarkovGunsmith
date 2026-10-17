@@ -41,9 +41,14 @@ interface MutableBest {
 }
 
 /**
- * Runs an exact branch-and-bound DFS over the slot tree and returns the
- * best (lowest-score) leaf found, or `null` if no leaf was ever reached
+ * Runs a heuristic branch-and-bound DFS over the slot tree and returns the
+ * best (lowest-score) leaf it found, or `null` if no leaf was ever reached
  * (e.g. the onNodeVisit callback aborted before the first completion).
+ *
+ * Not provably optimal: the pruning bound covers only the slots already
+ * pending, not the sub-slots of candidates not yet chosen, so it can cut a
+ * branch whose deeper parts would have won. A result may also leave a
+ * required slot empty or contain conflicting parts. #225 owns all three.
  *
  * Tie-breaking: lower price wins; then lexicographic order of the sorted
  * attachments map ensures determinism.
