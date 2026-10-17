@@ -44,12 +44,15 @@ export function formatRub(value: number): string {
 
 /**
  * One line saying what a build costs, naming what keeps it from a total: the parts with no
- * price, or the parts (or weapon) the gate cannot get. `nameOf` names an item id.
+ * price, or the parts (or weapon) the gate cannot get. A total that another way of buying the
+ * build, with prices not known, may undercut says so. `nameOf` names an item id.
  */
 export function describeBuildPrice(price: BuildPrice, nameOf: (id: string) => string): string {
   switch (price.status) {
     case "priced":
-      return formatRub(price.totalRUB);
+      return price.cheaperUnpriced === undefined
+        ? formatRub(price.totalRUB)
+        : `${formatRub(price.totalRUB)}; may cost less bought another way (no price for ${price.cheaperUnpriced.unpriced.map(nameOf).join(", ")})`;
     case "unknown":
       return `${formatRub(price.knownRUB)} known; no price for ${price.unpriced.map(nameOf).join(", ")}`;
     case "unobtainable":

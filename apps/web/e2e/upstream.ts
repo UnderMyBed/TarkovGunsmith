@@ -46,14 +46,15 @@ const STUB_IMAGE = Buffer.from(
   "base64",
 );
 
-/** The key `useProfile` persists to — `packages/tarkov-data/src/hooks/useProfile.ts:4`. */
+/** The key `useProgression` persists the profile to — `packages/tarkov-data/src/hooks/useProgression.ts`. */
 const PROFILE_STORAGE_KEY = "tg:player-profile";
 
 /**
  * The profile the suite runs as by default.
  *
- * `/builder`'s weapon picker lists only weapons available on the player's profile
- * (`useBuilderState.ts:99`), and on `DEFAULT_PROFILE` — level 1, every trader LL1, no flea —
+ * A stored profile puts `/builder` in progression mode (`resolveMode` in `useProgression.ts`),
+ * where the weapon picker lists only weapons available on the player's profile, and on
+ * `DEFAULT_PROFILE` — level 1, every trader LL1, no flea —
  * only the PM is reachable (through its default preset, Prapor LL1); the M4A1's cheapest
  * gate is a Peacekeeper LL2 preset barter. A fresh profile would therefore leave the Builder
  * specs on the wrong weapon.
@@ -63,8 +64,9 @@ const PROFILE_STORAGE_KEY = "tg:player-profile";
  * slot), which is what the slot-tree and optimizer specs need to be exercising. Availability gating is still live — it is simply being driven from a
  * state that makes the fixture's own content reachable.
  *
- * `test.use({ playerProfile: "fresh" })` opts a spec out; `builder-profile.spec.ts` does,
- * because its subject IS the DEFAULT_PROFILE starting state.
+ * `test.use({ playerProfile: "fresh" })` opts a spec out: nothing is stored, so the Builder
+ * opens in theorycraft, as a first visit does. `builder-mode.spec.ts` and
+ * `builder-profile.spec.ts` do, because their subject IS that starting state.
  */
 export const PROGRESSED_PROFILE: PlayerProfile = {
   mode: "basic",

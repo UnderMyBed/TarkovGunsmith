@@ -60,7 +60,7 @@ export const ARMOR_MATERIALS: Record<
 // ---------- Items ----------
 // One weapon with two slots, one always-available mod, one locked-by-default mod (LL2
 // Mechanic, which the DEFAULT_PROFILE's all-LL1 traders can't reach) so availability-gating
-// UI (SlotTree "Show all items", the weapon picker's "Show all weapons") has something real
+// UI (SlotTree "Show all items", the weapon picker in progression mode) has something real
 // to gate. Two ammo types and two armor pieces (one head zone, one chest zone) so `/sim`'s
 // helmet vs. body-armor split and `/matrix`, `/adc`, `/aec`, `/charts` all have distinct rows.
 export const ITEMS_DOCUMENT: {
@@ -114,8 +114,8 @@ export const ITEMS_DOCUMENT: {
         ],
       },
       // Prapor LL1 — satisfied by DEFAULT_PROFILE (every trader starts at LL1), so this
-      // weapon is selectable in the Builder's default "available on your profile" filter
-      // without the tester having to flip "Show all weapons" first.
+      // weapon is selectable in the Builder's progression-mode "available on your profile"
+      // filter, not only in theorycraft.
       buyFromTrader: [
         {
           trader: "t-prapor",

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// Every hook in `hooks/` except `useProfile` (localStorage-backed, no TanStack Query — see
+// Every hook in `hooks/` except `useProgression` (localStorage-backed, no TanStack Query — see
 // its own test file) in one file. Each is a thin wrapper around either a `useTarkovClient()`
 // query fetcher or a `buildsApi`/`pairsApi` function that reads the global `fetch` — same
 // shape of test three ways (list hooks, id-gated detail hooks, load/mutation hooks), so

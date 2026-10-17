@@ -24,15 +24,6 @@ export type { PriceGate } from "./item-availability.js";
 
 type Obtainable = Extract<ItemAvailability, { available: true }>;
 
-/**
- * The Builder's mode from its "Show all" toggle: on is theorycraft. Until the real mode
- * (#241) exists, this is the one place the toggle becomes a mode, for preset seeding and
- * prices alike.
- */
-export function builderMode(showAll: boolean): BuilderMode {
-  return showAll ? "theorycraft" : "progression";
-}
-
 /** Whose gates price the build: the profile in progression mode, none in theorycraft. */
 export function priceGate(mode: BuilderMode, profile: PlayerProfile): PriceGate {
   return mode === "theorycraft" ? null : profile;
@@ -141,6 +132,12 @@ export type BuildPrice =
       readonly totalRUB: number;
       /** The preset the weapon is bought as, or `null` for the receiver. */
       readonly presetId: string | null;
+      /**
+       * Another way to buy the build that may cost less: its known prices sum to less than
+       * {@link totalRUB}, but some are not known. Absent when no such path exists. When
+       * several do, the one with the lowest known sum.
+       */
+      readonly cheaperUnpriced?: UnpricedPath;
     }
   | {
       /** Obtainable, but some price on the cheapest path is not known. */
@@ -156,6 +153,16 @@ export type BuildPrice =
       /** The weapon's id when no path buys it, else the parts no path can get. */
       readonly missing: readonly string[];
     };
+
+/** A way to buy the build with some price not known. */
+export interface UnpricedPath {
+  /** The preset bought, or `null` for the receiver. */
+  readonly presetId: string | null;
+  /** The sum of the prices that are known. Not a total. */
+  readonly knownRUB: number;
+  /** Ids whose price is not known: the weapon's, or parts'. */
+  readonly unpriced: readonly string[];
+}
 
 interface PathTotal {
   readonly presetId: string | null;
@@ -194,6 +201,10 @@ function totalFor(gate: PriceGate, path: WeaponPath, input: BuildPriceInput): Pa
  * path beats one with an unknown price, as in {@link itemAvailability}, and fewer unknown
  * prices beat more: a path is not cheaper for leaving its own price out of the known sum. Ties
  * go to the lower known sum, then the receiver, then preset id.
+ *
+ * A fully priced total is a real total, but not always the least the build can cost: a path
+ * with an unknown price may be cheaper. When one's known prices already sum to less, the
+ * result names it as `cheaperUnpriced`.
  */
 export function buildPriceUnder(gate: PriceGate, input: BuildPriceInput): BuildPrice {
   const paths = weaponPaths(gate, input.weapon, input.presets);
@@ -214,7 +225,24 @@ export function buildPriceUnder(gate: PriceGate, input: BuildPriceInput): BuildP
       Number(String(a.presetId) < String(b.presetId));
   const best = complete.sort(order)[0]!;
   if (best.unpriced.length === 0) {
-    return { status: "priced", totalRUB: best.knownRUB, presetId: best.presetId };
+    // `complete` is in `order` now, and the sort is stable: an equal known sum keeps it.
+    const cheaper = complete
+      .filter((t) => t.unpriced.length > 0 && t.knownRUB < best.knownRUB)
+      .sort((a, b) => a.knownRUB - b.knownRUB)[0];
+    return {
+      status: "priced",
+      totalRUB: best.knownRUB,
+      presetId: best.presetId,
+      ...(cheaper === undefined
+        ? {}
+        : {
+            cheaperUnpriced: {
+              presetId: cheaper.presetId,
+              knownRUB: cheaper.knownRUB,
+              unpriced: cheaper.unpriced,
+            },
+          }),
+    };
   }
   return {
     status: "unknown",
