@@ -32,12 +32,13 @@ function latestProfile(): PlayerProfile {
  * The bar over the real `useProgression` and `useTarkovTrackerSync`, wired as `BuilderPage`
  * wires them, so what it sets is what persists.
  */
-function Harness({ tasks = [] }: { tasks?: TaskListItem[] }) {
+function Harness({ tasks = [] }: { tasks?: TaskListItem[] | null }) {
   const progression = useProgression();
   const sync = useTarkovTrackerSync({
     profile: progression.profile,
     onChange: (next, cause) => applySyncedProfile(progression, next, cause),
-    tasks,
+    // `null`: the quest list is still loading.
+    tasks: tasks ?? undefined,
   });
   return (
     <>
@@ -172,6 +173,94 @@ describe("ModeBar re-syncing a first import that failed", () => {
       level: 30,
     });
     expect(window.localStorage.getItem(MODE_KEY)).toBe("progression");
+  });
+});
+
+describe("ModeBar while a sync is in flight", () => {
+  const TASKS: TaskListItem[] = [
+    {
+      id: "5a03296886f774569778596a",
+      name: "I Need More Power",
+      normalizedName: "i-need-more-power",
+      kappaRequired: false,
+      trader: { normalizedName: "peacekeeper" },
+    },
+  ];
+  const PROGRESSION = {
+    tasksProgress: [{ id: "5a03296886f774569778596a", complete: true }],
+    taskObjectivesProgress: [],
+    hideoutModulesProgress: [],
+    hideoutPartsProgress: [],
+    displayName: "SyncUser",
+    userId: "sync",
+    playerLevel: 30,
+    gameEdition: 1,
+    pmcFaction: "USEC",
+  };
+
+  function expectLocked() {
+    const controls = [
+      ...["LL1", "LL2", "LL3", "LL4", "Theorycraft", "Progression"].map((name) =>
+        screen.getByRole("button", { name }),
+      ),
+      screen.getByRole("button", { name: /Import from TarkovTracker/ }),
+    ];
+    for (const control of controls) {
+      expect(control).toBeDisabled();
+      expect(control).toHaveAccessibleDescription("Importing from TarkovTracker…");
+    }
+  }
+
+  it("locks the bar through a re-sync with no profile, then applies it as the first import", async () => {
+    window.localStorage.setItem("tg:tarkovtracker-token", "tok-123");
+    let answer: (r: Response) => void = () => undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((resolve) => (answer = resolve))),
+    );
+    render(<Harness tasks={TASKS} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Re-sync" }));
+    expectLocked();
+    // A click on a locked one-click profile does nothing.
+    fireEvent.click(screen.getByRole("button", { name: "LL3" }));
+    expect(window.localStorage.getItem(PROFILE_KEY)).toBeNull();
+
+    await act(async () => {
+      answer(new Response(JSON.stringify(PROGRESSION), { status: 200 }));
+      await Promise.resolve();
+    });
+    await screen.findByText("progression");
+    expect(latestProfile()).toMatchObject({
+      mode: "advanced",
+      completedQuests: ["i-need-more-power"],
+      level: 30,
+      traders: DEFAULT_PROFILE.traders,
+    });
+    expect(window.localStorage.getItem(MODE_KEY)).toBe("progression");
+  });
+
+  it("stays locked while a connect waits for the quest list, then lands as the first import", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(PROGRESSION), { status: 200 })),
+    );
+    const { rerender } = render(<Harness tasks={null} />);
+    await importToken("tok-123");
+    expect(await screen.findByText("Importing from TarkovTracker…")).toBeInTheDocument();
+    expectLocked();
+    fireEvent.click(screen.getByRole("button", { name: "Theorycraft" }));
+    expect(window.localStorage.getItem(MODE_KEY)).toBeNull();
+
+    rerender(<Harness tasks={TASKS} />);
+    await screen.findByText("progression");
+    expect(latestProfile()).toMatchObject({
+      mode: "advanced",
+      completedQuests: ["i-need-more-power"],
+    });
+    expect(window.localStorage.getItem(MODE_KEY)).toBe("progression");
+    // Landed, the bar is live again.
+    expect(screen.getByRole("button", { name: "Theorycraft" })).toBeEnabled();
   });
 });
 

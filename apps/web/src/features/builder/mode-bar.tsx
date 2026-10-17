@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useId, useState, type ReactElement } from "react";
 import {
   loyaltyProfile,
   type BuilderMode,
@@ -31,10 +31,23 @@ const MODE_LABEL: Record<BuilderMode, string> = {
  * - Theorycraft with a profile set: the way back to it. The one-click profiles are not offered,
  *   since one click would overwrite the user's own trader levels with no undo.
  * - Progression: the toggle back.
+ *
+ * While a TarkovTracker sync is in flight, including its wait for the quest list, every
+ * control here is disabled and says why. Whether the sync applies as the first import, and so
+ * which mode it leaves, is decided when it lands; a one-click profile or a mode switch made in
+ * between would be overwritten by it, or overwrite it.
  */
 export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
   const { profile, hasProfile, setProfile, mode, setMode } = progression;
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const busy = sync.state === "syncing";
+  const busyId = useId();
+  const busyProps = { disabled: busy, "aria-describedby": busy ? busyId : undefined };
+  const busyNote = busy && (
+    <p id={busyId} role="status" className="w-full text-xs text-[var(--color-muted-foreground)]">
+      Importing from TarkovTracker…
+    </p>
+  );
 
   const toggle = (
     <div
@@ -49,6 +62,7 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
           size="sm"
           variant={mode === m ? "default" : "ghost"}
           aria-pressed={mode === m}
+          {...busyProps}
           onClick={() => setMode(m)}
         >
           {MODE_LABEL[m]}
@@ -68,6 +82,7 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
             </span>
           </p>
           {toggle}
+          {busyNote}
         </CardContent>
       </Card>
     );
@@ -84,11 +99,12 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
             </span>
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" size="sm" onClick={() => setMode("progression")}>
+            <Button type="button" size="sm" {...busyProps} onClick={() => setMode("progression")}>
               Back to your progression
             </Button>
             {toggle}
           </div>
+          {busyNote}
         </CardContent>
       </Card>
     );
@@ -114,14 +130,22 @@ export function ModeBar({ progression, sync }: ModeBarProps): ReactElement {
             type="button"
             size="sm"
             variant="secondary"
+            {...busyProps}
             onClick={() => setProfile(loyaltyProfile(ll, profile))}
           >
             LL{ll}
           </Button>
         ))}
-        <Button type="button" size="sm" variant="ghost" onClick={() => setPopoverOpen(true)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          {...busyProps}
+          onClick={() => setPopoverOpen(true)}
+        >
           ▲ Import from TarkovTracker
         </Button>
+        {busyNote}
         {/* An import under way, or one that failed or was left after a reload: its progress,
             its error and its Re-sync show here, where it was started. */}
         {sync.state !== "disconnected" && sync.state !== "synced" && (
