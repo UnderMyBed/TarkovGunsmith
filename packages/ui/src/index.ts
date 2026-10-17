@@ -36,3 +36,5 @@ export { Skeleton } from "./components/skeleton.js";
 export type { SkeletonProps } from "./components/skeleton.js";
 export { WeaponSilhouette, weaponSilhouetteSrc } from "./components/weapon-silhouette.js";
 export type { WeaponSilhouetteProps } from "./components/weapon-silhouette.js";
+export { Combobox } from "./components/combobox.js";
+export type { ComboboxProps, ComboboxOption } from "./components/combobox.js";

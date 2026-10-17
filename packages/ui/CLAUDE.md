@@ -9,6 +9,7 @@ Design tokens and shared React primitives for TarkovGunsmith. shadcn-style (copy
 - `src/components/button.tsx` — `<Button>` with `variant` (`default | secondary | ghost | destructive`) and `size` (`sm | md | lg | icon`).
 - `src/components/card.tsx` — `<Card>` family: `<CardHeader>`, `<CardTitle>`, `<CardDescription>`, `<CardContent>`, `<CardFooter>`.
 - `src/components/input.tsx` — `<Input>` text input with consistent styling.
+- `src/components/combobox.tsx` — `<Combobox>`, a searchable single-select (WAI-ARIA editable combobox with a listbox popup), hand-rolled with no dependency.
 - `src/components/tarkov-icon.tsx` — `<TarkovIcon itemId="..." />` renders an `<img>` from `assets.tarkov.dev`. Exports an `iconUrl(itemId)` helper.
 
 ## Conventions
@@ -52,7 +53,6 @@ Use the future `add-ui-primitive` skill (TBD). Until then:
 ## Out of scope (deferred to follow-up plans or apps/web)
 
 - `<DataTable>` (TanStack Table integration) — heavy; ship when apps/web `/matrix` route needs it.
-- `<Combobox>` (Radix Popover + Command) — heavy; ship when apps/web `/builder` needs it.
 - `<Tabs>`, `<Form>`, `<Select>` — add when first consumer needs them.
 - Storybook — overkill for MVP.
 - Theme switcher (light mode) — tokens are dark-first; light mode is a CSS-var override sheet, ships when apps/web has the toggle UI.

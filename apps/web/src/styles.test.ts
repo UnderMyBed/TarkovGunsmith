@@ -67,6 +67,15 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
   // apps/web (its 8px panel radius included), so this is the one that proves the scan.
   ["card.tsx", ["text-[var(--color-card-foreground)]"]],
   [
+    "combobox.tsx",
+    [
+      // The field's focus indicator: the input inside draws no ring of its own.
+      "focus-within:border-[var(--color-primary)]",
+      // The list's height cap. Without it a 160-weapon list runs off the bottom of the page.
+      "max-h-80",
+    ],
+  ],
+  [
     "input.tsx",
     [
       "focus-visible:border-[var(--color-primary)]",
