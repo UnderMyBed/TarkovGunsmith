@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.21.0...v1.22.0) (2026-10-17)
+
+
+### Features
+
+* **builder:** run the optimizer in a Web Worker, with progress, cancel and per-outcome UI ([#266](https://github.com/UnderMyBed/TarkovGunsmith/issues/266)) ([09e0939](https://github.com/UnderMyBed/TarkovGunsmith/commit/09e09391a230cbffc7004fe7c16d159985423a36))
+* **builder:** unpinned-by-default pin tree with lock, empty and free per slot, and the pin report ([#269](https://github.com/UnderMyBed/TarkovGunsmith/issues/269)) ([e09a022](https://github.com/UnderMyBed/TarkovGunsmith/commit/e09a022e4a3b74d8617ef214cd25d5bb7ab08bc7))
+
 ## [1.21.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.20.0...v1.21.0) (2026-10-17)
 
 
