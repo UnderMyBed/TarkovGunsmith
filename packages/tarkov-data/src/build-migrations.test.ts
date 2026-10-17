@@ -92,10 +92,10 @@ describe("migrateV1ToV2", () => {
     expect(v2.orphaned).toEqual([]);
   });
 
-  it("caps orphaned at 64 (silent truncation)", () => {
+  it("keeps every mod it cannot place, past 64 too: nothing is dropped", () => {
     const manyModIds = Array.from({ length: 200 }, (_, i) => `mod-${i}`);
     const v2 = migrateV1ToV2({ ...v1, modIds: manyModIds }, []);
-    expect(v2.orphaned).toHaveLength(64);
+    expect(v2.orphaned).toEqual(manyModIds);
   });
 });
 
@@ -359,7 +359,7 @@ describe("upgradeLoadedBuild", () => {
  * Placements the pre-#214 tree (depth 3, recursing only into WeaponMod children) produced for a
  * v1 build listing every item in the fixture, captured by running that implementation over this
  * same fixture before it was replaced. v1 share links must keep migrating to exactly this.
- * Every fixture item the old tree cannot place is an orphan, up to the cap of 64, so the counts
+ * Every fixture item the old tree cannot place is an orphan, so the counts
  * track the fixture: when it grows, re-derive them by running the pre-#214 implementation over it
  * (last done when the preset parts and the golden TT landed, by running the pre-#214 `weaponTree.ts` and
  * `migrateV1ToV2` from 4b9dd32 over the fixture). The PM and TT default cartridges added since
@@ -392,7 +392,7 @@ const LEGACY_V1_PLACEMENTS = [
   },
   {
     weaponId: "5448bd6b4bdc2dfc2f8b4569",
-    orphanedCount: 64,
+    orphanedCount: 93,
     attachments: {
       mod_magazine: "55d485be4bdc2d962f8b456f",
       "mod_pistolgrip/mod_tactical/mod_scope": "58d39d3d86f77445bb794ae7",

@@ -47,6 +47,9 @@ export { attachedParts, mountedAttachments, withAttachment } from "./attached-pa
 export { conflictsWith } from "./conflicts.js";
 export type { Conflict, ConflictContext, ConflictFields } from "./conflicts.js";
 export { resolveBuild } from "./build-core/resolve.js";
+export { applyBuildAction, toBuildPayload } from "./build-core/reducer.js";
+export type { BuildAction, BuildContext, BuildMeta, BuildState } from "./build-core/reducer.js";
+export { loadSavedBuild } from "./build-core/load.js";
 export type {
   BuildConflict,
   OrphanReason,
@@ -133,6 +136,7 @@ export {
 export {
   orphanUnknownParts,
   snapshotPart,
+  snapshotPartsById,
   snapshotPartCatalog,
   snapshotPriceIds,
   snapshotSlotGraph,

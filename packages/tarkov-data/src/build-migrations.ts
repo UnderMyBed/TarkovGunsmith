@@ -7,7 +7,6 @@ import type {
   BuildV5,
   BuildV6,
 } from "./build-schema.js";
-import { ORPHANED_CAP } from "./build-schema.js";
 import { expandSlots, type SlotGraph, type WeaponTree } from "./queries/slot-graph.js";
 
 /**
@@ -67,9 +66,8 @@ function legacyLevel(
  * Duplicates in v1 `modIds` are deduped: once a mod has been placed or
  * orphaned, subsequent occurrences are ignored.
  *
- * Orphaned list is capped at {@link ORPHANED_CAP}; extra entries are silently
- * dropped (the user can always re-enter them manually, and 64 is already a
- * larger bucket than any realistic build could fill).
+ * Every unplaceable mod is kept. A v1 build holds at most 64 mod ids, so the
+ * list stays within {@link ORPHANED_CAP}; nothing is dropped to make it so.
  */
 export function migrateV1ToV2(v1: BuildV1, tree: readonly SlotNodeForMigration[]): BuildV2 {
   const attachments: Record<string, string> = {};
@@ -81,12 +79,8 @@ export function migrateV1ToV2(v1: BuildV1, tree: readonly SlotNodeForMigration[]
     seen.add(modId);
 
     const path = findSlotPathFor(modId, tree);
-    if (path !== null) {
-      attachments[path] = modId;
-    } else if (orphaned.length < ORPHANED_CAP) {
-      orphaned.push(modId);
-    }
-    // else: silently drop — orphaned list is full.
+    if (path !== null) attachments[path] = modId;
+    else orphaned.push(modId);
   }
 
   return {

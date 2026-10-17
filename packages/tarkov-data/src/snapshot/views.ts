@@ -85,6 +85,14 @@ export function snapshotPart(
   return part === undefined ? undefined : { ...part, buyFor: pricedOffers(snapshot, id, prices) };
 }
 
+/**
+ * Every snapshot part by id, unpriced: what checking a build against the game data needs (which
+ * ids exist, and their conflict lists). Built once per snapshot.
+ */
+export function snapshotPartsById(snapshot: BuilderSnapshot): ReadonlyMap<string, SnapshotPart> {
+  return derive(snapshot).parts;
+}
+
 /** The buildable weapons, each with its offers priced from `prices`. */
 export function snapshotWeaponList(
   snapshot: BuilderSnapshot,
