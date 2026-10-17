@@ -120,6 +120,20 @@ describe("StatStrip", () => {
     expect(sub("Cost")).toHaveTextContent("Known so far; no price for Mystery stock");
   });
 
+  it("sets a seven-figure cost, total or known so far, as one figure that never breaks", () => {
+    renderStrip(STOCK, {
+      buildPrice: { status: "priced", totalRUB: 1_234_567, presetId: null },
+    });
+    expect(value("Cost")).toHaveTextContent(/^₽1,234,567$/);
+    expect(value("Cost")).toHaveClass("whitespace-nowrap");
+    cleanup();
+    renderStrip(STOCK, {
+      buildPrice: { status: "unknown", knownRUB: 1_234_567, unpriced: ["mod-x"], presetId: null },
+    });
+    expect(value("Cost")).toHaveTextContent(/^₽1,234,567\+$/);
+    expect(value("Cost")).toHaveClass("whitespace-nowrap");
+  });
+
   it("says what cannot be bought, with no figure", () => {
     renderStrip(STOCK, {
       buildPrice: { status: "unobtainable", missing: ["mod-x"] },

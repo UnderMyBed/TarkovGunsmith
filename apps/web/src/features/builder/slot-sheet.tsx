@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Dialog, SheetPanel } from "@tarkov/ui";
 import { SlotInspector, type SlotInspectorProps } from "./slot-inspector.js";
 
@@ -39,4 +40,20 @@ export function SlotSheet({ onClose, onAttach, ...inspector }: SlotSheetProps) {
       </SheetPanel>
     </Dialog>
   );
+}
+
+/**
+ * Whether the slot sheet is open, and the setter. The sheet belongs to the editor of the weapon
+ * it was opened on: once `allowed` goes false (the window widened past the phone breakpoint, or
+ * the page left the editor) or the weapon changes — browser history included — it is closed for
+ * good, so it never sits over the optimizer and never pops open again on another tree.
+ */
+export function useSlotSheetOpen(
+  allowed: boolean,
+  weaponId: string,
+): readonly [boolean, (open: boolean) => void] {
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  if (openFor !== null && (!allowed || openFor !== weaponId)) setOpenFor(null);
+  const open = allowed && openFor === weaponId;
+  return [open, (next) => setOpenFor(next ? weaponId : null)] as const;
 }

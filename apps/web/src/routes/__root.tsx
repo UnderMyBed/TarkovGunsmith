@@ -1,6 +1,6 @@
 import { createRootRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { SiteChromeProvider, useWorkbenchMounted } from "../site-chrome.js";
+import { SiteChromeProvider, useBottomBarMounted, useWorkbenchMounted } from "../site-chrome.js";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -55,6 +55,7 @@ function RootLayout() {
  */
 function SiteShell() {
   const workbench = useWorkbenchMounted();
+  const bottomBar = useBottomBarMounted();
   const pathname = useRouterState({ select: (st) => st.location.pathname });
   const compareActive = pathname === COMPARE_PREFIX || pathname.startsWith(COMPARE_PREFIX + "/");
   const builderActive =
@@ -132,6 +133,8 @@ function SiteShell() {
           </span>
         </div>
       </footer>
+      {/* Room for a bar fixed to the bottom of the screen, so the footer scrolls clear of it. */}
+      {bottomBar && <div aria-hidden className="h-(--phone-bar-height)" />}
     </div>
   );
 }

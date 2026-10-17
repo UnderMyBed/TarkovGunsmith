@@ -88,12 +88,14 @@ function Cell({
   return (
     <div
       data-testid={testId}
-      className="flex min-w-0 flex-[1_1_150px] flex-col gap-1 border-b border-r border-[var(--color-border)] px-3 py-2.5 sm:px-6 sm:py-3"
+      className="flex min-w-0 flex-[1_1_150px] flex-col gap-1 border-b border-r border-[var(--color-border)] px-2 py-2.5 sm:px-6 sm:py-3"
     >
       <dt className="text-12 font-medium text-[var(--color-muted-foreground)]">{label}</dt>
       <dd
         title={title}
-        className="break-words font-mono text-20 font-medium leading-tight tabular-nums text-[var(--color-foreground)] sm:text-[28px]"
+        // A figure never breaks. At phone width a third of the strip holds 11 digits and signs at
+        // 16 px ("₽1,234,567+" is 110 px in a 113 px cell), so the value drops to that size there.
+        className="whitespace-nowrap font-mono text-base font-medium leading-tight tabular-nums text-[var(--color-foreground)] sm:text-[28px]"
       >
         {value}
         {unit !== undefined && (

@@ -19,13 +19,13 @@ import { CompareFromBuildDialog } from "./compare/compare-from-build-dialog.js";
 import { DetailsPanel } from "./details-panel.js";
 import { ModeSwitch } from "./mode-switch.js";
 import { OptimizeWorkbench } from "./optimize/optimize-workbench.js";
-import { PhoneActionBar, PhoneBarSpacer } from "./phone-action-bar.js";
+import { PhoneActionBar } from "./phone-action-bar.js";
 import { PresetSelect } from "./preset-select.js";
 import { ProgressionPanel, ProgressionStatus } from "./progression-panel.js";
 import { QuestNameProvider } from "./quest-names.js";
 import { SlotInspector } from "./slot-inspector.js";
 import { useSlotSelection, type SlotSelection } from "./slot-selection.js";
-import { SlotSheet } from "./slot-sheet.js";
+import { SlotSheet, useSlotSheetOpen } from "./slot-sheet.js";
 import { SnapshotBanner } from "./snapshot-banner.js";
 import { StatStrip } from "./stat-strip.js";
 import { applySyncedProfile } from "./synced-profile.js";
@@ -159,10 +159,12 @@ export function BuilderPage({
   const selectedSlot = selection.selected?.slot ?? null;
 
   // On a phone the inspector is a bottom sheet over the tree. Which slot it shows is still the
-  // selection's; tapping a row (or Enter on it) selects the slot and opens the sheet.
+  // selection's; tapping a row (or Enter on it) selects the slot and opens the sheet. The sheet
+  // belongs to the editor of the weapon it was opened on: widening past the phone breakpoint, a
+  // switch to the optimizer or another weapon (history included) closes it for good, so it never
+  // sits over the optimizer or pops open again on another tree.
   const phone = usePhoneLayout();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  if (!phone && sheetOpen) setSheetOpen(false);
+  const [sheetOpen, setSheetOpen] = useSlotSheetOpen(phone && view === "editor", builder.weaponId);
   const treeSelection: SlotSelection = phone
     ? {
         ...selection,
@@ -319,6 +321,7 @@ export function BuilderPage({
                         attachments={builder.attachments}
                         attachedCount={builder.attachedCount}
                         selection={treeSelection}
+                        opensSheet={phone}
                         getAvailability={(id) => builder.availabilityById.get(id) ?? null}
                         mode={mode}
                         getFittedConflict={builder.getFittedConflict}
@@ -432,24 +435,21 @@ export function BuilderPage({
         />
       )}
       {phone && (
-        <>
-          <PhoneBarSpacer />
-          <PhoneActionBar
-            onCompare={weapon ? compareHandoff.open : undefined}
-            action={
-              view === "optimize"
-                ? { label: "Back to build", onClick: handleExitOptimizer }
-                : weapon
-                  ? { label: "Optimize", onClick: handleOpenOptimizer }
-                  : undefined
-            }
-          />
-        </>
+        <PhoneActionBar
+          onCompare={weapon ? compareHandoff.open : undefined}
+          action={
+            view === "optimize"
+              ? { label: "Back to build", onClick: handleExitOptimizer }
+              : weapon && builder.spec
+                ? { label: "Optimize", onClick: handleOpenOptimizer }
+                : undefined
+          }
+        />
       )}
       {shareBuild.shareUrl && (
         <div
           role="status"
-          className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg max-sm:bottom-24 max-sm:left-4"
+          className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg max-sm:bottom-[calc(var(--phone-bar-height)+1rem)] max-sm:left-4"
         >
           <div className="text-sm font-medium">Build URL copied</div>
           <code className="mt-1 block max-w-xs truncate text-xs text-[var(--color-muted-foreground)]">

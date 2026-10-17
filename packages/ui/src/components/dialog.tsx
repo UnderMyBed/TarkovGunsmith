@@ -241,7 +241,8 @@ export type SheetPanelProps = HTMLAttributes<HTMLDivElement>;
 /**
  * The visible panel inside a bottom <Dialog>: full width, rounded on top, with a grab handle,
  * no taller than the screen less a strip of the page behind, and scrolling inside itself.
- * Its bottom padding clears a phone's home indicator.
+ * Its bottom padding is `env(safe-area-inset-bottom)`, which is 0 unless the page opts into
+ * `viewport-fit=cover`.
  */
 export function SheetPanel({ className, children, ...props }: SheetPanelProps) {
   return (

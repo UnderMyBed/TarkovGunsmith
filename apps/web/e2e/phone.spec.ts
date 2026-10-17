@@ -147,6 +147,14 @@ test.describe("phone width", () => {
     await magazine.tap();
     await expect(sheet(page, "Magazine")).toBeVisible();
     await expectFits(page, "the magazine sheet");
+    // The sheet's controls are thumb-sized: 44 px or taller.
+    const controls = sheet(page, "Magazine").locator('button, input[type="search"], select');
+    for (const control of await controls.all()) {
+      expect(
+        (await box(control)).height,
+        await control.evaluate((el) => el.outerHTML.slice(0, 80)),
+      ).toBeGreaterThanOrEqual(44);
+    }
     await fitButton(page, /AR-15 5\.56x45 Magpul PMAG 30 GEN M3 W STANAG 30-round magazine/).tap();
 
     // Fit closes the sheet, and focus is back on the row, which shows the new part.
@@ -229,10 +237,38 @@ test.describe("phone width", () => {
     const fixed = await box(actions);
     expect(fixed.y + fixed.height).toBeCloseTo(PHONE_HEIGHT, 0);
 
-    // Scrolled to the end, the page's last panel ends above the bar, not under it.
+    // Scrolled to the end, the last panel and the footer end above the bar, not under it.
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const barTop = (await box(actions)).y;
     const details = await box(page.getByRole("region", { name: "Details" }));
-    expect(details.y + details.height).toBeLessThanOrEqual((await box(actions)).y);
+    expect(details.y + details.height).toBeLessThanOrEqual(barTop);
+    const footer = await box(page.getByRole("contentinfo"));
+    expect(footer.y + footer.height).toBeLessThanOrEqual(barTop);
+    await expect(
+      page.getByRole("contentinfo").getByRole("link", { name: /GitHub/ }),
+    ).toBeInViewport();
+  });
+
+  test("a seven-figure cost fits its cell on one line", async ({ page }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    await pickWeapon(page);
+    const cost = page.getByTestId("build-cost").locator("dd").first();
+    await expect(cost).toHaveText(/^₽[\d,]+$/);
+    await page.evaluate(() => document.fonts.ready);
+    // The capture's builds cost five figures; set the widest figures a cost can take into the
+    // real cell, in the real font, and measure them there.
+    for (const figure of ["₽1,234,567", "₽1,234,567+"]) {
+      const fit = await cost.evaluate((dd, text) => {
+        dd.textContent = text;
+        const lineHeight = parseFloat(getComputedStyle(dd).lineHeight);
+        return {
+          overflow: dd.scrollWidth - dd.clientWidth,
+          lines: Math.round(dd.getBoundingClientRect().height / lineHeight),
+        };
+      }, figure);
+      expect(fit, figure).toEqual({ overflow: 0, lines: 1 });
+    }
+    await expectFits(page, "a seven-figure cost");
   });
 
   test("optimize mode stacks the optimizer under the tree, runs, and fits", async ({ page }) => {

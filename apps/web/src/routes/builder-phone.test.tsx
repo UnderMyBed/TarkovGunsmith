@@ -82,6 +82,39 @@ describe("/builder on a phone", () => {
     await waitFor(() => expect(muzzleRow()).toHaveFocus());
   });
 
+  it("opens the sheet on Space's release, so the release does not close it again", async () => {
+    const user = userEvent.setup();
+    await pickTheM4A1(user);
+    muzzleRow().focus();
+
+    await user.keyboard("[Space>]");
+    // Pressed, not yet released: nothing has opened to take the release.
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await user.keyboard("[/Space]");
+    const sheet = screen.getByRole("dialog", { name: "Muzzle options" });
+    expect(sheet).toContainElement(document.activeElement as HTMLElement);
+    // A further press and release lands on the sheet's focused Close button, as it should.
+    await user.keyboard(" ");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("closes the sheet for good when history leaves the editor under it", async () => {
+    const user = userEvent.setup();
+    const { router } = await renderRoute("/builder");
+    await pickWeapon(user);
+    await screen.findByText("2 attached", { exact: true });
+    await user.click(muzzleRow());
+    expect(screen.getByRole("dialog", { name: "Muzzle options" })).toBeInTheDocument();
+
+    await act(() => router.navigate({ to: "/builder", search: { view: "optimize" } }));
+    expect(await screen.findByRole("complementary", { name: "Optimizer" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await act(() => router.navigate({ to: "/builder", search: { view: "editor" } }));
+    expect(await screen.findByRole("region", { name: "Build" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("puts Compare and Optimize in the bottom bar, and Back to build there in the optimizer", async () => {
     const user = userEvent.setup();
     // Before a weapon, Compare is the link to the Compare page, and there is nothing to optimize.

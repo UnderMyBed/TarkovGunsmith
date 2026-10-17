@@ -51,6 +51,7 @@ interface HarnessProps {
   getAvailability?: (itemId: string) => ItemAvailability | null;
   getFittedConflict?: (path: string) => string | null;
   diff?: SlotDiffMap;
+  opensSheet?: boolean;
 }
 
 /** The tree and the inspector wired through one selection, as the Builder wires them. */
@@ -61,6 +62,7 @@ function Workbench({
   getAvailability,
   getFittedConflict,
   diff,
+  opensSheet,
 }: HarnessProps) {
   const selection = useSlotSelection(t, attachments);
   const slot = selection.selected?.slot;
@@ -72,6 +74,7 @@ function Workbench({
         getAvailability={getAvailability}
         getFittedConflict={getFittedConflict}
         diff={diff}
+        opensSheet={opensSheet}
       />
       {slot && (
         <SlotInspector
@@ -100,6 +103,15 @@ function rows(): HTMLElement[] {
 }
 
 describe("SlotTree — rows", () => {
+  it("ends each row in a chevron only where a row opens the phone's sheet", () => {
+    render(<Workbench />);
+    // The Builder on a desktop, and Compare at any width: the inspector is beside the tree.
+    for (const r of rows()) expect(r.querySelector("svg")).toBeNull();
+    cleanup();
+    render(<Workbench opensSheet />);
+    for (const r of rows()) expect(r.querySelector("svg")).not.toBeNull();
+  });
+
   it("says the weapon has no mod slots rather than rendering an empty shell", () => {
     render(<Workbench tree={tree([])} />);
     expect(screen.getByText("This weapon has no mod slots.")).toBeInTheDocument();

@@ -1,10 +1,11 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * Below Tailwind's `sm` breakpoint (40rem): the width the workbench's `max-sm:` / `sm:` classes
- * switch at, so this hook and the stylesheet never disagree about which layout is on screen.
+ * Below Tailwind's `sm` breakpoint (40rem), spelled exactly as the built stylesheet spells
+ * `max-sm:` — `@media not all and (min-width:40rem)` — so this hook and the CSS agree on every
+ * browser, including Safari releases that predate the `(width < 40rem)` range syntax.
  */
-export const PHONE_QUERY = "(width < 40rem)";
+export const PHONE_QUERY = "not all and (min-width: 40rem)";
 
 function queryList(): MediaQueryList | null {
   // jsdom has no matchMedia; there is no phone to detect, and the desktop layout renders.

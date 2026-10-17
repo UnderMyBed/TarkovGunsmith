@@ -20,6 +20,9 @@ interface SiteChrome {
   /** True while at least one workbench is mounted. */
   readonly workbench: boolean;
   readonly mount: () => () => void;
+  /** True while a bar is fixed to the bottom of the screen (the Builder's on a phone). */
+  readonly bottomBar: boolean;
+  readonly mountBottomBar: () => () => void;
 }
 
 const SiteChromeContext = createContext<SiteChrome | null>(null);
@@ -32,7 +35,15 @@ export function SiteChromeProvider({ children }: { children: ReactNode }) {
     setMounted((n) => n + 1);
     return () => setMounted((n) => n - 1);
   }, []);
-  const value = useMemo<SiteChrome>(() => ({ workbench: mounted > 0, mount }), [mounted, mount]);
+  const [bars, setBars] = useState(0);
+  const mountBottomBar = useCallback(() => {
+    setBars((n) => n + 1);
+    return () => setBars((n) => n - 1);
+  }, []);
+  const value = useMemo<SiteChrome>(
+    () => ({ workbench: mounted > 0, mount, bottomBar: bars > 0, mountBottomBar }),
+    [mounted, mount, bars, mountBottomBar],
+  );
   return <SiteChromeContext.Provider value={value}>{children}</SiteChromeContext.Provider>;
 }
 
@@ -47,5 +58,23 @@ export function useWorkbenchMounted(): boolean {
  */
 export function useWorkbenchChrome(): void {
   const mount = useContext(SiteChromeContext)?.mount;
+  useLayoutEffect(() => mount?.(), [mount]);
+}
+
+/**
+ * Whether a bar is fixed to the bottom of the screen. Read by the root layout, which then ends
+ * the page — footer included — with room the height of the bar (`--phone-bar-height`), so
+ * nothing stays under it.
+ */
+export function useBottomBarMounted(): boolean {
+  return useContext(SiteChromeContext)?.bottomBar ?? false;
+}
+
+/**
+ * Declares a bar fixed to the bottom of the screen for as long as the caller is mounted. A layout
+ * effect, so the room for it is there from the first paint.
+ */
+export function useBottomBarChrome(): void {
+  const mount = useContext(SiteChromeContext)?.mountBottomBar;
   useLayoutEffect(() => mount?.(), [mount]);
 }

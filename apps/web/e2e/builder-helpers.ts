@@ -111,9 +111,14 @@ export async function selectSlot(root: Root, path: string): Promise<void> {
   await expect(row).toHaveAttribute("aria-selected", "true");
 }
 
-/** The slot inspector: the region named "<slot> options". */
+/**
+ * The slot inspector: the region named "<slot> options" beside the tree, or at phone width the
+ * bottom sheet (a dialog) of that name that holds it.
+ */
 export function inspector(root: Root) {
-  return root.getByRole("region", { name: / options$/ });
+  return root
+    .getByRole("region", { name: / options$/ })
+    .or(root.getByRole("dialog", { name: / options$/ }));
 }
 
 /** The inspector's row for the part whose text matches `name` (a part name, or its start). */

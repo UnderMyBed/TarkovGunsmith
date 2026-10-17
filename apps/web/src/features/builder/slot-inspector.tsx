@@ -168,7 +168,8 @@ export function SlotInspector({
     <section
       ref={sectionRef}
       id={id}
-      aria-label={`${slot.label} options`}
+      // In the phone's sheet the dialog carries this name; the section inside it takes none.
+      aria-label={onClose ? undefined : `${slot.label} options`}
       tabIndex={-1}
       onKeyDown={onKeyDown}
       className={cn(
@@ -219,7 +220,7 @@ export function SlotInspector({
                   placeholder="Name"
                   value={query}
                   onChange={(e) => setSearch({ key: searchKey, text: e.target.value })}
-                  className="w-44"
+                  className="w-44 max-sm:h-11"
                 />
               </div>
               <div className="flex flex-col gap-0.5">
@@ -230,7 +231,7 @@ export function SlotInspector({
                   id={sortId}
                   value={sort}
                   onChange={(e) => setSort(e.target.value as InspectorSort)}
-                  className="h-9 rounded-[var(--radius)] border border-[var(--color-border-strong)] bg-[var(--color-input)] px-2 text-13 text-[var(--color-foreground)]"
+                  className="h-9 max-sm:h-11 rounded-[var(--radius)] border border-[var(--color-border-strong)] bg-[var(--color-input)] px-2 text-13 text-[var(--color-foreground)]"
                 >
                   {(Object.keys(SORT_LABELS) as InspectorSort[])
                     .filter((key) => key !== "price" || pricesReady)
@@ -247,6 +248,7 @@ export function SlotInspector({
             <Button
               variant="secondary"
               size="md"
+              className="max-sm:h-11"
               onClick={() => {
                 onAttach(slot.path, null);
                 // The button goes with the part; keep the focus in the inspector.
@@ -415,7 +417,7 @@ function PartRow({
           disabled={row.conflict !== null}
           onClick={isFitted ? undefined : onFit}
           className={cn(
-            "min-w-16",
+            "min-w-16 max-sm:h-11",
             isFitted &&
               "font-bold text-[var(--color-primary-text)] hover:text-[var(--color-primary-text)]",
           )}

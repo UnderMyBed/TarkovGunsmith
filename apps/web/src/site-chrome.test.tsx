@@ -2,7 +2,13 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { SiteChromeProvider, useWorkbenchChrome, useWorkbenchMounted } from "./site-chrome.js";
+import {
+  SiteChromeProvider,
+  useBottomBarChrome,
+  useBottomBarMounted,
+  useWorkbenchChrome,
+  useWorkbenchMounted,
+} from "./site-chrome.js";
 
 afterEach(() => cleanup());
 
@@ -59,5 +65,40 @@ describe("site chrome", () => {
       </>,
     );
     expect(screen.getByText("masthead")).toBeInTheDocument();
+  });
+});
+
+describe("bottom bar chrome", () => {
+  function Room() {
+    return <p>{useBottomBarMounted() ? "room for the bar" : "no room"}</p>;
+  }
+  function Bar() {
+    useBottomBarChrome();
+    return null;
+  }
+
+  it("reserves room while a bottom bar is mounted, and gives it back once it unmounts", () => {
+    const shell = (bar: boolean) => (
+      <SiteChromeProvider>
+        <Room />
+        {bar && <Bar />}
+      </SiteChromeProvider>
+    );
+    const { rerender } = render(shell(false));
+    expect(screen.getByText("no room")).toBeInTheDocument();
+    rerender(shell(true));
+    expect(screen.getByText("room for the bar")).toBeInTheDocument();
+    rerender(shell(false));
+    expect(screen.getByText("no room")).toBeInTheDocument();
+  });
+
+  it("reads as no bar outside a provider", () => {
+    render(
+      <>
+        <Room />
+        <Bar />
+      </>,
+    );
+    expect(screen.getByText("no room")).toBeInTheDocument();
   });
 });

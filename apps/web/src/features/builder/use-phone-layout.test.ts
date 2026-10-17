@@ -17,6 +17,8 @@ describe("usePhoneLayout", () => {
     try {
       expect(renderHook(() => usePhoneLayout()).result.current).toBe(true);
       expect(media.queries).toContain(PHONE_QUERY);
+      // The query the stylesheet's max-sm: compiles to, not the range syntax older Safari lacks.
+      expect(PHONE_QUERY).toBe("not all and (min-width: 40rem)");
     } finally {
       media.restore();
     }
