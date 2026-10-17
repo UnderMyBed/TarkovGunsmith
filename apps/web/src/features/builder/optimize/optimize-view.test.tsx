@@ -252,4 +252,38 @@ describe("OptimizeView", () => {
       await screen.findByText("Nothing you can get fits the Handguard slot, and the W needs one."),
     ).toBeInTheDocument();
   });
+  it("scores the result by the objective it was run with, not the form's current one", async () => {
+    render(
+      <OptimizeView
+        weapon={weapon}
+        weaponItem={weaponItem}
+        slotTree={slotTree}
+        parts={parts}
+        profile={profile}
+        gate={profile}
+        presets={[]}
+        pricesReady
+        sync={sync}
+        currentAttachments={{ muzzle: "m-old" }}
+        currentBuild={{
+          version: 6,
+          weaponId: "w1",
+          attachments: { muzzle: "m-old" },
+          orphaned: [],
+          createdAt: "2026-04-22T00:00:00Z",
+        }}
+        currentStats={currentStats}
+        currentPrice={{ status: "priced", totalRUB: 10_000, presetId: null }}
+        onAccept={vi.fn()}
+        onExit={vi.fn()}
+        onEditProfile={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Max accuracy" }));
+    fireEvent.click(screen.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }));
+    // MOA 2.5 → 2.2.
+    expect(await screen.findByText(/SCORE Δ/)).toHaveTextContent("SCORE Δ · −0.30");
+    fireEvent.click(screen.getByRole("radio", { name: "Min recoil" }));
+    expect(screen.getByText(/SCORE Δ/)).toHaveTextContent("SCORE Δ · −0.30");
+  });
 });

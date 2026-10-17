@@ -41,6 +41,11 @@ describe("OptimizeTriptych", () => {
     const deltaErgo = getByTestId("triptych-delta-ergo");
     expect(deltaErgo.textContent).toContain("+8");
     expect(deltaErgo.className).toContain("text-[var(--color-olive)]");
+    // MOA, lower is better: 2.50 → 2.20 is an improvement.
+    expect(getByTestId("triptych-current-moa").textContent).toBe("2.50");
+    expect(getByTestId("triptych-optimized-moa").textContent).toBe("2.20");
+    expect(getByTestId("triptych-delta-moa").textContent).toBe("−0.30");
+    expect(getByTestId("triptych-delta-moa").className).toContain("text-[var(--color-olive)]");
   });
 
   it("renders — placeholders when optimized is null (idle state)", () => {
@@ -52,8 +57,8 @@ describe("OptimizeTriptych", () => {
         priceOptimized={null}
       />,
     );
-    // 4 stats in OPTIMIZED card + 4 in DELTA card = 8 placeholders.
-    expect(getAllByText("—").length).toBeGreaterThanOrEqual(8);
+    // 5 stats in OPTIMIZED card + 5 in DELTA card = 10 placeholders.
+    expect(getAllByText("—").length).toBeGreaterThanOrEqual(10);
   });
 
   it("colours recoil improvement (lower) as olive and regression (higher) as destructive", () => {

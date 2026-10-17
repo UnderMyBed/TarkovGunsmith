@@ -10,7 +10,7 @@ export interface OptimizeTriptychProps {
   running?: boolean;
 }
 
-type StatKey = "recoil" | "ergo" | "weight" | "price";
+type StatKey = "recoil" | "ergo" | "weight" | "moa" | "price";
 
 interface StatDef {
   readonly key: StatKey;
@@ -41,6 +41,13 @@ const STATS: readonly StatDef[] = [
     lowerIsBetter: true,
     format: (v) => v.toFixed(2),
     select: (s) => s.weight,
+  },
+  {
+    key: "moa",
+    label: "MOA",
+    lowerIsBetter: true,
+    format: (v) => v.toFixed(2),
+    select: (s) => s.accuracy,
   },
   {
     key: "price",
