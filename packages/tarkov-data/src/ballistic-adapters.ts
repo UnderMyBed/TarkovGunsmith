@@ -53,7 +53,7 @@ export function adaptWeapon(item: WeaponListItem): BallisticWeapon {
  * preset loads a cylinder, so cylinder rounds follow the same rule.
  *
  * @example
- *   const mods = attachedParts(tree, attachments, byId).entries.map((e) => adaptMod(e.part));
+ *   const mods = resolveBuild(tree, attachments, byId).placed.map((e) => adaptMod(e.part));
  */
 export function adaptMod(part: AttachablePart): BallisticMod {
   const p = part.properties;
@@ -106,7 +106,7 @@ export interface MountedMagazine {
  * mounts a magazine mounts it there. Its figures are the part's own, not an aggregate.
  *
  * @example
- *   mountedMagazine(attachedParts(tree, attachments, byId).entries)?.capacity; // 30
+ *   mountedMagazine(resolveBuild(tree, attachments, byId).placed)?.capacity; // 30
  */
 export function mountedMagazine(
   entries: readonly { readonly path: string; readonly part: AttachablePart }[],

@@ -61,7 +61,7 @@ import type { WeaponListItem } from "../packages/tarkov-data/src/queries/weaponL
 import { presetRecordSchema } from "../packages/tarkov-data/src/queries/presets.js";
 import type { BuilderSnapshot } from "../packages/tarkov-data/src/snapshot/types.js";
 import { partsById, type AttachablePart } from "../packages/tarkov-data/src/queries/parts.js";
-import { attachedParts } from "../packages/tarkov-data/src/attached-parts.js";
+import { resolveBuild } from "../packages/tarkov-data/src/build-core/resolve.js";
 import { adaptMod, adaptWeapon } from "../packages/tarkov-data/src/ballistic-adapters.js";
 import { weaponSpec } from "../packages/ballistics/src/weapon/weaponSpec.js";
 
@@ -488,6 +488,7 @@ function checkPresets(
   const weaponById = new Map(weapons.map((w) => [w.id, w]));
   let placed = 0;
   let perPartMatches = 0;
+  const invalid: string[] = [];
   let moaChecked = 0;
   const misses: string[] = [];
   const moaMisses: string[] = [];
@@ -501,7 +502,22 @@ function checkPresets(
     for (const preset of presets) {
       placed += 1;
       const stats = presetRecordSchema.parse(doc.items[preset.id]).properties;
-      const { entries, missing } = attachedParts(tree, preset.attachments, byId);
+      const resolved = resolveBuild(tree, preset.attachments, byId);
+      const { placed: entries, orphaned: missing } = resolved;
+      // An official preset is a build the game itself assembles: if the build core finds a
+      // clash or an empty required slot in one, the rule (or upstream's data) is wrong, and the
+      // Builder would flag every player who starts from that preset.
+      if (resolved.conflicts.length > 0 || resolved.missingRequired.length > 0) {
+        invalid.push(
+          `${preset.id} ${preset.shortName}: ` +
+            [
+              ...resolved.conflicts.map(
+                (c) => `${c.a.itemId}@${c.a.path} × ${c.b.itemId}@${c.b.path}`,
+              ),
+              ...resolved.missingRequired.map((slot) => `${slot.path} empty`),
+            ].join(", "),
+        );
+      }
       const distinct = [...new Map(entries.map((e) => [e.part.id, e.part])).values()];
       const matches = (spec: ReturnType<typeof weaponSpec>) =>
         Math.abs(spec.ergonomics - stats.ergonomics) < 1e-6 &&
@@ -546,6 +562,11 @@ function checkPresets(
     `${misses.length} preset(s) disagree with upstream's own stats: ${misses.slice(0, 5).join("; ")}`,
   );
   check(
+    "presets/valid",
+    invalid.length === 0,
+    `${invalid.length} preset(s) hold a clash or an empty required slot: ${invalid.slice(0, 5).join("; ")}`,
+  );
+  check(
     "presets/moa",
     moaMisses.length === 0,
     `${moaMisses.length} preset(s) disagree with upstream's moa: ${moaMisses.slice(0, 5).join("; ")}`,
@@ -553,7 +574,8 @@ function checkPresets(
   notes.push(
     `presets: ${placed} placed on ${Object.keys(byWeapon).length} weapons; ` +
       `${placed - misses.length} match upstream over distinct parts, ${perPartMatches} also ` +
-      `counting every physical part; MOA ${moaChecked - moaMisses.length}/${moaChecked} within 0.006`,
+      `counting every physical part; MOA ${moaChecked - moaMisses.length}/${moaChecked} within 0.006; ` +
+      `${placed - invalid.length}/${placed} with no clash and every required slot filled`,
   );
 }
 

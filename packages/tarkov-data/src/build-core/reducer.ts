@@ -1,4 +1,3 @@
-import { withAttachment } from "../attached-parts.js";
 import type { BuildV6, PlayerProfile } from "../build-schema.js";
 import { CURRENT_BUILD_VERSION } from "../build-schema.js";
 import { conflictsWith, type ConflictFields } from "../conflicts.js";
@@ -127,6 +126,25 @@ function attach(
     }
   };
   carry(itemId, path, new Set([ctx.tree.weaponId, itemId]));
+  return next;
+}
+
+/**
+ * Set or clear the item at `path`. When the item there changes, every key beneath it goes too:
+ * those slots belonged to the old item. Re-selecting the item already there changes nothing.
+ */
+function withAttachment(
+  attachments: Readonly<Record<string, string>>,
+  path: string,
+  itemId: string | null,
+): Record<string, string> {
+  if ((attachments[path] ?? null) === itemId) return { ...attachments };
+  const prefix = `${path}/`;
+  const next: Record<string, string> = {};
+  for (const [key, value] of Object.entries(attachments)) {
+    if (key !== path && !key.startsWith(prefix)) next[key] = value;
+  }
+  if (itemId !== null) next[path] = itemId;
   return next;
 }
 

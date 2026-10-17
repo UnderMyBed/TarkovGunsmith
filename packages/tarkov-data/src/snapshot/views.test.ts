@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fixtureSnapshot } from "../__test-utils__/fixture-snapshot.js";
 import { expandSlots } from "../queries/slot-graph.js";
-import { BuildV6, ORPHANED_CAP } from "../build-schema.js";
 import {
-  orphanUnknownParts,
   snapshotPart,
   snapshotPartCatalog,
   snapshotPriceIds,
@@ -161,49 +159,5 @@ describe("snapshotWeaponPresets", () => {
     const byWeapon = snapshotWeaponPresets({ ...snapshot, presets }, prices.prices);
     expect(byWeapon[TT_GOLDEN]?.[0]?.buyFor).toEqual([]);
     expect(snapshotPriceIds({ ...snapshot, presets })).not.toContain(TT_GOLDEN_DEFAULT);
-  });
-});
-
-describe("orphanUnknownParts", () => {
-  it("moves ids the game data does not hold into orphaned, once each", async () => {
-    const { snapshot } = await fixtureSnapshot();
-    const result = orphanUnknownParts(
-      snapshot,
-      {
-        mod_reciever: "55d355e64bdc2d962f8b4569",
-        "mod_reciever/mod_barrel": BARREL_10_3,
-        mod_stock: "gone-upstream",
-        mod_charge: "also-gone",
-        mod_pistol_grip: "gone-upstream",
-      },
-      ["also-gone", "kept-from-before"],
-    );
-    expect(result).toEqual({
-      attachments: {
-        mod_reciever: "55d355e64bdc2d962f8b4569",
-        "mod_reciever/mod_barrel": BARREL_10_3,
-      },
-      orphaned: ["also-gone", "kept-from-before", "gone-upstream"],
-    });
-  });
-});
-
-describe("orphanUnknownParts at the cap", () => {
-  it("never passes the cap a saved build must respect, keeping the ids it just found", async () => {
-    const { snapshot } = await fixtureSnapshot();
-    const earlier = Array.from(
-      { length: ORPHANED_CAP },
-      (_, i) => `old-${String(i).padStart(2, "0")}`,
-    );
-    const result = orphanUnknownParts(
-      snapshot,
-      { mod_stock: "new-b", mod_charge: "new-a", mod_reciever: "55d355e64bdc2d962f8b4569" },
-      earlier,
-    );
-    expect(result.orphaned).toHaveLength(ORPHANED_CAP);
-    // Oldest dropped; new ids appended in slot-path order (mod_charge before mod_stock).
-    expect(result.orphaned.slice(0, 2)).toEqual(["old-02", "old-03"]);
-    expect(result.orphaned.slice(-2)).toEqual(["new-a", "new-b"]);
-    expect(BuildV6.shape.orphaned.safeParse(result.orphaned).success).toBe(true);
   });
 });

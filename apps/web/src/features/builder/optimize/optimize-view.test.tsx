@@ -3,7 +3,13 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { OptimizeView } from "./optimize-view.js";
-import type { PlayerProfile, WeaponListItem, WeaponTree, BuildV6 } from "@tarkov/data";
+import type {
+  AttachablePart,
+  PlayerProfile,
+  WeaponListItem,
+  WeaponTree,
+  BuildV6,
+} from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
 import { tinyTree } from "../../../test/tiny-tree.js";
@@ -36,9 +42,29 @@ vi.mock("@tarkov/optimizer", () => ({
 const weapon = { id: "w1" } as unknown as BallisticWeapon;
 const weaponItem = { id: "w1", shortName: "W", types: [], buyFor: [] } as unknown as WeaponListItem;
 const slotTree: WeaponTree = tinyTree("w1", [
-  { nameId: "muzzle", name: "Muzzle", items: [] },
-  { nameId: "handguard", name: "Handguard", items: [] },
+  { nameId: "muzzle", name: "Muzzle", items: ["m-old", "m-new"] },
+  { nameId: "handguard", name: "Handguard", items: ["h-old", "h-new"] },
 ]);
+/** The four parts the stubbed optimizer and the current build use: structure only, no stats. */
+const parts: AttachablePart[] = ["m-old", "m-new", "h-old", "h-new"].map((id) => ({
+  id,
+  name: id,
+  shortName: id,
+  iconLink: "https://assets.tarkov.dev/x.webp",
+  weight: 0,
+  types: ["mods"],
+  minLevelForFlea: null,
+  properties: {
+    propertiesType: "ItemPropertiesWeaponMod",
+    ergonomics: 0,
+    recoilModifier: 0,
+    accuracyModifier: 0,
+    velocity: 0,
+  },
+  buyFor: [],
+  conflictingItems: [],
+  conflictingSlotIds: [],
+}));
 const profile: PlayerProfile = {
   mode: "basic",
   traders: { prapor: 4, therapist: 3, skier: 3, peacekeeper: 2, mechanic: 3, ragman: 2, jaeger: 3 },
@@ -68,7 +94,7 @@ describe("OptimizeView", () => {
         weapon={weapon}
         weaponItem={weaponItem}
         slotTree={slotTree}
-        parts={[]}
+        parts={parts}
         profile={profile}
         gate={profile}
         presets={[]}
@@ -101,7 +127,7 @@ describe("OptimizeView", () => {
         weapon={weapon}
         weaponItem={weaponItem}
         slotTree={slotTree}
-        parts={[]}
+        parts={parts}
         profile={profile}
         gate={profile}
         presets={[]}
@@ -137,7 +163,7 @@ describe("OptimizeView", () => {
         weapon={weapon}
         weaponItem={weaponItem}
         slotTree={slotTree}
-        parts={[]}
+        parts={parts}
         profile={profile}
         gate={profile}
         presets={[]}

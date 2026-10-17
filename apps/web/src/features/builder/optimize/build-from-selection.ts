@@ -1,4 +1,4 @@
-import { mountedAttachments, type BuildV6, type KnownItems, type WeaponTree } from "@tarkov/data";
+import { resolveBuild, type BuildV6, type ConflictFields, type WeaponTree } from "@tarkov/data";
 
 /**
  * The current build with the selected optimizer rows applied.
@@ -15,7 +15,7 @@ import { mountedAttachments, type BuildV6, type KnownItems, type WeaponTree } fr
  *
  * Paths are decided parents first, so "its parent" means the parent's result, not its row.
  *
- * The result keeps only what then mounts (`mountedAttachments`): a part accepted under a parent
+ * The result keeps only what is then on the weapon (`resolveBuild`): a part accepted under a parent
  * the user kept lands only if that parent has the slot and allows it.
  */
 export function buildFromSelection(
@@ -23,10 +23,10 @@ export function buildFromSelection(
   proposed: BuildV6,
   selected: ReadonlySet<string>,
   tree: WeaponTree,
-  parts: KnownItems,
+  parts: ReadonlyMap<string, ConflictFields>,
 ): BuildV6 {
-  const currentOn = mountedAttachments(tree, current.attachments, parts);
-  const proposedOn = mountedAttachments(tree, proposed.attachments, parts);
+  const currentOn = resolveBuild(tree, current.attachments, parts).attachments;
+  const proposedOn = resolveBuild(tree, proposed.attachments, parts).attachments;
   const changed = (path: string) => currentOn[path] !== proposedOn[path];
   const parentKept = (path: string) => {
     const cut = path.lastIndexOf("/");
@@ -45,5 +45,5 @@ export function buildFromSelection(
     else if (parentKept(path)) itemId = currentOn[path];
     if (itemId !== undefined) merged[path] = itemId;
   }
-  return { ...current, attachments: mountedAttachments(tree, merged, parts) };
+  return { ...current, attachments: { ...resolveBuild(tree, merged, parts).attachments } };
 }

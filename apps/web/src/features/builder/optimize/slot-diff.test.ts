@@ -139,15 +139,14 @@ describe("slotDiff", () => {
     expect(rows).toEqual([]);
   });
 
-  it("falls back to the mod id when the mod is missing from the catalog", () => {
+  it("treats a part the catalog does not hold as not on the weapon: an emptied slot", () => {
     const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-missing" }, slotTree, parts, null);
     expect(row).toMatchObject({
-      proposedName: "m-missing",
+      slotId: "muzzle",
+      currentName: "Old Muzzle",
+      proposedName: null,
       proposedErgo: 0,
       proposedRecoil: 0,
-      // Not in the catalog, so its price is not known: never 0.
-      proposedPrice: null,
-      priceDelta: null,
     });
   });
 

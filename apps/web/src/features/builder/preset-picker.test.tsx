@@ -51,13 +51,15 @@ const TREE = tinyTree(M4A1, [
     ],
   },
 ]);
-const KNOWN = new Set([
-  "55d4b9964bdc2d1d4e8b456e",
-  "5a339805c4a2826c6e06d73d",
-  "55d355e64bdc2d962f8b4569",
-  "55d3632e4bdc2d972f8b4569",
-  "55d35ee94bdc2d61338b4568",
-]);
+const KNOWN = new Map(
+  [
+    "55d4b9964bdc2d1d4e8b456e",
+    "5a339805c4a2826c6e06d73d",
+    "55d355e64bdc2d962f8b4569",
+    "55d3632e4bdc2d972f8b4569",
+    "55d35ee94bdc2d61338b4568",
+  ].map((id) => [id, { conflictingItems: [], conflictingSlotIds: [] }]),
+);
 
 function Picker(props: Omit<PresetPickerProps, "tree" | "known">) {
   return <PresetPicker tree={TREE} known={KNOWN} {...props} />;

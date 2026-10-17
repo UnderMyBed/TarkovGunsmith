@@ -1,7 +1,7 @@
 import {
   adaptMod,
-  mountedAttachments,
   priceUnder,
+  resolveBuild,
   visibleSlots,
   type AttachablePart,
   type BuildPrice,
@@ -43,15 +43,9 @@ interface ModStats {
   readonly price: number | null;
 }
 
-function lookupMod(
-  id: string | undefined,
-  parts: ReadonlyMap<string, AttachablePart>,
-  gate: PriceGate,
-  covered: boolean,
-): ModStats {
-  if (id === undefined) return { name: null, ergo: 0, recoil: 0, price: 0 };
-  const m = parts.get(id);
-  if (m === undefined) return { name: id, ergo: 0, recoil: 0, price: null };
+/** A row side's figures; `m` is the part on the weapon there, or `undefined` for an empty slot. */
+function lookupMod(m: AttachablePart | undefined, gate: PriceGate, covered: boolean): ModStats {
+  if (m === undefined) return { name: null, ergo: 0, recoil: 0, price: 0 };
   const stats = adaptMod(m);
   return {
     name: m.name,
@@ -106,7 +100,7 @@ function coveredPaths(
 
 /**
  * One row per slot whose part differs between the two builds, in slot order. Only parts on the
- * weapon are compared ({@link mountedAttachments}): a stale key beneath a removed or replaced
+ * weapon are compared (`resolveBuild`): a stale key beneath a removed or replaced
  * part is not a change anyone could accept.
  *
  * A row's price is what its part adds to that build's cost, as `buildPriceUnder` counts it: a
@@ -121,8 +115,12 @@ export function slotDiff(
   gate: PriceGate,
   covers: BuildCovers = NO_COVERS,
 ): readonly ChangedRow[] {
-  const currentOn = mountedAttachments(slotTree, current, parts);
-  const proposedOn = mountedAttachments(slotTree, proposed, parts);
+  const currentBuild = resolveBuild(slotTree, current, parts);
+  const proposedBuild = resolveBuild(slotTree, proposed, parts);
+  const currentOn = currentBuild.attachments;
+  const proposedOn = proposedBuild.attachments;
+  const partAt = (build: typeof currentBuild, path: string) =>
+    build.placed.find((p) => p.path === path)?.part;
   // Every slot either build shows, so a change deep under a barrel or handguard gets its real
   // slot name.
   const slots = shownSlots(slotTree, currentOn, proposedOn);
@@ -133,10 +131,8 @@ export function slotDiff(
   const proposedCovered = coveredPaths(proposedOn, order, covers.proposed);
   const rows: ChangedRow[] = [];
   for (const slot of changed) {
-    const c = currentOn[slot.path];
-    const p = proposedOn[slot.path];
-    const cm = lookupMod(c, parts, gate, currentCovered.has(slot.path));
-    const pm = lookupMod(p, parts, gate, proposedCovered.has(slot.path));
+    const cm = lookupMod(partAt(currentBuild, slot.path), gate, currentCovered.has(slot.path));
+    const pm = lookupMod(partAt(proposedBuild, slot.path), gate, proposedCovered.has(slot.path));
     rows.push({
       slotId: slot.path,
       slotLabel: slot.label || slot.nameId || slot.path,

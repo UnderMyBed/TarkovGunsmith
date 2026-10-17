@@ -149,6 +149,39 @@ describe("resolveBuild on the captured M4A1", () => {
   });
 });
 
+describe("resolveBuild — what is not on the weapon", () => {
+  const M855A1 = "54527ac44bdc2d36668b4567";
+  const BARREL_10_3 = "55d35ee94bdc2d61338b4568";
+  const GAS_BLOCK_ID = "5ae30e795acfc408fb139a0b";
+
+  it("orphans a cartridge saved into the magazine slot: the snapshot holds no such part", async () => {
+    const { tree, parts } = await m4a1();
+    expect(parts.has(M855A1)).toBe(false);
+    const r = resolveBuild(tree, { mod_magazine: M855A1, mod_reciever: M4A1_UPPER }, parts);
+    expect(r.placed.map((p) => p.itemId)).toEqual([M4A1_UPPER]);
+    expect(r.orphaned).toEqual([{ path: "mod_magazine", itemId: M855A1, reason: "unknown-item" }]);
+  });
+
+  it("leaves a removed barrel's gas block and muzzle off the weapon, keys or no keys", async () => {
+    const { tree, parts } = await m4a1();
+    const stale = {
+      mod_reciever: M4A1_UPPER,
+      [`${BARREL}/mod_gas_block`]: GAS_BLOCK_ID,
+      [MUZZLE]: COLT_A2_FLASH_HIDER,
+    };
+    const r = resolveBuild(tree, stale, parts);
+    expect(r.attachments).toEqual({ mod_reciever: M4A1_UPPER });
+    expect(r.orphaned.map((o) => [o.path, o.reason])).toEqual([
+      [`${BARREL}/mod_gas_block`, "unreachable"],
+      [MUZZLE, "unreachable"],
+    ]);
+    // With the barrel fitted, both are on the weapon.
+    expect(
+      Object.keys(resolveBuild(tree, { ...stale, [BARREL]: BARREL_10_3 }, parts).attachments),
+    ).toHaveLength(4);
+  });
+});
+
 describe("resolveBuild — structure", () => {
   const fields = (over: Partial<ConflictFields> = {}): ConflictFields => ({
     conflictingItems: [],
