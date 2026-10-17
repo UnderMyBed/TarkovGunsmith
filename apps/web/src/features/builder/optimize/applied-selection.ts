@@ -83,8 +83,16 @@ function diffOf(
 
 const labelOf = (slot: SlotNode | undefined, path: string) => slot?.label || slot?.nameId || path;
 
-const conflictKey = (c: BuildConflict) =>
-  [c.kind, c.a.path, c.a.itemId, c.b.path, c.b.itemId, c.slotId ?? ""].join("|");
+/**
+ * One conflict, the same however the build orders it. An `item` conflict's two parts come in
+ * slot order, which a replacement parent part with its slots in another order swaps, so its
+ * key does not depend on which is `a`. A `slot` conflict's `a` is the part that blocks.
+ */
+const conflictKey = (c: BuildConflict) => {
+  const side = (s: BuildConflict["a"]) => `${s.path}|${s.itemId}`;
+  const parts = c.kind === "item" ? [side(c.a), side(c.b)].sort() : [side(c.a), side(c.b)];
+  return [c.kind, ...parts, c.slotId ?? ""].join("|");
+};
 
 const atOrBelow = (path: string, root: string) => path === root || path.startsWith(`${root}/`);
 
@@ -222,17 +230,11 @@ export function appliedSelection(
       }
       return null;
     }
-    const u = sel.evaluate(withoutTicked(sel, ticked, path));
-    for (const c of u.fresh) {
-      for (const side of [c.a, c.b]) {
-        if (atOrBelow(side.path, path)) continue;
-        const owner = changesAtOrAbove(sel, side.path).find(
-          (p) => u.on[p] === proposedOn[p] && ticked.has(p),
-        );
-        if (owner !== undefined) return `makes room for the new ${label(owner)}`;
-      }
-    }
-    return null;
+    // Named after the change that goes with this one: the parent part, where the clashing
+    // change is one it requires.
+    const next = withoutTicked(sel, ticked, path);
+    const drop = toUntick(sel, sel.evaluate(next), next);
+    return drop === undefined ? null : `makes room for the new ${label(drop)}`;
   };
 
   const rows = new Map<string, ChangeState>();
@@ -323,7 +325,64 @@ export function toggleChange(
 }
 
 // Both settle one new conflict per pass and then look again, so a change is ticked (or
-// unticked) only while a conflict still calls for it.
+// unticked) only while a conflict still calls for it. Each first looks at the change at each
+// part's own slot or nearest above it: the one that put that part there. Only when neither
+// part's own change can clear a conflict do they look further up.
+
+/** The leading items of `items` that pass `keep`. */
+function takeWhile<T>(items: readonly T[], keep: (item: T) => boolean): T[] {
+  const stop = items.findIndex((item) => !keep(item));
+  return stop < 0 ? [...items] : items.slice(0, stop);
+}
+
+/**
+ * The change to tick so that a new conflict on `now` goes: one that does not land and is not
+ * ticked, at or above a part that is there because a change did not land.
+ */
+function toTick(sel: Selection, now: Evaluated, next: ReadonlySet<string>): string | undefined {
+  const lands = (p: string) => now.on[p] === sel.proposedOn[p];
+  const sides = now.fresh.flatMap((c) => [c.a, c.b]);
+  const own = (side: BuildConflict["a"]) => {
+    const chain = changesAtOrAbove(sel, side.path);
+    if (chain.length === 0 || lands(chain[0]!)) return undefined;
+    // That change, or the change above it that it needs.
+    return takeWhile(chain, (p) => !lands(p)).find((p) => !next.has(p));
+  };
+  const further = (side: BuildConflict["a"]) =>
+    changesAtOrAbove(sel, side.path).find((p) => !lands(p) && !next.has(p));
+  return sides.map(own).find(Boolean) ?? sides.map(further).find(Boolean);
+}
+
+/**
+ * The change to untick so that a new conflict on `now` goes: the ticked change that put one
+ * of its parts there. A change its landed new parent part requires goes only with that
+ * parent, or the slot is left empty, so the parent is named in its place.
+ */
+function toUntick(sel: Selection, now: Evaluated, next: ReadonlySet<string>): string | undefined {
+  const lands = (p: string) => now.on[p] === sel.proposedOn[p];
+  const sides = now.fresh.flatMap((c) => [c.a, c.b]);
+  const own = (side: BuildConflict["a"]) => {
+    const chain = changesAtOrAbove(sel, side.path);
+    if (chain.length === 0 || !lands(chain[0]!)) return undefined;
+    // That change, or the landed change above it it goes with.
+    return takeWhile(chain, lands).find((p) => next.has(p));
+  };
+  const further = (side: BuildConflict["a"]) =>
+    changesAtOrAbove(sel, side.path).find((p) => lands(p) && next.has(p));
+  let drop = sides.map(own).find(Boolean) ?? sides.map(further).find(Boolean);
+  if (drop === undefined) return undefined;
+  for (let up = parentOf(drop); up !== null; up = parentOf(up)) {
+    const required = sel.proposedSlots.get(drop)?.required === true;
+    if (!(required && sel.changes.has(up) && lands(up))) break;
+    drop = up;
+  }
+  return drop;
+}
+
+// A new conflict always has a part under a change that does not land (or nothing ticked would
+// have it too), and a part under a landed change (or the proposal would have it), so both
+// searches find a change. Should one ever come up empty, the set is returned as it stands:
+// Apply's build then shows the conflict, as the Builder flags any, rather than the view failing.
 
 function tickSettled(
   sel: Selection,
@@ -334,20 +393,8 @@ function tickSettled(
   let next = withTicked(sel, ticked, on, path);
   for (;;) {
     const now = sel.evaluate(next);
-    if (now.fresh.length === 0) return next;
-    // The change nearest above either part of a new conflict that does not land and is not
-    // ticked: ticking it takes that part off.
-    const clear = now.fresh
-      .flatMap((c) => [c.a, c.b])
-      .map((side) =>
-        changesAtOrAbove(sel, side.path).find(
-          (p) => now.on[p] !== sel.proposedOn[p] && !next.has(p),
-        ),
-      )
-      .find((p) => p !== undefined);
-    if (clear === undefined) {
-      throw new Error(`Ticking ${path} leaves a conflict no other change clears.`);
-    }
+    const clear = now.fresh.length === 0 ? undefined : toTick(sel, now, next);
+    if (clear === undefined) return next;
     next = withTicked(sel, next, now.on, clear);
   }
 }
@@ -356,26 +403,8 @@ function untickSettled(sel: Selection, ticked: ReadonlySet<string>, path: string
   let next = withoutTicked(sel, ticked, path);
   for (;;) {
     const now = sel.evaluate(next);
-    if (now.fresh.length === 0) return next;
-    // The ticked change nearest above a part the proposal brought to a new conflict.
-    let drop = now.fresh
-      .flatMap((c) => [c.a, c.b])
-      .map((side) =>
-        changesAtOrAbove(sel, side.path).find(
-          (p) => now.on[p] === sel.proposedOn[p] && next.has(p),
-        ),
-      )
-      .find((p) => p !== undefined);
-    if (drop === undefined) {
-      throw new Error(`Unticking ${path} leaves a conflict no ticked change clears.`);
-    }
-    // A change its landed new parent part requires goes with that parent, or the slot is left
-    // empty.
-    for (let up = parentOf(drop); up !== null; up = parentOf(up)) {
-      const required = sel.proposedSlots.get(drop)?.required === true;
-      if (!(required && sel.changes.has(up) && now.on[up] === sel.proposedOn[up])) break;
-      drop = up;
-    }
+    const drop = now.fresh.length === 0 ? undefined : toUntick(sel, now, next);
+    if (drop === undefined) return next;
     next = withoutTicked(sel, next, drop);
   }
 }

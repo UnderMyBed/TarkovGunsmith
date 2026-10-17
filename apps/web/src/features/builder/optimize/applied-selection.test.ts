@@ -371,6 +371,88 @@ describe("a change whose part clashes with a part another change takes off", () 
     const after = resolveBuild(tr, appliedSelection(c0, p0, next, tr, ps).build.attachments, ps);
     expect(after.missingRequired).toEqual([]);
     expect(after.conflicts).toEqual([]);
+    // The note names what goes with the stock: the barrel, which the gas block goes with.
+    const all3 = new Set(["barrel", "barrel/gas", "stock"]);
+    expect(appliedSelection(c0, p0, all3, tr, ps).rows.get("stock")?.note).toBe(
+      "makes room for the new Barrel",
+    );
+  });
+
+  it("unticks the change that brought the clashing part, not a part above the one unticked", () => {
+    // Both handguards carry the same rail; the mount under it changes. The new stock clashes
+    // with the old mount. Unticking the mount brings the old mount back: the stock has to go,
+    // not the handguard the mount sits under.
+    const tr = tinyTree("w1", [
+      {
+        nameId: "hg",
+        name: "Handguard",
+        items: [
+          [
+            "h-old",
+            [{ nameId: "rail", items: [["r", [{ nameId: "mount", items: ["m-old", "m-new"] }]]] }],
+          ],
+          [
+            "h-new",
+            [{ nameId: "rail", items: [["r", [{ nameId: "mount", items: ["m-old", "m-new"] }]]] }],
+          ],
+        ],
+      },
+      { nameId: "stock", name: "Stock", items: ["s-old", "s-new"] },
+    ]);
+    const ps = partsWith(["h-old", "h-new", "r", "m-old", "m-new", "s-old", "s-new"], {
+      "s-new": ["m-old"],
+    });
+    const c0 = build({ hg: "h-old", "hg/rail": "r", "hg/rail/mount": "m-old", stock: "s-old" });
+    const p0 = build({ hg: "h-new", "hg/rail": "r", "hg/rail/mount": "m-new", stock: "s-new" });
+    const every = new Set(appliedSelection(c0, p0, new Set(), tr, ps).rows.keys());
+    expect([...every].sort()).toEqual(["hg", "hg/rail/mount", "stock"]);
+    const next = toggleChange("hg/rail/mount", c0, p0, every, tr, ps);
+    expect([...next]).toEqual(["hg"]);
+    const v0 = appliedSelection(c0, p0, next, tr, ps);
+    expect(v0.build.attachments).toEqual({
+      hg: "h-new",
+      "hg/rail": "r",
+      "hg/rail/mount": "m-old",
+      stock: "s-old",
+    });
+    expect(resolveBuild(tr, v0.build.attachments, ps).conflicts).toEqual([]);
+    expect(appliedSelection(c0, p0, every, tr, ps).rows.get("hg/rail/mount")?.note).toBe(
+      "makes room for the new Stock",
+    );
+  });
+
+  it("does not count a clash the current build has as new when the new parent orders its slots differently", () => {
+    // The old handguard lists its rail before its side slot, the new one after; the side part
+    // clashes with the old mount on both. That clash is the current build's, whichever comes first.
+    const tr = tinyTree("w1", [
+      {
+        nameId: "hg",
+        name: "Handguard",
+        items: [
+          [
+            "h-old",
+            [
+              { nameId: "rail", items: [["r", [{ nameId: "mount", items: ["m-old", "m-new"] }]]] },
+              { nameId: "side", items: ["p"] },
+            ],
+          ],
+          [
+            "h-new",
+            [
+              { nameId: "side", items: ["p"] },
+              { nameId: "rail", items: [["r", [{ nameId: "mount", items: ["m-old", "m-new"] }]]] },
+            ],
+          ],
+        ],
+      },
+    ]);
+    const ps = partsWith(["h-old", "h-new", "r", "m-old", "m-new", "p"], { p: ["m-old"] });
+    const base = { "hg/rail": "r", "hg/side": "p" };
+    const c0 = build({ hg: "h-old", ...base, "hg/rail/mount": "m-old" });
+    const p0 = build({ hg: "h-new", ...base, "hg/rail/mount": "m-new" });
+    const every = new Set(["hg", "hg/rail/mount"]);
+    expect(appliedSelection(c0, p0, every, tr, ps).rows.get("hg/rail/mount")?.note).toBeNull();
+    expect([...toggleChange("hg/rail/mount", c0, p0, every, tr, ps)]).toEqual(["hg"]);
   });
 
   it("leaves a clash the current build already has to the build, not to the ticks", () => {

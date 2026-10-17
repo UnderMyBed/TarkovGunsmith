@@ -69,6 +69,12 @@ const OPTIMIZER_CARBINE_CHANGED_SLOTS = 12;
  */
 const OPTIMIZER_CARBINE_KEPT_WITHOUT_BARREL = 6;
 
+/**
+ * The parts on the build those six changes make: the Carbine preset's 12, less the magazine,
+ * the rear sight and the old stock's buttstock the changes take off, plus the new stock's.
+ */
+const OPTIMIZER_CARBINE_ATTACHED_WITHOUT_BARREL = 10;
+
 test.describe("builder optimize mode", () => {
   test("run, untick a change by keyboard, apply the rest; the build shares and survives a reload", async ({
     page,
@@ -189,7 +195,7 @@ test.describe("builder optimize mode", () => {
 
     await proposal(page).getByRole("button", { name: "Apply ticked changes" }).click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
-    await expect(page.getByText(/^[1-9]\d* attached$/)).toBeVisible();
+    await expect(attached(page, OPTIMIZER_CARBINE_ATTACHED_WITHOUT_BARREL)).toBeVisible();
     await expect(page.getByText(/^Conflict · /)).toHaveCount(0);
     await expect(page.getByText(/^Incomplete · /)).toHaveCount(0);
   });

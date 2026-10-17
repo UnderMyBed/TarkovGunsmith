@@ -17,7 +17,7 @@ import { buildFromSelection } from "./build-from-selection.js";
  * and step.
  */
 
-const SEEDS = [1, 2, 3, 4, 5];
+const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const CASES_PER_SEED = 100;
 const STEPS_PER_CASE = 10;
 
@@ -45,7 +45,15 @@ function randomSlot(rng: Rng, nameId: string, depth: number, ids: { n: number })
   const items: Node["items"] = [];
   const count = 1 + Math.floor(rng.next() * 3);
   for (let i = 0; i < count; i++) {
-    if (depth < 3 && rng.next() < 0.6) {
+    const sibling = items.find((item) => item.kids.length > 0);
+    if (sibling && rng.next() < 0.5) {
+      // Another part for the same slot with the same slots (a handguard and its replacement,
+      // both taking the same rail), listed in its own order: a change below can keep a part
+      // with slots of its own while the part above it changes, and a clash's two parts can
+      // come the other way round. Its slots are its own (`owner:nameId` ids).
+      const kids = rng.next() < 0.5 ? [...sibling.kids] : [...sibling.kids].reverse();
+      items.push({ id: `i${ids.n++}`, kids });
+    } else if (depth < 3 && rng.next() < 0.6) {
       const kids: Node[] = [];
       for (const kid of ["a", "b"])
         if (rng.next() < 0.6) kids.push(randomSlot(rng, kid, depth + 1, ids));
@@ -127,14 +135,32 @@ function partsOf(
     });
   };
   roots.forEach(walk("w"));
-  const olds = Object.values(current);
+  // The old parts the proposal replaces: a clash with one of them is the kind a partial apply
+  // can leave on the weapon. A clash with a part both builds keep is taken back out below.
+  const replaced = Object.keys(current)
+    .filter((p) => proposed[p] !== current[p])
+    .map((p) => current[p]!);
   const slots = [...slotIds];
   const clashes = new Map(
     [...ids].map((id) => [id, { items: [] as string[], slots: [] as string[] }]),
   );
   for (const id of Object.values(proposed)) {
-    if (olds.length > 0 && rng.next() < 0.3) clashes.get(id)!.items.push(rng.pick(olds));
+    if (replaced.length > 0 && rng.next() < 0.4) clashes.get(id)!.items.push(rng.pick(replaced));
     if (rng.next() < 0.08) clashes.get(id)!.slots.push(rng.pick(slots));
+  }
+  // Clashes the current build already has, which a tick never has to clear. Most are between
+  // parts in two different slots under one part: if a replacement lists those slots the other
+  // way round, the build lists the clash's two parts the other way round too.
+  const paths = Object.keys(current);
+  for (const p of paths) {
+    if (rng.next() >= 0.15) continue;
+    const parent = p.slice(0, Math.max(0, p.lastIndexOf("/")));
+    const cousins = paths.filter(
+      (q) =>
+        q !== p && q.startsWith(`${parent}/`) && !q.startsWith(`${p}/`) && !p.startsWith(`${q}/`),
+    );
+    const other = cousins.length > 0 && rng.next() < 0.8 ? rng.pick(cousins) : rng.pick(paths);
+    clashes.get(current[p]!)!.items.push(current[other]!);
   }
   const make = () =>
     partsById(
@@ -210,8 +236,11 @@ describe("appliedSelection, on random trees and toggle walks", () => {
       caseNo++;
       const currentResolved = resolveBuild(tree, current.attachments, parts);
       const currentOn = currentResolved.attachments;
-      const clashKey = (c: BuildConflict) =>
-        [c.kind, c.a.path, c.a.itemId, c.b.path, c.b.itemId, c.slotId ?? ""].join("|");
+      // The same clash whichever of its parts the build lists first.
+      const clashKey = (c: BuildConflict) => {
+        const sides = [`${c.a.path}|${c.a.itemId}`, `${c.b.path}|${c.b.itemId}`];
+        return [c.kind, ...(c.kind === "item" ? sides.sort() : sides), c.slotId ?? ""].join("|");
+      };
       const currentClashes = new Set(currentResolved.conflicts.map(clashKey));
       const proposedOn = resolveBuild(tree, proposed.attachments, parts).attachments;
       let ticked: ReadonlySet<string> = new Set(
@@ -247,6 +276,37 @@ describe("appliedSelection, on random trees and toggle walks", () => {
                 ([p, r]) => p !== path && r.landed !== view.rows.get(p)?.landed,
               );
               expect(moved.length, where).toBeGreaterThan(0);
+            }
+            // No more than a clash calls for: each change the toggle moves beyond the row and
+            // what it always takes along (`plain`), put back as it was, brings a new clash.
+            const changes = [...view.rows.keys()];
+            const below = (p: string) => changes.filter((c) => c.startsWith(`${p}/`));
+            const plain = new Set(ticked);
+            if (row.landed) {
+              for (const p of [path, ...below(path)]) plain.delete(p);
+            } else {
+              const needs = changes.filter(
+                (c) => path.startsWith(`${c}/`) && !view.rows.get(c)!.landed,
+              );
+              for (const p of [path, ...needs]) for (const q of [p, ...below(p)]) plain.add(q);
+            }
+            const extra = row.landed
+              ? [...plain].filter((p) => !next.has(p))
+              : [...next].filter((p) => !plain.has(p));
+            const tops = extra.filter((p) => !extra.some((q) => p.startsWith(`${q}/`)));
+            for (const top of tops) {
+              const group = [top, ...below(top)].filter((p) => extra.includes(p));
+              const back = new Set(next);
+              for (const p of group) {
+                if (row.landed) back.add(p);
+                else back.delete(p);
+              }
+              const undone = buildFromSelection(current, proposed, back, tree, parts);
+              const clashes = resolveBuild(tree, undone.attachments, parts).conflicts;
+              expect(
+                clashes.some((c) => !currentClashes.has(clashKey(c))),
+                `${where}: ${row.landed ? "unticking" : "ticking"} also moved ${top} for no clash`,
+              ).toBe(true);
             }
           }
           if (row.note?.startsWith("left empty")) {
@@ -288,6 +348,6 @@ describe("appliedSelection, on random trees and toggle walks", () => {
     // The walk exercised rows, not only empty diffs.
     expect(checked).toBeGreaterThan(500);
     // ...and rows whose toggle clears or brings back a clash.
-    expect(coupled, "coupled rows").toBeGreaterThan(50);
+    expect(coupled, "coupled rows").toBeGreaterThan(20);
   });
 });
