@@ -1,53 +1,110 @@
 import type { AttachablePart, SlotDef, WeaponTree } from "@tarkov/data";
 import { UNKNOWN_PRICE, type Problem, type SolverPart } from "./problem.js";
+import type { Found } from "./search.js";
 import { solve } from "./solve.js";
 import type { OptimizationResult } from "./types.js";
 
+type PinnedUnpriced = Extract<OptimizationResult, { reason: "pinned-unpriced" }>;
+
+/** The refusal for pinned parts no price the profile can pay is known for. */
+export function pinnedUnpriced(
+  ids: readonly string[],
+  catalog: ReadonlyMap<string, AttachablePart>,
+): PinnedUnpriced {
+  const names = ids.map((id) => catalog.get(id)!.name);
+  return {
+    ok: false,
+    reason: "pinned-unpriced",
+    itemIds: ids,
+    message: `No price you can pay is known for ${names.join(", ")}. Unpin ${names.length === 1 ? "it" : "them"} or clear the budget.`,
+  };
+}
+
 type Failure = Exclude<
   Extract<OptimizationResult, { ok: false }>,
-  { reason: "timeout" | "weapon-unavailable" | "pinned-unpriced" }
+  { reason: "timeout" | "weapon-unavailable" }
 >;
 
 export const rub = (amount: number): string => `₽${new Intl.NumberFormat("en-US").format(amount)}`;
 
 /**
+ * The cheapest build that keeps the pins, with no budget, or `null` when there is none. Every
+ * stat zeroed and every key blank rates all builds alike, so price decides, and the search has
+ * no objective to bound: far faster than solving for it.
+ */
+export function cheapestBuild(
+  problem: Problem,
+  tree: WeaponTree,
+  catalog: ReadonlyMap<string, AttachablePart>,
+  deadline: number,
+): Found | null {
+  const flat = new Map<string, SolverPart>();
+  for (const [id, part] of problem.parts) flat.set(id, { ...part, stat: 0, key: "" });
+  return solve(
+    { ...problem, budget: undefined, parts: flat, multiplier: undefined },
+    tree,
+    catalog,
+    deadline,
+  );
+}
+
+/**
  * Why no build exists, after {@link solve} found none. Each cause is tested by taking a
  * constraint away and solving again, in an order that names the one the user can act on:
  *
- * 1. the budget — a complete build exists without it; the message names the cheapest;
+ * 1. the budget — a complete build exists without it. The message names the cheapest, or,
+ *    when its price is unknown because of pinned parts no price is known for, those parts;
  * 2. the pins — a complete build exists without them (and the budget);
  * 3. a required slot — even ignoring conflicts, nothing obtainable fills it on any path;
- * 4. otherwise, every complete build has parts that clash.
+ * 4. scarce copies — every required slot has a part, but parts that come only with the gun
+ *    are needed more often than any way to buy it supplies them;
+ * 5. otherwise, every complete build has parts that clash.
+ *
+ * `cheapest` is {@link cheapestBuild}'s answer, when the caller already has it.
  */
 export function diagnose(
   problem: Problem,
   tree: WeaponTree,
   catalog: ReadonlyMap<string, AttachablePart>,
   deadline: number,
+  known?: Found | null,
 ): Failure {
   const noPins: ReadonlyMap<string, string | null> = new Map();
-  if (problem.budget !== undefined) {
-    const free = { ...problem, budget: undefined };
-    if (solve(free, tree, catalog, deadline) !== null) {
-      const flat = new Map<string, SolverPart>();
-      for (const [id, part] of problem.parts) flat.set(id, { ...part, stat: 0, key: "" });
-      // Every stat zeroed and every key blank rates all builds alike: price decides.
-      const cheapest = solve(
-        { ...free, parts: flat, multiplier: undefined },
-        tree,
-        catalog,
-        deadline,
-      )!;
-      const price = cheapest.point.price;
+  const cheapest =
+    problem.budget === undefined
+      ? null
+      : known === undefined
+        ? cheapestBuild(problem, tree, catalog, deadline)
+        : known;
+  if (problem.budget !== undefined && cheapest !== null) {
+    const price = cheapest.point.price;
+    if (price < UNKNOWN_PRICE) {
       return {
         ok: false,
         reason: "infeasible-budget",
-        message:
-          price >= UNKNOWN_PRICE
-            ? "No complete build has a known price on this profile, so none can be shown to fit a budget."
-            : `The cheapest complete build costs ${rub(price)}, over the ${rub(problem.budget)} budget.`,
+        message: `The cheapest complete build costs ${rub(price)}, over the ${rub(problem.budget)} budget.`,
       };
     }
+    // The cheapest build carries the fewest parts of unknown price. Pinned ones are the user's.
+    const unpriced = [
+      ...new Set(
+        [...problem.pins]
+          .filter(([path, id]) => id !== null && cheapest.attachments[path] === id)
+          .map(([, id]) => id!)
+          .filter(
+            (id) =>
+              problem.parts.get(id)!.price >= UNKNOWN_PRICE &&
+              problem.paths.every((p) => (p.covers.get(id) ?? 0) === 0),
+          ),
+      ),
+    ];
+    if (unpriced.length > 0) return pinnedUnpriced(unpriced, catalog);
+    return {
+      ok: false,
+      reason: "infeasible-budget",
+      message:
+        "No complete build has a known price on this profile, so none can be shown to fit a budget.",
+    };
   }
   const bare = { ...problem, budget: undefined, pins: noPins };
   if (problem.pins.size > 0 && solve(bare, tree, catalog, deadline) !== null) {
@@ -75,15 +132,15 @@ export function diagnose(
   }
   const scarce = scarceParts(bare, tree, catalog, deadline);
   if (scarce !== null) {
-    const names = scarce.ids.map((id) => catalog.get(id)!.name).join(", ");
+    const names = scarce.ids.map((id) => catalog.get(id)!.name);
+    const list = names.join(", ");
     return {
       ok: false,
       reason: "required-slot",
       slotPath: scarce.path,
-      message:
-        scarce.ids.length === 1
-          ? `You can get the ${names} only with the gun, at most ${scarce.most} per gun, and every complete build needs more.`
-          : `You can get ${names} only with the gun, and every complete build needs more of them than it comes with.`,
+      message: scarce.alone
+        ? `You can get the ${list} only with the gun, and no way to buy it comes with ${names.length === 1 ? "as many as" : "as many of each as"} a complete build needs.`
+        : `You can get the ${list} only with the gun, and no way to buy it comes with enough of them together for a complete build.`,
     };
   }
   return {
@@ -95,17 +152,18 @@ export function diagnose(
 
 /**
  * When no build exists even with conflicts ignored, yet every required slot has something to
- * fill it ({@link requiredGap} found none empty), the short supply is copies: a part nobody
- * sells that a preset supplies, needed more often than any preset supplies it. Names the one
- * part whose short supply alone is the cause, else all such parts; `null` when conflicts are
- * the cause after all.
+ * fill it ({@link requiredGap} found none empty), the short supply is copies: parts nobody
+ * sells that only the presets supply. `alone` names the parts short even with every other such
+ * part to be had freely — no way to buy the gun comes with enough of each. When none is, the
+ * shortage is joint (each preset short of one or another), and every such part is named.
+ * `null` when conflicts are the cause after all.
  */
 function scarceParts(
   problem: Problem,
   tree: WeaponTree,
   catalog: ReadonlyMap<string, AttachablePart>,
   deadline: number,
-): { ids: string[]; most: number; path: string } | null {
+): { ids: string[]; alone: boolean; path: string } | null {
   const loose = new Map<string, SolverPart>();
   for (const [id, part] of problem.parts) {
     loose.set(id, { ...part, conflictingItems: [], conflictingSlotIds: [] });
@@ -118,23 +176,32 @@ function scarceParts(
   const free = (parts: ReadonlyMap<string, SolverPart>) =>
     solve({ ...problem, parts }, tree, none, deadline) !== null;
   if (free(loose)) return null;
-  const covered = (id: string) => Math.max(...problem.paths.map((p) => p.covers.get(id) ?? 0));
-  const candidates = [...loose.values()].filter((p) => !p.available && covered(p.id) > 0);
-  const alone = candidates.find((c) => free(new Map(loose).set(c.id, { ...c, available: true })));
-  const ids = alone === undefined ? candidates.map((c) => c.id) : [alone.id];
-  return { ids, most: covered(ids[0]!), path: requiredPathTo(problem, new Set(ids)) };
+  const candidates = [...loose.values()].filter(
+    (p) => !p.available && problem.paths.some((path) => (path.covers.get(p.id) ?? 0) > 0),
+  );
+  const short = candidates.filter((c) => {
+    const others = new Map(loose);
+    for (const o of candidates) if (o !== c) others.set(o.id, { ...o, available: true });
+    return !free(others);
+  });
+  const ids = (short.length > 0 ? short : candidates).map((c) => c.id);
+  return { ids, alone: short.length > 0, path: requiredPathTo(problem, new Set(ids)) };
 }
 
-/** The first required slot, breadth first from the weapon, that takes one of `ids`. */
+/**
+ * The first required slot that takes one of `ids`, breadth first from the weapon through the
+ * slots every build fills (required through required). One exists: with the pins and conflicts
+ * gone, only those slots can make a build need a part, and at least one part
+ * {@link scarceParts} names is one that every build needs.
+ */
 function requiredPathTo(problem: Problem, ids: ReadonlySet<string>): string {
-  // One exists: a part short only in copies sits in a required slot, or a build could skip it.
   const queue: [readonly SlotDef[], string][] = [[problem.rootSlots, ""]];
   const seen = new Set<string>();
   for (;;) {
     const [slots, base] = queue.shift()!;
-    for (const slot of slots) {
+    for (const slot of slots.filter((s) => s.required)) {
       const at = base === "" ? slot.nameId : `${base}/${slot.nameId}`;
-      if (slot.required && slot.allowedItemIds.some((id) => ids.has(id))) return at;
+      if (slot.allowedItemIds.some((id) => ids.has(id))) return at;
       for (const id of slot.allowedItemIds) {
         const part = problem.parts.get(id);
         if (part === undefined || seen.has(id)) continue;

@@ -27,8 +27,9 @@ parts. When none exists it says why.
 - `solve.ts` — max-accuracy rates MOA itself, `multiplier(key) × (1 − Σ accuracyModifier)`, and
   first looks for a build whose multiplier is 0, which beats every other.
 - `diagnose.ts` — why no build exists, in the order the user can act on: the budget (naming the
-  cheapest complete build), the pins, a required slot nothing obtainable fills, or parts that
-  cannot be fitted together.
+  cheapest complete build, or the pinned parts that leave its price unknown), the pins, a
+  required slot nothing obtainable fills, parts that come only with the gun and are needed more
+  often than any way to buy it supplies them, or parts that cannot be fitted together.
 - `pins.ts` — which pins the build keeps, and why it drops the rest.
 
 Prices follow `@tarkov/data`'s `buildPriceUnder` rule: the weapon by its cheapest path plus

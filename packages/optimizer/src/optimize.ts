@@ -8,7 +8,7 @@ import {
   type BuildV6,
 } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
-import { diagnose, rub } from "./diagnose.js";
+import { cheapestBuild, diagnose, pinnedUnpriced, rub } from "./diagnose.js";
 import { pinReport } from "./pins.js";
 import { buildProblem, UNKNOWN_PRICE, type Problem } from "./problem.js";
 import { pinHonourable, SolveTimeout } from "./relaxed.js";
@@ -56,33 +56,42 @@ function refuseBudget(
     if (problem.paths.some((p) => (p.covers.get(id) ?? 0) > 0)) continue;
     unpriced.set(id, catalog.get(id)!);
   }
-  if (unpriced.size === 0) return null;
-  const parts = [...unpriced.values()];
-  return {
-    ok: false,
-    reason: "pinned-unpriced",
-    itemIds: parts.map((p) => p.id),
-    message: `No price you can pay is known for ${parts.map((p) => p.name).join(", ")}. Unpin ${parts.length === 1 ? "it" : "them"} or clear the budget.`,
-  };
+  return unpriced.size === 0 ? null : pinnedUnpriced([...unpriced.keys()], catalog);
 }
 
-/** Why the weapon cannot be bought: the cause a player can act on, if there is one. */
+const titled = (trader: string) => trader.charAt(0).toUpperCase() + trader.slice(1);
+
+/**
+ * Why the weapon cannot be bought: the cause a player can act on, if there is one. Reads every
+ * offer that buys it, its presets' included, as `weaponPaths` does.
+ */
 function unavailableMessage(input: OptimizationInput): string {
   const name = input.weaponItem.shortName;
-  const availability = itemAvailability(input.weaponItem, input.constraints.profile);
-  if (
-    input.constraints.profile === null ||
-    (!availability.available && availability.reason === "no-sources")
-  ) {
-    // Theorycraft opens every gate, so only a weapon nothing sells is refused there.
-    return `No trader or flea listing sells the ${name}.`;
-  }
+  const profile = input.constraints.profile;
+  const offers = [
+    ...(input.weaponItem.buyFor ?? []),
+    ...(input.presets ?? []).flatMap((p) => p.buyFor ?? []),
+  ];
+  if (offers.length === 0) return `No trader or flea listing sells the ${name}.`;
+  const availability = itemAvailability({ buyFor: offers, types: input.weaponItem.types }, profile);
   if (!availability.available && availability.reason === "untracked-trader") {
-    const trader = availability.traderNormalizedName;
-    const named = trader.charAt(0).toUpperCase() + trader.slice(1);
-    return `Only ${named} sells the ${name}${availability.payment === "barter" ? ", by barter" : ""}, and no trader level you can set reaches ${named}.`;
+    // Every other kind of offer outranks this reason: each offer left is an untracked trader's.
+    const traders = [
+      ...new Set(
+        // The offer collector names a trader's vendor after the trader (`buy-for.ts`).
+        offers.map((o) => o.vendor.normalizedName),
+      ),
+    ].map(titled);
+    const barter = offers.every((o) => o.vendor.__typename === "TraderBarter");
+    const who = traders.join(" and ");
+    return `Only ${who} ${traders.length === 1 ? "sells" : "sell"} the ${name}${barter ? ", by barter" : ""}, and no trader level you can set reaches ${traders.length === 1 ? who : "them"}.`;
   }
-  return `You can't get the ${name} on this profile.`;
+  if (!availability.available && availability.reason === "flea-unlisted") {
+    return `Nobody is listing the ${name} on the flea, and no trader you can reach sells it.`;
+  }
+  return profile === null
+    ? `You can't get the ${name}.`
+    : `You can't get the ${name} on this profile.`;
 }
 
 /**
@@ -99,14 +108,14 @@ export function optimize(input: OptimizationInput): OptimizationResult {
   }
 
   const tree = input.slotTree;
+  const budgetRub = input.constraints.budgetRub;
+  let refusal: Refusal | null = null;
   try {
-    const budgetRub = input.constraints.budgetRub;
-    const refusal =
-      budgetRub === undefined ? null : refuseBudget(input, problem, budgetRub, catalog);
+    refusal = budgetRub === undefined ? null : refuseBudget(input, problem, budgetRub, catalog);
     if (refusal !== null) {
       // The budget is only the cause if some build exists without it.
-      const free = solve({ ...problem, budget: undefined }, tree, catalog, deadline);
-      return free === null ? diagnose(problem, tree, catalog, deadline) : refusal;
+      const cheapest = cheapestBuild(problem, tree, catalog, deadline);
+      return cheapest === null ? diagnose(problem, tree, catalog, deadline, null) : refusal;
     }
     const found = solve(problem, tree, catalog, deadline);
     if (found === null) return diagnose(problem, tree, catalog, deadline);
@@ -132,7 +141,9 @@ export function optimize(input: OptimizationInput): OptimizationResult {
       ),
     };
   } catch (error) {
-    if (error instanceof SolveTimeout) return { ok: false, reason: "timeout" };
+    // A refusal is true of every build there is: it stands when the question of whether any
+    // exists runs out of time.
+    if (error instanceof SolveTimeout) return refusal ?? { ok: false, reason: "timeout" };
     throw error;
   }
 }

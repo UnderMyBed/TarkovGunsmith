@@ -302,6 +302,9 @@ describe("optimize — what it refuses", () => {
     const nobody = { ...refusal, message: "No trader or flea listing sells the TR." };
     expect(run({ weaponItem: unsold })).toEqual(nobody);
     expect(run({ weaponItem: unsold, profile: null })).toEqual(nobody);
+    // A record with no offers field at all, and a preset with none.
+    const { buyFor: _none, ...bare } = SMALL_WEAPON_ITEM;
+    expect(run({ weaponItem: bare, presets: [{ id: "pa", attachments: {} }] })).toEqual(nobody);
     // Only Ref sells it, by barter: no trader level a profile holds reaches him.
     const refOnly = {
       ...SMALL_WEAPON_ITEM,
@@ -337,6 +340,65 @@ describe("optimize — what it refuses", () => {
     };
     expect(run({ weaponItem: refCash })).toMatchObject({
       message: "Only Ref sells the TR, and no trader level you can set reaches Ref.",
+    });
+    // Ref sells it for cash as well as by barter, and Fence sells it too.
+    const refBarter = refOnly.buyFor[0]!;
+    expect(
+      run({ weaponItem: { ...SMALL_WEAPON_ITEM, buyFor: [refBarter, ...refCash.buyFor] } }),
+    ).toMatchObject({
+      message: "Only Ref sells the TR, and no trader level you can set reaches Ref.",
+    });
+    const fence = {
+      ...refBarter,
+      vendor: {
+        ...refBarter.vendor,
+        normalizedName: "fence",
+        trader: { normalizedName: "fence" },
+        barterId: "b2",
+      },
+    };
+    expect(run({ weaponItem: { ...SMALL_WEAPON_ITEM, buyFor: [refBarter, fence] } })).toMatchObject(
+      {
+        message:
+          "Only Ref and Fence sell the TR, by barter, and no trader level you can set reaches them.",
+      },
+    );
+    // Only a preset sells it, at a level the profile lacks: the preset's offer is the cause.
+    expect(
+      run({
+        weaponItem: unsold,
+        presets: [{ id: "pa", attachments: {}, buyFor: highLevel.buyFor }],
+      }),
+    ).toEqual(gated);
+    // The flea is the only way, and nobody is listing it.
+    const unlisted = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: [
+        {
+          priceRUB: null,
+          currency: "RUB",
+          unlisted: true as const,
+          vendor: {
+            __typename: "FleaMarket" as const,
+            normalizedName: "flea-market",
+            minPlayerLevel: 1,
+          },
+        },
+      ],
+    };
+    expect(run({ weaponItem: unlisted })).toEqual({
+      ...refusal,
+      message: "Nobody is listing the TR on the flea, and no trader you can reach sells it.",
+    });
+    // Theorycraft: a flea-only gun the flea may not trade.
+    const noFlea = {
+      ...SMALL_WEAPON_ITEM,
+      types: [...SMALL_WEAPON_ITEM.types, "noFlea"],
+      buyFor: [{ ...unlisted.buyFor[0]!, priceRUB: 1000, unlisted: undefined }],
+    };
+    expect(run({ weaponItem: noFlea, profile: null })).toEqual({
+      ...refusal,
+      message: "You can't get the TR.",
     });
   });
 
@@ -572,6 +634,31 @@ describe("optimize — why no build exists", () => {
     ).toMatchObject({ ok: false, reason: "required-slot", slotPath: "front" });
   });
 
+  it("names a pinned part below the weapon that every build must carry and nobody prices", () => {
+    // The receiver is required and takes only the upper, so the pinned foregrip is on every build.
+    const slotTree = tree([
+      {
+        nameId: "receiver",
+        required: true,
+        items: [["upper", [{ nameId: "foregrip", items: ["fg", "fg2"] }]]],
+      },
+    ]);
+    const parts = [part("upper"), part("fg", { price: null }), part("fg2", { price: 500 })];
+    expect(
+      run({ slotTree, parts, pins: { "receiver/foregrip": "fg" }, budgetRub: 50_000 }),
+    ).toEqual({
+      ok: false,
+      reason: "pinned-unpriced",
+      itemIds: ["fg"],
+      message: "No price you can pay is known for fg. Unpin it or clear the budget.",
+    });
+  });
+
+  it("keeps a budget refusal when asking whether any build exists runs out of time", () => {
+    vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValue(10_000);
+    expect(run({ budgetRub: 9_999 })).toMatchObject({ reason: "infeasible-budget" });
+  });
+
   it("names a required slot before the budget when no build exists at any budget", () => {
     const unsoldStock = [...SMALL_MODS.slice(0, 3), part("stock_standard", { price: "unsold" })];
     const gap = {
@@ -617,14 +704,20 @@ describe("optimize — why no build exists", () => {
       reason: "required-slot",
       slotPath: "front",
       message:
-        "You can get the p4 only with the gun, at most 1 per gun, and every complete build needs more.",
+        "You can get the p4 only with the gun, and no way to buy it comes with as many as a complete build needs.",
     });
-    // Deeper down: the first required slot that takes it is named.
+    // Deeper down: the first slot every build fills that takes it is named, not one under a
+    // slot a build may leave empty, though the search reaches that first.
     const nested = tree([
+      {
+        nameId: "optional",
+        items: [["rail", [{ nameId: "front", required: true, items: ["p4"] }]]],
+      },
       {
         nameId: "receiver",
         required: true,
         items: [
+          "uncatalogued",
           [
             "upper",
             [
@@ -634,12 +727,12 @@ describe("optimize — why no build exists", () => {
           ],
         ],
       },
-      { nameId: "side", items: ["upper", "uncatalogued"] },
+      { nameId: "side", required: true, items: ["upper"] },
     ]);
     expect(
       run({
         slotTree: nested,
-        parts: [part("upper"), part("p4", { price: "unsold" })],
+        parts: [part("rail"), part("upper"), part("p4", { price: "unsold" })],
         weaponItem: withPresets(["pa", "pb"]),
         presets: [
           { id: "pa", attachments: { receiver: "upper", "receiver/front": "p4" } },
@@ -665,7 +758,26 @@ describe("optimize — why no build exists", () => {
       reason: "required-slot",
       slotPath: "a",
       message:
-        "You can get p, q only with the gun, and every complete build needs more of them than it comes with.",
+        "You can get the p, q only with the gun, and no way to buy it comes with as many of each as a complete build needs.",
+    });
+    // Each preset has enough of one and too few of the other: neither is short alone.
+    const offer2 = withPresets(["pa", "pb"]);
+    expect(
+      run({
+        slotTree: two,
+        parts: [part("p", { price: "unsold" }), part("q", { price: "unsold" })],
+        weaponItem: offer2,
+        presets: [
+          { id: "pa", attachments: { a: "p", b: "p", c: "q" } },
+          { id: "pb", attachments: { a: "p", c: "q", d: "q" } },
+        ],
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "required-slot",
+      slotPath: "a",
+      message:
+        "You can get the p, q only with the gun, and no way to buy it comes with enough of them together for a complete build.",
     });
   });
 
