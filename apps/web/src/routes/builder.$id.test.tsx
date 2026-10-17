@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
+import type userEvent from "@testing-library/user-event";
 import { renderRoute } from "../test/render-route.js";
 import { createTestClient } from "../test/test-client.js";
 import { createTestBuilderData } from "../test/test-builder-data.js";
@@ -27,12 +28,16 @@ const VALID_ID = "abcdefgh"; // 8 chars from the builds-api id alphabet.
  * build still holds exactly its saved parts, so no preset chip is current.
  */
 async function expectNotSeeded(savedCount: number): Promise<void> {
-  const group = await screen.findByRole("group", { name: "Presets" });
+  const select = await screen.findByRole<HTMLSelectElement>("combobox", { name: "Preset" });
   expect(screen.getByText(`${savedCount} attached`, { exact: true })).toBeInTheDocument();
-  const pressed = within(group)
-    .getAllByRole("button")
-    .filter((b) => b.getAttribute("aria-pressed") === "true");
-  expect(pressed).toEqual([]);
+  await waitFor(() => expect(select.options.length).toBeGreaterThan(2));
+  expect(select.selectedOptions[0]).toHaveTextContent("Custom parts");
+}
+
+/** Choose the Empty preset in the Build panel's preset select. */
+async function chooseEmptyPreset(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  const select = await screen.findByRole<HTMLSelectElement>("combobox", { name: "Preset" });
+  await user.selectOptions(select, within(select).getByRole("option", { name: /^Empty/ }));
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -180,8 +185,7 @@ describe("/builder/$id edits", () => {
     expect(localStorage.getItem(sharedDraftKey(VALID_ID))).toBeNull();
     expect(screen.queryByText("Edited from the shared build")).not.toBeInTheDocument();
 
-    const group = await screen.findByRole("group", { name: "Presets" });
-    await user.click(within(group).getByRole("button", { name: /^Empty/ }));
+    await chooseEmptyPreset(user);
     // The shared parts match no preset, so the picker asks before replacing them.
     await user.click(await screen.findByRole("button", { name: "Replace" }));
     expect(await screen.findByText("0 attached")).toBeInTheDocument();
@@ -209,49 +213,6 @@ describe("/builder/$id edits", () => {
     expect(await screen.findByText("1 attached")).toBeInTheDocument();
     expect(screen.queryByText("Edited from the shared build")).not.toBeInTheDocument();
     expect(localStorage.getItem(sharedDraftKey(VALID_ID))).toBeNull();
-  });
-});
-
-describe("/builder/$id edits, empty weapon", () => {
-  it("says the build is edited only while edits are stored", async () => {
-    const user = (await import("@testing-library/user-event")).default.setup();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockImplementation(() =>
-        Promise.resolve(
-          jsonResponse({
-            version: 6,
-            weaponId: "w-m4a1",
-            attachments: { mod_muzzle: "mod-muzzle" },
-            orphaned: [],
-            createdAt: new Date().toISOString(),
-          }),
-        ),
-      ),
-    );
-    await renderRoute(`/builder/${VALID_ID}`);
-    await screen.findByText("1 attached");
-    const weaponSelect = screen
-      .getAllByRole<HTMLSelectElement>("combobox")
-      .find((el) => el.querySelector('option[value=""]'));
-    if (!weaponSelect) throw new Error("weapon <select> not found");
-
-    // No weapon is no build: nothing is stored, and the page does not claim an edit.
-    await user.selectOptions(weaponSelect, "");
-    expect(localStorage.getItem(sharedDraftKey(VALID_ID))).toBeNull();
-    expect(screen.queryByText("Edited from the shared build")).not.toBeInTheDocument();
-
-    await user.selectOptions(weaponSelect, "w-m4a1");
-    expect(await screen.findByText("Edited from the shared build")).toBeInTheDocument();
-
-    // A Revert prompt open when the edits go does not come back with the next edit.
-    await user.click(screen.getByRole("button", { name: "Revert" }));
-    await user.selectOptions(weaponSelect, "");
-    await user.selectOptions(weaponSelect, "w-m4a1");
-    expect(await screen.findByText("Edited from the shared build")).toBeInTheDocument();
-    expect(
-      screen.queryByText("Discard your edits and go back to the shared build?"),
-    ).not.toBeInTheDocument();
   });
 });
 
@@ -284,8 +245,7 @@ describe("/builder/$id edits across a refetch", () => {
     );
     const { queryClient } = await renderRoute(`/builder/${VALID_ID}`);
     await screen.findByText("1 attached");
-    const group = await screen.findByRole("group", { name: "Presets" });
-    await user.click(within(group).getByRole("button", { name: /^Empty/ }));
+    await chooseEmptyPreset(user);
     await user.click(await screen.findByRole("button", { name: "Replace" }));
     await screen.findByText("0 attached");
     const stored = localStorage.getItem(sharedDraftKey(VALID_ID));
@@ -308,7 +268,7 @@ describe("/builder/$id edits across a refetch", () => {
       await queryClient.refetchQueries({ queryKey: ["build", VALID_ID] });
     });
     await settle();
-    await user.type(screen.getByPlaceholderText("Build name (optional)"), "X");
+    await user.type(screen.getByLabelText("Build name"), "X");
     const stored = JSON.parse(localStorage.getItem(sharedDraftKey(VALID_ID)) ?? "") as {
       build: { attachments: object; name: string };
     };
@@ -334,7 +294,7 @@ describe("/builder/$id edits across a refetch", () => {
     expect(screen.getByText("Edited from the shared build")).toBeInTheDocument();
     expect(localStorage.getItem(sharedDraftKey(VALID_ID))).toBe(stored);
 
-    await user.type(screen.getByPlaceholderText("Build name (optional)"), "X");
+    await user.type(screen.getByLabelText("Build name"), "X");
     const after = JSON.parse(localStorage.getItem(sharedDraftKey(VALID_ID)) ?? "") as {
       build: { attachments: object; name: string };
     };

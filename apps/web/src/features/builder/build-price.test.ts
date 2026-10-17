@@ -3,6 +3,7 @@ import type { PricedPreset, WeaponListItem } from "@tarkov/data";
 import { tinyTree } from "../../test/tiny-tree.js";
 import {
   coversOf,
+  buildPriceParts,
   describeBuildPrice,
   formatRub,
   priceBuild,
@@ -41,6 +42,38 @@ describe("describeBuildPrice", () => {
         nameOf,
       ),
     ).toBe("₽55,000; may cost less bought another way (no price for Grip)");
+  });
+});
+
+describe("buildPriceParts", () => {
+  it("splits the rouble figure from the words around it", () => {
+    expect(buildPriceParts({ status: "priced", totalRUB: 82_984, presetId: null }, nameOf)).toEqual(
+      { figure: "₽82,984", note: null },
+    );
+    expect(
+      buildPriceParts(
+        {
+          status: "priced",
+          totalRUB: 55_000,
+          presetId: "p-default",
+          cheaperUnpriced: { presetId: null, knownRUB: 38_000, unpriced: ["grip"] },
+        },
+        nameOf,
+      ),
+    ).toEqual({
+      figure: "₽55,000",
+      note: "May cost less bought another way (no price for Grip)",
+    });
+    expect(
+      buildPriceParts(
+        { status: "unknown", knownRUB: 29_985, unpriced: ["grip", "stock"], presetId: null },
+        nameOf,
+      ),
+    ).toEqual({ figure: "₽29,985+", note: "Known so far; no price for Grip, Stock" });
+    expect(buildPriceParts({ status: "unobtainable", missing: ["gun"] }, nameOf)).toEqual({
+      figure: null,
+      note: "Can't be bought: M4A1",
+    });
   });
 });
 

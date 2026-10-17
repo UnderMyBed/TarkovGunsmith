@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { pickWeapon } from "./builder-helpers.js";
 
 /**
  * The Builder runs on the build-time snapshot (#211): its weapons, parts and slots come from
@@ -15,13 +15,6 @@ const SNAPSHOT = JSON.parse(
 
 const BOGUS_PART = "000000000000000000000000";
 
-function weaponPicker(page: Page) {
-  return page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-}
-
 test.describe("Builder snapshot", () => {
   test("is the fixture snapshot outside the release deploy", () => {
     expect(SNAPSHOT.source).toBe("fixtures");
@@ -35,7 +28,7 @@ test.describe("Builder snapshot", () => {
     });
 
     await page.goto("/builder", { waitUntil: "networkidle" });
-    await weaponPicker(page).selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+    await pickWeapon(page);
 
     const label = new Intl.DateTimeFormat("en-GB", {
       day: "numeric",

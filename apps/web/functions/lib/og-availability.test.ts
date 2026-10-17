@@ -175,7 +175,7 @@ describe("availabilityPill", () => {
 
 // ---------- Parity with the Builder over the captured game data ----------
 
-/** What the Builder's pill says for one item: `useBuilderState`'s gate, `ModsPanel`'s filter. */
+/** What the Builder's pill says for one item: `useBuilderState`'s gate, `BuildPanel`'s filter. */
 function builderPill(item: AvailabilityInput, profile: PlayerProfile | undefined): string | null {
   const mode = profile === undefined ? "theorycraft" : "progression";
   const shown = shownAvailability(

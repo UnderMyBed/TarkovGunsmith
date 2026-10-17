@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { BuilderMode, ItemAvailability, WeaponTree } from "@tarkov/data";
 import { tinyTree } from "../../test/tiny-tree.js";
-import { ModsPanel } from "./mods-panel.js";
+import { BuildPanel } from "./build-panel.js";
 
 afterEach(() => cleanup());
 
@@ -21,9 +21,13 @@ const TREE = tinyTree(
 const NO_SOURCES: ItemAvailability = { available: false, reason: "no-sources" };
 const ON_FLEA: ItemAvailability = { available: true, kind: "flea", priceRUB: 4_500 };
 
-function renderPanel(mode: BuilderMode, conflictWith: string | null = null) {
+function renderPanel(
+  mode: BuilderMode,
+  conflictWith: string | null = null,
+  flags: { missingRequired?: string[]; conflicts?: string[] } = {},
+) {
   render(
-    <ModsPanel
+    <BuildPanel
       tree={{ data: TREE, isLoading: false, error: null } as UseQueryResult<WeaponTree, Error>}
       attachments={{}}
       attachedCount={0}
@@ -34,13 +38,15 @@ function renderPanel(mode: BuilderMode, conflictWith: string | null = null) {
       orphaned={[]}
       modNames={NAMES}
       onDismissOrphaned={vi.fn()}
+      presets={<p>preset select</p>}
+      {...flags}
     />,
   );
 }
 
 const option = (name: RegExp) => screen.getByRole("button", { name });
 
-describe("ModsPanel", () => {
+describe("BuildPanel", () => {
   it("in theorycraft, shows a part nobody sells neither dimmed nor Locked", () => {
     renderPanel("theorycraft");
     const orphan = option(/Discontinued muzzle brake/);
@@ -67,5 +73,29 @@ describe("ModsPanel", () => {
 
     fireEvent.click(screen.getByLabelText("Show all items"));
     expect(option(/Discontinued muzzle brake/)).not.toHaveClass("opacity-40");
+  });
+
+  it("carries the preset control in its header", () => {
+    renderPanel("theorycraft");
+    const panel = screen.getByRole("region", { name: "Build" });
+    expect(within(panel).getByText("preset select")).toBeInTheDocument();
+    expect(within(panel).getByText("0 attached")).toBeInTheDocument();
+  });
+
+  it("flags an incomplete build, naming the empty required slots", () => {
+    renderPanel("theorycraft", null, { missingRequired: ["Barrel", "Gas block"] });
+    const pill = screen.getByText("Incomplete · 2 required empty");
+    expect(pill).toHaveAttribute("title", "Required slots empty: Barrel, Gas block");
+  });
+
+  it("flags clashing parts, listing each pair", () => {
+    renderPanel("theorycraft", null, { conflicts: ["ADAR stock × M4SS"] });
+    expect(screen.getByText("Conflict · 1")).toHaveAttribute("title", "ADAR stock × M4SS");
+  });
+
+  it("shows neither flag for a complete build with no clash", () => {
+    renderPanel("theorycraft");
+    expect(screen.queryByText(/Incomplete/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Conflict/)).not.toBeInTheDocument();
   });
 });

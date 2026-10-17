@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { openProgression } from "./builder-helpers.js";
 
 /**
  * In-browser half of the guard for GitHub issue #162, where Tailwind never scanned
@@ -64,7 +65,8 @@ test.describe("design system — styles reach the browser", () => {
   }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     // The profile editor's PMC level field is an <Input> on a live page, inside the
-    // "Edit profile" disclosure.
+    // progression panel's "Edit profile" disclosure.
+    await openProgression(page);
     await page.getByText("Edit profile", { exact: false }).click();
     const level = page.getByLabel("PMC level");
     await expect(level).toBeVisible({ timeout: 15_000 });

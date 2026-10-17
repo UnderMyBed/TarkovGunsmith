@@ -32,7 +32,7 @@ All three fonts are served via the [Google Fonts](https://fonts.google.com/) CDN
 
 ## Assets
 
-- **Favicon (`favicon.svg`) and Apple Touch Icon (`apple-touch-icon.png`)** — first-party, original artwork in the Field Ledger aesthetic (amber corner brackets on dark ground). No third-party artwork involved.
+- **Favicon (`favicon.svg`) and Apple Touch Icon (`apple-touch-icon.png`)** — first-party, original artwork in the Graphite palette (a teal cartridge on a dark grey ground). No third-party artwork involved.
 - **Weapon silhouettes** — not bundled in this repository. Fetched at runtime from `assets.tarkov.dev`, a CDN operated by [the-hideout](https://github.com/the-hideout). These images are EFT game assets processed by [tarkov-dev-image-generator](https://github.com/the-hideout/tarkov-dev-image-generator). Displayed as monochrome decorative backdrops in the Builder UI; attribution for the underlying asset processing goes to the-hideout community.
 - **In-app item icons** — also fetched at runtime from `assets.tarkov.dev` (same CDN, same attribution as above). No icons are bundled in this repository.
 

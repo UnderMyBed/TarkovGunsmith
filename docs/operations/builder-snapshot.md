@@ -21,7 +21,7 @@ copy's age. A share card is cached for 30 days, so it prices from the release-ti
 
 `dataAsOf` is the newest `updated` timestamp in the items document. Upstream refreshes some item
 every few minutes, so in practice it is when the snapshot was taken, not when the game last
-changed. The Builder's weapon panel shows it as "Data as of <date>".
+changed. The Builder's Details panel shows it as "Data as of <date>".
 
 ## Where the data comes from
 

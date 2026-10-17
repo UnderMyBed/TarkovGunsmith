@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { afterEach, describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderRoute } from "../test/render-route.js";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("__root shell (header nav, footer)", () => {
   it("renders the brand and exactly the Builder and Compare nav links", async () => {
@@ -19,7 +22,30 @@ describe("__root shell (header nav, footer)", () => {
     expect(nav.queryAllByRole("button")).toEqual([]);
   });
 
-  it("marks Builder active, and Compare not, on a shared build /builder/abc12345", async () => {
+  it("gives /builder the workbench bar in place of the masthead, with no centred frame on <main>", async () => {
+    await renderRoute("/builder");
+
+    const bar = await screen.findByRole("region", { name: "Workbench" });
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    // The wordmark moves into the workbench bar and still leads home.
+    expect(within(bar).getByRole("link", { name: "TarkovGunsmith" })).toHaveAttribute("href", "/");
+    expect(within(bar).getByRole("link", { name: "Compare" })).toHaveAttribute(
+      "href",
+      "/builder/compare",
+    );
+    expect(document.querySelector("main")).not.toHaveClass("max-w-6xl");
+    // The skip link still lands on <main>.
+    expect(screen.getByRole("link", { name: "Skip to content" })).toHaveAttribute(
+      "href",
+      "#main-content",
+    );
+  });
+
+  it("keeps the masthead, Builder marked active, while a shared build /builder/abc12345 loads", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
     await renderRoute("/builder/abc12345");
 
     const nav = within(screen.getByRole("navigation"));

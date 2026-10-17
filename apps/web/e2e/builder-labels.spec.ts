@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { M4A1_LABEL, pickWeapon, weaponPicker } from "./builder-helpers.js";
 
 /**
  * The picker names the weapon on screen even when the profile cannot buy it (#222), and no two
@@ -7,14 +8,6 @@ import { test, expect } from "./upstream.js";
  */
 
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
-const M4A1_LABEL = "Colt M4A1 5.56x45 assault rifle";
-
-function weaponPicker(page: Page) {
-  return page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-}
 
 /** Every visible slot row as [parent path, label]. */
 async function slotRows(page: Page): Promise<[string, string][]> {
@@ -51,17 +44,24 @@ test.describe("Builder weapon picker and slot labels", () => {
       await page.goto("/builder/abcd2348", { waitUntil: "networkidle" });
 
       const picker = weaponPicker(page);
-      await expect(picker).toHaveValue(M4A1, { timeout: 15_000 });
-      await expect(picker.locator("option:checked")).toHaveText(
-        `${M4A1_LABEL} — locked · peacekeeper LL2 barter`,
+      await expect(picker).toHaveValue(M4A1_LABEL, { timeout: 15_000 });
+      // The closed picker says what locks the weapon on screen, and so does its option.
+      await expect(
+        page.getByText("Locked · peacekeeper LL2 barter", { exact: true }).first(),
+      ).toBeVisible();
+      await picker.click();
+      await expect(page.getByRole("listbox").getByRole("option", { selected: true })).toHaveText(
+        `${M4A1_LABEL}Locked · peacekeeper LL2 barter`,
       );
-      await expect(page.getByRole("button", { name: "Progression", pressed: true })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "My progression…", pressed: true }),
+      ).toBeVisible();
     });
   });
 
   test("no two slot rows under one parent share a label on the M4A1", async ({ page }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
-    await weaponPicker(page).selectOption({ label: M4A1_LABEL });
+    await pickWeapon(page);
     await expect(page.locator('details[data-slot-path="mod_reciever/mod_barrel"]')).toBeAttached({
       timeout: 15_000,
     });

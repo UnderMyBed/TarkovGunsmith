@@ -23,8 +23,6 @@ export { Stamp } from "./components/stamp.js";
 export type { StampProps } from "./components/stamp.js";
 export { SectionTitle } from "./components/section-title.js";
 export type { SectionTitleProps } from "./components/section-title.js";
-export { StatRow } from "./components/stat-row.js";
-export type { StatRowProps } from "./components/stat-row.js";
 export { Dialog, DialogPanel, DialogTitle, DialogBody } from "./components/dialog.js";
 export type {
   DialogProps,
@@ -36,3 +34,5 @@ export { Skeleton } from "./components/skeleton.js";
 export type { SkeletonProps } from "./components/skeleton.js";
 export { WeaponSilhouette, weaponSilhouetteSrc } from "./components/weapon-silhouette.js";
 export type { WeaponSilhouetteProps } from "./components/weapon-silhouette.js";
+export { Combobox } from "./components/combobox.js";
+export type { ComboboxProps, ComboboxOption } from "./components/combobox.js";

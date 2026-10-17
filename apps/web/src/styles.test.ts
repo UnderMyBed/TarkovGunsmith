@@ -11,7 +11,7 @@ import { beforeAll, describe, expect, it } from "vitest";
  * `@tarkov/ui` resolves through `node_modules` (a pnpm workspace symlink) and Tailwind's
  * automatic source detection deliberately never descends there, so every utility class used
  * ONLY by a design-system primitive was absent from the production stylesheet: no
- * `focus-visible:` ring on `<Button>`/`<Input>`, no grid template on `<StatRow>`.
+ * `focus-visible:` ring on `<Button>`/`<Input>`, no `animate-pulse` on `<Skeleton>`.
  * The components rendered the class names; the stylesheet had no matching rule.
  *
  * Why this test and not a jsdom one: the eleven `packages/ui/src/components/*.test.tsx`
@@ -67,6 +67,15 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
   // apps/web (its 8px panel radius included), so this is the one that proves the scan.
   ["card.tsx", ["text-[var(--color-card-foreground)]"]],
   [
+    "combobox.tsx",
+    [
+      // The field's focus indicator: the input inside draws no ring of its own.
+      "focus-within:border-[var(--color-primary)]",
+      // The list's height cap. Without it a 160-weapon list runs off the bottom of the page.
+      "max-h-80",
+    ],
+  ],
+  [
     "input.tsx",
     [
       "focus-visible:border-[var(--color-primary)]",
@@ -75,16 +84,6 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
     ],
   ],
   ["stamp.tsx", ["border-[1.5px]", "px-2.5", "border-[var(--color-destructive)]"]],
-  [
-    "stat-row.tsx",
-    [
-      // The five-column template. Without it the whole row collapses to a single column.
-      "grid-cols-[110px_46px_56px_48px_1fr]",
-      "gap-2.5",
-      // Every other class this component paints with is shared with apps/web, so there is no
-      // third entry to promote. The meta-test below catches a shared class added here.
-    ],
-  ],
   ["skeleton.tsx", ["animate-pulse", "space-y-2"]],
   ["dialog.tsx", ["max-w-2xl", "duration-150"]],
   [

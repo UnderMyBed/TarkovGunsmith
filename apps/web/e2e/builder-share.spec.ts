@@ -1,6 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 import { test, expect, expectNoLiveThirdParty, installUpstreamBoundary } from "./upstream.js";
 import { capturedItemName } from "./upstream-fixtures.js";
+import { expectPreset, M4A1_LABEL, pickWeapon, weaponPicker } from "./builder-helpers.js";
 
 /**
  * Share links: what a reader opens is the build that was shared.
@@ -15,7 +16,6 @@ import { capturedItemName } from "./upstream-fixtures.js";
  */
 
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
-const M4A1_LABEL = "Colt M4A1 5.56x45 assault rifle";
 const MOE_GRIP = "55802f5d4bdc2dac148b458f";
 const MOE_GRIP_NAME = "AR-15 Magpul MOE pistol grip (Black)";
 const PMAG = "55802d5f4bdc2dac148b458e";
@@ -47,21 +47,14 @@ const SOPMOD_II_COUNT = Object.keys(SOPMOD_II).length;
 
 const STATS = [
   "Ergonomics",
-  "Vert. recoil",
-  "Horiz. recoil",
+  "Vertical recoil",
+  "Horizontal recoil",
   "Weight",
   "Accuracy",
   "Muzzle velocity",
   "Sighting range",
   "Capacity",
 ] as const;
-
-function weaponPicker(page: Page) {
-  return page
-    .locator("select")
-    .filter({ has: page.locator('option:has-text("Select weapon")') })
-    .first();
-}
 
 function attached(page: Page, count: number) {
   return page.getByText(`${count} attached`, { exact: true });
@@ -85,7 +78,7 @@ function fittedParts(page: Page): Promise<Record<string, string>> {
   );
 }
 
-/** Every Spec stat the panel shows, label to value. */
+/** Every stat the stat strip and the Details panel show, label to value. */
 async function stats(page: Page): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   for (const label of STATS) {
@@ -130,14 +123,12 @@ test.describe("Builder share links", () => {
     browser,
   }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
-    await weaponPicker(page).selectOption({ label: M4A1_LABEL });
-    await expect(
-      page.getByRole("group", { name: "Presets" }).getByRole("button", { name: /^M4A1 Carbine/ }),
-    ).toHaveAttribute("aria-pressed", "true", { timeout: 15_000 });
+    await pickWeapon(page);
+    await expectPreset(page, /^M4A1 Carbine/);
     await fitPart(page, "mod_pistol_grip", MOE_GRIP_NAME);
     await fitPart(page, "mod_magazine", PMAG_NAME);
     await expect(attached(page, 12)).toBeVisible();
-    await page.getByPlaceholder("Build name (optional)").fill("Round trip");
+    await page.getByLabel("Build name").fill("Round trip");
 
     const sharedRows = await slotRows(page);
     const sharedStats = await stats(page);
@@ -171,8 +162,8 @@ test.describe("Builder share links", () => {
       await reader.goto(`/builder/${id}`, { waitUntil: "networkidle" });
 
       await expect(attached(reader, 12)).toBeVisible({ timeout: 15_000 });
-      await expect(weaponPicker(reader).locator("option:checked")).toHaveText(M4A1_LABEL);
-      await expect(reader.getByPlaceholder("Build name (optional)")).toHaveValue("Round trip");
+      await expect(weaponPicker(reader)).toHaveValue(M4A1_LABEL);
+      await expect(reader.getByLabel("Build name")).toHaveValue("Round trip");
       expect(await slotRows(reader)).toEqual(sharedRows);
       expect(await stats(reader)).toEqual(sharedStats);
       expectNoLiveThirdParty(escaped);
@@ -220,7 +211,7 @@ test.describe("Builder share links", () => {
       await page.goto(`/builder/${id}`, { waitUntil: "networkidle" });
 
       await expect(attached(page, SOPMOD_II_COUNT)).toBeVisible({ timeout: 15_000 });
-      await expect(weaponPicker(page).locator("option:checked")).toHaveText(M4A1_LABEL);
+      await expect(weaponPicker(page)).toHaveValue(M4A1_LABEL);
       await expect(page.getByText(/couldn't be placed on this weapon/)).toHaveCount(0);
       // Every part in the slot it was saved in, by name: a migration that moved or swapped
       // parts would still fit nineteen of them.
@@ -229,11 +220,11 @@ test.describe("Builder share links", () => {
           Object.entries(SOPMOD_II).map(([path, itemId]) => [path, capturedItemName(itemId)]),
         ),
       );
-      await expect(page.getByPlaceholder("Build name (optional)")).toHaveValue(
+      await expect(page.getByLabel("Build name")).toHaveValue(
         version >= 4 ? `v${version} SOPMOD` : "",
       );
       if (version >= 4) {
-        await expect(page.getByPlaceholder("Description (optional)")).toHaveValue("Saved long ago");
+        await expect(page.getByLabel("Notes")).toHaveValue("Saved long ago");
       }
 
       // The author's profile arrives under the current quest names, level defaulted.

@@ -1,16 +1,7 @@
 import { useMemo, useState, type ReactElement } from "react";
 import type { PlayerProfile, TaskListItem } from "@tarkov/data";
 import { useTasks } from "@tarkov/data";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-  focusRing,
-} from "@tarkov/ui";
+import { Button, Input, focusRing } from "@tarkov/ui";
 import { TarkovTrackerConnectPopover } from "./tarkovtracker-connect-popover.js";
 import { TarkovTrackerSyncBanner } from "./tarkovtracker-sync-banner.js";
 import type { UseTarkovTrackerSyncResult } from "./useTarkovTrackerSync.js";
@@ -68,6 +59,11 @@ export function useTaskList(data: readonly TaskListItem[] | undefined): readonly
   return useMemo(() => data ?? [], [data]);
 }
 
+/**
+ * The player's profile: basic or advanced checking, trader levels, flea access, PMC level and,
+ * in advanced, the quests that unlock gear. Drawn without a card or title of its own: it lives
+ * in the workbench's progression panel, which has both.
+ */
 export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): ReactElement {
   const tasks = useTasks();
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -121,194 +117,200 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
     onChange({ ...profile, completedQuests: [...next] });
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <CardTitle>Your progression</CardTitle>
-            <CardDescription>
-              Dims mods you can&apos;t acquire yet and shows the blocking requirement.
-            </CardDescription>
-            <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-              {MODE_COPY[profile.mode]}
-            </p>
-          </div>
-          <div className="flex gap-1 rounded-[var(--radius)] border p-1">
-            <Button
-              type="button"
-              size="sm"
-              variant={profile.mode === "basic" ? "default" : "ghost"}
-              onClick={() => setMode("basic")}
-            >
-              Basic
+  const header = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p className="text-sm text-[var(--color-muted-foreground)]">
+          Dims mods you can&apos;t acquire yet and shows the blocking requirement.
+        </p>
+        <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
+          {MODE_COPY[profile.mode]}
+        </p>
+      </div>
+      <div className="flex gap-1 rounded-[var(--radius)] border p-1">
+        <Button
+          type="button"
+          size="sm"
+          variant={profile.mode === "basic" ? "default" : "ghost"}
+          onClick={() => setMode("basic")}
+        >
+          Basic
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={profile.mode === "advanced" ? "default" : "ghost"}
+          onClick={() => setMode("advanced")}
+        >
+          Advanced
+        </Button>
+      </div>
+    </div>
+  );
+  const content = (
+    <>
+      {profile.mode === "advanced" && (
+        <div className="mb-3">
+          {sync.state === "disconnected" ? (
+            <Button type="button" size="sm" variant="ghost" onClick={() => setPopoverOpen(true)}>
+              ▲ Connect TarkovTracker
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={profile.mode === "advanced" ? "default" : "ghost"}
-              onClick={() => setMode("advanced")}
-            >
-              Advanced
-            </Button>
-          </div>
+          ) : (
+            <TarkovTrackerSyncBanner sync={sync} />
+          )}
         </div>
-      </CardHeader>
-      <CardContent>
-        {profile.mode === "advanced" && (
-          <div className="mb-3">
-            {sync.state === "disconnected" ? (
-              <Button type="button" size="sm" variant="ghost" onClick={() => setPopoverOpen(true)}>
-                ▲ Connect TarkovTracker
-              </Button>
-            ) : (
-              <TarkovTrackerSyncBanner sync={sync} />
-            )}
-          </div>
-        )}
+      )}
 
-        <details className="group">
-          <summary className="cursor-pointer text-sm text-[var(--color-muted-foreground)] hover:opacity-80">
-            {sync.state === "synced" ? "Override manually" : "Edit profile"}{" "}
-            <span className="ml-1 inline-block transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <div className="mt-4 flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {TRADER_KEYS.map((key) => (
-                <label key={key} className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium">{TRADER_LABELS[key]}</span>
-                  <select
-                    className="h-8 rounded-[var(--radius)] border bg-[var(--color-input)] px-2 text-sm"
-                    value={profile.traders[key]}
-                    onChange={(e) => setTraderLevel(key, Number(e.target.value))}
-                  >
-                    {[1, 2, 3, 4].map((ll) => (
-                      <option key={ll} value={ll}>
-                        LL {ll}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={profile.flea}
-                  onChange={(e) => setFlea(e.target.checked)}
-                />
-                <span>Flea market access</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-sm">
-                <span className="font-medium">PMC level</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={99}
-                  step={1}
-                  inputMode="numeric"
-                  className="h-8 w-20"
-                  value={profile.level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  onBlur={(e) => {
-                    // The field is controlled by `profile.level`, but a rejected keystroke
-                    // leaves no state change to re-render it. Snap the DOM value back so
-                    // the field always agrees with the profile it edits.
-                    e.currentTarget.value = String(profile.level);
-                  }}
-                />
-              </label>
-            </div>
-            {profile.flea && (
-              <p className="-mt-2 text-xs text-[var(--color-muted-foreground)]">
-                Flea offers with a level requirement above {profile.level} stay locked.
-              </p>
-            )}
-
-            {profile.mode === "advanced" && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    Quests that unlock gear{" "}
-                    <span className="text-xs font-normal text-[var(--color-muted-foreground)]">
-                      — {doneCount} of {allTasks.length} complete
-                    </span>
-                  </span>
-                  {tasks.isLoading && (
-                    <span className="text-xs text-[var(--color-muted-foreground)]">
-                      Loading quest list…
-                    </span>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Filter quests…"
+      <details className="group">
+        <summary className="cursor-pointer text-sm text-[var(--color-muted-foreground)] hover:opacity-80">
+          {sync.state === "synced" ? "Override manually" : "Edit profile"}{" "}
+          <span className="ml-1 inline-block transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <div className="mt-4 flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {TRADER_KEYS.map((key) => (
+              <label key={key} className="flex flex-col gap-1 text-sm">
+                <span className="font-medium">{TRADER_LABELS[key]}</span>
+                <select
                   className="h-8 rounded-[var(--radius)] border bg-[var(--color-input)] px-2 text-sm"
-                />
-                <div className="flex gap-1 text-xs">
-                  {(
-                    [
-                      ["all", "All"],
-                      ["incomplete", "Incomplete"],
-                    ] as const
-                  ).map(([key, label]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setFilter(key)}
-                      className={`border px-2 py-0.5 ${focusRing} ${
-                        filter === key
-                          ? "border-[var(--color-primary)] text-[var(--color-primary-text)]"
-                          : "border-[var(--color-border)] text-[var(--color-muted-foreground)]"
-                      }`}
-                    >
-                      {label}
-                    </button>
+                  value={profile.traders[key]}
+                  onChange={(e) => setTraderLevel(key, Number(e.target.value))}
+                >
+                  {[1, 2, 3, 4].map((ll) => (
+                    <option key={ll} value={ll}>
+                      LL {ll}
+                    </option>
                   ))}
-                </div>
-                {tasks.error && (
-                  <span className="text-xs text-[var(--color-muted-foreground)]">
-                    Couldn&apos;t load the quest list. Reload the page.
+                </select>
+              </label>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={profile.flea}
+                onChange={(e) => setFlea(e.target.checked)}
+              />
+              <span>Flea market access</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-sm">
+              <span className="font-medium">PMC level</span>
+              <Input
+                type="number"
+                min={1}
+                max={99}
+                step={1}
+                inputMode="numeric"
+                className="h-8 w-20"
+                value={profile.level}
+                onChange={(e) => setLevel(e.target.value)}
+                onBlur={(e) => {
+                  // The field is controlled by `profile.level`, but a rejected keystroke
+                  // leaves no state change to re-render it. Snap the DOM value back so
+                  // the field always agrees with the profile it edits.
+                  e.currentTarget.value = String(profile.level);
+                }}
+              />
+            </label>
+          </div>
+          {profile.flea && (
+            <p className="-mt-2 text-xs text-[var(--color-muted-foreground)]">
+              Flea offers with a level requirement above {profile.level} stay locked.
+            </p>
+          )}
+
+          {profile.mode === "advanced" && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  Quests that unlock gear{" "}
+                  <span className="text-xs font-normal text-[var(--color-muted-foreground)]">
+                    — {doneCount} of {allTasks.length} complete
                   </span>
-                )}
-                <ul className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
-                  {visibleTasks.map((t) => (
-                    <li key={t.normalizedName}>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={completedSet.has(t.normalizedName)}
-                          onChange={() => toggleQuest(t.normalizedName)}
-                        />
-                        <span>{t.name}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-                {sync.state === "synced" && (
-                  <p className="text-xs italic text-[var(--color-muted-foreground)]">
-                    Manual toggles override the TarkovTracker snapshot until the next Re-sync.
-                  </p>
+                </span>
+                {tasks.isLoading && (
+                  <span className="text-xs text-[var(--color-muted-foreground)]">
+                    Loading quest list…
+                  </span>
                 )}
               </div>
-            )}
-          </div>
-        </details>
-      </CardContent>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Filter quests…"
+                className="h-8 rounded-[var(--radius)] border bg-[var(--color-input)] px-2 text-sm"
+              />
+              <div className="flex gap-1 text-xs">
+                {(
+                  [
+                    ["all", "All"],
+                    ["incomplete", "Incomplete"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setFilter(key)}
+                    className={`border px-2 py-0.5 ${focusRing} ${
+                      filter === key
+                        ? "border-[var(--color-primary)] text-[var(--color-primary-text)]"
+                        : "border-[var(--color-border)] text-[var(--color-muted-foreground)]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {tasks.error && (
+                <span className="text-xs text-[var(--color-muted-foreground)]">
+                  Couldn&apos;t load the quest list. Reload the page.
+                </span>
+              )}
+              <ul className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
+                {visibleTasks.map((t) => (
+                  <li key={t.normalizedName}>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={completedSet.has(t.normalizedName)}
+                        onChange={() => toggleQuest(t.normalizedName)}
+                      />
+                      <span>{t.name}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              {sync.state === "synced" && (
+                <p className="text-xs italic text-[var(--color-muted-foreground)]">
+                  Manual toggles override the TarkovTracker snapshot until the next Re-sync.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </details>
+    </>
+  );
+  const popover = (
+    <TarkovTrackerConnectPopover
+      open={popoverOpen}
+      onClose={() => setPopoverOpen(false)}
+      onConnect={(token) => {
+        setPopoverOpen(false);
+        void sync.connect(token);
+      }}
+    />
+  );
 
-      <TarkovTrackerConnectPopover
-        open={popoverOpen}
-        onClose={() => setPopoverOpen(false)}
-        onConnect={(token) => {
-          setPopoverOpen(false);
-          void sync.connect(token);
-        }}
-      />
-    </Card>
+  return (
+    <div className="flex flex-col gap-4">
+      {header}
+      <div>{content}</div>
+      {popover}
+    </div>
   );
 }

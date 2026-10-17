@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type * as BuilderState from "../features/builder/useBuilderState.js";
 import { renderRoute } from "../test/render-route.js";
+import { pickWeapon } from "../test/pick-weapon.js";
 
 /**
  * Sharing a build, or handing it to Compare, commits it: `BuilderPage` calls the Builder's
@@ -45,18 +46,9 @@ afterEach(() => {
   sessionStorage.clear();
 });
 
-function weaponSelect(): HTMLSelectElement {
-  const found = screen
-    .getAllByRole<HTMLSelectElement>("combobox")
-    .find((el) => el.querySelector('option[value=""]'));
-  if (!found) throw new Error("weapon <select> not found among comboboxes");
-  return found;
-}
-
 async function pickFixtureWeapon(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByText("1 weapons available on your profile");
-  await waitFor(() => expect(weaponSelect()).not.toBeDisabled());
-  await user.selectOptions(weaponSelect(), "w-m4a1");
+  await pickWeapon(user);
   await screen.findByText("2 attached", { exact: true });
 }
 
@@ -83,7 +75,12 @@ describe("/builder commits the build it hands on", () => {
     await pickFixtureWeapon(user);
 
     await user.click(screen.getByRole("button", { name: "Share build" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Build URL copied");
+    // The toast is a status; so is the weapon picker's (silent) result count.
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("Build URL copied")),
+      ).toBe(true),
+    );
     expect(calls).toEqual(["commit", "POST"]);
   });
 
@@ -92,9 +89,10 @@ describe("/builder commits the build it hands on", () => {
     const { router } = await renderRoute("/builder");
     await pickFixtureWeapon(user);
 
-    await user.click(screen.getByRole("button", { name: "Compare ↔" }));
-    expect(calls).toEqual([]);
     await user.click(screen.getByRole("button", { name: "Compare" }));
+    expect(calls).toEqual([]);
+    const dialog = screen.getByRole("dialog", { name: "Compare this build" });
+    await user.click(within(dialog).getByRole("button", { name: "Compare" }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe("/builder/compare"));
     expect(calls).toEqual(["commit"]);

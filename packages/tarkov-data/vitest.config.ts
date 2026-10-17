@@ -14,7 +14,7 @@ export default defineConfig({
     // the root CLAUDE.md's per-package-tsconfig gotcha for the failure mode this avoids). Each
     // hook test carries a `// @vitest-environment jsdom` pragma per-file instead of switching
     // the whole package's default `environment` — mirrors the pattern apps/web already uses
-    // (see e.g. features/builder/build-header.test.tsx).
+    // (see e.g. features/builder/stat-strip.test.tsx).
     include: ["src/**/*.test.ts"],
     environment: "node",
     coverage: {

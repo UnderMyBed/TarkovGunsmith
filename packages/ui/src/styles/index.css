@@ -5,8 +5,8 @@
  * resolves through `node_modules/@tarkov/ui` (a pnpm workspace symlink), so every class
  * that exists ONLY in this package's components was invisible to the scanner and its
  * rules were never emitted: no `focus-visible:` ring on Button or Input, no
- * `animate-pulse` on Skeleton, no `grid-cols-[110px_46px_56px_48px_1fr]` on StatRow. The markup shipped the class
- * names; the stylesheet had no matching rule. See GitHub issue #162.
+ * `animate-pulse` on Skeleton. The markup shipped the class names; the stylesheet had no
+ * matching rule. See GitHub issue #162.
  *
  * The directive lives here rather than in a consumer's stylesheet because this package
  * owns those classes: any app that imports `@tarkov/ui/styles.css` gets the scan with it,

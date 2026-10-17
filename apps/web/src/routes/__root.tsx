@@ -1,5 +1,6 @@
 import { createRootRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { SiteChromeProvider, useWorkbenchMounted } from "../site-chrome.js";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -40,6 +41,20 @@ function NavLink({
 }
 
 function RootLayout() {
+  return (
+    <SiteChromeProvider>
+      <SiteShell />
+    </SiteChromeProvider>
+  );
+}
+
+/**
+ * The masthead, `<main>` and footer. A Builder workbench draws its own top bar, wordmark
+ * included (`site-chrome.tsx`), so while one is mounted the masthead steps aside and `<main>`
+ * runs full width for the workbench's bars.
+ */
+function SiteShell() {
+  const workbench = useWorkbenchMounted();
   const pathname = useRouterState({ select: (st) => st.location.pathname });
   const compareActive = pathname === COMPARE_PREFIX || pathname.startsWith(COMPARE_PREFIX + "/");
   const builderActive =
@@ -47,7 +62,9 @@ function RootLayout() {
   return (
     <div className="min-h-full bg-[var(--color-background)] text-[var(--color-foreground)]">
       {/* First focusable element on every page: a keyboard user can jump the masthead and
-       * the two nav disclosures instead of tabbing through them on every route.
+       * its nav instead of tabbing through them on every route. A workbench page (the
+       * Builder) has no masthead: its workbench bar is the start of <main>, so there the link
+       * lands on the bar, whose weapon picker is the page's first control.
        *
        * Parked off-screen with a transform rather than `sr-only`, and revealed by undoing
        * that transform on focus. `sr-only`/`not-sr-only` both set `position`, as does the
@@ -66,29 +83,37 @@ function RootLayout() {
       >
         Skip to content
       </a>
-      <div className="h-[2px] bg-[var(--color-foreground)]" aria-hidden />
-      <header className="border-b border-[var(--color-border)] bg-[var(--color-muted)]">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-          <Link to="/" className="flex items-center gap-3">
-            <span aria-hidden className="text-[var(--color-primary-text)] text-lg leading-none">
-              ▲
-            </span>
-            <span className="font-display text-lg leading-none">TarkovGunsmith</span>
-          </Link>
-          <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <NavLink to="/builder" active={builderActive}>
-              Builder
-            </NavLink>
-            <NavLink to="/builder/compare" active={compareActive}>
-              Compare
-            </NavLink>
-          </nav>
-        </div>
-      </header>
+      {!workbench && (
+        <>
+          <div className="h-[2px] bg-[var(--color-foreground)]" aria-hidden />
+          <header className="border-b border-[var(--color-border)] bg-[var(--color-muted)]">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+              <Link to="/" className="flex items-center gap-3">
+                <span aria-hidden className="text-[var(--color-primary-text)] text-lg leading-none">
+                  ▲
+                </span>
+                <span className="font-display text-lg leading-none">TarkovGunsmith</span>
+              </Link>
+              <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <NavLink to="/builder" active={builderActive}>
+                  Builder
+                </NavLink>
+                <NavLink to="/builder/compare" active={compareActive}>
+                  Compare
+                </NavLink>
+              </nav>
+            </div>
+          </header>
+        </>
+      )}
       {/* `tabIndex={-1}` so the skip link above actually MOVES focus here rather than only
        * scrolling: a fragment target that is not focusable leaves focus on the link, and
        * the next Tab resumes in the nav the user just skipped. */}
-      <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-6 py-10">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={workbench ? undefined : "mx-auto max-w-6xl px-6 py-10"}
+      >
         <Outlet />
       </main>
       <footer className="mt-24 border-t border-[var(--color-border)]">

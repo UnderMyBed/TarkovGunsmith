@@ -22,7 +22,7 @@ export interface UseKeyboardShortcutsResult {
  * Shortcuts:
  *   ?     Toggle the shortcut overlay
  *   g b   → /builder
- *   /     Focus first <select>/<input type="search">
+ *   /     Focus the first picker: a combobox input, <select> or <input type="search">
  *   Esc   Close overlay (dialogs handle their own Esc)
  *
  * Input-safety: no shortcut (except Esc for overlay) fires while focus is in
@@ -64,9 +64,11 @@ export function useKeyboardShortcuts(): UseKeyboardShortcutsResult {
         return;
       }
 
-      // `/` focuses first select/search input.
+      // `/` focuses the first picker in DOM order: on the Builder, the weapon combobox.
       if (e.key === "/") {
-        const target = document.querySelector<HTMLElement>("select, input[type='search']");
+        const target = document.querySelector<HTMLElement>(
+          "input[role='combobox'], select, input[type='search']",
+        );
         if (target) {
           e.preventDefault();
           target.focus();
