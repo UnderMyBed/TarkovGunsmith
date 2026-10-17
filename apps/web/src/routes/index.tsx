@@ -87,7 +87,7 @@ function HomePage() {
             ◇ NEW · OPTIMIZER
           </span>
           <span className="font-mono text-10 tracking-20 uppercase text-[var(--color-muted-foreground)]">
-            BRANCH-AND-BOUND · EXACT
+            BRANCH-AND-BOUND · HEURISTIC
           </span>
         </div>
         <div>

@@ -99,6 +99,17 @@ describe("buildFromSelection", () => {
     });
   });
 
+  it("keeps a deselected part whose parent is unchanged beneath a selected grandparent", () => {
+    const current = build({ upper: "u-1", "upper/barrel": "b-long", "upper/barrel/gas": "g-std" });
+    const proposed = build({ upper: "u-2", "upper/barrel": "b-long", "upper/barrel/gas": "g-low" });
+    expect([...allRows(current, proposed)].sort()).toEqual(["upper", "upper/barrel/gas"]);
+    expect(apply(current, proposed, ["upper"])).toEqual({
+      upper: "u-2",
+      "upper/barrel": "b-long",
+      "upper/barrel/gas": "g-std",
+    });
+  });
+
   it("lands a selected row beneath a kept parent only where that parent takes it", () => {
     const current = build({ upper: "u-1", "upper/barrel": "b-short" });
     const takes = build({ upper: "u-1", "upper/barrel": "b-long", "upper/barrel/gas": "g-std" });
