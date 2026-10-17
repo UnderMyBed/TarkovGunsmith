@@ -92,8 +92,9 @@ test.describe("Builder prices", () => {
       }),
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("build-cost")).toHaveCount(0);
-    // Asked once and retried once; the components mounted since do not ask again.
-    expect(asked).toBe(2);
+    // Asked once and retried once, each a `no-cache` request and a fallback to the HTTP cache,
+    // which holds no copy and so asks upstream too; the components mounted since do not ask.
+    expect(asked).toBe(4);
   });
 
   test("price each Compare side", async ({ page }) => {

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   answerPriceRequest,
   fetchPriceTable,
+  PRICE_FALLBACK_TIMEOUT_MS,
   PRICE_MAX_AGE_MS,
   PriceFetchError,
   type PriceRequest,
@@ -95,6 +96,72 @@ describe("fetchPriceTable", () => {
     );
     expect(caches).toEqual(["no-cache", "force-cache"]);
     expect(prices).toMatchObject({ asOf: AS_OF, fetchedAt: lastFetchedAt });
+  });
+
+  it("falls back to the cache when it has never fetched too, not knowing that copy's age", async () => {
+    const { fetchImpl, caches } = sequence(
+      () => Promise.resolve(respond({}, 503, "Service Unavailable")),
+      () => Promise.resolve(respond(doc())),
+    );
+    const prices = await fetchPriceTable(request, { fetchImpl, now: () => NOW });
+    expect(caches).toEqual(["no-cache", "force-cache"]);
+    expect(prices).toMatchObject({ asOf: AS_OF, fetchedAt: null });
+  });
+
+  it("throws the first failure, not the fallback's, when both fail", async () => {
+    const { fetchImpl, caches } = sequence(
+      () => Promise.resolve(respond({}, 503, "Service Unavailable")),
+      () => Promise.reject(new TypeError("Failed to fetch")),
+    );
+    await expect(fetchPriceTable(request, { fetchImpl, now: () => NOW })).rejects.toThrow(
+      new PriceFetchError("json.tarkov.dev answered 503 Service Unavailable"),
+    );
+    expect(caches).toEqual(["no-cache", "force-cache"]);
+  });
+
+  it("gives the fallback only a short wait", async () => {
+    const signals: (AbortSignal | undefined)[] = [];
+    const fetchImpl = ((_input: RequestInfo | URL, init?: RequestInit) => {
+      signals.push(init?.signal ?? undefined);
+      if (signals.length === 1) return Promise.reject(new TypeError("Failed to fetch"));
+      return new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted")));
+      });
+    }) as typeof fetch;
+    vi.useFakeTimers();
+    try {
+      const pending = fetchPriceTable(request, { fetchImpl, now: () => NOW });
+      const settled = expect(pending).rejects.toThrow("Failed to fetch");
+      await vi.advanceTimersByTimeAsync(PRICE_FALLBACK_TIMEOUT_MS);
+      await settled;
+      expect(signals).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not fall back after a timeout, which would only wait again", async () => {
+    let calls = 0;
+    const fetchImpl = ((_input: RequestInfo | URL, init?: RequestInit) => {
+      calls += 1;
+      return new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted")));
+      });
+    }) as typeof fetch;
+    await expect(fetchPriceTable(request, { fetchImpl, timeoutMs: 5 })).rejects.toThrow(
+      "Prices did not arrive within 0.005 s",
+    );
+    expect(calls).toBe(1);
+  });
+
+  it("treats a last fetch in the future as unknown, so the cache cannot answer for it", async () => {
+    const { fetchImpl, caches } = sequence(() => Promise.resolve(respond(doc())));
+    const prices = await fetchPriceTable(
+      { ...request, lastFetchedAt: 9e15 },
+      { fetchImpl, now: () => NOW },
+    );
+    expect(caches).toEqual(["no-cache"]);
+    expect(prices.fetchedAt).toBe(NOW);
   });
 
   it("names the status when upstream refuses", async () => {

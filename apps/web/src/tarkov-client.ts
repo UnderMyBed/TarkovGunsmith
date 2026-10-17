@@ -28,7 +28,8 @@ export function localFetchedAtStore(): FetchedAtStore {
     get: () => {
       try {
         const value = Number(localStorage.getItem(FETCHED_AT_KEY));
-        return Number.isFinite(value) && value > 0 ? value : memory.get();
+        // A time in the future is not a fetch that happened: a skewed clock or a corrupt value.
+        return Number.isFinite(value) && value > 0 && value <= Date.now() ? value : memory.get();
       } catch {
         return memory.get();
       }

@@ -1,6 +1,7 @@
 import type { BuildPrice } from "@tarkov/data";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
 import { describeBuildPrice, type PricesStatus } from "./build-price.js";
+import { PricesLine } from "./prices-line.js";
 import { formatRequirement } from "./slot-tree.js";
 import type { WeaponOption } from "./useBuilderState.js";
 
@@ -37,32 +38,7 @@ const DATA_DATE = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
-const PRICE_TIME = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: "UTC",
-  timeZoneName: "short",
-});
-
 const META = "font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]";
-
-function PricesLine({ prices }: { prices: PricesStatus }) {
-  if (prices.state === "loading") return <p className={META}>Prices loading…</p>;
-  if (prices.state === "error") {
-    return (
-      <p className="font-mono text-10 uppercase tracking-18 text-[var(--color-destructive)]">
-        Prices unavailable: {prices.message}
-      </p>
-    );
-  }
-  return (
-    <p className={META}>
-      Prices as of <time dateTime={prices.asOf}>{PRICE_TIME.format(new Date(prices.asOf))}</time>
-    </p>
-  );
-}
 
 /**
  * The "Weapon" card: picker + profile-filtered availability toggle, plus (once a weapon is

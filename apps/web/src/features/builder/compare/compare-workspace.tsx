@@ -23,7 +23,7 @@ import { CompareProgressionRow } from "./compare-progression-row.js";
 import { CompareSide, computeSideSpec } from "./compare-side.js";
 import { useCompareDraft } from "./useCompareDraft.js";
 import { withKnownSide } from "./known-parts.js";
-import { priceBuild } from "../build-price.js";
+import { priceBuild, pricesStatus } from "../build-price.js";
 
 export interface CompareWorkspaceProps {
   initialPair?: BuildPair;
@@ -290,7 +290,7 @@ export function CompareWorkspace({
       <CompareProgressionRow
         left={{ price: leftPrice, gated: draft.state.leftProfile !== undefined }}
         right={{ price: rightPrice, gated: draft.state.rightProfile !== undefined }}
-        pricesReady={livePrices.data !== undefined}
+        prices={pricesStatus(livePrices)}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

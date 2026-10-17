@@ -13,6 +13,7 @@ export type { ExtractedPrices, ItemPriceTuple, PriceTable } from "./table.js";
 export {
   answerPriceRequest,
   fetchPriceTable,
+  PRICE_FALLBACK_TIMEOUT_MS,
   PRICE_MAX_AGE_MS,
   PRICE_TIMEOUT_MS,
   PriceFetchError,

@@ -122,6 +122,23 @@ describe("createBuilderDataSource", () => {
     expect(stored).toEqual([Date.now(), Date.now()]);
   });
 
+  it("records no fetch time for a copy the cache served after upstream failed", async () => {
+    const up = await fakeUpstream();
+    const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) =>
+      urlOf(input) === ITEMS_URL && init?.cache === "no-cache"
+        ? Promise.reject(new TypeError("Failed to fetch"))
+        : up.fetchImpl(input, init)) as typeof fetch;
+    const stored: number[] = [];
+    const source = createBuilderDataSource({
+      snapshotUrl: SNAPSHOT_URL,
+      itemsUrl: ITEMS_URL,
+      fetchImpl,
+      fetchedAtStore: { get: () => null, set: (at) => stored.push(at) },
+    });
+    expect(await source.prices()).toMatchObject({ asOf: up.prices.dataAsOf, fetchedAt: null });
+    expect(stored).toEqual([]);
+  });
+
   it("fails a snapshot load loudly and retries it next time", async () => {
     const up = await fakeUpstream();
     const source = createBuilderDataSource({
@@ -161,6 +178,8 @@ describe("createBuilderDataSource", () => {
         first = false;
         return new Promise<Response>((_, reject) => (rejectFirst = reject));
       }
+      // Nor does the HTTP cache hold a copy for the failed load to fall back on.
+      if (init?.cache === "force-cache") return Promise.reject(new TypeError("no cached copy"));
       return up.fetchImpl(input, init);
     }) as typeof fetch;
     const source = createBuilderDataSource({

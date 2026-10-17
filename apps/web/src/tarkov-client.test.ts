@@ -49,6 +49,14 @@ describe("localFetchedAtStore", () => {
     expect(localFetchedAtStore().get()).toBe(1_792_198_082_000);
   });
 
+  it("ignores a stored time in the future, from a skewed clock or a corrupt value", () => {
+    vi.stubGlobal("localStorage", storage(false));
+    localStorage.setItem("tarkov:prices-fetched-at", "9e15");
+    expect(localFetchedAtStore().get()).toBeNull();
+    localStorage.setItem("tarkov:prices-fetched-at", String(Date.now() + 60_000));
+    expect(localFetchedAtStore().get()).toBeNull();
+  });
+
   it("lasts as long as the page where storage is refused", () => {
     vi.stubGlobal("localStorage", storage(true));
     const store = localFetchedAtStore();

@@ -8,6 +8,7 @@ afterEach(() => cleanup());
 
 const priced = { status: "priced", totalRUB: 26_666, presetId: "carbine" } as const;
 const locked = { status: "unobtainable", missing: ["gun"] } as const;
+const READY = { state: "ready", asOf: "2026-10-17T01:50:29.000Z" } as const;
 
 describe("CompareProgressionRow", () => {
   it("claims nothing about either side until prices are in", () => {
@@ -15,7 +16,7 @@ describe("CompareProgressionRow", () => {
       <CompareProgressionRow
         left={{ price: priced, gated: true }}
         right={{ price: locked, gated: true }}
-        pricesReady={false}
+        prices={{ state: "loading" }}
       />,
     );
     expect(screen.getByTestId("compare-price-row")).toHaveTextContent("——");
@@ -28,7 +29,7 @@ describe("CompareProgressionRow", () => {
       <CompareProgressionRow
         left={{ price: priced, gated: true }}
         right={{ price: locked, gated: true }}
-        pricesReady
+        prices={READY}
       />,
     );
     expect(screen.getByText("₽26,666")).toBeInTheDocument();
@@ -42,11 +43,41 @@ describe("CompareProgressionRow", () => {
           gated: false,
         }}
         right={{ price: null, gated: false }}
-        pricesReady
+        prices={READY}
       />,
     );
     expect(screen.getByText("₽1,000+")).toBeInTheDocument();
     expect(screen.getByText("2 UNPRICED")).toBeInTheDocument();
     expect(screen.queryByText("REACHABLE")).not.toBeInTheDocument();
+  });
+
+  it("says why there are no prices when they failed", () => {
+    render(
+      <CompareProgressionRow
+        left={{ price: priced, gated: true }}
+        right={{ price: null, gated: false }}
+        prices={{ state: "error", message: "json.tarkov.dev answered 503 Service Unavailable" }}
+      />,
+    );
+    expect(screen.getByTestId("compare-price-row")).toHaveTextContent("——");
+    expect(
+      screen.getByText("Prices unavailable: json.tarkov.dev answered 503 Service Unavailable"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows how old a table served from the cache is", () => {
+    // The fallback copy from two days earlier: its prices show, with their age beside them.
+    const stale = "2026-10-15T09:12:00.000Z";
+    render(
+      <CompareProgressionRow
+        left={{ price: priced, gated: false }}
+        right={{ price: null, gated: false }}
+        prices={{ state: "ready", asOf: stale }}
+      />,
+    );
+    expect(screen.getByText("₽26,666")).toBeInTheDocument();
+    const time = screen.getByText(/^Prices as of/).querySelector("time");
+    expect(time).toHaveAttribute("datetime", stale);
+    expect(time).toHaveTextContent("15 Oct, 09:12 UTC");
   });
 });

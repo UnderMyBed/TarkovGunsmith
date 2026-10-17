@@ -5,8 +5,11 @@ export interface LivePrices {
   readonly table: PriceTable;
   /** The newest `updated` timestamp in the items document (ISO 8601). */
   readonly asOf: string;
-  /** When the document was last fetched from upstream rather than the HTTP cache (ms). */
-  readonly fetchedAt: number;
+  /**
+   * When the document was last fetched from upstream rather than the HTTP cache (ms), or
+   * `null` when a cached copy was used whose fetch time is not known.
+   */
+  readonly fetchedAt: number | null;
 }
 
 /** What the main thread asks the price worker for. */
@@ -34,10 +37,19 @@ export const PRICE_TIMEOUT_MS = 60_000;
 /** A copy of the items document fetched longer ago than this is fetched again. */
 export const PRICE_MAX_AGE_MS = 3_600_000;
 
+/**
+ * How long the fallback to the HTTP cache may take. A cached copy answers at once; a fallback
+ * that goes to the network after all must not keep the user waiting for a second full timeout.
+ */
+export const PRICE_FALLBACK_TIMEOUT_MS = 5_000;
+
 /** Thrown when live prices cannot be read; the message says why. */
 export class PriceFetchError extends Error {
   override name = "PriceFetchError";
 }
+
+/** Upstream did not answer within the timeout. */
+class PriceTimeoutError extends PriceFetchError {}
 
 export interface FetchPricesOptions {
   readonly fetchImpl?: typeof fetch;
@@ -77,7 +89,7 @@ async function load(
     return { table: extractPrices((id) => byId[id], request.ids).table, asOf };
   } catch (error) {
     if (controller.signal.aborted) {
-      throw new PriceFetchError(`Prices did not arrive within ${timeoutMs / 1000} s`);
+      throw new PriceTimeoutError(`Prices did not arrive within ${timeoutMs / 1000} s`);
     }
     throw error;
   } finally {
@@ -97,8 +109,13 @@ async function load(
  * regenerates `items` about every 10 minutes (`Last-Modified` 01:40:30 then 01:50:29 on
  * 2026-10-17, and the earlier ETag drew a 200).
  *
- * If the `no-cache` request fails, whatever copy the cache holds is used: its `asOf` is shown
- * with the prices, so their age stays visible. Any other failure rejects with a
+ * A `lastFetchedAt` in the future (a skewed clock, or a corrupt stored value) is treated as
+ * unknown, so it cannot keep the cache answering until the clock catches up.
+ *
+ * If the `no-cache` request fails, whatever copy the HTTP cache holds is used (`force-cache`,
+ * within {@link PRICE_FALLBACK_TIMEOUT_MS}): its `asOf` is shown with the prices, so their age
+ * stays visible. After a timeout there is no fallback, since a second wait would follow the
+ * first. When the fallback fails too, the `no-cache` request's own error is the one thrown: a
  * {@link PriceFetchError} or the network error, and the caller treats every price as unknown.
  */
 export async function fetchPriceTable(
@@ -113,20 +130,29 @@ export async function fetchPriceTable(
   } = options;
   const doFetch: typeof fetch = (input, init) =>
     fetchImpl !== undefined ? fetchImpl(input, init) : fetch(input, init);
-  const { lastFetchedAt } = request;
-  if (lastFetchedAt !== null && now() - lastFetchedAt <= maxAgeMs) {
+  const fetchedAt = now();
+  const lastFetchedAt =
+    request.lastFetchedAt !== null && request.lastFetchedAt <= fetchedAt
+      ? request.lastFetchedAt
+      : null;
+  if (lastFetchedAt !== null && fetchedAt - lastFetchedAt <= maxAgeMs) {
     return { ...(await load(request, "default", doFetch, timeoutMs)), fetchedAt: lastFetchedAt };
   }
-  const fetchedAt = now();
   try {
     return { ...(await load(request, "no-cache", doFetch, timeoutMs)), fetchedAt };
   } catch (error) {
-    if (lastFetchedAt === null) throw error;
-    // Upstream is unreachable: the copy fetched at `lastFetchedAt`, if the cache still holds it.
-    return {
-      ...(await load(request, "force-cache", doFetch, timeoutMs)),
-      fetchedAt: lastFetchedAt,
-    };
+    if (error instanceof PriceTimeoutError) throw error;
+    // Upstream is unreachable or refused: the copy the cache holds, fetched at `lastFetchedAt`.
+    try {
+      const timeout = Math.min(timeoutMs, PRICE_FALLBACK_TIMEOUT_MS);
+      return {
+        ...(await load(request, "force-cache", doFetch, timeout)),
+        fetchedAt: lastFetchedAt,
+      };
+    } catch {
+      // The first failure is the one that says what is wrong with upstream.
+      throw error;
+    }
   }
 }
 

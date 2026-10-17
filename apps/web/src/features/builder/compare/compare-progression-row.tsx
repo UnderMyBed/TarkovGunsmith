@@ -1,7 +1,8 @@
 import type { ReactElement } from "react";
 import type { BuildPrice } from "@tarkov/data";
 import { Pill } from "@tarkov/ui";
-import { formatRub } from "../build-price.js";
+import { formatRub, type PricesStatus } from "../build-price.js";
+import { PricesLine } from "../prices-line.js";
 
 /** One side's cost, under that side's profile, or `null` gates in theorycraft. */
 export interface CompareSidePrice {
@@ -14,8 +15,8 @@ export interface CompareSidePrice {
 interface CompareProgressionRowProps {
   left: CompareSidePrice;
   right: CompareSidePrice;
-  /** Without live prices every total is unknown, so none is shown. */
-  pricesReady: boolean;
+  /** Where live prices stand. Without them every total is unknown, so none is shown. */
+  prices: PricesStatus;
 }
 
 function SidePill({ side, pricesReady }: { side: CompareSidePrice; pricesReady: boolean }) {
@@ -45,13 +46,14 @@ function SidePill({ side, pricesReady }: { side: CompareSidePrice; pricesReady: 
  * with, under the side's own profile, or every gate open when it has none.
  */
 export function CompareProgressionRow(props: CompareProgressionRowProps): ReactElement {
+  const pricesReady = props.prices.state === "ready";
   return (
-    <div
-      className="flex items-center justify-between border-t border-dashed border-[var(--color-border)] py-2 text-sm"
-      data-testid="compare-price-row"
-    >
-      <SidePill side={props.left} pricesReady={props.pricesReady} />
-      <SidePill side={props.right} pricesReady={props.pricesReady} />
+    <div className="flex flex-col gap-1 border-t border-dashed border-[var(--color-border)] py-2">
+      <div className="flex items-center justify-between text-sm" data-testid="compare-price-row">
+        <SidePill side={props.left} pricesReady={pricesReady} />
+        <SidePill side={props.right} pricesReady={pricesReady} />
+      </div>
+      <PricesLine prices={props.prices} />
     </div>
   );
 }

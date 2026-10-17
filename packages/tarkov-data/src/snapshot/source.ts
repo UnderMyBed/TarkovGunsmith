@@ -149,6 +149,8 @@ export function createBuilderDataSource(options: BuilderDataSourceOptions): Buil
         createPriceWorker !== undefined
           ? await requestPricesFromWorker(createPriceWorker, request)
           : await fetchPriceTable(request, { fetchImpl: doFetch });
+      // A copy the cache served after upstream failed has no known fetch time to keep.
+      if (live.fetchedAt === null) return live;
       fetchedAtStore.set(live.fetchedAt);
       return live;
     })();
