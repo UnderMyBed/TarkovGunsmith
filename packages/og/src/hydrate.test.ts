@@ -40,6 +40,19 @@ describe("hydrateBuildCard", () => {
     expect(hydrateBuildCard({ ...args, priceRub: null }).priceRub).toBeNull();
   });
 
+  it("shows ergonomics summing below 0 as the game's 0", () => {
+    // 48 base + 30 from the fixture parts − 101 sums to −23.
+    const heavy = [...m4a1Mods, { ...m4a1Mods[0]!, ergonomicsDelta: -101 }];
+    expect(hydrateBuildCard({ ...args, mods: heavy }).stats.ergo).toBe(0);
+    const side: HydrateSideArgs = {
+      name: undefined,
+      weapon: m4a1Weapon,
+      mods: heavy,
+      availability: null,
+    };
+    expect(hydratePairCard({ left: side, right: null }).left?.stats.ergo).toBe(0);
+  });
+
   it("computes stats via weaponSpec aggregation", () => {
     const vm = hydrateBuildCard(args);
     // 48 + 15 + 8 + 7 = 78

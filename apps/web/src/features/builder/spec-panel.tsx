@@ -1,6 +1,7 @@
 import type { WeaponSpec } from "@tarkov/ballistics";
 import type { MountedMagazine } from "@tarkov/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
+import { ergonomicsFloorNote, shownErgonomics } from "./ergonomics.js";
 
 export interface SpecPanelProps {
   weaponShortName: string;
@@ -21,7 +22,11 @@ export function SpecPanel({ weaponShortName, spec, magazine }: SpecPanelProps) {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <dl className="grid gap-2 sm:grid-cols-3">
-          <SpecStat label="Ergonomics" value={spec.ergonomics.toFixed(1)} />
+          <SpecStat
+            label="Ergonomics"
+            value={shownErgonomics(spec.ergonomics).toFixed(1)}
+            title={ergonomicsFloorNote(spec.ergonomics)}
+          />
           <SpecStat label="Vert. recoil" value={spec.verticalRecoil.toFixed(1)} />
           <SpecStat label="Horiz. recoil" value={spec.horizontalRecoil.toFixed(1)} />
           <SpecStat label="Weight" value={`${spec.weight.toFixed(2)} kg`} />
@@ -73,13 +78,26 @@ export function SpecPanel({ weaponShortName, spec, magazine }: SpecPanelProps) {
   );
 }
 
-function SpecStat({ label, value, detail }: { label: string; value: string; detail?: string }) {
+function SpecStat({
+  label,
+  value,
+  detail,
+  title,
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+  /** What the value leaves out, shown on hover. */
+  title?: string | undefined;
+}) {
   return (
     <div className="flex flex-col gap-0.5 rounded-[var(--radius)] border p-3">
       <dt className="text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
         {label}
       </dt>
-      <dd className="text-lg font-semibold">{value}</dd>
+      <dd className="text-lg font-semibold" title={title}>
+        {value}
+      </dd>
       {detail !== undefined && (
         <dd className="text-xs text-[var(--color-muted-foreground)]">{detail}</dd>
       )}

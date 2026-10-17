@@ -54,7 +54,9 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
     availability: args.availability,
     priceRub: args.priceRub,
     stats: {
-      ergo: spec.ergonomics,
+      // The game floors effective ergonomics at 0 (`Mathf.Max(0f, …)` in the client); the raw
+      // sum stays in `weaponSpec`, whose callers need it linear. A PNG has no tooltip for it.
+      ergo: Math.max(0, spec.ergonomics),
       recoilV: spec.verticalRecoil,
       recoilH: spec.horizontalRecoil,
       weight: spec.weight,

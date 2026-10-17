@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, within } from "@testing-library/react";
 import { weaponSpec } from "@tarkov/ballistics";
 import type { BallisticMod, BallisticWeapon } from "@tarkov/ballistics";
 import { BuildHeader } from "./build-header.js";
@@ -134,6 +134,26 @@ describe("BuildHeader accuracy", () => {
     expect(screen.queryByText("+2.41")).not.toBeInTheDocument();
     // No bar fill: StatRow renders one only when given a percent.
     expect(row.querySelector("span")).toBeNull();
+  });
+});
+
+describe("BuildHeader ergonomics floor", () => {
+  // 48 base − 71 from parts sums to −23; the game floors effective ergonomics at 0.
+  const heavy: BallisticMod = { ...realMods[0]!, ergonomicsDelta: -71 };
+
+  it("shows a build summing below 0 as 0, with the raw sum in the row's title", () => {
+    renderHeader([heavy]);
+    const row = screen.getByText("ERGONOMICS").parentElement!;
+    expect(row).toHaveAttribute("title", "−23 before the game's floor at 0");
+    // Label, stock 48, delta −48 against the floored 0 (not −71), value 0.
+    expect(row).toHaveTextContent(/^ERGONOMICS48-480$/);
+    expect(within(row).getByText("-48")).toBeInTheDocument();
+    expect(row.querySelector("span")).toHaveStyle({ width: "0%" });
+  });
+
+  it("gives no title to a build at or above the floor", () => {
+    renderHeader(realMods);
+    expect(screen.getByText("ERGONOMICS").parentElement!).not.toHaveAttribute("title");
   });
 });
 

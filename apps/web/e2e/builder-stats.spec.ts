@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 
 /**
@@ -71,5 +71,50 @@ test.describe("Builder stats", () => {
     // −11% from the barrel and +0.7% from a part: 922 × 0.897.
     await expectStat(page, "Muzzle velocity", "827 m/s", "M855 · −10.3%");
     await expectStat(page, "Sighting range", "800 m");
+  });
+
+  test("a build whose ergonomics sum below 0 shows the game's 0, with the sum on hover", async ({
+    page,
+  }) => {
+    // Captured ergonomics: M4A1 48, upper +5, Elcan −4, A2 20" barrel −32, front-sight gas
+    // block −1, QDC kit −0.5, QDSS NT-4 −12, STANAG −1.5, carbine buffer tube −2, carry
+    // handle −1. The plain sum is −1; the game floors it at 0.
+    const id = "ergz2273";
+    await page.route(`**/api/builds/${id}`, (route: Route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          version: 6,
+          weaponId: "5447a9cd4bdc2dbd208b4567",
+          attachments: {
+            mod_magazine: "55d4887d4bdc2d962f8b4570",
+            mod_reciever: "55d355e64bdc2d962f8b4569",
+            "mod_reciever/mod_scope": "57ac965c24597706be5f975c",
+            "mod_reciever/mod_sight_rear": "5ae30bad5acfc400185c2dc4",
+            "mod_reciever/mod_barrel": "68a63ac58e1fe612970728f2",
+            "mod_reciever/mod_barrel/mod_gas_block": "5ae30e795acfc408fb139a0b",
+            "mod_reciever/mod_barrel/mod_muzzle": "56ea8180d2720bf2698b456a",
+            "mod_reciever/mod_barrel/mod_muzzle/mod_muzzle": "57da93632459771cb65bf83f",
+            mod_stock: "5649be884bdc2d79388b4577",
+          },
+          orphaned: [],
+          createdAt: "2026-10-17T00:00:00.000Z",
+        }),
+      }),
+    );
+    await page.goto(`/builder/${id}`, { waitUntil: "networkidle" });
+    await expect(page.getByText("9 attached", { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/couldn't be placed on this weapon/)).toHaveCount(0);
+
+    const note = "−1 before the game's floor at 0";
+    const spec = stat(page, "Ergonomics").locator("dd").first();
+    await expect(spec).toHaveText("0.0");
+    await expect(spec).toHaveAttribute("title", note);
+
+    // The header row: label, stock 48, delta −48 against the floored 0, current 0.
+    const header = page.getByText("ERGONOMICS", { exact: true }).locator("..");
+    await expect(header).toHaveText(/^ERGONOMICS48-480$/);
+    await expect(header).toHaveAttribute("title", note);
   });
 });
