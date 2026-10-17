@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as Og from "@tarkov/og";
 import type { BuildCardViewModel, PairCardViewModel } from "@tarkov/og";
 import { capturedBuilderData } from "../../src/test/captured-data.js";
-import { resetOgData } from "../lib/og-graphql.js";
+import { DEFAULT_PROFILE } from "@tarkov/data";
+import * as graphql from "../lib/og-graphql.js";
+import * as availability from "../lib/og-availability.js";
+import { ogCacheKey } from "../lib/og-cache.js";
 
 // Both handlers end to end over the captured game data: the stored record, its upgrade, the
 // snapshot read through `ASSETS`, the hydrator and the edge cache are all real. Only the
@@ -24,6 +27,16 @@ vi.mock("@tarkov/og", async (importOriginal) => {
       return Promise.resolve(new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
     },
   };
+});
+
+// The real row builder and pill, wrapped so a test can read what each pair side was gated on.
+vi.mock("../lib/og-graphql.js", async (importOriginal) => {
+  const real = await importOriginal<typeof graphql>();
+  return { ...real, fetchOgRowsForBuild: vi.fn(real.fetchOgRowsForBuild) };
+});
+vi.mock("../lib/og-availability.js", async (importOriginal) => {
+  const real = await importOriginal<typeof availability>();
+  return { ...real, availabilityPillText: vi.fn(real.availabilityPillText) };
 });
 
 const { onRequestGet: buildCard } = await import("./build/[id].js");
@@ -72,7 +85,9 @@ async function call(
 
 beforeEach(() => {
   rendered.length = 0;
-  resetOgData();
+  graphql.resetOgData();
+  vi.mocked(graphql.fetchOgRowsForBuild).mockClear();
+  vi.mocked(availability.availabilityPillText).mockClear();
   cache = new Map();
   stored = {};
   upstreamCalls = [];
@@ -144,7 +159,7 @@ describe("/og/build/:id over stored records", () => {
     const second = await call(buildCard, "id", "https://site.pages.dev/og/build/abcd2345?x=2");
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect([...cache.keys()]).toEqual(["https://site.pages.dev/og/build/abcd2345"]);
+    expect([...cache.keys()]).toEqual([ogCacheKey("https://site.pages.dev/og/build/abcd2345").url]);
     // The second request never reached the builds-api or the renderer.
     expect(upstreamCalls).toEqual(["https://api.example.com/builds/abcd2345"]);
     expect(rendered).toHaveLength(1);
@@ -163,6 +178,35 @@ describe("/og/pair/:pairId over stored records", () => {
     expect(vm.left?.stats.weight).toBeGreaterThan(0.75);
   });
 
+  it("gates each side on the pair's own profile for it, not the build's embedded one", async () => {
+    // Compare prices a side under `leftProfile` / `rightProfile`, or with every gate open when
+    // the pair has none (`compare-workspace.tsx`); a profile embedded in the side's build is
+    // not what it reads.
+    const pairProfile = { ...DEFAULT_PROFILE, flea: true, level: 30 };
+    const embedded = { ...DEFAULT_PROFILE, level: 2 };
+    const side = {
+      version: 6,
+      weaponId: M4A1,
+      attachments: {},
+      orphaned: [],
+      createdAt: CREATED,
+      profileSnapshot: embedded,
+    };
+    stored["pairs/efgh6789"] = {
+      v: 1,
+      createdAt: CREATED,
+      left: side,
+      right: side,
+      leftProfile: pairProfile,
+    };
+    await call(pairCard, "pairId", "https://site.pages.dev/og/pair/efgh6789");
+    expect(rendered).toHaveLength(1);
+    const gates = vi.mocked(graphql.fetchOgRowsForBuild).mock.calls.map(([args]) => args.gate);
+    expect(gates).toEqual([pairProfile, null]);
+    const pills = vi.mocked(availability.availabilityPillText).mock.calls.map(([, p]) => p);
+    expect(pills).toEqual([pairProfile, DEFAULT_PROFILE]);
+  });
+
   it("serves the fallback, uncached, for a pair Compare would refuse, naming the id", async () => {
     const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
     stored["pairs/efgh6789"] = { v: 1, left: null, right: null };
@@ -177,7 +221,7 @@ describe("/og/pair/:pairId over stored records", () => {
     stored["pairs/efgh6789"] = { v: 1, createdAt: CREATED, left: V1_BUILD, right: null };
     await call(pairCard, "pairId", "https://site.pages.dev/og/pair/efgh6789?a");
     await call(pairCard, "pairId", "https://site.pages.dev/og/pair/efgh6789?b");
-    expect([...cache.keys()]).toEqual(["https://site.pages.dev/og/pair/efgh6789"]);
+    expect([...cache.keys()]).toEqual([ogCacheKey("https://site.pages.dev/og/pair/efgh6789").url]);
     expect(rendered).toHaveLength(1);
   });
 });

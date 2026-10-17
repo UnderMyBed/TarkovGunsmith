@@ -189,9 +189,6 @@ importers:
       '@tarkov/ballistics':
         specifier: workspace:*
         version: link:../ballistics
-      '@tarkov/data':
-        specifier: workspace:*
-        version: link:../tarkov-data
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -199,6 +196,9 @@ importers:
         specifier: ^0.10.14
         version: 0.10.14
     devDependencies:
+      '@tarkov/data':
+        specifier: workspace:*
+        version: link:../tarkov-data
       '@types/react':
         specifier: ^19.2.18
         version: 19.2.18
