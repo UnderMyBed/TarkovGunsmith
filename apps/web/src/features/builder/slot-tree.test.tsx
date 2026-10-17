@@ -626,7 +626,7 @@ describe("SlotTree — quests", () => {
             id: "5a03296886f774569778596a",
             name: "I Need More Power",
             normalizedName: "i-need-more-power",
-            kappaRequired: true,
+            kappaRequired: false,
             trader: { normalizedName: "peacekeeper" },
           },
         ],

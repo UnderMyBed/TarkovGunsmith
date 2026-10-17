@@ -41,6 +41,8 @@ const ERROR_COPY: Record<string, string> = {
   network: "Can't reach TarkovTracker. Your local profile is unchanged — try Re-sync in a minute.",
   "shape-mismatch":
     "TarkovTracker changed its API shape. This tool needs an update — please file an issue.",
+  "quest-list":
+    "The quest list didn't load, so your progression can't be applied. Reload the page.",
 };
 
 export function TarkovTrackerSyncBanner({

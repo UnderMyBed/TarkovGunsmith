@@ -74,7 +74,12 @@ export function BuilderPage({
 
   const [profile, setProfile] = useProfile();
   const tasks = useTasks();
-  const sync = useTarkovTrackerSync({ profile, onChange: setProfile, tasks: tasks.data });
+  const sync = useTarkovTrackerSync({
+    profile,
+    onChange: setProfile,
+    tasks: tasks.data,
+    tasksError: tasks.error,
+  });
 
   const saveMeta = useSaveMetadata(initialName, initialDescription);
 
