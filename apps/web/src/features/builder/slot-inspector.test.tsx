@@ -149,6 +149,26 @@ describe("SlotInspector — fitting", () => {
     expect(onAttach).toHaveBeenCalledWith("mod_pistol_grip", null);
   });
 
+  it("keeps the focus in the inspector after Remove, on the search", async () => {
+    const user = userEvent.setup();
+    const props = {
+      slot: slot(),
+      parts: PARTS,
+      getAvailability: () => null,
+      mode: "progression" as const,
+      pricesReady: false,
+    };
+    let fitted: string | null = "grip-a2";
+    const { rerender } = render(
+      <SlotInspector {...props} fittedId={fitted} onAttach={(_p, id) => (fitted = id)} />,
+    );
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    rerender(<SlotInspector {...props} fittedId={fitted} onAttach={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(document.activeElement).not.toBe(document.body);
+    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveFocus();
+  });
+
   it("offers no Remove on a required slot, nor on an empty one", () => {
     const { unmount } = renderInspector({ slot: slot({ required: true }) });
     expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();

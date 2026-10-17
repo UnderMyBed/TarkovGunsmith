@@ -104,10 +104,15 @@ export function useSlotSelection(
     () => (tree ? flattenVisibleSlots(tree, attachments) : []),
     [tree, attachments],
   );
-  const selected = resolveSelection(
-    rows,
-    requested !== null && requested.weaponId === tree?.weaponId ? requested.path : null,
-  );
+  const current =
+    requested !== null && requested.weaponId === tree?.weaponId ? requested.path : null;
+  const selected = resolveSelection(rows, current);
+  // A fallback becomes the request: the slot asked for went away (its parent was emptied or
+  // swapped), and the inspector now shows another one. Fitting a part there must not jump the
+  // selection back to the old path because the new part happens to have a slot of that name.
+  if (current !== null && selected !== null && selected.slot.path !== current) {
+    setRequested({ weaponId: tree?.weaponId ?? "", path: selected.slot.path });
+  }
   const treeId = useId();
   const inspectorId = useId();
   const weaponId = tree?.weaponId ?? "";

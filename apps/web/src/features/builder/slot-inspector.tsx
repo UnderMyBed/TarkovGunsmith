@@ -1,4 +1,4 @@
-import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { AttachablePart, BuilderMode, ItemAvailability, SlotNode } from "@tarkov/data";
 import { Button, Input, cn } from "@tarkov/ui";
 import { formatRub } from "./build-price.js";
@@ -93,6 +93,8 @@ export function SlotInspector({
   const questName = useQuestName();
   const searchId = useId();
   const sortId = useId();
+  const sectionRef = useRef<HTMLElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   // The search belongs to the slot it was typed in; another slot starts with none.
   const [search, setSearch] = useState({ path: slot.path, text: "" });
   const query = search.path === slot.path ? search.text : "";
@@ -152,6 +154,7 @@ export function SlotInspector({
     // The handler only adds Escape and arrow shortcuts over native, keyboard-operable controls.
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <section
+      ref={sectionRef}
       id={id}
       aria-label={`${slot.label} options`}
       tabIndex={-1}
@@ -180,6 +183,7 @@ export function SlotInspector({
                   Search
                 </label>
                 <Input
+                  ref={searchRef}
                   id={searchId}
                   type="search"
                   placeholder="Name"
@@ -210,7 +214,15 @@ export function SlotInspector({
             </>
           )}
           {fitted && !slot.required && (
-            <Button variant="secondary" size="md" onClick={() => onAttach(slot.path, null)}>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => {
+                onAttach(slot.path, null);
+                // The button goes with the part; keep the focus in the inspector.
+                (searchRef.current ?? sectionRef.current)?.focus();
+              }}
+            >
               Remove
             </Button>
           )}

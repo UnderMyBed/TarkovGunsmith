@@ -229,6 +229,19 @@ describe("SlotTree — selection", () => {
     expect(row("Muzzle")).toHaveAttribute("aria-selected", "true");
   });
 
+  it("after a fallback, stays on the slot shown when a part brings the old path back", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<Workbench attachments={{ mod_muzzle: "mod-adapter" }} />);
+    await user.click(row("Suppressor mount"));
+    // Something outside the inspector swaps the adapter out, so the selection falls back.
+    rerender(<Workbench attachments={{ mod_muzzle: "mod-dtk" }} />);
+    expect(row("Muzzle")).toHaveAttribute("aria-selected", "true");
+    // The adapter comes back: its mount slot reappears, but the selection stays put.
+    rerender(<Workbench attachments={{ mod_muzzle: "mod-adapter" }} />);
+    expect(row("Muzzle")).toHaveAttribute("aria-selected", "true");
+    expect(row("Suppressor mount")).toHaveAttribute("aria-selected", "false");
+  });
+
   it("stays readable and selectable when Compare supplies a slot diff", async () => {
     const user = userEvent.setup();
     render(
