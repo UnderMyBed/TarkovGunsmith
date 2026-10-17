@@ -11,7 +11,7 @@ export interface BuildCardViewModel {
   /** Number of parts on the weapon, one per filled slot. */
   modCount: number;
   /**
-   * The availability pill, in the Builder's words (e.g. `LL3`, `LL4 BARTER · FLEA`, `LOCKED`),
+   * The availability pill, in the Builder's words (e.g. `LL3`, `LL4 barter · Flea`, `Locked`),
    * or `null` to leave it off.
    */
   availability: string | null;

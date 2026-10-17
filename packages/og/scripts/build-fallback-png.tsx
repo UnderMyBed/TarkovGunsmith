@@ -1,3 +1,7 @@
+/* `scripts/` sits outside tsconfig.json's `include`, so tsx would compile this file with the
+ * classic JSX runtime and fail on a missing `React` global. The pragma selects the automatic
+ * runtime the package itself builds with. */
+/** @jsxRuntime automatic */
 import { writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,17 +14,6 @@ const WIDTH = 1200;
 const HEIGHT = 630;
 
 function fallbackCard(): ReactNode {
-  const bracket = (pos: Record<string, number | string>): ReactNode => (
-    <div
-      style={{
-        position: "absolute",
-        width: 40,
-        height: 40,
-        border: `4px solid ${COLORS.amber}`,
-        ...pos,
-      }}
-    />
-  );
   return (
     <div
       style={{
@@ -36,46 +29,44 @@ function fallbackCard(): ReactNode {
         gap: 20,
       }}
     >
-      {bracket({ top: 28, left: 28, borderRight: "none", borderBottom: "none" })}
-      {bracket({ top: 28, right: 28, borderLeft: "none", borderBottom: "none" })}
-      {bracket({ bottom: 28, left: 28, borderRight: "none", borderTop: "none" })}
-      {bracket({ bottom: 28, right: 28, borderLeft: "none", borderTop: "none" })}
       <div
         style={{
           display: "flex",
-          fontFamily: "Bungee",
+          fontFamily: "Chivo",
+          fontWeight: 700,
           fontSize: 84,
-          textTransform: "uppercase",
           color: COLORS.foreground,
           lineHeight: 1,
         }}
       >
-        BUILD NOT FOUND
+        Build not found
       </div>
       <div
         style={{
           display: "flex",
           fontFamily: "Chivo",
           fontSize: 28,
-          color: COLORS.paperDim,
+          color: COLORS.dim,
         }}
       >
-        link expired or never existed
+        Link expired or never existed
       </div>
       <div
         style={{
           position: "absolute",
           bottom: 44,
           display: "flex",
-          fontFamily: "Azeret Mono",
+          alignItems: "center",
+          fontFamily: "Bungee",
           fontSize: 22,
-          letterSpacing: "0.15em",
-          textTransform: "uppercase",
-          gap: 8,
-          color: COLORS.amber,
+          gap: 10,
+          color: COLORS.foreground,
         }}
       >
-        ▲ TARKOVGUNSMITH
+        <svg width="20" height="17" viewBox="0 0 14 12">
+          <path d="M7 0 14 12H0z" fill={COLORS.accent} />
+        </svg>
+        TarkovGunsmith
       </div>
     </div>
   );

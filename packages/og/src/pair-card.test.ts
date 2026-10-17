@@ -10,33 +10,33 @@ describe("pairCard", () => {
     const fonts = await loadFonts();
     const svg = await renderSvg(pairCard(pairSample), fonts);
     const text = textContent(svg);
-    expect(text).toMatch(/BUILD A/);
-    expect(text).toMatch(/BUILD B/);
+    expect(text).toMatch(/Build A/);
+    expect(text).toMatch(/Build B/);
     expect(text).toMatch(/M4A1/);
     expect(text).toMatch(/HK 416A5/);
-    expect(text).toMatch(/VS/);
-    expect(text).toMatch(/BUILD COMPARISON/);
-    expect(text).toMatch(/ERGO/);
-    expect(text).toMatch(/RECOIL V/);
-    expect(text).toMatch(/RECOIL H/);
-    expect(text).toMatch(/WEIGHT/);
+    expect(text).toMatch(/vs/);
+    expect(text).toMatch(/Build comparison/);
+    expect(text).toMatch(/Ergo/);
+    expect(text).toMatch(/Recoil V/);
+    expect(text).toMatch(/Recoil H/);
+    expect(text).toMatch(/Weight/);
   });
 
   it("prints a side's availability after its part count, and only the count without one", async () => {
     const fonts = await loadFonts();
-    const left = { ...pairSample.left!, modCount: 7, availability: "LL4 BARTER · FLEA" };
+    const left = { ...pairSample.left!, modCount: 7, availability: "LL4 barter · Flea" };
     const right = { ...pairSample.right!, modCount: 9, availability: null };
     const text = textContent(await renderSvg(pairCard({ left, right }), fonts));
-    expect(text).toMatch(/7 MODS · LL4 BARTER · FLEA/);
-    expect(text).toMatch(/9 MODS/);
-    expect(text).not.toMatch(/9 MODS ·/);
+    expect(text).toMatch(/7 mods · LL4 barter · Flea/);
+    expect(text).toMatch(/9 mods/);
+    expect(text).not.toMatch(/9 mods ·/);
   });
 
-  it("renders EMPTY SLOT for a missing side", async () => {
+  it("renders Empty slot for a missing side", async () => {
     const fonts = await loadFonts();
     const svg = await renderSvg(pairCard(pairOneSided), fonts);
     const text = textContent(svg);
-    expect(text).toMatch(/EMPTY SLOT/);
+    expect(text).toMatch(/Empty slot/);
     expect(text).toMatch(/M4A1/);
   });
 
@@ -49,7 +49,7 @@ describe("pairCard", () => {
       left: {
         weapon: "M4A1",
         modCount: 3,
-        availability: "FLEA",
+        availability: "Flea",
         stats: { ergo: NaN, recoilV: 60, recoilH: 300, weight: 1.2 },
       },
       right: null,
