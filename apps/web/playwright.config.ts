@@ -36,7 +36,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `pnpm --filter @tarkov/builds-api exec wrangler dev --ip 127.0.0.1 --port ${API_PORT} --var OG_FIXTURE_BUILD_ID:abcd2345 --var OG_FIXTURE_PAIR_ID:efgh6789`,
+      command: `pnpm --filter @tarkov/builds-api exec wrangler dev --ip 127.0.0.1 --port ${API_PORT} --var OG_FIXTURE_BUILD_ID:abcd2345 --var OG_FIXTURE_PAIR_ID:efgh6789 --var OG_FIXTURE_V1_BUILD_ID:abcd2346 --var OG_FIXTURE_V1_PAIR_ID:efgh6782`,
       url: `http://127.0.0.1:${API_PORT}/healthz`,
       timeout: 60_000,
       reuseExistingServer: !process.env.CI,

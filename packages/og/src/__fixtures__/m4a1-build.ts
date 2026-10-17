@@ -1,10 +1,12 @@
+import type { BallisticMod } from "@tarkov/ballistics";
 import type { BuildV6 } from "@tarkov/data";
-import type { HydrateMod, HydrateWeapon } from "../hydrate.js";
+import type { HydrateWeapon } from "../hydrate.js";
 
 /**
- * Hand-constructed BuildV6 + weapon/mod lookups. Every id, slot path and
+ * Hand-constructed BuildV6 + the weapon and placed parts `hydrateBuildCard` takes. Every id, slot path and
  * numeric value below is taken from the live json.tarkov.dev items document
- * (sampled 2026-08-19; the accuracy, velocity and range fields 2026-10-17).
+ * (sampled 2026-08-19; the accuracy, velocity and range fields 2026-10-17; the
+ * weapon's own 0.75 kg 2026-10-17).
  *
  * The previous version claimed "real Tarkov item IDs" but the four it used
  * were a front sight, a receiver extension, an M-LOK rail, and one id absent
@@ -28,16 +30,15 @@ export const m4a1Build: BuildV6 = {
   description: "",
 };
 
-export type FixtureWeapon = HydrateWeapon;
-export type FixtureMod = HydrateMod;
-
-export const m4a1Weapon: FixtureWeapon = {
-  id: "5447a9cd4bdc2dbd208b4567",
+export const m4a1Weapon: HydrateWeapon = {
   shortName: "M4A1",
-  properties: {
-    ergonomics: 48,
-    recoilVertical: 119,
-    recoilHorizontal: 342,
+  ballistic: {
+    id: "5447a9cd4bdc2dbd208b4567",
+    name: "Colt M4A1 5.56x45 assault rifle",
+    baseErgonomics: 48,
+    baseVerticalRecoil: 119,
+    baseHorizontalRecoil: 342,
+    baseWeight: 0.75,
     centerOfImpact: 0.01,
     deviationCurve: 1.35,
     velocity: 0,
@@ -52,27 +53,34 @@ export const m4a1Weapon: FixtureWeapon = {
 const PLAIN = { centerOfImpact: 0, deviationMax: null, velocity: 0, sightingRange: null };
 
 // recoilModifier / accuracyModifier are fractions, exactly as upstream returns
-// them. Attached sum is -0.495, i.e. a real -49.5% recoil build.
-export const m4a1Mods: FixtureMod[] = [
+// them. Attached sum is -0.495, i.e. a real -49.5% recoil build. One entry per
+// filled slot, in the order of `m4a1Build.attachments`.
+export const m4a1Mods: BallisticMod[] = [
   {
     id: "5a33e75ac4a2826c6e06d759",
-    shortName: "CQR AR15",
+    name: "AR-15 Hera Arms CQR pistol grip/buttstock",
     weight: 0.499,
-    properties: { ergonomics: 15, recoilModifier: -0.23, accuracyModifier: 0 },
+    ergonomicsDelta: 15,
+    recoilModifier: -0.23,
+    accuracyModifier: 0,
     ...PLAIN,
   },
   {
     id: "5947e98b86f774778f1448bc",
-    shortName: "UBR GEN2",
+    name: "AR-15 Magpul UBR GEN2 stock (Black)",
     weight: 0.61,
-    properties: { ergonomics: 8, recoilModifier: -0.225, accuracyModifier: 0 },
+    ergonomicsDelta: 8,
+    recoilModifier: -0.225,
+    accuracyModifier: 0,
     ...PLAIN,
   },
   {
     id: "59bfe68886f7746004266202",
-    shortName: "MUR-1S",
+    name: "AR-15 Vltor MUR-1S 5.56x45 upper receiver",
     weight: 0.246,
-    properties: { ergonomics: 7, recoilModifier: -0.04, accuracyModifier: 0 },
+    ergonomicsDelta: 7,
+    recoilModifier: -0.04,
+    accuracyModifier: 0,
     ...PLAIN,
   },
 ];

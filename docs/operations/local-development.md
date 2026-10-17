@@ -45,11 +45,13 @@ Wrangler reads `.dev.vars` automatically during `wrangler dev` (Workers) and `wr
 
 ### Committed templates (copy to `.dev.vars` to activate)
 
-| File                                | Variable              | Purpose                                                                                         |
-| ----------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------- |
-| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_BUILD_ID` | Set to a seeded build id to unlock `/og/build/:id` rendering in `wrangler pages dev`.           |
-| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_PAIR_ID`  | Same, for pair OG cards.                                                                        |
-| `apps/web/.dev.vars.example`        | `BUILDS_API_URL`      | Must be `http://localhost:8788` for Pages Functions `/api/builds/*` to proxy correctly locally. |
+| File                                | Variable                 | Purpose                                                                                         |
+| ----------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_BUILD_ID`    | Set to a seeded build id to unlock `/og/build/:id` rendering in `wrangler pages dev`.           |
+| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_PAIR_ID`     | Same, for pair OG cards.                                                                        |
+| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_V1_BUILD_ID` | Seeds a version-1 build (bare mod ids) under this id, for the card's upgrade path.              |
+| `apps/builds-api/.dev.vars.example` | `OG_FIXTURE_V1_PAIR_ID`  | Seeds a pair whose left side is a version-1 build.                                              |
+| `apps/web/.dev.vars.example`        | `BUILDS_API_URL`         | Must be `http://localhost:8788` for Pages Functions `/api/builds/*` to proxy correctly locally. |
 
 ### Production secrets (set via wrangler, NOT committed)
 

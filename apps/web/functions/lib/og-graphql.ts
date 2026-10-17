@@ -1,8 +1,13 @@
-import type { HydrateMod, HydrateWeapon } from "@tarkov/og";
+import type { BallisticMod } from "@tarkov/ballistics";
+import type { HydrateWeapon } from "@tarkov/og";
 import type { AvailabilityMod, AvailabilityOffer } from "./og-availability.js";
 import {
   adaptMod,
+  adaptWeapon,
+  Build,
+  BuildPair,
   buildPriceUnder,
+  loadSavedBuild,
   parseBuilderPrices,
   parseBuilderSnapshot,
   resolveBuild,
@@ -14,16 +19,11 @@ import {
   type AttachablePart,
   type BuilderPrices,
   type BuilderSnapshot,
+  type BuildV6,
   type BuyForEntry,
+  type PlayerProfile,
   type PriceGate,
 } from "@tarkov/data";
-
-/**
- * The mods returned here serve two consumers: `hydrateBuildCard` draws their stats, and
- * `availabilityPillText` reads `offers` (every offer, priced or not). This intersection type
- * lets TypeScript see that one row satisfies both contracts.
- */
-export type OgMod = HydrateMod & AvailabilityMod;
 
 /** The build-time game data a card is drawn from. */
 export interface OgData {
@@ -78,6 +78,44 @@ export function resetOgData(): void {
   loaded = null;
 }
 
+/**
+ * A stored build of any version, as the Builder opens it: checked against the `Build` schema,
+ * as `loadBuild` checks it for the SPA, then brought to the current version and checked
+ * against the game data by `loadSavedBuild`, the SPA's one load path (`/builder/$id`). A v1
+ * build's bare mod ids are placed on the weapon here; nothing downstream reads an old shape.
+ *
+ * @throws The schema's error when the record is not a build the SPA would open either.
+ */
+export function loadStoredBuild(raw: unknown, snapshot: BuilderSnapshot): BuildV6 {
+  return loadSavedBuild(Build.parse(raw), snapshot);
+}
+
+/** A stored comparison: each side through {@link loadStoredBuild}'s path, with its profile. */
+export interface StoredPairSide {
+  build: BuildV6;
+  /** The side's profile, which the Compare page prices it under (`compare-workspace.tsx`). */
+  profile: PlayerProfile | undefined;
+}
+
+/**
+ * A stored comparison of any version, both sides loaded as the Compare page loads them
+ * (`loadPair` in `apps/web/src/features/builder/compare/known-parts.ts`).
+ *
+ * @throws The schema's error when the record is not a pair the SPA would open either.
+ */
+export function loadStoredPair(
+  raw: unknown,
+  snapshot: BuilderSnapshot,
+): { left: StoredPairSide | null; right: StoredPairSide | null } {
+  const pair = BuildPair.parse(raw);
+  const side = (build: Build | null, profile: PlayerProfile | undefined) =>
+    build === null ? null : { build: loadSavedBuild(build, snapshot), profile };
+  return {
+    left: side(pair.left, pair.leftProfile),
+    right: side(pair.right, pair.rightProfile),
+  };
+}
+
 interface Args {
   weaponId: string;
   /** The saved build's attachments, slot path → item id. */
@@ -114,9 +152,13 @@ export function fetchOgRowsForBuild(
   data: OgData,
 ): {
   weapon: HydrateWeapon;
-  mods: OgMod[];
-  /** The attachments actually on the weapon (`resolveBuild`); the card counts these. */
-  attachments: Record<string, string>;
+  /**
+   * Every part on the weapon as the Builder hands it to `weaponSpec`: `adaptMod` over
+   * `resolveBuild(...).placed`, one entry per filled slot, so a part fitted twice counts twice.
+   */
+  mods: BallisticMod[];
+  /** Each distinct part on the weapon with every offer on it, for the availability pill. */
+  availability: AvailabilityMod[];
   /**
    * The build's price under `args.gate` by the Builder's own rule (`buildPriceUnder`): weapon
    * or preset plus parts, at the release's prices. `null` unless every price is known.
@@ -128,63 +170,33 @@ export function fetchOgRowsForBuild(
   const found = snapshotWeaponList(snapshot, table).find((w) => w.id === args.weaponId);
   if (found === undefined) throw new Error(`og: weapon ${args.weaponId} not found`);
 
-  const weapon: HydrateWeapon = {
-    id: found.id,
-    shortName: found.shortName,
-    properties: {
-      ergonomics: found.properties.ergonomics,
-      recoilVertical: found.properties.recoilVertical,
-      recoilHorizontal: found.properties.recoilHorizontal,
-      centerOfImpact: found.properties.centerOfImpact,
-      deviationCurve: found.properties.deviationCurve,
-      velocity: found.velocity,
-      fireRate: found.properties.fireRate,
-      effectiveDistance: found.properties.effectiveDistance,
-      sightingRange: found.properties.sightingRange,
-      defaultAmmo:
-        found.defaultAmmo === null
-          ? null
-          : { name: found.defaultAmmo.shortName, initialSpeed: found.defaultAmmo.initialSpeed },
-    },
-  };
+  // The weapon's own stats, its weight included, through the Builder's own adapter.
+  const weapon: HydrateWeapon = { shortName: found.shortName, ballistic: adaptWeapon(found) };
 
   // Only parts on the weapon reach the card, resolved exactly as the Builder resolves them: a
   // key beneath an empty or replaced part, or an id the snapshot does not hold, is not on it.
-  const { placed, attachments } = resolveBuild(
+  const { placed } = resolveBuild(
     snapshotWeaponTree(snapshot, args.weaponId),
     args.attachments,
     snapshotPartsById(snapshot),
   );
 
-  // One row per distinct part: the lookup `hydrateBuildCard` maps `attachments` onto, one entry
-  // per filled slot, so a part fitted twice counts twice for stats as in the Builder.
-  const mods: OgMod[] = [];
+  // Each distinct part, priced once from the release's table; `placed` repeats it per slot.
   const priced = new Map<string, AttachablePart>();
+  const availability: AvailabilityMod[] = [];
   for (const { itemId } of placed) {
     if (priced.has(itemId)) continue;
-    // The same part record and adapter the Builder uses, so a barrel, scope or magazine counts
-    // here exactly as it does on the page, and cylinder ammo adds weight but no stat modifiers.
-    const part = snapshotPart(snapshot, table, itemId)!;
+    const part = snapshotPart(snapshot, table, itemId);
+    // `resolveBuild` places only ids the snapshot holds, so this cannot miss; if it does, the
+    // card fails rather than drawing a build short a part.
+    if (part === undefined) throw new Error(`og: placed part ${itemId} not in the snapshot`);
     priced.set(itemId, part);
-    const stats = adaptMod(part);
-    mods.push({
-      id: itemId,
-      shortName: part.shortName,
-      weight: part.weight,
-      properties: {
-        ergonomics: stats.ergonomicsDelta,
-        recoilModifier: stats.recoilModifier,
-        accuracyModifier: stats.accuracyModifier,
-      },
-      centerOfImpact: stats.centerOfImpact,
-      deviationMax: stats.deviationMax,
-      velocity: stats.velocity,
-      sightingRange: stats.sightingRange,
-      offers: availabilityOffers(part.buyFor ?? []),
-    });
+    availability.push({ id: itemId, offers: availabilityOffers(part.buyFor ?? []) });
   }
 
-  // One entry per filled slot, so a part fitted twice is paid for twice, as in the Builder.
+  // One entry per filled slot, so a part fitted twice counts and is paid for twice, as in the
+  // Builder. The same adapter the Builder uses: a barrel, scope or magazine counts here exactly
+  // as it does on the page, and cylinder ammo adds weight but no stat modifiers.
   const parts = placed.map(({ itemId }) => priced.get(itemId)!);
   // The weapon's presets, as the Builder passes them (`priceBuild`): a build bought as a preset
   // does not pay again for the parts it comes with.
@@ -192,8 +204,8 @@ export function fetchOgRowsForBuild(
   const price = buildPriceUnder(args.gate, { weapon: found, parts, presets });
   return {
     weapon,
-    mods,
-    attachments: { ...attachments },
+    mods: parts.map(adaptMod),
+    availability,
     priceRub: price.status === "priced" ? price.totalRUB : null,
   };
 }
