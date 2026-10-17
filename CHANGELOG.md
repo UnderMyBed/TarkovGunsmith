@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.19.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.18.0...v1.19.0) (2026-10-17)
+
+
+### Features
+
+* **builder:** one price model with live flea prices off the main thread ([#248](https://github.com/UnderMyBed/TarkovGunsmith/issues/248)) ([c87f75f](https://github.com/UnderMyBed/TarkovGunsmith/commit/c87f75fde6ed6d70b35455f08f95267357b30b1a))
+* **builder:** real MOA, muzzle velocity, ranges, fire rate and magazine stats ([#249](https://github.com/UnderMyBed/TarkovGunsmith/issues/249)) ([a9b38e7](https://github.com/UnderMyBed/TarkovGunsmith/commit/a9b38e726f8dfb51ec6a54c9704d90b5b8e1cb19))
+* **builder:** start new builds from the weapon's default preset ([#245](https://github.com/UnderMyBed/TarkovGunsmith/issues/245)) ([1609498](https://github.com/UnderMyBed/TarkovGunsmith/commit/1609498aad204b4355d4138852474a737709aaa6))
+
+
+### Bug Fixes
+
+* **builder:** name the locked current weapon and disambiguate sibling slot labels ([#247](https://github.com/UnderMyBed/TarkovGunsmith/issues/247)) ([65c97ad](https://github.com/UnderMyBed/TarkovGunsmith/commit/65c97ad7c5ba10a71204a1869d90f7dc74c35eed))
+
 ## [1.18.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.17.1...v1.18.0) (2026-10-17)
 
 
