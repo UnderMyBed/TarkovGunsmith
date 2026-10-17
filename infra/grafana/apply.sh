@@ -11,9 +11,15 @@
 #   Faro app            matched by name, then `frontend apps update` or `create`
 # Every lookup that finds more than one match fails: a duplicate is a fault to fix, not to pick from.
 #
+# Every gcx call that the next step depends on is its own statement, never an argument to
+# another command: bash ignores the exit status of a command substitution used as an argument,
+# so a failed list there would read as "nothing exists" and the script would create a duplicate.
+# inherit_errexit keeps errexit on inside every $(...).
+#
 # Needs: GRAFANA_SERVER, GRAFANA_TOKEN, GRAFANA_STACK_ID, GRAFANA_PROVIDER_SYNTH_SM_URL,
 #        GRAFANA_PROVIDER_SYNTH_SM_TOKEN, GRAFANA_ALERT_EMAIL. Optional: GITHUB_OUTPUT.
 set -euo pipefail
+shopt -s inherit_errexit
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
@@ -28,13 +34,17 @@ for var in GRAFANA_SERVER GRAFANA_TOKEN GRAFANA_STACK_ID GRAFANA_PROVIDER_SYNTH_
   fi
 done
 
-# Prints the single value jq selects from a JSON array, nothing when there is none, and fails
-# when there is more than one.
+# Prints the single value jq selects from a gcx list, nothing when there is none, and fails when
+# there is more than one, or when the list is not a JSON array (gcx prints `null` for none).
 one_or_none() { # what, json, jq filter, jq args...
   local what="$1" json="$2" filter="$3"
   shift 3
   local found count
-  found="$(jq -r "$@" "[.[] | $filter]" <<<"$json")"
+  if ! jq -e '. == null or type == "array"' <<<"$json" >/dev/null; then
+    echo "::error::listing $what did not return a JSON array: ${json:0:200}" >&2
+    exit 1
+  fi
+  found="$(jq -r "$@" "[(. // [])[] | $filter]" <<<"$json")"
   count="$(jq 'length' <<<"$found")"
   if [ "$count" -gt 1 ]; then
     echo "::error::$count objects match $what; delete the extras (docs/operations/observability.md)" >&2
@@ -51,12 +61,12 @@ push_resources() { # dir
 }
 
 apply_contact_point() {
-  local file="$here/contact-point.yaml" rendered="$work/contact-point.yaml" name uid
+  local file="$here/contact-point.yaml" rendered="$work/contact-point.yaml" name list uid
   name="$(yq -r '.name' "$file")"
   # Only the one variable is substituted, so nothing else in the file can be expanded.
   envsubst '$GRAFANA_ALERT_EMAIL' <"$file" >"$rendered"
-  uid="$(one_or_none "contact point \"$name\"" "$(gcx alert contact-points list -o json)" \
-    'select(.name == $n) | .uid' --arg n "$name")"
+  list="$(gcx alert contact-points list --limit 0 -o json)"
+  uid="$(one_or_none "contact point \"$name\"" "$list" 'select(.name == $n) | .uid' --arg n "$name")"
   if [ -n "$uid" ]; then
     echo "== contact point \"$name\": update $uid"
     gcx alert contact-points update "$uid" -f "$rendered" -o json >/dev/null
@@ -67,10 +77,11 @@ apply_contact_point() {
 }
 
 apply_check() { # file
-  local file="$1" job target name
+  local file="$1" job target list name
   job="$(yq -r '.spec.job' "$file")"
   target="$(yq -r '.spec.target' "$file")"
-  name="$(one_or_none "check $job -> $target" "$(gcx synthetic-monitoring checks list -o json)" \
+  list="$(gcx synthetic-monitoring checks list --limit 0 -o json)"
+  name="$(one_or_none "check $job -> $target" "$list" \
     'select(.spec.job == $j and .spec.target == $t) | .metadata.name' \
     --arg j "$job" --arg t "$target")"
   # `checks create` rewrites metadata.name in the file it reads; give it a copy.
@@ -86,23 +97,26 @@ apply_check() { # file
   fi
 }
 
-# Upserts the Faro app and prints its collector URL on stdout.
+# Upserts the Faro app and sets FARO_URL to its collector URL. Called as a plain statement,
+# never inside $(...), so a failed write stops the script.
+FARO_URL=""
 apply_faro_app() {
-  local file="$here/faro-app.yaml" name slug app key endpoint url host
+  local file="$here/faro-app.yaml" name list slug app key endpoint url host
   name="$(yq -r '.spec.name' "$file")"
-  slug="$(one_or_none "Faro app \"$name\"" "$(gcx frontend apps list --limit 0 -o json)" \
-    'select(.spec.name == $n) | .metadata.name' --arg n "$name")"
+  list="$(gcx frontend apps list --limit 0 -o json)"
+  slug="$(one_or_none "Faro app \"$name\"" "$list" 'select(.spec.name == $n) | .metadata.name' \
+    --arg n "$name")"
   if [ -n "$slug" ]; then
-    echo "== Faro app \"$name\": update $slug" >&2
+    echo "== Faro app \"$name\": update $slug"
     gcx frontend apps update "$slug" -f "$file" -o json >/dev/null
   else
-    echo "== Faro app \"$name\": create" >&2
+    echo "== Faro app \"$name\": create"
     gcx frontend apps create -f "$file" -o json >/dev/null
   fi
 
   # Read back what exists now rather than trusting the write's reply.
-  app="$(one_or_none "Faro app \"$name\"" "$(gcx frontend apps list --limit 0 -o json)" \
-    'select(.spec.name == $n)' --arg n "$name")"
+  list="$(gcx frontend apps list --limit 0 -o json)"
+  app="$(one_or_none "Faro app \"$name\"" "$list" 'select(.spec.name == $n)' --arg n "$name")"
   if [ -z "$app" ]; then
     echo "::error::Faro app \"$name\" is missing after apply" >&2
     exit 1
@@ -126,16 +140,16 @@ apply_faro_app() {
     echo "::error::https://$host is not in connect-src in apps/web/public/_headers" >&2
     exit 1
   fi
-  printf '%s\n' "$url"
+  FARO_URL="$url"
 }
 
 push_resources "$here/resources/folder"
 apply_contact_point
 for check in "$here"/checks/*.yaml; do apply_check "$check"; done
 push_resources "$here/resources/alerting"
-faro_url="$(apply_faro_app)"
+apply_faro_app
 
-echo "== Faro collector: $faro_url"
+echo "== Faro collector: $FARO_URL"
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
-  echo "faro_url=$faro_url" >>"$GITHUB_OUTPUT"
+  echo "faro_url=$FARO_URL" >>"$GITHUB_OUTPUT"
 fi
