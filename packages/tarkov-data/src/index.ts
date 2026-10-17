@@ -75,6 +75,7 @@ export { useAmmoList } from "./hooks/useAmmoList.js";
 export { useArmorList } from "./hooks/useArmorList.js";
 export { useWeapon } from "./hooks/useWeapon.js";
 export { useWeaponList } from "./hooks/useWeaponList.js";
+export { useWeaponPresets } from "./hooks/useWeaponPresets.js";
 export { usePartCatalog } from "./hooks/usePartCatalog.js";
 export { useLivePrices } from "./hooks/useLivePrices.js";
 export { useSaveBuild } from "./hooks/useSaveBuild.js";
@@ -109,6 +110,7 @@ export type {
   BuilderPrices,
   BuilderSnapshot,
   SnapshotPart,
+  SnapshotPreset,
   SnapshotSource,
   SnapshotWeapon,
 } from "./snapshot/types.js";
@@ -132,8 +134,10 @@ export {
   snapshotPriceIds,
   snapshotSlotGraph,
   snapshotWeaponList,
+  snapshotWeaponPresets,
   snapshotWeaponTree,
 } from "./snapshot/views.js";
+export type { PricedPreset } from "./snapshot/views.js";
 export { createBuilderDataSource, staticBuilderDataSource } from "./snapshot/source.js";
 export { requestPricesFromWorker } from "./snapshot/source.js";
 export type {
@@ -209,7 +213,7 @@ export type {
   PresetPlacement,
   PresetPlacementFailure,
 } from "./preset-placement.js";
-export { presetAvailability, seedPreset } from "./preset-seed.js";
+export { presetAvailability, seedAttachments, seedPreset } from "./preset-seed.js";
 export type { BuilderMode, PresetSeed } from "./preset-seed.js";
 
 // Slot diff (Build comparison)

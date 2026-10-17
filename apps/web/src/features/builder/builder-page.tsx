@@ -1,7 +1,13 @@
 // apps/web/src/features/builder/builder-page.tsx
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
-import { useProfile, useTasks, type PlayerProfile } from "@tarkov/data";
+import {
+  presetAvailability,
+  useProfile,
+  useTasks,
+  useWeaponPresets,
+  type PlayerProfile,
+} from "@tarkov/data";
 import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
 import { Button, Card, CardContent } from "@tarkov/ui";
 import { adaptWeapon } from "../data-adapters/adapters.js";
@@ -17,6 +23,7 @@ import { UpstreamDriftBanner } from "./upstream-drift-banner.js";
 import { SnapshotBanner } from "./snapshot-banner.js";
 import { WeaponPanel } from "./weapon-panel.js";
 import { ModsPanel } from "./mods-panel.js";
+import { PresetPicker } from "./preset-picker.js";
 import { SpecPanel } from "./spec-panel.js";
 
 export interface BuilderPageProps {
@@ -86,6 +93,10 @@ export function BuilderPage({
     buildDescription: saveMeta.buildDescription,
     embedProfileOnSave: saveMeta.embedProfileOnSave,
   });
+
+  // Loading and errors are joined in `useBuilderState`, which seeds new builds from these.
+  const presets = useWeaponPresets();
+  const weaponPresets = presets.data?.[builder.weaponId] ?? [];
 
   const shareBuild = useShareBuild({
     selectedWeaponId: builder.selectedWeapon?.id,
@@ -181,6 +192,25 @@ export function BuilderPage({
 
           {builder.selectedWeapon && (
             <>
+              {builder.tree.data && (
+                // Keyed by weapon so a pending "Replace" prompt never outlives its weapon.
+                <PresetPicker
+                  key={builder.weaponId}
+                  presets={weaponPresets}
+                  tree={builder.tree.data}
+                  known={builder.partsById}
+                  attachments={builder.attachments}
+                  getAvailability={
+                    builder.showAllWeapons
+                      ? undefined
+                      : (id) => {
+                          const preset = weaponPresets.find((p) => p.id === id);
+                          return preset ? presetAvailability(preset, profile) : null;
+                        }
+                  }
+                  onApply={builder.applyPreset}
+                />
+              )}
               <ModsPanel
                 tree={builder.tree}
                 attachments={builder.attachments}

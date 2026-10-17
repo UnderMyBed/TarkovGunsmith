@@ -11,6 +11,7 @@ import {
   type TradersDocument,
 } from "../queries/traders.js";
 import { isBuildableWeapon, snapshotWeaponSchema } from "../queries/weaponList.js";
+import { selectWeaponPresets } from "../queries/presets.js";
 import {
   createOfferCollector,
   offerPriceIds,
@@ -22,6 +23,7 @@ import {
   type BuilderPrices,
   type BuilderSnapshot,
   type SnapshotPart,
+  type SnapshotPreset,
   type SnapshotSource,
   type SnapshotWeapon,
 } from "./types.js";
@@ -156,7 +158,8 @@ function slotShapeProblems(ownerId: string, raw: unknown): string[] {
  * names; every buildable weapon; every part a weapon's slots reach, its `conflictingSlotIds`
  * and `updated`; the slots of every reached item (`id`, `nameId`, `name`,
  * `filters.allowedItems`); every preset's `baseItem`, and the `normalizedName` of each preset
- * of a snapshot item; every offer on those (cash, preset and barter: trader, quest gate,
+ * of a snapshot item; every buildable weapon's presets, which must place into the slot graph
+ * with exactly one default per weapon; every offer on those (cash, preset and barter: trader, quest gate,
  * loyalty level, price fields); every barter rewarding one of them, or a preset of one, and
  * each of its ingredients; and two copies of one seller's trader offer that disagree on
  * price. Names that are still translation keys are drift too: the translation document did
@@ -334,7 +337,36 @@ export function buildBuilderSnapshot(
   const offers = new Map<string, UnpricedOffer[]>();
   for (const { id } of [...weapons, ...parts]) offers.set(id, collect(items[id]));
 
+  // Every buildable weapon's presets, placed into the same slot graph. A preset that fails
+  // its schema or cannot be placed, and a weapon without exactly one default, is drift: a
+  // weapon silently left without its presets would start new builds empty.
+  const placed = selectWeaponPresets(docs.items, graph);
+  for (const { id, reason, detail } of placed.failures) fail(`presets/${id}: ${reason}: ${detail}`);
+  const presets = sortedRecord(
+    Object.entries(placed.byWeapon)
+      .filter(([weaponId]) => weaponIds.has(weaponId))
+      .map(([weaponId, list]) => [
+        weaponId,
+        list.map((preset): SnapshotPreset => {
+          // The picker shows these names, so an untranslated one is drift like any other.
+          if (preset.name === translationKey(preset.id, "Name"))
+            fail(untranslated(`items/${preset.id}`, "name"));
+          if (preset.shortName === translationKey(preset.id, "ShortName"))
+            fail(untranslated(`items/${preset.id}`, "shortName"));
+          // The preset's own flea listing; its trader offers are already the weapon's.
+          const flea = collect(items[preset.id]).find((offer) => offer.kind === "flea");
+          return {
+            ...preset,
+            flea: flea === undefined ? null : { minPlayerLevel: flea.vendor.minPlayerLevel },
+          };
+        }),
+      ]),
+  );
+
   const priceIds = new Set<string>();
+  for (const list of Object.values(presets)) {
+    for (const preset of list) if (preset.flea !== null) priceIds.add(preset.id);
+  }
   // Ids that sell something: the snapshot's items and the presets they are sold as. Only
   // their trader offers are priced; an ingredient is valued at its flea price alone.
   const sellerIds = new Set<string>();
@@ -377,6 +409,8 @@ export function buildBuilderSnapshot(
       parts: parts.length,
       presetOffers: all.filter((o) => o.kind !== "flea" && o.preset !== undefined).length,
       barterOffers: all.filter((o) => o.kind === "barter").length,
+      presets: Object.values(presets).flat().length,
+      presetWeapons: Object.keys(presets).length,
     };
     for (const problem of floorProblems(counts)) fail(problem);
   }
@@ -392,6 +426,7 @@ export function buildBuilderSnapshot(
     parts,
     slots,
     offers: sortedRecord(offers),
+    presets,
     ingredientNames: sortedRecord(ingredientNames),
     traders: traders.sort(byId),
     // Stable sort, so tasks sharing a normalizedName keep the document's order.

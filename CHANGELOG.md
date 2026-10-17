@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.18.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.17.1...v1.18.0) (2026-10-17)
+
+
+### Features
+
+* **data:** generate the Builder's game data at build time ([#242](https://github.com/UnderMyBed/TarkovGunsmith/issues/242)) ([20ce156](https://github.com/UnderMyBed/TarkovGunsmith/commit/20ce156a65fa93cc5ef279a49bf0eaad7c5f55cc))
+* **data:** place upstream weapon presets into the slot graph ([#243](https://github.com/UnderMyBed/TarkovGunsmith/issues/243)) ([69cb0c5](https://github.com/UnderMyBed/TarkovGunsmith/commit/69cb0c5caebf81359ce85610dd697766ccf1dcb0))
+
 ## [1.17.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.17.0...v1.17.1) (2026-10-17)
 
 

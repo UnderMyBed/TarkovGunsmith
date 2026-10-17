@@ -105,7 +105,7 @@ export interface BuyForTask {
 
 type TraderOfferVendor = Extract<Vendor, { __typename: "TraderOffer" }>;
 type TraderBarterVendor = Extract<Vendor, { __typename: "TraderBarter" }>;
-type FleaMarketVendor = Extract<Vendor, { __typename: "FleaMarket" }>;
+export type FleaMarketVendor = Extract<Vendor, { __typename: "FleaMarket" }>;
 
 /**
  * One acquisition offer with everything except its price.
@@ -478,15 +478,23 @@ export function priceOffers(
         ...preset,
       };
     }
-    const priceRUB = flea(itemId);
-    const listed = priceRUB !== null || prices.items[itemId] === undefined;
-    return {
-      priceRUB,
-      currency: "RUB",
-      vendor: offer.vendor,
-      ...(listed ? {} : { unlisted: true as const }),
-    };
+    return priceFleaOffer(itemId, offer.vendor, prices);
   });
+}
+
+/**
+ * One flea-market entry for `itemId`, priced at its own flea price: `null` with no table, and
+ * marked `unlisted` when the table holds the item and that price is `null`.
+ */
+export function priceFleaOffer(
+  itemId: string,
+  vendor: FleaMarketVendor,
+  prices: PriceTable | null,
+): BuyForEntry {
+  if (prices === null) return { priceRUB: null, currency: "RUB", vendor };
+  const priceRUB = fleaPriceFromTuple(prices.items[itemId]);
+  const listed = priceRUB !== null || prices.items[itemId] === undefined;
+  return { priceRUB, currency: "RUB", vendor, ...(listed ? {} : { unlisted: true as const }) };
 }
 
 /** An offer whose price is not known because there is no price table. */
@@ -504,7 +512,7 @@ function unknownPrice(offer: UnpricedOffer): BuyForEntry {
       ...preset,
     };
   }
-  return { priceRUB: null, currency: "RUB", vendor: offer.vendor };
+  return priceFleaOffer("", offer.vendor, null);
 }
 
 /** Every acquisition offer for one upstream item, priced. */

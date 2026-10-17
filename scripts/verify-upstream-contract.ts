@@ -56,10 +56,8 @@ import {
   selectWeaponTree,
 } from "../packages/tarkov-data/src/queries/slot-graph.js";
 import type { WeaponListItem } from "../packages/tarkov-data/src/queries/weaponList.js";
-import {
-  presetRecordSchema,
-  selectWeaponPresets,
-} from "../packages/tarkov-data/src/queries/presets.js";
+import { presetRecordSchema } from "../packages/tarkov-data/src/queries/presets.js";
+import type { BuilderSnapshot } from "../packages/tarkov-data/src/snapshot/types.js";
 import { partsById, type AttachablePart } from "../packages/tarkov-data/src/queries/parts.js";
 import { attachedParts } from "../packages/tarkov-data/src/attached-parts.js";
 import { adaptMod, adaptWeapon } from "../packages/tarkov-data/src/ballistic-adapters.js";
@@ -356,15 +354,16 @@ async function checkBuilderSnapshot(): Promise<void> {
   // Presets are checked against the weapons and parts the Builder actually reads: the snapshot.
   checkPresets(
     documents.items,
+    snapshot.presets,
     snapshotWeaponList(snapshot, prices.prices),
     snapshotPartCatalog(snapshot, prices.prices),
   );
 }
 
 /**
- * Every live weapon preset places into the slot graph, and its parts reproduce upstream's own
- * preset ergonomics and recoil — the stat oracle (#220), over the whole document rather than
- * the six presets the unit test pins.
+ * Every weapon preset in the snapshot reproduces upstream's own preset ergonomics and recoil —
+ * the stat oracle (#220), over the whole document rather than the six presets the unit test
+ * pins.
  *
  * Upstream's preset stats count each DISTINCT part once, while the Builder counts every physical
  * part (a preset listing 3× rail has three rails). So the oracle is checked over distinct parts,
@@ -372,20 +371,12 @@ async function checkBuilderSnapshot(): Promise<void> {
  */
 function checkPresets(
   doc: ItemsDocument,
+  byWeapon: BuilderSnapshot["presets"],
   weapons: readonly WeaponListItem[],
   parts: readonly AttachablePart[],
 ): void {
+  // Placement failures and the preset floors are drift inside generation, reported above.
   const graph = buildSlotGraph(doc);
-  const { byWeapon, failures } = selectWeaponPresets(doc, graph);
-  check(
-    "presets/placement",
-    failures.length === 0,
-    `${failures.length} preset(s) could not be placed or validated: ${failures
-      .slice(0, 5)
-      .map((f) => `${f.id} ${f.reason} (${f.detail})`)
-      .join("; ")}`,
-  );
-
   const byId = partsById(parts);
   const weaponById = new Map(weapons.map((w) => [w.id, w]));
   let placed = 0;
@@ -428,22 +419,6 @@ function checkPresets(
         perPartMatches += 1;
     }
   }
-  // Floors far below today's 399 presets on 164 weapons: a renamed field upstream reaches the
-  // selector as failures, but a field the selector no longer recognises as a preset at all
-  // would read as "0 placed", and that must not pass.
-  const minimums = { placed: 300, weaponsWithDefault: 150 } as const;
-  check(
-    "presets/placed",
-    placed >= minimums.placed,
-    `only ${placed} weapon presets placed (expected at least ${minimums.placed}) — a preset ` +
-      `field upstream renamed can make every preset fail or vanish`,
-  );
-  check(
-    "presets/weapons-with-default",
-    Object.keys(byWeapon).length >= minimums.weaponsWithDefault,
-    `only ${Object.keys(byWeapon).length} weapons have exactly one default preset (expected at ` +
-      `least ${minimums.weaponsWithDefault})`,
-  );
   check(
     "presets/oracle",
     misses.length === 0,

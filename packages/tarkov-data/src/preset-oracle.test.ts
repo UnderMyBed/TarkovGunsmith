@@ -48,8 +48,7 @@ async function statsOf(presetId: string) {
   const record = presetRecordSchema.parse(doc.items[presetId]);
   const weaponId = record.properties.baseItem;
   const tree = await fixtureWeaponTree(client, weaponId);
-  // One preset at a time: the oracle capture carries the AKS-74UN's Zenit without its default,
-  // so `selectWeaponPresets` leaves that weapon out.
+  // One preset at a time, through the same placer `selectWeaponPresets` loops over.
   const preset = selectWeaponPreset(doc, tree.graph, presetId);
   if (preset === null || "reason" in preset) throw new Error(`preset ${presetId} was not placed`);
 

@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { fixtureClient } from "./__fixtures__/client.js";
 import { DEFAULT_PROFILE, type PlayerProfile } from "./build-schema.js";
 import { itemAvailability, type ItemAvailability } from "./item-availability.js";
-import type { ItemsDocument } from "./queries/documents.js";
-import { buildSlotGraph } from "./queries/slot-graph.js";
-import { selectWeaponPresets, type WeaponPreset } from "./queries/presets.js";
-import { fixtureOfferResolver, fixtureWeaponList } from "./__test-utils__/fixture-snapshot.js";
-import { presetAvailability, seedPreset } from "./preset-seed.js";
+import type { WeaponPreset } from "./queries/presets.js";
+import { fixtureSnapshot } from "./__test-utils__/fixture-snapshot.js";
+import { snapshotWeaponList, snapshotWeaponPresets } from "./snapshot/views.js";
+import { presetAvailability, seedAttachments, seedPreset } from "./preset-seed.js";
 
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
 const PM = "5448bd6b4bdc2dfc2f8b4569";
@@ -23,22 +21,22 @@ const withTraders = (traders: Partial<PlayerProfile["traders"]>): PlayerProfile 
 const WITH_FLEA: PlayerProfile = { ...DEFAULT_PROFILE, flea: true, level: 20 };
 
 async function load() {
-  const client = fixtureClient();
-  const [doc, resolve, weapons] = await Promise.all([
-    client.fetchResource<ItemsDocument>("items"),
-    fixtureOfferResolver(client),
-    fixtureWeaponList(client),
-  ]);
-  const { byWeapon } = selectWeaponPresets(doc, buildSlotGraph(doc));
+  const { snapshot, prices } = await fixtureSnapshot();
+  const byWeapon = snapshotWeaponPresets(snapshot, prices.prices);
+  const weapons = snapshotWeaponList(snapshot, prices.prices);
   const presetsOf = (weaponId: string): readonly WeaponPreset[] => {
     const list = byWeapon[weaponId];
     if (list === undefined) throw new Error(`fixture lost ${weaponId}'s presets`);
     return list;
   };
-  const availability = (presetId: string, profile: PlayerProfile) =>
-    presetAvailability(resolve, doc.items[presetId], profile);
+  const presetById = new Map(Object.values(byWeapon).flatMap((list) => list.map((p) => [p.id, p])));
+  const availability = (presetId: string, profile: PlayerProfile) => {
+    const preset = presetById.get(presetId);
+    if (preset === undefined) throw new Error(`fixture lost preset ${presetId}`);
+    return presetAvailability(preset, profile);
+  };
   const weapon = (id: string) => weapons.find((w) => w.id === id);
-  return { presetsOf, availability, weapon };
+  return { presetsOf, availability, weapon, byWeapon };
 }
 
 describe("presetAvailability", () => {
@@ -84,9 +82,11 @@ describe("presetAvailability", () => {
     });
   });
 
-  it("throws for something that is not a preset record", async () => {
-    const { availability } = await load();
-    expect(() => availability("not-an-item", DEFAULT_PROFILE)).toThrow();
+  it("reads a preset with no offers as having no sources", () => {
+    expect(presetAvailability({ buyFor: [] }, WITH_FLEA)).toEqual({
+      available: false,
+      reason: "no-sources",
+    });
   });
 });
 
@@ -180,5 +180,19 @@ describe("seedPreset", () => {
     expect(() =>
       seedPreset(others, "theorycraft", () => ({ available: false, reason: "no-sources" })),
     ).toThrow(`no default preset among ${M4A1_SOPMOD}`);
+  });
+});
+
+describe("seedAttachments", () => {
+  it("returns the seeded preset's attachments, a copy, or none without presets", async () => {
+    const { byWeapon } = await load();
+    const m4 = byWeapon[M4A1] ?? [];
+    const theorycraft = seedAttachments(m4, "theorycraft", DEFAULT_PROFILE);
+    expect(theorycraft).toEqual(m4[0]?.attachments);
+    expect(theorycraft).not.toBe(m4[0]?.attachments);
+    expect(seedAttachments(m4, "progression", withTraders({ mechanic: 2 }))).toEqual(
+      m4[1]?.attachments,
+    );
+    expect(seedAttachments([], "progression", DEFAULT_PROFILE)).toEqual({});
   });
 });

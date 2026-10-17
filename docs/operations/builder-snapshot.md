@@ -4,10 +4,10 @@ The Builder reads its game data from two files generated on every build of `apps
 from `json.tarkov.dev` at runtime. The decision and its reasons are in
 [ADR-0004](../adr/0004-builder-snapshot.md).
 
-| File                          | Holds                                                                                                                               | Read by                                              |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `/data/builder-snapshot.json` | Buildable weapons, every part a weapon's slots reach, the slot graph, every offer without its price, traders, tasks, and `dataAsOf` | The SPA (Builder, Compare) and the OG card Functions |
-| `/data/builder-prices.json`   | The prices of those offers, as of the same documents                                                                                | The OG card Functions only                           |
+| File                          | Holds                                                                                                                                                      | Read by                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `/data/builder-snapshot.json` | Buildable weapons, every part a weapon's slots reach, the slot graph, each weapon's presets, every offer without its price, traders, tasks, and `dataAsOf` | The SPA (Builder, Compare) and the OG card Functions |
+| `/data/builder-prices.json`   | The prices of those offers, as of the same documents                                                                                                       | The OG card Functions only                           |
 
 The SPA prices offers from live data: a Web Worker fetches the raw `items` document (no
 translations) and posts back only the price fields of the snapshot's ids, so the parse never
@@ -60,6 +60,8 @@ Generation is strict for everything the snapshot holds or derives from:
 - the slots of every item a weapon reaches: `id`, `nameId` and `name` non-empty, and
   `filters.allowedItems` a list;
 - every preset's `baseItem`, and the `normalizedName` of each preset of a weapon or part;
+- every buildable weapon's presets: each must place into the slot graph, and a weapon with
+  presets must have exactly one default;
 - every offer on those: trader, quest gate, loyalty level and price fields;
 - every barter rewarding one of them or a preset of one, and each of its ingredients.
 
@@ -78,6 +80,8 @@ vanish rather than fail to parse:
 | Parts                                            | 2000  | 2335             |
 | Offers selling a weapon or part through a preset | 150   | 303              |
 | Barter offers                                    | 150   | 304              |
+| Weapon presets                                   | 200   | 399              |
+| Weapons with presets                             | 80    | 164              |
 
 Any failure stops the build and lists every problem, one line each (the error message shows the
 first 50):
@@ -107,10 +111,10 @@ it:
 Every Builder visit downloads the snapshot. `SNAPSHOT_BUDGET` in
 `packages/tarkov-data/src/snapshot/limits.ts` is the one copy of the budget:
 
-| Measure                                   | Budget | Live, 2026-10-17 | Headroom | Why this number                                                                         |
-| ----------------------------------------- | ------ | ---------------- | -------- | --------------------------------------------------------------------------------------- |
-| Brotli at quality 4 (close to the edge's) | 300 KB | 236 KB           | 64 KB    | Room for the weapon presets #216 adds (about 27 KB) plus about 37 KB of upstream growth |
-| Raw                                       | 6 MB   | 3685 KB          | 2459 KB  | Bounds the main-thread parse (6.6 ms at today's size); #216 adds about 280 KB           |
+| Measure                                   | Budget | Live, 2026-10-17 | Headroom | Why this number                                            |
+| ----------------------------------------- | ------ | ---------------- | -------- | ---------------------------------------------------------- |
+| Brotli at quality 4 (close to the edge's) | 300 KB | 263 KB           | 37 KB    | Room for upstream growth                                   |
+| Raw                                       | 6 MB   | 3974 KB          | 2170 KB  | Bounds the main-thread parse (about 10 ms at today's size) |
 
 The snapshot script fails the build when either is exceeded, so the release deploy's build step
 is the hard gate. `pnpm verify:upstream` checks the same budget against live data on a schedule
@@ -122,6 +126,25 @@ Both files carry `schema`, which `BUILDER_SNAPSHOT_SCHEMA` in
 `packages/tarkov-data/src/snapshot/types.ts` must match. Bump it with any change to the file
 shape. A tab opened before a deploy that changed it gets "Game data was updated. Reload the
 page." rather than misreading the new file.
+
+## Presets
+
+The snapshot's `presets` maps each weapon id to its upstream presets, placed into the slot graph:
+the default first, then the rest in upstream's order. A preset's trader offers and barters are
+already among its weapon's offers, tagged with the preset; its own flea listing is carried on the
+preset as the listing's player-level gate (`flea`), or `null` when upstream flags the preset
+`noFlea`, and priced from the preset's id.
+
+Choosing a weapon starts a new build from one of them:
+
+- With "Show all weapons" on, the default.
+- Otherwise, the default if the profile can buy it; else the cheapest preset the profile can
+  buy (known price first, then short name, then id); else, when it can buy none, the default,
+  which the preset picker shows locked with what it needs.
+
+A Compare side always starts from the default. A weapon without presets starts empty. Loading
+a saved build, a v1 link or a comparison never applies a preset, and applying a preset from the
+picker leaves a loaded build's orphaned parts listed until they are dismissed.
 
 ## Saved builds
 

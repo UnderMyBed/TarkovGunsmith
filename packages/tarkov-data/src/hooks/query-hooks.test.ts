@@ -29,10 +29,16 @@ import { useTasks } from "./useTasks.js";
 import { useTraders } from "./useTraders.js";
 import { useWeaponList } from "./useWeaponList.js";
 import { useLivePrices } from "./useLivePrices.js";
+import { useWeaponPresets } from "./useWeaponPresets.js";
 import { useBuilderSnapshot } from "./useBuilderSnapshot.js";
 import { fixtureBuilderData, fixtureSnapshot } from "../__test-utils__/fixture-snapshot.js";
 import type { BuilderDataSource } from "../snapshot/source.js";
-import { snapshotPartCatalog, snapshotWeaponList, snapshotWeaponTree } from "../snapshot/views.js";
+import {
+  snapshotPartCatalog,
+  snapshotWeaponList,
+  snapshotWeaponPresets,
+  snapshotWeaponTree,
+} from "../snapshot/views.js";
 import { useWeapon } from "./useWeapon.js";
 import { fetchWeapon } from "../queries/weapon.js";
 import { useWeaponTree } from "./useWeaponTree.js";
@@ -221,6 +227,14 @@ describe("Builder hooks", () => {
       table: prices.prices,
       asOf: prices.dataAsOf,
     });
+  });
+
+  it("useWeaponPresets prices the snapshot's presets", async () => {
+    const { snapshot, prices } = await fixtureSnapshot();
+    expect(await resolveBuilderHook(() => useWeaponPresets())).toEqual(
+      snapshotWeaponPresets(snapshot, prices.prices),
+    );
+    expect(await rejectBuilderHook(() => useWeaponPresets())).toBe("game data down");
   });
 
   it("useTasks returns the snapshot's tasks", async () => {

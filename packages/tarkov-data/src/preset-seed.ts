@@ -1,7 +1,6 @@
-import { z } from "zod";
 import type { PlayerProfile } from "./build-schema.js";
 import { itemAvailability, type ItemAvailability } from "./item-availability.js";
-import type { OfferResolver } from "./queries/shared/buy-for.js";
+import type { BuyForEntry } from "./queries/shared/buy-for.js";
 import type { WeaponPreset } from "./queries/presets.js";
 
 /**
@@ -12,33 +11,21 @@ import type { WeaponPreset } from "./queries/presets.js";
  */
 export type BuilderMode = "theorycraft" | "progression";
 
-const presetIdentitySchema = z.object({
-  id: z.string(),
-  normalizedName: z.string(),
-  types: z.array(z.string()),
-});
-
 /**
- * Whether the profile can buy this preset as a whole.
+ * Whether the profile can buy this preset as a whole: its trader offers and barters (the
+ * entries its weapon's offers carry tagged with this preset) and its own flea listing, as
+ * `snapshotWeaponPresets` prices them. The flea listing is the preset's, not the weapon's:
+ * an assembled preset is listed on the flea in its own right, at its own price (329 of the
+ * 399 live weapon presets are), while the weapon's flea offer is the bare receiver's.
  *
- * The preset's offers are what the offer resolver finds for the preset item itself: its trader
- * cash offers and barters (the same entries a weapon's `buyFor` carries tagged with this
- * preset) and its own flea listing. The flea listing is the reason this reads the preset item
- * rather than filtering the weapon's `buyFor`: the resolver leaves preset flea listings out of
- * the weapon's offers, so weapon-level availability keeps reading the receiver's own flea
- * entry, while an assembled preset is listed on the flea in its own right, at its own price
- * (329 of the 399 live weapon presets are flea-listed). Every entry is tagged with the preset,
- * so `availability.preset` names what the price buys. Throws when `rawPreset` is not a preset
- * record (no `id`, `normalizedName` or `types`).
+ * `types` is empty because the snapshot already left out the flea listing of a preset upstream
+ * flags `noFlea`, which is the only thing `itemAvailability` reads `types` for.
  */
 export function presetAvailability(
-  resolve: OfferResolver,
-  rawPreset: unknown,
+  preset: { readonly buyFor: readonly BuyForEntry[] },
   profile: PlayerProfile,
 ): ItemAvailability {
-  const { id, normalizedName, types } = presetIdentitySchema.parse(rawPreset);
-  const buyFor = resolve(rawPreset).map((entry) => ({ ...entry, preset: { id, normalizedName } }));
-  return itemAvailability({ buyFor, types }, profile);
+  return itemAvailability({ buyFor: preset.buyFor, types: [] }, profile);
 }
 
 export interface PresetSeed {
@@ -69,7 +56,7 @@ function byPrice(a: number | null, b: number | null): number {
  *   the best gun the player can actually get right now. When it can buy none, the default,
  *   with its unmet requirement in `availability` so the Builder can say why.
  *
- * `presets` is one weapon's list from `selectWeaponPresets`, which leaves out any weapon
+ * `presets` is one weapon's list from the snapshot (`selectWeaponPresets`), which leaves out any weapon
  * without exactly one default; a list without one is a contract break and throws.
  * `availabilityOf` is {@link presetAvailability} for each preset id.
  */
@@ -101,4 +88,19 @@ export function seedPreset(
       compareText(a.preset.id, b.preset.id),
   );
   return obtainable[0] ?? { preset: fallback, availability: fallbackAvailability };
+}
+
+/**
+ * The attachments a new build of a weapon starts with: {@link seedPreset}'s pick from the
+ * weapon's presets, or none for a weapon without presets. `presets` is the weapon's list from
+ * `snapshotWeaponPresets`; `profile` is read only in `progression` mode.
+ */
+export function seedAttachments(
+  presets: readonly (WeaponPreset & { readonly buyFor: readonly BuyForEntry[] })[],
+  mode: BuilderMode,
+  profile: PlayerProfile,
+): Record<string, string> {
+  const byId = new Map(presets.map((preset) => [preset.id, preset]));
+  const seed = seedPreset(presets, mode, (id) => presetAvailability(byId.get(id)!, profile));
+  return seed === null ? {} : { ...seed.preset.attachments };
 }

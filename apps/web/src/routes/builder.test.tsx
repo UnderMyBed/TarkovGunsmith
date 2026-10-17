@@ -132,18 +132,42 @@ function findWeaponSelect(): HTMLSelectElement {
   return found;
 }
 
-/** Wait for the weapon <select> to finish loading and select the fixture M4A1. */
+/**
+ * Wait for the weapon <select> to finish loading, select the fixture M4A1 (which starts from
+ * its default preset: the muzzle and the stock), then clear it with "Empty".
+ */
 async function selectFixtureWeapon(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByText("1 weapons available on your profile");
   const weaponSelect = findWeaponSelect();
   await waitFor(() => expect(weaponSelect).not.toBeDisabled());
   await user.selectOptions(weaponSelect, "w-m4a1");
   // Slot tree only appears once useWeaponTree resolves.
-  await screen.findByText("0 attached");
+  await screen.findByText("2 attached", { exact: true });
+  await user.click(presetChip(/^Empty/));
+  await screen.findByText("0 attached", { exact: true });
   return weaponSelect;
 }
 
+function presetChip(name: RegExp): HTMLElement {
+  return within(screen.getByRole("group", { name: "Presets" })).getByRole("button", { name });
+}
+
 describe("/builder", () => {
+  it("starts a picked weapon from its default preset", async () => {
+    const user = userEvent.setup();
+    await renderRoute("/builder");
+    await screen.findByText("1 weapons available on your profile");
+    const weaponSelect = findWeaponSelect();
+    await waitFor(() => expect(weaponSelect).not.toBeDisabled());
+    await user.selectOptions(weaponSelect, "w-m4a1");
+
+    expect(await screen.findByText("2 attached", { exact: true })).toBeInTheDocument();
+    expect(presetChip(/^M4A1 Default/)).toHaveAttribute("aria-pressed", "true");
+    expect(presetChip(/^M4A1 Stock/)).toHaveAttribute("aria-pressed", "false");
+    // Progression mode: the other preset says what it needs.
+    expect(within(presetChip(/^M4A1 Stock/)).getByText("mechanic LL2")).toBeInTheDocument();
+  });
+
   it("lists the fixture weapon as available, then loads its slot tree + stock spec on selection", async () => {
     const user = userEvent.setup();
     await renderRoute("/builder");

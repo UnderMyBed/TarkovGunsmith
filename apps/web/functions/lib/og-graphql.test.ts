@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildBuilderSnapshot, DEFAULT_PROFILE, type SnapshotDocuments } from "@tarkov/data";
+import {
+  BUILDER_SNAPSHOT_SCHEMA,
+  buildBuilderSnapshot,
+  DEFAULT_PROFILE,
+  type SnapshotDocuments,
+} from "@tarkov/data";
 import { hydrateBuildCard } from "@tarkov/og";
 import { availabilityPillText } from "./og-availability.js";
 import {
@@ -301,7 +306,10 @@ describe("loadOgData", () => {
   it("refuses a file of another schema", async () => {
     const a = assets();
     const fetcher = {
-      fetch: () => Promise.resolve(new Response(JSON.stringify({ ...a.data.snapshot, schema: 2 }))),
+      fetch: () =>
+        Promise.resolve(
+          new Response(JSON.stringify({ ...a.data.snapshot, schema: BUILDER_SNAPSHOT_SCHEMA + 1 })),
+        ),
     } as unknown as Fetcher;
     await expect(loadOgData(fetcher, "https://example.com/")).rejects.toThrow(
       "Game data was updated. Reload the page.",
