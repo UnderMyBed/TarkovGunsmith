@@ -27,7 +27,9 @@ parts. When none exists it says why.
 - `solve.ts` — max-accuracy rates MOA itself, `multiplier(key) × (1 − Σ accuracyModifier)`, and
   first looks for a build whose multiplier is 0, which beats every other.
 - `diagnose.ts` — why no build exists, in the order the user can act on: the budget (naming the
-  cheapest complete build, or the pinned parts that leave its price unknown), the pins, a
+  cheapest complete build; the pinned parts nobody prices, when unpinning them gives a build of
+  known price; the other pins to lift, when only dropping those does; or else the profile, as the
+  failure's `cause`), the pins, a
   required slot nothing obtainable fills, parts that come only with the gun and are needed more
   often than any way to buy it supplies them, or parts that cannot be fitted together.
 - `pins.ts` — which pins the build keeps, and why it drops the rest.
@@ -53,7 +55,10 @@ accuracy modifiers out, so nothing confirms the factor matches the game.
 ## Conventions
 
 - **Pure functions.** Same inputs, same output. The only clock read is `Date.now()` against the
-  `timeoutMs` safety net (default 2 s), which returns `timeout` with no partial build.
+  `timeoutMs` safety net (default 2 s), which returns `timeout` with no partial build. The
+  optional `onProgress` callback observes how many candidate builds the run has checked; it
+  never changes the result. The Builder runs `optimize` in a Web Worker
+  (`apps/web/src/features/builder/optimize/optimize.worker.ts`).
 - **Tests:** unit tests per module; `solve.property.test.ts` checks 400 random problems against
   a brute-force oracle; `goldens.test.ts` runs real M4A1, AKM and RSASS records
   (`src/__fixtures__/goldens.json`, written by `scripts/optimizer-goldens.ts`) and pins the

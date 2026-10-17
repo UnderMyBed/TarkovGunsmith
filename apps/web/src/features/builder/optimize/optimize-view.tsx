@@ -1,4 +1,5 @@
 import { useMemo, useReducer, useState, type ReactElement } from "react";
+import type { ScoreDelta } from "./mod-changes-table.js";
 import {
   partsById,
   type AttachablePart,
@@ -9,7 +10,7 @@ import {
   type WeaponListItem,
   type WeaponTree,
 } from "@tarkov/data";
-import type { Objective, OptimizationResult } from "@tarkov/optimizer";
+import type { Objective } from "@tarkov/optimizer";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { Button, Card, Pill, focusRing } from "@tarkov/ui";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
@@ -17,7 +18,11 @@ import {
   constraintsReducer,
   initialConstraintsState,
   toOptimizerInput,
+  type ConstraintsAction,
+  type ConstraintsState,
 } from "./optimize-constraints-reducer.js";
+import { OPTIMIZER_TIMEOUT_MS } from "./optimize-protocol.js";
+import { OptimizeOutcome, OptimizeRunning } from "./optimize-outcome.js";
 import { OptimizeConstraintsForm } from "./optimize-constraints-form.js";
 import { useOptimizer } from "./useOptimizer.js";
 import { OptimizeTriptych } from "./optimize-triptych.js";
@@ -49,27 +54,32 @@ export interface OptimizeViewProps {
   onEditProfile: () => void;
 }
 
-/** What to tell the user when the solver returns no build. Every reason but a timeout says why. */
-function failureMessage(result: Extract<OptimizationResult, { ok: false }>): string {
-  return result.reason === "timeout"
-    ? "The solver ran out of time before finding a build. Pin more slots and run it again."
-    : result.message;
-}
-
-function computeScoreDelta(
+/**
+ * The change in what the run optimised. Min recoil minimises the summed recoil modifier, which
+ * scales vertical and horizontal recoil alike, so its delta is on V+H; max accuracy is MOA.
+ * Decimals match the triptych.
+ */
+export function objectiveDelta(
   objective: Objective,
   current: WeaponSpec,
   proposed: WeaponSpec,
-): number {
+): ScoreDelta {
   switch (objective) {
     case "min-recoil":
-      return proposed.verticalRecoil - current.verticalRecoil;
+      return {
+        label: "RECOIL V+H",
+        value:
+          proposed.verticalRecoil +
+          proposed.horizontalRecoil -
+          (current.verticalRecoil + current.horizontalRecoil),
+        digits: 0,
+      };
     case "max-ergonomics":
-      return proposed.ergonomics - current.ergonomics;
+      return { label: "ERGO", value: proposed.ergonomics - current.ergonomics, digits: 0 };
     case "min-weight":
-      return proposed.weight - current.weight;
+      return { label: "WEIGHT KG", value: proposed.weight - current.weight, digits: 2 };
     case "max-accuracy":
-      return proposed.accuracy - current.accuracy;
+      return { label: "MOA", value: proposed.accuracy - current.accuracy, digits: 2 };
   }
 }
 
@@ -92,8 +102,6 @@ export function OptimizeView({
 }: OptimizeViewProps): ReactElement {
   const [state, dispatch] = useReducer(constraintsReducer, initialConstraintsState);
   const optimizer = useOptimizer();
-  // The objective the shown result was run with: the form may have moved on since.
-  const [ranWith, setRanWith] = useState<Objective>(initialConstraintsState.objective);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
   // Pre-fill constraints pins from the user's current build. This used to be a mount-only
@@ -164,16 +172,34 @@ export function OptimizeView({
 
   const mode: TableMode = optimizer.state === "running" ? "running" : proposed ? "result" : "idle";
 
+  // Scored by the objective the result was run with, which the hook keeps with the result.
   const scoreDelta =
-    proposed && currentStats && proposed.stats
-      ? computeScoreDelta(ranWith, currentStats, proposed.stats)
+    proposed && currentStats && optimizer.objective
+      ? objectiveDelta(optimizer.objective, currentStats, proposed.stats)
       : null;
 
-  function handleRun(): void {
-    setRanWith(state.objective);
+  function runWith(constraints: ConstraintsState): void {
     optimizer.run(
-      toOptimizerInput(state, { weapon, weaponItem, slotTree, parts, gate, presets, pricesReady }),
+      toOptimizerInput(constraints, {
+        weapon,
+        weaponItem,
+        slotTree,
+        parts,
+        gate,
+        presets,
+        pricesReady,
+      }),
     );
+  }
+
+  function handleRun(): void {
+    runWith(state);
+  }
+
+  /** Change the constraints and run on the changed ones at once. */
+  function changeAndRun(action: ConstraintsAction): void {
+    dispatch(action);
+    runWith(constraintsReducer(state, action));
   }
 
   function handleToggle(slotId: string): void {
@@ -208,8 +234,8 @@ export function OptimizeView({
     onExit();
   }
 
-  const isError =
-    optimizer.state === "error" || (proposed === null && optimizer.result && !optimizer.result.ok);
+  const failure = optimizer.result && !optimizer.result.ok ? optimizer.result : null;
+  const isError = optimizer.state === "error" || failure !== null;
 
   const optimizerPillTone =
     optimizer.state === "idle"
@@ -250,25 +276,32 @@ export function OptimizeView({
             pricesReady={pricesReady}
           />
           <ProfileReadout gate={gate} sync={sync} onEditProfile={onEditProfile} />
-          <Button onClick={handleRun} disabled={optimizer.state === "running"}>
-            RE-RUN OPTIMIZATION
-          </Button>
+          {/* Enabled while running: the solver is pure, so a new run just supersedes the old. */}
+          <Button onClick={handleRun}>RE-RUN OPTIMIZATION</Button>
         </Card>
 
         <div className="flex flex-col gap-5 min-w-0">
+          {optimizer.progress !== undefined && (
+            <OptimizeRunning
+              progress={optimizer.progress}
+              timeoutMs={OPTIMIZER_TIMEOUT_MS}
+              onCancel={() => optimizer.cancel()}
+            />
+          )}
           {isError ? (
-            <Card variant="bracket" className="p-5">
-              <div className="font-display text-base">OPTIMIZER ERROR</div>
-              <p className="mt-2 text-sm text-[var(--color-destructive)]">
-                {optimizer.error?.message ??
-                  (optimizer.result && !optimizer.result.ok
-                    ? failureMessage(optimizer.result)
-                    : "No valid build under these constraints.")}
-              </p>
-              <Button className="mt-3" variant="secondary" onClick={() => optimizer.reset()}>
-                BACK TO CONSTRAINTS
-              </Button>
-            </Card>
+            <OptimizeOutcome
+              failure={failure}
+              error={optimizer.error}
+              theorycraft={gate === null}
+              pinnedSlots={optimizer.pins ?? state.pinnedSlots}
+              nameOf={(id) => byId.get(id)?.name ?? id}
+              timeoutMs={OPTIMIZER_TIMEOUT_MS}
+              onRunWithoutBudget={() => changeAndRun({ type: "SET_BUDGET", value: "" })}
+              onUnpin={(paths) => changeAndRun({ type: "UNPIN", slotPaths: paths })}
+              onEditProfile={onEditProfile}
+              onBack={() => optimizer.reset()}
+              onRunAgain={handleRun}
+            />
           ) : (
             <OptimizeTriptych
               current={currentStats}

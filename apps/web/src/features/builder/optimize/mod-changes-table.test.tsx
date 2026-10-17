@@ -53,7 +53,7 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={-3.04}
+        scoreDelta={{ label: "MOA", value: -3.04, digits: 2 }}
         mode="result"
         unchangedCount={12}
       />,
@@ -73,7 +73,7 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={0}
+        scoreDelta={{ label: "ERGO", value: 0, digits: 0 }}
         mode="result"
         unchangedCount={0}
       />,
@@ -91,7 +91,7 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={0}
+        scoreDelta={{ label: "ERGO", value: 0, digits: 0 }}
         mode="result"
         unchangedCount={0}
       />,
@@ -108,7 +108,7 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={0}
+        scoreDelta={{ label: "ERGO", value: 0, digits: 0 }}
         mode="result"
         unchangedCount={14}
       />,
@@ -129,12 +129,29 @@ describe("ModChangesTable", () => {
         onAcceptAll={vi.fn()}
         onAcceptSelected={vi.fn()}
         onDiscard={vi.fn()}
-        scoreDelta={-30}
+        scoreDelta={{ label: "RECOIL V+H", value: -30, digits: 0 }}
         mode="result"
         unchangedCount={0}
       />,
     );
     expect(screen.getByText("−22.5")).toBeInTheDocument();
     expect(screen.queryByText("−0")).not.toBeInTheDocument();
+  });
+
+  it("labels the score delta with the stat the run optimised", () => {
+    render(
+      <ModChangesTable
+        rows={[row({})]}
+        selected={new Set()}
+        onToggle={vi.fn()}
+        onAcceptAll={vi.fn()}
+        onAcceptSelected={vi.fn()}
+        onDiscard={vi.fn()}
+        scoreDelta={{ label: "WEIGHT KG", value: 0.125, digits: 2 }}
+        mode="result"
+        unchangedCount={0}
+      />,
+    );
+    expect(screen.getByText(/WEIGHT KG Δ/)).toHaveTextContent("WEIGHT KG Δ · +0.13");
   });
 });

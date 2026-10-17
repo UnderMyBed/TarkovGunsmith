@@ -1,62 +1,76 @@
-import {
-  adaptMod,
-  itemAvailability,
-  partsById,
-  priceUnder,
-  resolveBuild,
-  type AttachablePart,
-  type BuildV6,
-} from "@tarkov/data";
+import { adaptMod, itemAvailability, partsById, resolveBuild, type BuildV6 } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
-import { cheapestBuild, diagnose, pinnedUnpriced, rub } from "./diagnose.js";
+import {
+  cheapestBuild,
+  diagnose,
+  KEEPS_PINS,
+  rub,
+  unknownPriceVerdict,
+  unpricedPins,
+} from "./diagnose.js";
 import { pinReport } from "./pins.js";
 import { buildProblem, UNKNOWN_PRICE, type Problem } from "./problem.js";
-import { pinHonourable, SolveTimeout } from "./relaxed.js";
+import { SolveTimeout } from "./relaxed.js";
 import { solve } from "./solve.js";
 import type { OptimizationInput, OptimizationResult } from "./types.js";
 
 const DEFAULT_TIMEOUT_MS = 2000;
 
-type Refusal = Extract<OptimizationResult, { reason: "infeasible-budget" | "pinned-unpriced" }>;
+type Refusal = Extract<OptimizationResult, { reason: "infeasible-budget" }>;
 
 /**
  * Why a budget run cannot start, or `null` when it can: the gun alone is over budget or has
- * no known price, or a part pinned to one of the weapon's own slots — a path every build has —
- * has no price the profile can pay and no path supplies it free. A pin deeper down holds only
- * where its path exists, so a build without that path may still fit; the search decides those.
+ * no known price (`byPins: false`), or a part pinned to one of the weapon's own slots — a path
+ * every build has — has no price the profile can pay and no path supplies it free
+ * (`byPins: true`). A pin deeper down holds only where its path exists, so a build without
+ * that path may still fit; the search decides those.
+ *
+ * Each refusal is true of every build there is. Whether the pins are to blame, rather than
+ * some other part nobody prices, is for `unknownPriceVerdict` to say.
  */
 function refuseBudget(
   input: OptimizationInput,
   problem: Problem,
   budgetRub: number,
-  catalog: ReadonlyMap<string, AttachablePart>,
-): Refusal | null {
+): { refusal: Refusal; byPins: boolean } | null {
   const name = input.weaponItem.shortName;
   const cheapest = Math.min(...problem.paths.map((p) => p.price));
   if (cheapest >= UNKNOWN_PRICE) {
     return {
-      ok: false,
-      reason: "infeasible-budget",
-      message: `No ${name} you can get has a known price, so no build can be shown to fit a budget.`,
+      byPins: false,
+      refusal: {
+        ok: false,
+        reason: "infeasible-budget",
+        cause: "unpriced",
+        message: `No ${name} you can get has a known price, so no build can be shown to fit a budget.`,
+      },
     };
   }
   if (cheapest > budgetRub) {
     return {
-      ok: false,
-      reason: "infeasible-budget",
-      message: `The cheapest ${name} you can get costs ${rub(cheapest)}, over the ${rub(budgetRub)} budget.`,
+      byPins: false,
+      refusal: {
+        ok: false,
+        reason: "infeasible-budget",
+        cause: "over-budget",
+        message: `The cheapest ${name} you can get costs ${rub(cheapest)}, over the ${rub(budgetRub)} budget.`,
+      },
     };
   }
-  const unpriced = new Map<string, AttachablePart>();
-  for (const [path, id] of input.constraints.pinnedSlots) {
-    if (id === null) continue;
-    const slot = problem.rootSlots.find((s) => s.nameId === path);
-    if (slot === undefined || !pinHonourable(problem, slot, id)) continue;
-    if (priceUnder(input.constraints.profile, catalog.get(id)!) !== null) continue;
-    if (problem.paths.some((p) => (p.covers.get(id) ?? 0) > 0)) continue;
-    unpriced.set(id, catalog.get(id)!);
-  }
-  return unpriced.size === 0 ? null : pinnedUnpriced([...unpriced.keys()], catalog);
+  const pinned = [...unpricedPins(problem).keys()].filter((path) =>
+    problem.rootSlots.some((s) => s.nameId === path),
+  );
+  if (pinned.length === 0) return null;
+  return {
+    byPins: true,
+    refusal: {
+      ok: false,
+      reason: "infeasible-budget",
+      cause: "pins",
+      paths: pinned,
+      message: KEEPS_PINS,
+    },
+  };
 }
 
 const titled = (trader: string) => trader.charAt(0).toUpperCase() + trader.slice(1);
@@ -111,11 +125,13 @@ export function optimize(input: OptimizationInput): OptimizationResult {
   const budgetRub = input.constraints.budgetRub;
   let refusal: Refusal | null = null;
   try {
-    refusal = budgetRub === undefined ? null : refuseBudget(input, problem, budgetRub, catalog);
-    if (refusal !== null) {
+    const refused = budgetRub === undefined ? null : refuseBudget(input, problem, budgetRub);
+    if (refused !== null) {
+      refusal = refused.refusal;
       // The budget is only the cause if some build exists without it.
       const cheapest = cheapestBuild(problem, tree, catalog, deadline);
-      return cheapest === null ? diagnose(problem, tree, catalog, deadline, null) : refusal;
+      if (cheapest === null) return diagnose(problem, tree, catalog, deadline, null);
+      return refused.byPins ? unknownPriceVerdict(problem, tree, catalog, deadline) : refusal;
     }
     const found = solve(problem, tree, catalog, deadline);
     if (found === null) return diagnose(problem, tree, catalog, deadline);

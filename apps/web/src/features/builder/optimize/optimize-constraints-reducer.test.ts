@@ -91,6 +91,23 @@ describe("constraintsReducer", () => {
     expect(state.pinnedSlots.size).toBe(2);
   });
 
+  it("UNPIN frees each slot for the solver, never pinning one to empty", () => {
+    const state: ConstraintsState = {
+      ...initialConstraintsState,
+      pinnedSlots: new Map<string, string | null>([
+        ["muzzle", "brake"],
+        ["grip", null],
+        ["stock", "buffer"],
+      ]),
+    };
+    const next = constraintsReducer(state, {
+      type: "UNPIN",
+      slotPaths: ["muzzle", "grip", "nope"],
+    });
+    expect([...next.pinnedSlots]).toEqual([["stock", "buffer"]]);
+    expect(state.pinnedSlots.size).toBe(3);
+  });
+
   it("RESET returns to initial", () => {
     const state: ConstraintsState = {
       objective: "max-ergonomics",

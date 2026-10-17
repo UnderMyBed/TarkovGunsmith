@@ -4,6 +4,14 @@ import type { ChangedRow, WeaponChange } from "./slot-diff.js";
 
 export type TableMode = "idle" | "running" | "result";
 
+/** The change in the stat the run optimised, labelled with that stat. */
+export interface ScoreDelta {
+  readonly label: string;
+  readonly value: number;
+  /** Decimals to show it with. */
+  readonly digits: number;
+}
+
 export interface ModChangesTableProps {
   rows: readonly ChangedRow[];
   selected: ReadonlySet<string>;
@@ -11,7 +19,7 @@ export interface ModChangesTableProps {
   onAcceptAll: () => void;
   onAcceptSelected: () => void;
   onDiscard: () => void;
-  scoreDelta: number | null;
+  scoreDelta: ScoreDelta | null;
   mode: TableMode;
   unchangedCount: number;
   weaponChange?: WeaponChange | null;
@@ -61,8 +69,8 @@ export function ModChangesTable({
         <Pill tone="muted">{unchangedCount} SLOTS UNCHANGED</Pill>
         {scoreDelta !== null && (
           <span className="ml-auto font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-            SCORE Δ · {scoreDelta >= 0 ? "+" : "−"}
-            {Math.abs(scoreDelta).toFixed(2)}
+            {scoreDelta.label} Δ · {scoreDelta.value >= 0 ? "+" : "−"}
+            {Math.abs(scoreDelta.value).toFixed(scoreDelta.digits)}
           </span>
         )}
       </div>
