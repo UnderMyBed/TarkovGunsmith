@@ -4,8 +4,8 @@
  *
  * Mirrors `/og/build/:id` but hydrates both sides. Either side
  * may be null (single-sided pair) — `hydratePairCard` tolerates that. The
- * upstream Worker returns a `BuildPairV1` JSON body with `left`/`right`
- * each potentially `null`.
+ * upstream Worker returns a stored `BuildPair`; each side, of any build version,
+ * is loaded as the Compare page loads it (`loadStoredPair`).
  *
  * Note on asset loading: see `/og/build/[id].ts` — fonts + fallback PNG come
  * from `@tarkov/og`'s `embeddedFonts()` / `embeddedFallbackPng()` helpers
@@ -18,12 +18,19 @@ import {
   initResvg,
   pairCard,
   renderPng,
-  type HydrateWeapon,
+  type HydrateSideArgs,
 } from "@tarkov/og";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
-import { type BuildV6, DEFAULT_PROFILE } from "@tarkov/data";
-import { fetchOgRowsForBuild, loadOgData, type OgData, type OgMod } from "../../lib/og-graphql.js";
-import { availabilityPillText } from "../../lib/og-availability.js";
+import { DEFAULT_PROFILE } from "@tarkov/data";
+import {
+  fetchOgRowsForBuild,
+  loadOgData,
+  loadStoredPair,
+  type OgData,
+  type StoredPairSide,
+} from "../../lib/og-graphql.js";
+import { availabilityPillText, type AvailabilityPill } from "../../lib/og-availability.js";
+import { ogCacheKey } from "../../lib/og-cache.js";
 import { isValidBuildId } from "../../lib/build-id.js";
 import { buildsApiBase } from "../../lib/builds-api.js";
 
@@ -31,13 +38,6 @@ export interface Env {
   BUILDS_API_URL?: string;
   /** The deploy's static assets, which hold the build-time snapshot the card is drawn from. */
   ASSETS: Fetcher;
-}
-
-interface PairRecord {
-  v: 1;
-  left: BuildV6 | null;
-  right: BuildV6 | null;
-  createdAt: string;
 }
 
 const HEADERS_PNG = {
@@ -50,32 +50,25 @@ const HEADERS_FALLBACK = {
   "cache-control": "public, max-age=3600",
 } as const;
 
-/**
- * Local alias — same shape as `HydrateBuildArgs` but preserves `OgMod[]`
- * (the intersection of `HydrateMod` and `AvailabilityMod`) so the call to
- * `availabilityPillText` below stays type-safe. `hydratePairCard` widens
- * to `HydrateMod[]` internally, which is fine.
- */
-interface SideArgs {
-  build: BuildV6;
-  weapon: HydrateWeapon;
-  mods: OgMod[];
+interface SideRows {
+  args: HydrateSideArgs;
+  availability: AvailabilityPill;
 }
 
-function hydrateSide(build: BuildV6 | null, data: OgData): SideArgs | null {
-  if (!build) return null;
+function hydrateSide(side: StoredPairSide | null, data: OgData): SideRows | null {
+  if (!side) return null;
   const rows = fetchOgRowsForBuild(
     {
-      weaponId: build.weaponId,
-      attachments: build.attachments,
-      gate: build.profileSnapshot ?? null,
+      weaponId: side.build.weaponId,
+      attachments: side.build.attachments,
+      // The side's own profile, as the Compare page prices it; the pair card prints no price.
+      gate: side.profile ?? null,
     },
     data,
   );
   return {
-    build: { ...build, attachments: rows.attachments },
-    weapon: rows.weapon,
-    mods: rows.mods,
+    args: { name: side.build.name, weapon: rows.weapon, mods: rows.mods },
+    availability: availabilityPillText(rows.availability, side.profile ?? DEFAULT_PROFILE),
   };
 }
 
@@ -88,7 +81,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
   if (!isValidBuildId(id)) return invalidId(id);
 
   const cache = caches.default;
-  const cacheKey = new Request(request.url, { method: "GET" });
+  const cacheKey = ogCacheKey(request.url);
   const cached = await cache.match(cacheKey);
   if (cached) return cached;
 
@@ -100,30 +93,18 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     if (upstream.status === 404) return fallback("miss", id, startedAt);
     if (!upstream.ok) return fallback("upstream", id, startedAt, { "cache-control": "no-store" });
 
-    // `fetch().json()` is `Promise<any>` under the lib.dom typings; cast is
-    // load-bearing for downstream narrowing even though the rule thinks it's
-    // a no-op (same pattern as apps/web/functions/lib/og-graphql.ts).
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-    const pair = (await upstream.json()) as PairRecord;
+    const raw: unknown = await upstream.json();
     const dataStartedAt = Date.now();
     const data = await loadOgData(env.ASSETS, request.url);
     const dataMs = Date.now() - dataStartedAt;
-    const leftArgs = hydrateSide(pair.left, data);
-    const rightArgs = hydrateSide(pair.right, data);
-    const vm = hydratePairCard({ left: leftArgs, right: rightArgs });
-
-    if (vm.left && leftArgs) {
-      vm.left.availability = availabilityPillText(
-        leftArgs.mods,
-        pair.left?.profileSnapshot ?? DEFAULT_PROFILE,
-      );
-    }
-    if (vm.right && rightArgs) {
-      vm.right.availability = availabilityPillText(
-        rightArgs.mods,
-        pair.right?.profileSnapshot ?? DEFAULT_PROFILE,
-      );
-    }
+    // Both sides, of any stored version, upgraded and checked as Compare opens them; a record
+    // Compare would refuse throws into the fallback below, logged with its id.
+    const pair = loadStoredPair(raw, data.snapshot);
+    const left = hydrateSide(pair.left, data);
+    const right = hydrateSide(pair.right, data);
+    const vm = hydratePairCard({ left: left?.args ?? null, right: right?.args ?? null });
+    if (vm.left && left) vm.left.availability = left.availability;
+    if (vm.right && right) vm.right.availability = right.availability;
 
     const png = await renderPng(pairCard(vm), embeddedFonts(), { width: 1200, height: 630 });
     const body = new Uint8Array(png);

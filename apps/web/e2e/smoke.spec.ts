@@ -322,6 +322,10 @@ test.describe("smoke — OG cards", () => {
   // KV via `wrangler dev --var OG_FIXTURE_BUILD_ID:... --var OG_FIXTURE_PAIR_ID:...`.
   const FIXTURE_BUILD_ID = "abcd2345";
   const FIXTURE_PAIR_ID = "efgh6789";
+  // A version-1 build (bare mod ids) and a comparison with one as its left side, seeded by
+  // `--var OG_FIXTURE_V1_BUILD_ID:... --var OG_FIXTURE_V1_PAIR_ID:...`.
+  const FIXTURE_V1_BUILD_ID = "abcd2346";
+  const FIXTURE_V1_PAIR_ID = "efgh6782";
 
   // The builds-api seeds fixtures on first request via `ctx.waitUntil`. Poking
   // `/healthz` triggers the seed; a small delay lets the KV put settle before
@@ -358,6 +362,29 @@ test.describe("smoke — OG cards", () => {
     expect(body.byteLength).toBeGreaterThan(25_000);
     expect(body[0]).toBe(0x89);
   });
+
+  // A stored v1 build is upgraded as the Builder opens it. Before #228 the card cast it to the
+  // current version, threw on its missing `attachments`, and served the fallback instead.
+  for (const [route, id] of [
+    ["build", FIXTURE_V1_BUILD_ID],
+    ["pair", FIXTURE_V1_PAIR_ID],
+  ] as const) {
+    test(`/og/${route}/${id} (a v1 build) renders a card, not the fallback`, async ({
+      request,
+    }) => {
+      await primeFixtures(request);
+
+      const fallback = await (await request.get("/og/build/zzzzzzzz")).body();
+      const res = await request.get(`/og/${route}/${id}`);
+      expect(res.status()).toBe(200);
+      expect(res.headers()["content-type"]).toBe("image/png");
+      // Only a rendered card is cached for 30 days; the fallback is not.
+      expect(res.headers()["cache-control"]).toBe("public, max-age=2592000, immutable");
+      const body = await res.body();
+      expect(body.byteLength).toBeGreaterThan(25_000);
+      expect(body.equals(fallback)).toBe(false);
+    });
+  }
 
   test("/og/build/<invalid> returns the fallback PNG", async ({ request }) => {
     // Use a well-formed id that isn't seeded — builds-api returns 404, OG

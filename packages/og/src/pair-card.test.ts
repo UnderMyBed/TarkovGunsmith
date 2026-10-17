@@ -31,10 +31,9 @@ describe("pairCard", () => {
   });
 
   it('renders "—" instead of "NaN" for a NaN stat', async () => {
-    // `stats.*` is typed `number | null`, not `number | null | undefined` — a
-    // `Number.isNaN` value is a valid `number` at the type level (e.g. an upstream
-    // 0/0), and the card's `fmt()` helper guards it the same way it guards `null`. No
-    // hydrator path in this package produces one today, so it's constructed directly.
+    // A `Number.isNaN` value is a valid `number` at the type level (e.g. an upstream 0/0),
+    // and the card's `fmt()` helper guards it. No hydrator path in this package produces one
+    // today, so it's constructed directly.
     const fonts = await loadFonts();
     const vm: PairCardViewModel = {
       left: {

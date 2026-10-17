@@ -1,55 +1,26 @@
-import type { BuildV6 } from "@tarkov/data";
-import { weaponSpec } from "@tarkov/ballistics";
+import { weaponSpec, type BallisticMod, type BallisticWeapon } from "@tarkov/ballistics";
 import type { BuildCardViewModel, PairCardViewModel, SideViewModel } from "./view-model.js";
 
-/**
- * GraphQL-shaped weapon row the hydrator expects. Matches the relevant subset
- * of `api.tarkov.dev` `Item`/`ItemPropertiesWeapon` fields; the Pages Function
- * in Phase 2 is responsible for shaping the fetched data into this form.
- */
+/** The weapon a card is drawn for. */
 export interface HydrateWeapon {
-  id: string;
+  /** The headline name, e.g. "M4A1". */
   shortName: string;
-  properties: {
-    ergonomics: number;
-    recoilVertical: number;
-    recoilHorizontal: number;
-    /** Centimetres at 100 m; with the barrel's, the card's MOA. */
-    centerOfImpact: number;
-    deviationCurve: number;
-    /** Percent. */
-    velocity: number;
-    fireRate: number;
-    effectiveDistance: number;
-    sightingRange: number;
-    defaultAmmo: { name: string; initialSpeed: number } | null;
-  } | null;
-}
-
-/** GraphQL-shaped mod row the hydrator expects. */
-export interface HydrateMod {
-  id: string;
-  shortName: string;
-  weight: number;
-  properties: {
-    ergonomics?: number;
-    recoilModifier?: number;
-    accuracyModifier?: number;
-  } | null;
-  /** A barrel's `centerOfImpact` in cm at 100 m; 0 for other parts (see `adaptMod`). */
-  centerOfImpact: number;
-  /** A barrel's `deviationMax`; `null` for other parts. */
-  deviationMax: number | null;
-  /** Muzzle velocity modifier, a percent. */
-  velocity: number;
-  /** A sight's sighting range in metres; `null` for other parts. */
-  sightingRange: number | null;
+  /**
+   * The weapon's own stats, from `@tarkov/data`'s `adaptWeapon` — the input the Builder hands
+   * `weaponSpec` (`useBuilderState`), its own weight included.
+   */
+  ballistic: BallisticWeapon;
 }
 
 export interface HydrateBuildArgs {
-  build: BuildV6;
+  /** The build's own name; the weapon's short name heads the card when it has none. */
+  name: string | undefined;
   weapon: HydrateWeapon;
-  mods: readonly HydrateMod[];
+  /**
+   * Every part on the weapon, one per filled slot (a part fitted twice is two entries), from
+   * `@tarkov/data`'s `adaptMod` over `resolveBuild(...).placed` — the Builder's own input.
+   */
+  mods: readonly BallisticMod[];
   /**
    * What the build costs — the weapon or preset plus its parts — or `null` when that is not
    * known. The caller prices it with `@tarkov/data`'s `buildPriceUnder`, the Builder's own
@@ -59,80 +30,31 @@ export interface HydrateBuildArgs {
 }
 
 /**
- * Pure hydrator — turns a `BuildV6` + already-fetched weapon/mods rows into a
- * `BuildCardViewModel`. No network, no `@tarkov/data` hooks. The Pages
- * Function (Phase 2) handles the GraphQL fetch and calls this.
+ * Pure hydrator: a build's weapon and placed parts into a `BuildCardViewModel`. The stats are
+ * `weaponSpec` over exactly the inputs the Builder passes it, so the card and the page cannot
+ * disagree on ergonomics, recoil, weight or MOA.
  *
  * @example
- * const vm = hydrateBuildCard({ build, weapon, mods });
- * // vm.title, vm.stats.ergo, vm.priceRub
+ * const vm = hydrateBuildCard({ name, weapon, mods, priceRub });
+ * // vm.title, vm.stats.weight
  */
 export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
-  const { build, weapon, mods } = args;
-  const attachedIds = Object.values(build.attachments);
-  const attachedMods = attachedIds
-    .map((id) => mods.find((m) => m.id === id))
-    .filter((m): m is HydrateMod => m !== undefined);
-
-  const modCount = attachedMods.length;
-
-  const hasName = build.name !== undefined && build.name.length > 0;
-  const title = hasName ? (build.name as string) : weapon.shortName;
-  const subtitle = hasName ? weapon.shortName : null;
-
-  const spec = weapon.properties
-    ? weaponSpec(
-        {
-          id: weapon.id,
-          name: weapon.shortName,
-          baseErgonomics: weapon.properties.ergonomics,
-          baseVerticalRecoil: weapon.properties.recoilVertical,
-          baseHorizontalRecoil: weapon.properties.recoilHorizontal,
-          // `weight` is summed separately below, so the base is intentionally 0.
-          baseWeight: 0,
-          centerOfImpact: weapon.properties.centerOfImpact,
-          deviationCurve: weapon.properties.deviationCurve,
-          velocity: weapon.properties.velocity,
-          fireRate: weapon.properties.fireRate,
-          effectiveDistance: weapon.properties.effectiveDistance,
-          sightingRange: weapon.properties.sightingRange,
-          defaultAmmo: weapon.properties.defaultAmmo,
-        },
-        // Passthrough, no unit conversion: `recoilModifier` and
-        // `accuracyModifier` are fractions on both sides. Stays inline rather
-        // than using @tarkov/data's `adaptMod` because `HydrateMod` is a
-        // deliberately looser Pages-Function shape, not an `AttachablePart` —
-        // optional properties and `shortName`.
-        attachedMods.map((m) => ({
-          id: m.id,
-          name: m.shortName,
-          ergonomicsDelta: m.properties?.ergonomics ?? 0,
-          recoilModifier: m.properties?.recoilModifier ?? 0,
-          accuracyModifier: m.properties?.accuracyModifier ?? 0,
-          weight: m.weight,
-          centerOfImpact: m.centerOfImpact,
-          deviationMax: m.deviationMax,
-          velocity: m.velocity,
-          sightingRange: m.sightingRange,
-        })),
-      )
-    : null;
-
-  const stats = {
-    ergo: spec?.ergonomics ?? null,
-    recoilV: spec?.verticalRecoil ?? null,
-    recoilH: spec?.horizontalRecoil ?? null,
-    weight: attachedMods.reduce((s, m) => s + m.weight, 0),
-    accuracy: spec?.accuracy ?? null,
-  };
-
+  const { name, weapon, mods } = args;
+  const hasName = name !== undefined && name.length > 0;
+  const spec = weaponSpec(weapon.ballistic, mods);
   return {
-    title,
-    subtitle,
-    modCount,
+    title: hasName ? name : weapon.shortName,
+    subtitle: hasName ? weapon.shortName : null,
+    modCount: mods.length,
     availability: "FLEA",
     priceRub: args.priceRub,
-    stats,
+    stats: {
+      ergo: spec.ergonomics,
+      recoilV: spec.verticalRecoil,
+      recoilH: spec.horizontalRecoil,
+      weight: spec.weight,
+      accuracy: spec.accuracy,
+    },
   };
 }
 

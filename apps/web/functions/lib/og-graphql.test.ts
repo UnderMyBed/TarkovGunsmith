@@ -11,6 +11,8 @@ import {
   snapshotWeaponList,
   snapshotWeaponPresets,
   snapshotWeaponTree,
+  snapshotPartsById,
+  type BuildV6,
   type PriceGate,
   type SnapshotDocuments,
 } from "@tarkov/data";
@@ -22,6 +24,8 @@ import { availabilityPillText } from "./og-availability.js";
 import {
   fetchOgRowsForBuild,
   loadOgData,
+  loadStoredBuild,
+  loadStoredPair,
   OG_PRICES_PATH,
   OG_SNAPSHOT_PATH,
   resetOgData,
@@ -170,15 +174,17 @@ function ogData(): OgData {
 }
 
 describe("fetchOgRowsForBuild", () => {
-  it("returns the weapon with its stats", () => {
+  it("returns the weapon with its stats, its own weight included", () => {
     const out = fetchOgRowsForBuild({ weaponId: "w1", attachments: {}, gate: null }, ogData());
     expect(out.weapon).toEqual({
-      id: "w1",
       shortName: "M4A1",
-      properties: {
-        ergonomics: 50,
-        recoilVertical: 70,
-        recoilHorizontal: 250,
+      ballistic: {
+        id: "w1",
+        name: "Colt M4A1",
+        baseErgonomics: 50,
+        baseVerticalRecoil: 70,
+        baseHorizontalRecoil: 250,
+        baseWeight: 2.9,
         centerOfImpact: 0.01,
         deviationCurve: 1.35,
         velocity: 0,
@@ -195,8 +201,8 @@ describe("fetchOgRowsForBuild", () => {
       { weaponId: "w1", attachments: { mod_foregrip: "m1", mod_stock: "bartered" }, gate: null },
       ogData(),
     );
-    const [m1, bartered] = out.mods;
-    expect(m1).toMatchObject({ id: "m1", shortName: "RVG", weight: 0.1 });
+    expect(out.mods[0]).toMatchObject({ id: "m1", weight: 0.1, ergonomicsDelta: 3 });
+    const [m1, bartered] = out.availability;
     expect(m1!.offers).toEqual([
       { vendor: { normalizedName: "prapor" }, minTraderLevel: 2 },
       { vendor: { normalizedName: "flea-market" }, minTraderLevel: undefined },
@@ -232,18 +238,12 @@ describe("fetchOgRowsForBuild", () => {
       { weaponId: "w1", attachments: { mod_stock: "bartered" }, gate: null },
       { ...data, prices: { ...data.prices, prices: { items, trader } } },
     );
-    const [bartered] = out.mods;
+    const [bartered] = out.availability;
     expect(bartered!.offers).toEqual([{ vendor: { normalizedName: "prapor" }, minTraderLevel: 3 }]);
-    expect(availabilityPillText(out.mods, DEFAULT_PROFILE)).toBe("LL3");
+    expect(availabilityPillText(out.availability, DEFAULT_PROFILE)).toBe("LL3");
     expect(out.priceRub).toBeNull();
     const vm = hydrateBuildCard({
-      build: {
-        version: 6,
-        weaponId: "w1",
-        attachments: out.attachments,
-        orphaned: [],
-        createdAt: "2026-10-16T00:00:00.000Z",
-      },
+      name: undefined,
       weapon: out.weapon,
       mods: out.mods,
       priceRub: out.priceRub,
@@ -257,9 +257,15 @@ describe("fetchOgRowsForBuild", () => {
       { weaponId: "w1", attachments: { mod_barrel: BARREL, camora_000: M855A1 }, gate: null },
       ogData(),
     );
-    expect(out.mods.map((m) => [m.id, m.weight, m.properties])).toEqual([
-      [BARREL, 0.409, { ergonomics: -2, recoilModifier: -0.052, accuracyModifier: 0 }],
-      [M855A1, 0.012, { ergonomics: 0, recoilModifier: 0, accuracyModifier: 0 }],
+    expect(
+      out.mods.map((m) => [
+        m.id,
+        m.weight,
+        { ergonomics: m.ergonomicsDelta, recoil: m.recoilModifier, accuracy: m.accuracyModifier },
+      ]),
+    ).toEqual([
+      [BARREL, 0.409, { ergonomics: -2, recoil: -0.052, accuracy: 0 }],
+      [M855A1, 0.012, { ergonomics: 0, recoil: 0, accuracy: 0 }],
     ]);
     // The barrel's dispersion and velocity reach the card; the cartridge carries none.
     expect(
@@ -283,8 +289,8 @@ describe("fetchOgRowsForBuild", () => {
       },
       ogData(),
     );
-    expect(out.attachments).toEqual({ mod_foregrip: "m1" });
     expect(out.mods.map((m) => m.id)).toEqual(["m1"]);
+    expect(out.availability.map((m) => m.id)).toEqual(["m1"]);
   });
 
   it("skips a mounted id the snapshot holds no part for", () => {
@@ -352,53 +358,205 @@ describe("fetchOgRowsForBuild over the captured documents", () => {
   });
 });
 
-describe("the card's stats against the Builder's for one build", () => {
+describe("the card against the Builder, for stored builds of every version", () => {
   const M4A1 = "5447a9cd4bdc2dbd208b4567";
+  const M4A1_UPPER = "55d355e64bdc2d962f8b4569";
+  const M4_CARBINE_HANDGUARD = "5ae30db85acfc408fb139a05";
+  const COLT_A2_GRIP = "55d4b9964bdc2d1d4e8b456e";
   const SOPMOD = "5a8ae73886f7747b2e6e1416";
+  const M4A1_CARBINE = "5af08cf886f774223c269184";
   const PEQ15 = "544909bb4bdc2d6f028b4577";
+  const PM = "5448bd6b4bdc2dfc2f8b4569";
+  const PM_DEFAULT = "58414967245977598f1ad391";
   const HANDGUARD = "mod_reciever/mod_handguard";
+  const CREATED = "2026-04-21T00:00:00.000Z";
 
-  it("counts a part fitted in two slots twice, as the Builder does", async () => {
-    const data = await capturedBuilderData();
+  /** A weapon preset's attachments, as the Builder seeds them. */
+  function preset(data: OgData, weaponId: string, presetId: string): Record<string, string> {
+    const all = snapshotWeaponPresets(data.snapshot, data.prices.prices)[weaponId]!;
+    return { ...all.find((p) => p.id === presetId)!.attachments };
+  }
+
+  /** What the Builder shows for a loaded build: `useBuilderState`'s spec and `priceBuild`. */
+  function builder(data: OgData, build: BuildV6, gate: PriceGate) {
     const { snapshot } = data;
     const table = data.prices.prices;
-    const sopmod = snapshotWeaponPresets(snapshot, table)[M4A1]!.find((p) => p.id === SOPMOD)!;
-    const attachments = {
-      ...sopmod.attachments,
-      [`${HANDGUARD}/mod_tactical`]: PEQ15,
-      [`${HANDGUARD}/mod_tactical002`]: PEQ15,
-    };
-
-    const rows = fetchOgRowsForBuild({ weaponId: M4A1, attachments, gate: null }, data);
-    const build = {
-      version: 6 as const,
-      weaponId: M4A1,
-      attachments: rows.attachments,
-      orphaned: [],
-      createdAt: "2026-10-16T00:00:00.000Z",
-    };
-    const card = hydrateBuildCard({ build, weapon: rows.weapon, mods: rows.mods }).stats;
-
-    const weapon = snapshotWeaponList(snapshot, table).find((w) => w.id === M4A1)!;
-    const tree = snapshotWeaponTree(snapshot, M4A1);
-    const { placed } = resolveBuild(
-      tree,
-      attachments,
-      partsById(snapshotPartCatalog(snapshot, table)),
+    const weapon = snapshotWeaponList(snapshot, table).find((w) => w.id === build.weaponId)!;
+    const tree = snapshotWeaponTree(snapshot, build.weaponId);
+    const byId = partsById(snapshotPartCatalog(snapshot, table));
+    const { placed } = resolveBuild(tree, build.attachments, byId);
+    const spec = weaponSpec(
+      adaptWeapon(weapon),
+      placed.map((e) => adaptMod(e.part)),
     );
+    const price = priceBuild(
+      gate,
+      weapon,
+      tree,
+      build.attachments,
+      byId,
+      snapshotWeaponPresets(snapshot, table)[build.weaponId] ?? [],
+    );
+    return {
+      modCount: placed.length,
+      stats: {
+        ergo: spec.ergonomics,
+        recoilV: spec.verticalRecoil,
+        recoilH: spec.horizontalRecoil,
+        weight: spec.weight,
+        accuracy: spec.accuracy,
+      },
+      priceRub: price?.status === "priced" ? price.totalRUB : null,
+    };
+  }
+
+  /** The card for the same stored record, through the Pages Function's own path. */
+  function card(data: OgData, raw: unknown) {
+    const build = loadStoredBuild(raw, data.snapshot);
+    const gate = build.profileSnapshot ?? null;
+    const rows = fetchOgRowsForBuild(
+      { weaponId: build.weaponId, attachments: build.attachments, gate },
+      data,
+    );
+    const vm = hydrateBuildCard({
+      name: build.name,
+      weapon: rows.weapon,
+      mods: rows.mods,
+      priceRub: rows.priceRub,
+    });
+    return { build, gate, vm };
+  }
+
+  const stored: [string, (data: OgData) => unknown, number][] = [
+    [
+      // The production record behind /og/build/9ncgg3mx (the `pnpm seed:build` fixture).
+      "v4: a bare M4A1",
+      () => ({
+        version: 4,
+        weaponId: M4A1,
+        attachments: {},
+        orphaned: [],
+        createdAt: CREATED,
+        name: "M4A1 — seed build",
+        description: "Local dev fixture. Regenerate via `pnpm seed:build`.",
+      }),
+      0,
+    ],
+    [
+      "v1: bare mod ids, placed on the weapon by the upgrade",
+      () => ({
+        version: 1,
+        weaponId: M4A1,
+        modIds: [M4A1_UPPER, M4_CARBINE_HANDGUARD, COLT_A2_GRIP],
+        createdAt: CREATED,
+      }),
+      3,
+    ],
+    [
+      "v6: the M4A1 Carbine preset",
+      (data) => ({
+        version: 6,
+        weaponId: M4A1,
+        attachments: preset(data, M4A1, M4A1_CARBINE),
+        orphaned: [],
+        createdAt: CREATED,
+      }),
+      -1,
+    ],
+    [
+      "v6: the SOPMOD II with a PEQ-15 fitted in two more slots",
+      (data) => ({
+        version: 6,
+        weaponId: M4A1,
+        attachments: {
+          ...preset(data, M4A1, SOPMOD),
+          [`${HANDGUARD}/mod_tactical`]: PEQ15,
+          [`${HANDGUARD}/mod_tactical002`]: PEQ15,
+        },
+        orphaned: [],
+        createdAt: CREATED,
+        profileSnapshot: { ...DEFAULT_PROFILE, flea: true, level: 40 },
+      }),
+      -1,
+    ],
+    [
+      "v6: the PM default preset",
+      (data) => ({
+        version: 6,
+        weaponId: PM,
+        attachments: preset(data, PM, PM_DEFAULT),
+        orphaned: [],
+        createdAt: CREATED,
+      }),
+      -1,
+    ],
+  ];
+
+  it.each(stored)(
+    "%s: ergonomics, recoil, weight, MOA and price agree",
+    async (_label, make, mods) => {
+      const data = await capturedBuilderData();
+      const { build, gate, vm } = card(data, make(data));
+      const page = builder(data, build, gate);
+      expect(vm.stats).toEqual(page.stats);
+      expect(vm.modCount).toBe(page.modCount);
+      if (mods >= 0) expect(vm.modCount).toBe(mods);
+      expect(vm.priceRub).toBe(page.priceRub);
+      expect(vm.priceRub).not.toBeNull();
+    },
+  );
+
+  it("weighs a bare M4A1 at the receiver's own 0.75 kg, not 0", async () => {
+    const data = await capturedBuilderData();
+    const { vm } = card(data, stored[0]![1](data));
+    expect(vm.stats.weight).toBe(0.75);
+  });
+
+  it("counts a part fitted in two slots twice, weight included", async () => {
+    const data = await capturedBuilderData();
+    const { build, vm } = card(data, stored[3]![1](data));
+    const placed = resolveBuild(
+      snapshotWeaponTree(data.snapshot, M4A1),
+      build.attachments,
+      snapshotPartsById(data.snapshot),
+    ).placed;
     // The SOPMOD II already carries one PEQ-15; the build adds two more.
     expect(placed.filter((p) => p.itemId === PEQ15)).toHaveLength(3);
-    expect(rows.mods.filter((m) => m.id === PEQ15)).toHaveLength(1);
-    const builder = weaponSpec(
-      adaptWeapon(weapon),
-      placed.map((p) => adaptMod(p.part)),
-    );
+    const without = card(data, {
+      ...(stored[3]![1](data) as object),
+      attachments: preset(data, M4A1, SOPMOD),
+    }).vm;
+    const peq = snapshotPartsById(data.snapshot).get(PEQ15)!.weight;
+    expect(vm.stats.weight).toBeCloseTo(without.stats.weight + 2 * peq, 10);
+  });
 
-    expect(card.ergo).toBeCloseTo(builder.ergonomics, 10);
-    expect(card.recoilV).toBeCloseTo(builder.verticalRecoil, 10);
-    expect(card.recoilH).toBeCloseTo(builder.horizontalRecoil, 10);
-    expect(card.accuracy).toBeCloseTo(builder.accuracy, 10);
-    // Weight is left out here: the card drops the weapon's own weight (#228).
+  it("refuses a record the Builder would refuse", async () => {
+    const data = await capturedBuilderData();
+    expect(() => loadStoredBuild({ version: 6, weaponId: M4A1 }, data.snapshot)).toThrow();
+    expect(() => loadStoredBuild({ version: 99 }, data.snapshot)).toThrow();
+  });
+
+  it("loads both sides of a stored pair, a v1 side included, with each side's profile", async () => {
+    const data = await capturedBuilderData();
+    const leftProfile = { ...DEFAULT_PROFILE, flea: true, level: 30 };
+    const pair = loadStoredPair(
+      {
+        v: 1,
+        createdAt: CREATED,
+        left: stored[1]![1](data),
+        right: null,
+        leftProfile,
+      },
+      data.snapshot,
+    );
+    expect(pair.right).toBeNull();
+    expect(pair.left!.profile).toEqual(leftProfile);
+    expect(pair.left!.build.version).toBe(6);
+    expect(pair.left!.build.attachments).toEqual(
+      loadStoredBuild(stored[1]![1](data), data.snapshot).attachments,
+    );
+    expect(Object.keys(pair.left!.build.attachments)).toHaveLength(3);
+    expect(() => loadStoredPair({ v: 1, left: null, right: null }, data.snapshot)).toThrow();
   });
 });
 
