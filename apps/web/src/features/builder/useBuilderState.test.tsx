@@ -179,7 +179,18 @@ function weapon(id: string, name: string, buyFor: BuyForEntry[]): WeaponListItem
     name,
     types: [],
     weight: 0.75,
-    properties: { ergonomics: 48, recoilVertical: 119, recoilHorizontal: 342 },
+    velocity: 0,
+    properties: {
+      ergonomics: 48,
+      recoilVertical: 119,
+      recoilHorizontal: 342,
+      fireRate: 800,
+      centerOfImpact: 0.01,
+      deviationCurve: 1.35,
+      effectiveDistance: 500,
+      sightingRange: 100,
+    },
+    defaultAmmo: { id: "54527a984bdc2d4e668b4567", shortName: "M855", initialSpeed: 922 },
     buyFor,
   } as unknown as WeaponListItem;
 }

@@ -10,7 +10,7 @@ const vm: BuildCardViewModel = {
   modCount: 11,
   availability: "LL3",
   priceRub: 187_240,
-  stats: { ergo: 52, recoilV: 88, recoilH: 215, weight: 3.4, accuracy: 3.2 },
+  stats: { ergo: 52, recoilV: 88, recoilH: 215, weight: 3.4, accuracy: 1.17 },
 };
 
 async function render(model: BuildCardViewModel): Promise<string> {
@@ -31,7 +31,8 @@ describe("buildCard", () => {
     expect(text).toMatch(/RECOIL V/);
     expect(text).toMatch(/RECOIL H/);
     expect(text).toMatch(/WEIGHT/);
-    expect(text).toMatch(/ACCURACY/);
+    expect(text).toMatch(/MOA/);
+    expect(text).toMatch(/1\.17/);
     expect(text).toMatch(/SHARED BUILD/);
     expect(text).toMatch(/TARKOVGUNSMITH/);
     expect(text).toMatch(/187 240|187,240/);

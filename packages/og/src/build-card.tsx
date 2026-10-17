@@ -183,7 +183,7 @@ export function buildCard(vm: BuildCardViewModel): ReactNode {
         <StatCell label="RECOIL V" value={fmt(vm.stats.recoilV)} />
         <StatCell label="RECOIL H" value={fmt(vm.stats.recoilH)} />
         <StatCell label="WEIGHT" value={fmt(vm.stats.weight, 2)} />
-        <StatCell label="ACCURACY" value={fmt(vm.stats.accuracy, 1)} />
+        <StatCell label="MOA" value={fmt(vm.stats.accuracy, 2)} />
       </div>
 
       {/* Brand */}

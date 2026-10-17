@@ -12,7 +12,7 @@ import type { WeaponPreset } from "../queries/presets.js";
  * {@link BuilderPrices}: the snapshot ships in the same deploy as the code that reads it, so
  * the only reader that can ever see a different version is a tab opened before a deploy.
  */
-export const BUILDER_SNAPSHOT_SCHEMA = 2;
+export const BUILDER_SNAPSHOT_SCHEMA = 3;
 
 /** Where a snapshot's documents came from: live `json.tarkov.dev`, or the committed captures. */
 export type SnapshotSource = "upstream" | "fixtures";

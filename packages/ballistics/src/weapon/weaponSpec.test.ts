@@ -1,55 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { weaponSpec } from "./weaponSpec.js";
-import type { BallisticWeapon, BallisticMod } from "../types.js";
+import type { BallisticMod } from "../types.js";
+import {
+  AR15_BARREL_10_3,
+  CQR_GRIP as grip,
+  HAMR_SCOPE,
+  M4A1 as m4,
+  UBR_GEN2_STOCK as stock,
+  VP09_MUZZLE_BRAKE as muzzle,
+} from "../__fixtures__/weapons.js";
 
-// Every value below is sampled from the live json.tarkov.dev items document
-// (2026-08-19) rather than invented. Invented percent-scale magnitudes are
-// precisely what let the 100x recoil unit error survive for years — see
-// docs/operations/data-api-audit.md §B.
-
-// Colt M4A1 5.56x45 assault rifle — 5447a9cd4bdc2dbd208b4567.
-// baseAccuracy has no upstream counterpart; 3.5 mirrors DEFAULT_BASE_ACCURACY
-// in packages/tarkov-data/src/ballistic-adapters.ts.
-const m4: BallisticWeapon = {
-  id: "5447a9cd4bdc2dbd208b4567",
-  name: "M4A1",
-  baseErgonomics: 48,
-  baseVerticalRecoil: 119,
-  baseHorizontalRecoil: 342,
-  baseWeight: 0.75,
-  baseAccuracy: 3.5,
-};
-
-// AR-15 Hera Arms CQR pistol grip/buttstock — 5a33e75ac4a2826c6e06d759.
-const grip: BallisticMod = {
-  id: "5a33e75ac4a2826c6e06d759",
-  name: "CQR AR15",
-  ergonomicsDelta: 15,
-  recoilModifier: -0.23,
-  weight: 0.499,
-  accuracyModifier: 0,
-};
-
-// AR-15 Magpul UBR GEN2 stock (Black) — 5947e98b86f774778f1448bc.
-const stock: BallisticMod = {
-  id: "5947e98b86f774778f1448bc",
-  name: "UBR GEN2",
-  ergonomicsDelta: 8,
-  recoilModifier: -0.225,
-  weight: 0.61,
-  accuracyModifier: 0,
-};
-
-// AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake —
-// 5a7c147ce899ef00150bd8b8. Carries a real positive accuracyModifier.
-const muzzle: BallisticMod = {
-  id: "5a7c147ce899ef00150bd8b8",
-  name: "VP-09",
-  ergonomicsDelta: -2,
-  recoilModifier: -0.085,
-  weight: 0.2,
-  accuracyModifier: 0.04,
-};
+// Every value below is sampled from the live json.tarkov.dev items document rather than
+// invented (see the fixtures file). Invented percent-scale magnitudes are precisely what let
+// the 100x recoil unit error survive for years — see docs/operations/data-api-audit.md §B.
 
 describe("weaponSpec", () => {
   it("returns base stats when no mods are attached", () => {
@@ -60,7 +23,9 @@ describe("weaponSpec", () => {
     expect(spec.verticalRecoil).toBe(119);
     expect(spec.horizontalRecoil).toBe(342);
     expect(spec.weight).toBeCloseTo(0.75, 5);
-    expect(spec.accuracy).toBe(3.5);
+    expect(spec.fireRate).toBe(800);
+    expect(spec.effectiveDistance).toBe(500);
+    expect(spec.sightingRange).toBe(100);
   });
 
   it("sums ergonomics deltas additively", () => {
@@ -83,13 +48,6 @@ describe("weaponSpec", () => {
     expect(spec.weight).toBeCloseTo(2.059, 5);
   });
 
-  it("applies accuracy modifiers multiplicatively, positive modifier tightening MOA", () => {
-    const spec = weaponSpec(m4, [grip, stock, muzzle]);
-    // Only the VP-09 has a non-zero accuracyModifier: +0.04 = 4% better
-    // accuracy, so MOA drops. 3.5 * (1 - 0.04) = 3.36.
-    expect(spec.accuracy).toBeCloseTo(3.36, 5);
-  });
-
   it("reports modCount accurately", () => {
     expect(weaponSpec(m4, []).modCount).toBe(0);
     expect(weaponSpec(m4, [grip]).modCount).toBe(1);
@@ -104,9 +62,8 @@ describe("weaponSpec", () => {
   });
 
   it("floors the recoil multiplier so recoil can never reach zero or go negative", () => {
-    // No live weapon can reach this: the deepest measured multiplier is 0.062
-    // and it saturates with depth. Driven synthetically so the guard is still
-    // covered if upstream ever widens the mod pool.
+    // No measured build reaches this (the deepest is 0.022). Driven synthetically so the
+    // guard stays covered if upstream ever widens the mod pool.
     const absurd: BallisticMod[] = Array.from({ length: 6 }, (_, i) => ({
       ...grip,
       id: `absurd-${i}`,
@@ -118,13 +75,74 @@ describe("weaponSpec", () => {
     expect(spec.horizontalRecoil).toBeCloseTo(342 * 0.01, 6);
     expect(spec.verticalRecoil).toBeGreaterThan(0);
   });
+});
+
+describe("weaponSpec accuracy (MOA)", () => {
+  it("adds the barrel's centerOfImpact to the weapon's, at 100/2.9089 MOA per cm", () => {
+    const spec = weaponSpec(m4, [AR15_BARREL_10_3]);
+    // (0.01 + 0.07) × barrelDeviation(1.35, 22) × 100 / 2.9089 = 2.750228. Upstream
+    // publishes 2.75 for the M4A1 SOPMOD II preset, which carries this barrel.
+    expect(spec.baseMoa).toBeCloseTo(2.750228, 5);
+    expect(spec.accuracyModifier).toBe(0);
+    expect(spec.accuracy).toBeCloseTo(spec.baseMoa, 12);
+  });
+
+  it("reads the bare weapon's own centerOfImpact with the default deviationMax of 100", () => {
+    // 0.01 × barrelDeviation(1.35, 100) × 100 / 2.9089.
+    expect(weaponSpec(m4, []).baseMoa).toBeCloseTo(0.343779, 5);
+  });
+
+  it("skips a deviationMax of 0, as upstream's truthiness check does", () => {
+    const zeroed = weaponSpec(m4, [{ ...AR15_BARREL_10_3, deviationMax: 0 }]);
+    // Falls back to 100: (0.01 + 0.07) × barrelDeviation(1.35, 100) × 100 / 2.9089.
+    expect(zeroed.baseMoa).toBeCloseTo(2.750228, 3);
+    expect(zeroed.baseMoa).toBeGreaterThan(weaponSpec(m4, [AR15_BARREL_10_3]).baseMoa);
+  });
+
+  it("applies accuracy modifiers as (1 − sum), a positive modifier tightening MOA", () => {
+    const spec = weaponSpec(m4, [AR15_BARREL_10_3, grip, stock, muzzle]);
+    // Only the VP-09 carries one: +0.04 = 4% better, so 2.750228 × 0.96.
+    expect(spec.accuracyModifier).toBeCloseTo(0.04, 12);
+    expect(spec.accuracy).toBeCloseTo(2.640219, 5);
+    expect(spec.accuracy).toBeLessThan(spec.baseMoa);
+  });
 
   it("treats a negative accuracyModifier (suppressor) as worse MOA", () => {
     // Mosin Bramit suppressor reports accuracyModifier -0.05.
     const suppressor: BallisticMod = { ...muzzle, id: "bramit", accuracyModifier: -0.05 };
-    const spec = weaponSpec(m4, [suppressor]);
-    // 3.5 * (1 + 0.05) = 3.675 — MOA grows, i.e. accuracy degrades.
-    expect(spec.accuracy).toBeCloseTo(3.675, 5);
-    expect(spec.accuracy).toBeGreaterThan(m4.baseAccuracy);
+    const spec = weaponSpec(m4, [AR15_BARREL_10_3, suppressor]);
+    // 2.750228 × 1.05 — MOA grows, i.e. accuracy degrades.
+    expect(spec.accuracy).toBeCloseTo(2.887739, 5);
+    expect(spec.accuracy).toBeGreaterThan(spec.baseMoa);
+  });
+});
+
+describe("weaponSpec velocity, range and fire rate", () => {
+  it("applies velocity modifiers as percents to the default ammo's speed", () => {
+    const spec = weaponSpec(m4, [AR15_BARREL_10_3, grip]);
+    // M4A1 0% + 10.3" barrel -11% → 922 × 0.89.
+    expect(spec.velocityModifier).toBe(-11);
+    expect(spec.muzzleVelocity).toBeCloseTo(820.58, 6);
+    expect(spec.muzzleVelocityAmmo).toBe("M855");
+  });
+
+  it("has no muzzle velocity without a default ammo, and still sums the modifier", () => {
+    const spec = weaponSpec({ ...m4, velocity: 1.8, defaultAmmo: null }, [AR15_BARREL_10_3]);
+    expect(spec.velocityModifier).toBeCloseTo(-9.2, 12);
+    expect(spec.muzzleVelocity).toBeNull();
+    expect(spec.muzzleVelocityAmmo).toBeNull();
+  });
+
+  it("takes the longest sighting range of the weapon and its sights", () => {
+    expect(weaponSpec(m4, [grip]).sightingRange).toBe(100);
+    expect(weaponSpec(m4, [grip, HAMR_SCOPE]).sightingRange).toBe(800);
+    // Upstream reports 0 for some reflex sights: never shorter than the weapon's own.
+    expect(weaponSpec(m4, [{ ...HAMR_SCOPE, sightingRange: 0 }]).sightingRange).toBe(100);
+  });
+
+  it("passes fire rate and effective distance through: no part modifies them", () => {
+    const spec = weaponSpec(m4, [AR15_BARREL_10_3, HAMR_SCOPE, grip]);
+    expect(spec.fireRate).toBe(800);
+    expect(spec.effectiveDistance).toBe(500);
   });
 });

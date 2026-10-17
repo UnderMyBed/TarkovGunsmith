@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isModLikePart, partsById, snapshotPartSchema, type AttachablePart } from "./parts.js";
+import {
+  isModLikePart,
+  partRecord,
+  partsById,
+  snapshotPartSchema,
+  type AttachablePart,
+} from "./parts.js";
 import { adaptMod } from "../ballistic-adapters.js";
 import { buildSlotGraph } from "./slot-graph.js";
 import { fixtureClient } from "../__fixtures__/client.js";
@@ -82,9 +88,21 @@ describe("the Builder part catalog", () => {
       ergonomicsDelta: -2,
       recoilModifier: -0.052000000000000005,
       weight: 0.409,
+      centerOfImpact: 0.07,
+      deviationMax: 22,
+      velocity: -11,
     });
-    expect(adaptMod(byId.get(HAMR_SCOPE)!)).toMatchObject({ ergonomicsDelta: -3.5, weight: 0.411 });
-    expect(adaptMod(byId.get(STANAG_MAG)!)).toMatchObject({ ergonomicsDelta: -1.5 });
+    expect(adaptMod(byId.get(HAMR_SCOPE)!)).toMatchObject({
+      ergonomicsDelta: -3.5,
+      weight: 0.411,
+      sightingRange: 800,
+    });
+    expect(adaptMod(byId.get(STANAG_MAG)!)).toMatchObject({ ergonomicsDelta: -1.5, velocity: 0 });
+    expect(byId.get(STANAG_MAG)!.properties).toMatchObject({
+      capacity: 30,
+      loadModifier: 0,
+      malfunctionChance: 0.08,
+    });
   });
 
   it("gives ammo its weight and no stat modifiers, though upstream ships one", async () => {
@@ -100,6 +118,10 @@ describe("the Builder part catalog", () => {
       recoilModifier: 0,
       accuracyModifier: 0,
       weight: 0.012,
+      centerOfImpact: 0,
+      deviationMax: null,
+      velocity: 0,
+      sightingRange: null,
     });
   });
 
@@ -133,6 +155,26 @@ describe("the Builder part catalog", () => {
     for (const part of await fixturePartCatalog()) {
       expect(part).not.toHaveProperty("craftsFor");
       expect(part).not.toHaveProperty("bartersFor");
+    }
+  });
+});
+
+describe("partRecord", () => {
+  it("moves a mod-like part's top-level velocity into its properties", () => {
+    const raw = { id: "x", velocity: -11, properties: { propertiesType: "ItemPropertiesBarrel" } };
+    expect(partRecord(raw)).toEqual({
+      id: "x",
+      velocity: -11,
+      properties: { propertiesType: "ItemPropertiesBarrel", velocity: -11 },
+    });
+  });
+
+  it("leaves a cartridge, a part without velocity, and a malformed record as they are", () => {
+    const ammo = { velocity: 5, properties: { propertiesType: "ItemPropertiesAmmo" } };
+    const noVelocity = { properties: { propertiesType: "ItemPropertiesWeaponMod" } };
+    const noProperties = { velocity: 0, properties: null };
+    for (const raw of [ammo, noVelocity, noProperties, null, "x"]) {
+      expect(partRecord(raw)).toBe(raw);
     }
   });
 });

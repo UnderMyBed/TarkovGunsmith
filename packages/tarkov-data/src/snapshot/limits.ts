@@ -29,10 +29,10 @@ export const UPSTREAM_FLOORS = {
  * Size budget for `builder-snapshot.json`, which every Builder visit downloads. Brotli is
  * measured at quality 4, roughly what Cloudflare's edge serves the file at.
  *
- * - 300 KB brotli. Live data, weapon presets included, measured 263 KB on 2026-10-17: 37 KB
+ * - 300 KB brotli. Live data, weapon presets and stats included, measured 269 KB on 2026-10-17: 31 KB
  *   of headroom for upstream growth before a deliberate decision is needed.
- * - 6 MB raw. What the browser parses on load: 3974 KB on 2026-10-17 (`JSON.parse` about
- *   10 ms on a desktop), 2170 KB of headroom. The raw cap guards a payload that compresses
+ * - 6 MB raw. What the browser parses on load: 4058 KB on 2026-10-17 (`JSON.parse` about
+ *   10 ms on a desktop), 2086 KB of headroom. The raw cap guards a payload that compresses
  *   well but costs parse time and memory.
  */
 export const SNAPSHOT_BUDGET = {

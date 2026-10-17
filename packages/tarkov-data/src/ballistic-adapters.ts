@@ -3,35 +3,35 @@ import type { AttachablePart } from "./queries/parts.js";
 import type { WeaponListItem } from "./queries/weaponList.js";
 
 /**
- * Fallback base accuracy in MOA.
- *
- * Upstream exposes no base accuracy stat on a weapon — in EFT it is derived
- * from barrel, caliber and ammo, none of which the item document carries. This
- * constant is therefore fabricated, and the accuracy figures every surface
- * shows are only meaningful as *relative* comparisons between builds of the
- * same weapon. Recorded as such in docs/operations/data-api-audit.md §C.
- */
-export const DEFAULT_BASE_ACCURACY = 3.5;
-
-/**
  * Convert a `WeaponListItem` to the `@tarkov/ballistics` input shape.
  *
  * Reads the non-`default` recoil/ergonomics fields deliberately: upstream now
  * returns `defaultErgonomics` / `defaultRecoilVertical` / `defaultRecoilHorizontal`
- * as null, and the bare-receiver values are what the Builder wants anyway.
+ * as null, and the bare-receiver values are what the Builder wants anyway. Every other field
+ * passes through in upstream's unit: `centerOfImpact` in cm at 100 m, `velocity` a percent.
  *
  * @example
  *   const spec = weaponSpec(adaptWeapon(m4a1), mods.map(adaptMod));
  */
 export function adaptWeapon(item: WeaponListItem): BallisticWeapon {
+  const p = item.properties;
   return {
     id: item.id,
     name: item.name,
-    baseErgonomics: item.properties.ergonomics,
-    baseVerticalRecoil: item.properties.recoilVertical,
-    baseHorizontalRecoil: item.properties.recoilHorizontal,
+    baseErgonomics: p.ergonomics,
+    baseVerticalRecoil: p.recoilVertical,
+    baseHorizontalRecoil: p.recoilHorizontal,
     baseWeight: item.weight,
-    baseAccuracy: DEFAULT_BASE_ACCURACY,
+    centerOfImpact: p.centerOfImpact,
+    deviationCurve: p.deviationCurve,
+    velocity: item.velocity,
+    fireRate: p.fireRate,
+    effectiveDistance: p.effectiveDistance,
+    sightingRange: p.sightingRange,
+    defaultAmmo:
+      item.defaultAmmo === null
+        ? null
+        : { name: item.defaultAmmo.shortName, initialSpeed: item.defaultAmmo.initialSpeed },
   };
 }
 
@@ -65,6 +65,10 @@ export function adaptMod(part: AttachablePart): BallisticMod {
       recoilModifier: 0,
       weight: part.weight,
       accuracyModifier: 0,
+      centerOfImpact: 0,
+      deviationMax: null,
+      velocity: 0,
+      sightingRange: null,
     };
   }
   return {
@@ -74,5 +78,47 @@ export function adaptMod(part: AttachablePart): BallisticMod {
     recoilModifier: p.recoilModifier,
     weight: part.weight,
     accuracyModifier: p.accuracyModifier,
+    // Only a barrel has a centerOfImpact and deviationMax upstream, and only a sight a
+    // sightingRange: the other types carry no such field, so they add no dispersion and set
+    // no range. A rule for the type, not a default for a missing field.
+    centerOfImpact: p.propertiesType === "ItemPropertiesBarrel" ? p.centerOfImpact : 0,
+    deviationMax: p.propertiesType === "ItemPropertiesBarrel" ? p.deviationMax : null,
+    velocity: p.velocity,
+    sightingRange: p.propertiesType === "ItemPropertiesScope" ? p.sightingRange : null,
+  };
+}
+
+/** The magazine on a build, as upstream reports it. */
+export interface MountedMagazine {
+  readonly id: string;
+  readonly name: string;
+  /** Rounds. */
+  readonly capacity: number;
+  /** A signed fraction, as upstream reports it. */
+  readonly loadModifier: number;
+  /** A fraction. */
+  readonly malfunctionChance: number;
+}
+
+/**
+ * The magazine in the weapon's own `mod_magazine` slot, or `null` when that slot is empty or
+ * the weapon has none (break-action shotguns, the MP-18, the RShG-2). Every live preset that
+ * mounts a magazine mounts it there. Its figures are the part's own, not an aggregate.
+ *
+ * @example
+ *   mountedMagazine(attachedParts(tree, attachments, byId).entries)?.capacity; // 30
+ */
+export function mountedMagazine(
+  entries: readonly { readonly path: string; readonly part: AttachablePart }[],
+): MountedMagazine | null {
+  const entry = entries.find((e) => e.path === "mod_magazine");
+  const p = entry?.part.properties;
+  if (entry === undefined || p?.propertiesType !== "ItemPropertiesMagazine") return null;
+  return {
+    id: entry.part.id,
+    name: entry.part.name,
+    capacity: p.capacity,
+    loadModifier: p.loadModifier,
+    malfunctionChance: p.malfunctionChance,
   };
 }

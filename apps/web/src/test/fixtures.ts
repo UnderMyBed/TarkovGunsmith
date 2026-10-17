@@ -78,6 +78,8 @@ export const ITEMS_DOCUMENT: {
       updated: "2026-10-16T12:00:00.000Z",
       weight: 3.4,
       types: ["gun"],
+      // Top-level and a PERCENT, unlike the fraction-scale `properties` modifiers.
+      velocity: 0,
       minLevelForFlea: 0,
       avg24hPrice: 42_000,
       properties: {
@@ -87,6 +89,12 @@ export const ITEMS_DOCUMENT: {
         recoilVertical: 108,
         recoilHorizontal: 296,
         fireRate: 800,
+        centerOfImpact: 0.01,
+        deviationCurve: 1.35,
+        effectiveDistance: 500,
+        sightingRange: 100,
+        // An id the snapshot generator resolves to that ammo's `shortName` and `initialSpeed`.
+        defaultAmmo: "ammo-m855",
         slots: [
           {
             id: "slot-w-m4a1-muzzle",
@@ -125,6 +133,7 @@ export const ITEMS_DOCUMENT: {
       iconLink: ICON,
       weight: 0.14,
       types: ["mods"],
+      velocity: 0,
       minLevelForFlea: 0,
       avg24hPrice: 4_500,
       // Upstream sends both on every item, empty or not.
@@ -156,6 +165,7 @@ export const ITEMS_DOCUMENT: {
       iconLink: ICON,
       weight: 0.4,
       types: ["mods"],
+      velocity: 0,
       // Locked off flea by level, AND its only trader offer needs Mechanic LL2 — the
       // DEFAULT_PROFILE (all traders LL1, flea off) can reach neither path. Deliberately
       // unavailable so SlotTree's "Show all items" toggle and itemAvailability's
@@ -269,6 +279,7 @@ export const ITEMS_DOCUMENT: {
         damage: 63,
         armorDamage: 45,
         projectileCount: 1,
+        initialSpeed: 922,
       },
     },
     "ammo-m995": {
@@ -288,6 +299,7 @@ export const ITEMS_DOCUMENT: {
         damage: 50,
         armorDamage: 62,
         projectileCount: 1,
+        initialSpeed: 1013,
       },
     },
     "armor-6b13": {

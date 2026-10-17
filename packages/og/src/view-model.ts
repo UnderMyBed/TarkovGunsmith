@@ -19,6 +19,7 @@ export interface BuildCardViewModel {
     recoilV: number | null;
     recoilH: number | null;
     weight: number | null;
+    /** Accuracy in MOA, lower is better. */
     accuracy: number | null;
   };
 }

@@ -134,7 +134,7 @@ function HomePage() {
             {
               n: "02",
               title: "OPTIMIZER",
-              body: "Solve for min-recoil, max-ergo, min-weight or max-accuracy.",
+              body: "Solve for min-recoil, max-ergo or min-weight.",
             },
             {
               n: "03",

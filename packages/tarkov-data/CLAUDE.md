@@ -40,7 +40,7 @@ That drives every convention below:
 
 ## ⚠️ Units: upstream sends fractions, and it has cost us before
 
-`recoilModifier` and `accuracyModifier` are **fractions** — `-0.21` means −21%. `armorDamage` is a **percent** — `52` means 52%.
+`recoilModifier` and `accuracyModifier` are **fractions** — `-0.21` means −21%. So are a magazine's `loadModifier` and `malfunctionChance`. `armorDamage` is a **percent** — `52` means 52%. So is `velocity`, which sits at the **top level** of a weapon or mod record, not under `properties`: `-11` means −11%. `parts.ts`'s `partRecord` moves it into `properties` for parts.
 
 A 2026-08 audit found the recoil fraction being consumed as a percent, making every recoil calculation 100× too weak for the entire life of the project. It survived because the test fixtures used invented percent-scale values up to 43× larger than anything upstream returns, so no assertion could catch it.
 

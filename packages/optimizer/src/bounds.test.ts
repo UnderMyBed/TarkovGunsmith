@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { weaponSpec } from "@tarkov/ballistics";
 import { lowerBoundForRemaining } from "./bounds.js";
+import { slotCandidates } from "./feasibility.js";
+import { optimize } from "./optimize.js";
+import { M4A1_MODS, M4A1_TREE, M4A1_WEAPON } from "./__fixtures__/m4a1-like.js";
 import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
-import { partsById, type PlayerProfile } from "@tarkov/data";
+import { adaptMod, partsById, type AttachablePart, type PlayerProfile } from "@tarkov/data";
 
 const PARTS = partsById(SMALL_MODS);
 
@@ -110,8 +114,166 @@ describe("lowerBoundForRemaining", () => {
       "max-accuracy",
       SMALL_WEAPON,
     );
-    // Best is +0.06; weaponSpec applies `A * (1 - sum)`, so the additive delta
-    // against the running score is -A * 0.06 = -3.0 * 0.06 = -0.18.
-    expect(bound).toBeCloseTo(-0.18, 10);
+    // Best is +0.06. With no barrel in reach the bound is -K·C·D·0.06: the weapon's
+    // 0.01 cm at the 100-deviationMax factor is 0.343779 MOA, so -0.343779 × 0.06.
+    expect(bound).toBeCloseTo(-0.0206267, 6);
+  });
+});
+
+/**
+ * The max-accuracy bound is additive while MOA is a product, so it is checked exhaustively: on
+ * the 8-slot fixture, with real barrels (centerOfImpact, deviationMax, accuracy) in the barrel
+ * slot and real accuracy modifiers on the muzzles, every partial build's score plus the bound
+ * must be at most the best MOA any completion of it reaches. A bound above that would prune the
+ * better build.
+ */
+describe("the max-accuracy bound is admissible", () => {
+  const BARRELS = [
+    // AR-15 10.3", 14.5" and Hanson Carbine Pro 16" barrels, live 2026-10-17.
+    { centerOfImpact: 0.07, deviationMax: 22, accuracyModifier: 0 },
+    { centerOfImpact: 0.053, deviationMax: 23, accuracyModifier: 0 },
+    { centerOfImpact: 0.03, deviationMax: 23, accuracyModifier: 0.07 },
+  ];
+  // VP-09 brake +0.04, Bramit suppressor -0.05, none, SV-98 SRVV brake +0.06.
+  const MUZZLE_ACCURACY = [0.04, -0.05, 0, 0.06];
+  const parts: AttachablePart[] = M4A1_MODS.map((part) => {
+    const [slot, index] = part.id.split("_") as [string, string];
+    const i = Number(index);
+    if (slot === "barrel") {
+      const { ergonomics, recoilModifier } = part.properties as {
+        ergonomics: number;
+        recoilModifier: number;
+      };
+      return {
+        ...part,
+        properties: {
+          propertiesType: "ItemPropertiesBarrel",
+          ergonomics,
+          recoilModifier,
+          velocity: 0,
+          ...BARRELS[i]!,
+        },
+      };
+    }
+    if (slot === "muzzle") {
+      return {
+        ...part,
+        properties: {
+          ...part.properties,
+          accuracyModifier: MUZZLE_ACCURACY[i]!,
+        } as AttachablePart["properties"],
+      };
+    }
+    return part;
+  });
+  const profile: PlayerProfile = { ...flea, level: 99 };
+  const slots = M4A1_TREE.slots;
+  const accuracyOf = (mods: readonly AttachablePart[]) =>
+    weaponSpec(M4A1_WEAPON, mods.map(adaptMod)).accuracy;
+  const NO_PINS: ReadonlyMap<string, string | null> = new Map();
+
+  // A pinned slot offers only its pinned part, so a pinned part with a NEGATIVE accuracy
+  // modifier (a suppressor's -0.05, here on the sight slot) makes the remaining slots' best
+  // summed accuracy negative.
+  const sightPath = slots.find((s) => s.nameId === "sight")!.path;
+  const PINNED_NEGATIVE: ReadonlyMap<string, string | null> = new Map([[sightPath, "sight_0"]]);
+  const withNegativeSight = parts.map((part) =>
+    part.id === "sight_0"
+      ? {
+          ...part,
+          properties: {
+            ...part.properties,
+            accuracyModifier: -0.05,
+          } as AttachablePart["properties"],
+        }
+      : part,
+  );
+  // A barrel elsewhere in the catalog, not mountable on this weapon, at the live maximum
+  // centerOfImpact of 0.75 cm: the bound reads the catalog's largest barrel, not the weapon's.
+  const barrel0 = parts.find((p) => p.id === "barrel_0")!;
+  const withFarBarrel = [
+    ...withNegativeSight,
+    {
+      ...barrel0,
+      id: "far_barrel",
+      properties: { ...barrel0.properties, centerOfImpact: 0.75 } as AttachablePart["properties"],
+    },
+  ];
+
+  /** Best MOA over every completion; checks the bound at every node on the way. */
+  function bestCompletion(
+    catalog: readonly AttachablePart[],
+    pins: ReadonlyMap<string, string | null>,
+    checked: { nodes: number },
+  ): number {
+    const byId = partsById(catalog);
+    const walk = (index: number, mods: AttachablePart[]): number => {
+      if (index === slots.length) return accuracyOf(mods);
+      let best = Number.POSITIVE_INFINITY;
+      for (const candidate of slotCandidates(slots[index]!, byId, profile, pins)) {
+        const next = candidate === null ? mods : [...mods, candidate];
+        best = Math.min(best, walk(index + 1, next));
+      }
+      const bound = lowerBoundForRemaining(
+        slots.slice(index),
+        byId,
+        profile,
+        pins,
+        "max-accuracy",
+        M4A1_WEAPON,
+      );
+      expect(accuracyOf(mods) + bound).toBeLessThanOrEqual(best + 1e-12);
+      checked.nodes += 1;
+      return best;
+    };
+    return walk(0, []);
+  }
+
+  function solve(catalog: readonly AttachablePart[], pins: ReadonlyMap<string, string | null>) {
+    return optimize({
+      weapon: M4A1_WEAPON,
+      slotTree: M4A1_TREE,
+      parts: [...catalog],
+      constraints: { profile, pinnedSlots: new Map(pins) },
+      objective: "max-accuracy",
+      timeoutMs: 20_000,
+    });
+  }
+
+  it("never projects above the best completion of any partial build", () => {
+    const checked = { nodes: 0 };
+    const best = bestCompletion(parts, NO_PINS, checked);
+    expect(checked.nodes).toBeGreaterThan(10_000);
+    // The solver leaves any slot empty, required or not, so the best build has no barrel
+    // (the receiver's 0.01 cm alone) and the SRVV brake: 0.343779 MOA × (1 − 0.06).
+    expect(best).toBeCloseTo(0.3231518, 6);
+  });
+
+  it("stays admissible when a pinned part makes the remaining accuracy negative", () => {
+    // 0.343779 × (1 − (−0.05 + 0.06)): the pinned sight, no barrel, the SRVV brake.
+    expect(bestCompletion(withNegativeSight, PINNED_NEGATIVE, { nodes: 0 })).toBeCloseTo(
+      0.3403412,
+      6,
+    );
+    expect(bestCompletion(withFarBarrel, PINNED_NEGATIVE, { nodes: 0 })).toBeCloseTo(0.3403412, 6);
+  });
+
+  it("lets the solver find that best build", () => {
+    const result = solve(parts, NO_PINS);
+    expect(result.ok && !result.partial).toBe(true);
+    if (!result.ok) return;
+    expect(result.stats.accuracy).toBeCloseTo(bestCompletion(parts, NO_PINS, { nodes: 0 }), 12);
+    expect(result.build.attachments.barrel).toBeUndefined();
+    expect(result.build.attachments.muzzle).toBe("muzzle_3");
+  });
+
+  it("lets the solver find the best build with a negative pinned part, near or far barrels", () => {
+    for (const catalog of [withNegativeSight, withFarBarrel]) {
+      const result = solve(catalog, PINNED_NEGATIVE);
+      expect(result.ok && !result.partial).toBe(true);
+      if (!result.ok) continue;
+      expect(result.stats.accuracy).toBeCloseTo(0.3403412, 6);
+      expect(result.build.attachments.barrel).toBeUndefined();
+    }
   });
 });
