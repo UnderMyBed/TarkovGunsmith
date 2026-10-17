@@ -47,11 +47,11 @@ test.describe("Builder weapon picker and slot labels", () => {
       await expect(picker).toHaveValue(M4A1_LABEL, { timeout: 15_000 });
       // The closed picker says what locks the weapon on screen, and so does its option.
       await expect(
-        page.getByText("Locked · peacekeeper LL2 barter", { exact: true }).first(),
+        page.getByText("Locked · Peacekeeper LL2 barter", { exact: true }).first(),
       ).toBeVisible();
       await picker.click();
       await expect(page.getByRole("listbox").getByRole("option", { selected: true })).toHaveText(
-        `${M4A1_LABEL}Locked · peacekeeper LL2 barter`,
+        `${M4A1_LABEL}Locked · Peacekeeper LL2 barter`,
       );
       await expect(
         page.getByRole("button", { name: "My progression…", pressed: true }),

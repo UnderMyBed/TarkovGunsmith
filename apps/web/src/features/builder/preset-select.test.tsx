@@ -171,7 +171,7 @@ describe("PresetSelect", () => {
       />,
     );
     expect(option(/M4A1 Carbine/)).toHaveTextContent(
-      "M4A1 Carbine (default) · Locked · peacekeeper LL2 barter",
+      "M4A1 Carbine (default) · Locked · Peacekeeper LL2 barter",
     );
     expect(option(/M4A1 SOPMOD II/)).toHaveTextContent("M4A1 SOPMOD II · LL1");
     // Locked is said, never enforced: the preset can still be chosen.

@@ -328,7 +328,7 @@ describe("SlotInspector — where to get it", () => {
         payment: "cash",
         preset: null,
       },
-      "mechanic LL2",
+      "Mechanic LL2",
     ],
     [
       "a trader loyalty level on a barter",
@@ -340,7 +340,7 @@ describe("SlotInspector — where to get it", () => {
         payment: "barter",
         preset: null,
       },
-      "peacekeeper LL2 barter",
+      "Peacekeeper LL2 barter",
     ],
     [
       "an unfinished quest",
@@ -370,7 +370,7 @@ describe("SlotInspector — where to get it", () => {
         minLevel: 3,
         payment: "barter",
       },
-      "ref LL3 (not in profile)",
+      "Ref LL3 (not in profile)",
     ],
     ["nothing selling it", { available: false, reason: "no-sources" }, "No sources"],
   ] as const satisfies readonly (readonly [string, ItemAvailability, string])[])(

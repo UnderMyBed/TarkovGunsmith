@@ -55,7 +55,7 @@ describe("WeaponPicker", () => {
     await userEvent.setup().click(input());
     expect(screen.getByText("2 weapons available on your profile")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /Desert Tech MDR/ })).toHaveTextContent(
-      "Locked · peacekeeper LL4",
+      "Locked · Peacekeeper LL4",
     );
   });
 

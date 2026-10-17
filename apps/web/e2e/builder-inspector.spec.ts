@@ -102,7 +102,7 @@ test.describe("Slot inspector", () => {
     await selectSlot(page, "mod_reciever/mod_scope");
     const elcan = partRow(page, ELCAN);
     await expect(elcan.getByText("Locked")).toBeVisible();
-    await expect(elcan.getByText("peacekeeper LL3")).toBeVisible();
+    await expect(elcan.getByText("Peacekeeper LL3")).toBeVisible();
     await expect(elcan.getByText(/^Conflicts with/)).toBeVisible();
     await expect(fitButton(page, ELCAN)).toBeDisabled();
   });

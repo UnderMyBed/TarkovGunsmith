@@ -82,7 +82,7 @@ describe("/builder", () => {
     expect(await screen.findByText("2 attached", { exact: true })).toBeInTheDocument();
     expect(selectedPreset()).toMatch(/^M4A1 Default \(default\)/);
     // Progression mode: the other preset says what it needs.
-    expect(presetOption(/^M4A1 Stock/)).toHaveTextContent("Locked · mechanic LL2");
+    expect(presetOption(/^M4A1 Stock/)).toHaveTextContent("Locked · Mechanic LL2");
   });
 
   it("lists the fixture weapon as available, then loads its slot tree + stock spec on selection", async () => {
@@ -121,7 +121,7 @@ describe("/builder", () => {
     // so itemAvailability has no satisfying path — the SlotTree renders it LOCKED with the
     // cheapest unmet requirement alongside it.
     expect(within(stockButton).getByText("Locked")).toBeInTheDocument();
-    expect(within(stockButton).getByText("peacekeeper LL3")).toBeInTheDocument();
+    expect(within(stockButton).getByText("Peacekeeper LL3")).toBeInTheDocument();
 
     const muzzleButton = await partIn(user, "Muzzle", /AR-15 Colt USGI A2 5.56x45 flash hider/);
     // mod-muzzle (the A2 flash hider) needs only Mechanic LL1, available under the default profile.

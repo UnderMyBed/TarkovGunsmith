@@ -4,6 +4,7 @@ import { Pill, cn, focusRing } from "@tarkov/ui";
 import { useQuestName, type QuestName } from "./quest-names.js";
 import type { SlotSelection, VisibleSlot } from "./slot-selection.js";
 import { availabilityLabel } from "./shown-availability.js";
+import { traderLabel } from "./where-to-get.js";
 
 // ---------- Types ----------
 
@@ -257,13 +258,13 @@ export function formatRequirement(a: ItemAvailability, questName: QuestName): st
   if (a.available) return "";
   switch (a.reason) {
     case "trader-ll-required":
-      return `${a.traderNormalizedName} LL${a.minLevel}${a.payment === "barter" ? " barter" : ""}`;
+      return `${traderLabel(a.traderNormalizedName)} LL${a.minLevel}${a.payment === "barter" ? " barter" : ""}`;
     case "quest-required": {
       const name = questName(a.questNormalizedName);
       return name === undefined ? "Quest" : `Quest: ${name}`;
     }
     case "untracked-trader":
-      return `${a.traderNormalizedName} LL${a.minLevel} (not in profile)`;
+      return `${traderLabel(a.traderNormalizedName)} LL${a.minLevel} (not in profile)`;
     case "flea-level-required":
       return `Flea level ${a.minPlayerLevel}`;
     case "flea-unlisted":
