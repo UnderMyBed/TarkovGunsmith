@@ -7,6 +7,7 @@ import {
 } from "@tarkov/data";
 import { Pill, focusRing } from "@tarkov/ui";
 import { useQuestName, type QuestName } from "./quest-names.js";
+import { availabilityLabel } from "./shown-availability.js";
 
 // ---------- Keyboard navigation handler ----------
 
@@ -342,21 +343,11 @@ export function AvailabilityPill({ availability }: { availability: ItemAvailabil
         : (questName(availability.assumedQuest) ?? "a quest");
     return (
       <Pill tone="reliable" title={assumed === null ? undefined : `Assumes ${assumed} is complete`}>
-        {availabilityShortLabel(availability) ?? "OK"}
-        {assumed !== null && " · QUEST"}
+        {availabilityLabel(availability)}
       </Pill>
     );
   }
-  return <Pill tone="marginal">LOCKED</Pill>;
-}
-
-function availabilityShortLabel(a: ItemAvailability): string | null {
-  if (!a.available) return null;
-  // Prefer compact labels like "LL2" / "FLEA".
-  if (a.kind === "flea") return "FLEA";
-  if (a.kind === "trader") return `LL${a.minLevel}`;
-  if (a.kind === "barter") return `LL${a.minLevel} BARTER`;
-  return null;
+  return <Pill tone="marginal">{availabilityLabel(availability)}</Pill>;
 }
 
 export function formatRequirement(a: ItemAvailability, questName: QuestName): string {

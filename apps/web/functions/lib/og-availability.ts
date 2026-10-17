@@ -1,55 +1,87 @@
-import type { PlayerProfile } from "@tarkov/data";
+import {
+  buildPriceUnder,
+  itemAvailability,
+  weaponPaths,
+  type BuildPrice,
+  type BuildPriceInput,
+  type ItemAvailability,
+  type PriceGate,
+} from "@tarkov/data";
 
-/** One way to obtain a mod. Priced or not: the pill asks who sells it, not for how much. */
-export interface AvailabilityOffer {
-  vendor: { normalizedName: string };
-  minTraderLevel?: number;
-}
-
-export interface AvailabilityMod {
-  id: string;
-  /** Every offer, including those without a price (a barter whose inputs have none). */
-  offers: AvailabilityOffer[];
-}
-
-export type AvailabilityPill = "FLEA" | "LL2" | "LL3" | "LL4";
+type Obtainable = Extract<ItemAvailability, { available: true }>;
 
 /**
- * Summarize the lowest trader level that covers every mod in the build.
+ * The share card's availability pill: what it takes to make the purchase the card's price
+ * stands for, in the words of the Builder's per-item pill (`availabilityLabel`).
  *
- * If any mod is only purchasable on flea, returns "FLEA". Otherwise returns
- * the minimum "LL{n}" that still covers the highest `minTraderLevel` seen.
- * There is no LL1 pill in the spec — clamp up to "LL2".
+ * The pill describes the path `buildPriceUnder` chose (`price`, over the same `input`): the
+ * weapon bought as the receiver or as the chosen preset (its own flea listing included), then
+ * every part that path does not supply, walked as `totalFor` in `@tarkov/data`'s
+ * `price-under.ts` walks it. A part the preset comes with is not a step, so the same purchase
+ * reads the same under every profile that makes it.
+ *
+ * - `LOCKED` when `gate` is a profile and no path buys the build (`unobtainable`), the same
+ *   rule as Compare's LOCKED.
+ * - Otherwise `LL{n}` for the highest trader level any step needs, with ` BARTER` only when a
+ *   barter step is at that level; then `FLEA` when a step is the flea, and `QUEST` when a step
+ *   assumes a quest is done; joined with ` · `. For one step this is exactly that item's
+ *   Builder pill.
+ * - In theorycraft (`gate === null`) a part nobody sells is shown as nothing, not as gated,
+ *   as `shownAvailability` shows it in the Builder: the path is chosen as if the part were not
+ *   on the build. A weapon nobody sells leaves only its parts.
+ * - `null` when no step has a source to name; the card then leaves the pill off.
  */
-export function availabilityPillText(
-  mods: readonly AvailabilityMod[],
-  // Deliberately unused, and deliberately left that way. This is a parallel, hand-rolled
-  // summariser that never calls `itemAvailability`, so OG cards do NOT do profile gating:
-  // the pill reports what the build needs, not what any given player can reach. A build
-  // whose mods are flea-only above the author's PMC level still prints "FLEA" here, where
-  // `itemAvailability` would return `flea-level-required`. The divergence is known and
-  // out of scope for the flea-level gate; unifying the two is its own piece of work.
-  _profile: PlayerProfile,
-): AvailabilityPill {
-  let needsFlea = false;
-  let maxLevel = 1;
-
-  for (const mod of mods) {
-    if (mod.offers.length === 0) {
-      needsFlea = true;
-      continue;
-    }
-    const traderOffers = mod.offers.filter((o) => o.vendor.normalizedName !== "flea-market");
-    if (traderOffers.length === 0) {
-      needsFlea = true;
-      continue;
-    }
-    const modMin = Math.min(...traderOffers.map((o) => o.minTraderLevel ?? 1));
-    if (modMin > maxLevel) maxLevel = modMin;
+export function availabilityPill(
+  gate: PriceGate,
+  input: BuildPriceInput,
+  price: BuildPrice,
+): string | null {
+  let chosen = price;
+  let parts = input.parts;
+  if (chosen.status === "unobtainable") {
+    if (gate !== null) return "LOCKED";
+    // Theorycraft opens every gate, so what is missing is what nobody sells, which the
+    // Builder shows as nothing. Choose the path for the rest.
+    parts = parts.filter((part) => itemAvailability(part, null).available);
+    chosen = buildPriceUnder(null, { ...input, parts });
   }
 
-  if (needsFlea) return "FLEA";
-  if (maxLevel >= 4) return "LL4";
-  if (maxLevel >= 3) return "LL3";
-  return "LL2";
+  const steps: Obtainable[] = [];
+  const covers = new Map<string, number>();
+  // Still unobtainable only when nobody sells the weapon itself (theorycraft): no weapon step.
+  if (chosen.status !== "unobtainable") {
+    const presetId = chosen.presetId;
+    const path = weaponPaths(gate, input.weapon, input.presets).find(
+      (p) => p.presetId === presetId,
+    );
+    // `buildPriceUnder` chose this path from the same list; not finding it is a bug, not a
+    // build to draw without its weapon.
+    if (path === undefined) {
+      throw new Error(`og: no path ${String(presetId)} for weapon ${input.weapon.id}`);
+    }
+    steps.push(path.availability);
+    for (const [id, n] of path.covers) covers.set(id, n);
+  }
+  for (const part of parts) {
+    const supplied = covers.get(part.id) ?? 0;
+    if (supplied > 0) {
+      covers.set(part.id, supplied - 1);
+      continue;
+    }
+    const availability = itemAvailability(part, gate);
+    // The chosen path leaves no part unobtainable, and theorycraft dropped the unsold ones.
+    if (!availability.available) throw new Error(`og: part ${part.id} has no open path`);
+    steps.push(availability);
+  }
+
+  let level: number | null = null;
+  for (const step of steps) {
+    if (step.kind !== "flea") level = Math.max(level ?? step.minLevel, step.minLevel);
+  }
+  const barterAtLevel = steps.some((s) => s.kind === "barter" && s.minLevel === level);
+  const tokens: string[] = [];
+  if (level !== null) tokens.push(barterAtLevel ? `LL${level} BARTER` : `LL${level}`);
+  if (steps.some((s) => s.kind === "flea")) tokens.push("FLEA");
+  if (steps.some((s) => s.kind !== "flea" && s.assumedQuest !== null)) tokens.push("QUEST");
+  return tokens.length === 0 ? null : tokens.join(" · ");
 }

@@ -27,6 +27,11 @@ export interface HydrateBuildArgs {
    * rule; the card only prints it.
    */
   priceRub: number | null;
+  /**
+   * The availability pill, or `null` for none. The caller works it out under the build's gate
+   * the way the Builder does; the card only prints it.
+   */
+  availability: string | null;
 }
 
 /**
@@ -35,7 +40,7 @@ export interface HydrateBuildArgs {
  * disagree on ergonomics, recoil, weight or MOA.
  *
  * @example
- * const vm = hydrateBuildCard({ name, weapon, mods, priceRub });
+ * const vm = hydrateBuildCard({ name, weapon, mods, priceRub, availability });
  * // vm.title, vm.stats.weight
  */
 export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
@@ -46,7 +51,7 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
     title: hasName ? name : weapon.shortName,
     subtitle: hasName ? weapon.shortName : null,
     modCount: mods.length,
-    availability: "FLEA",
+    availability: args.availability,
     priceRub: args.priceRub,
     stats: {
       ergo: spec.ergonomics,
