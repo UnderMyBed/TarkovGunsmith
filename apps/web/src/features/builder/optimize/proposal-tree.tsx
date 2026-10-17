@@ -11,6 +11,7 @@ import { Delta } from "../delta.js";
 import type { VisibleSlot } from "../slot-selection.js";
 import { focusTreeRow, useTreeKeys } from "../slot-tree.js";
 import { direction, formatDelta } from "../stat-strip.js";
+import type { ChangeState } from "./applied-selection.js";
 import type { ChangedRow } from "./slot-diff.js";
 import { pinStateOf, type OptimizeSession, type PinState } from "./useOptimizeSession.js";
 
@@ -51,7 +52,7 @@ function recoilEffect(change: ChangedRow): string {
  */
 export function ProposalBuildPanel({ session }: { session: OptimizeSession }): ReactElement {
   const treeId = useId();
-  const { rows, changes, ticked, constraints, proposed, confirming } = session;
+  const { rows, changes, changeStates, constraints, proposed, confirming } = session;
   const pins = constraints.pinnedSlots;
   const locked = [...pins.values()].filter((id) => id !== null).length;
   const keptEmpty = pins.size - locked;
@@ -95,6 +96,8 @@ export function ProposalBuildPanel({ session }: { session: OptimizeSession }): R
         </p>
         {confirming !== null && (
           <EmptyPrompt
+            // A new slot asked about is a new prompt, and takes focus again.
+            key={confirming.path}
             label={labelOf(confirming.path)}
             below={confirming.below}
             onConfirm={() => {
@@ -114,7 +117,7 @@ export function ProposalBuildPanel({ session }: { session: OptimizeSession }): R
           rows={rows}
           session={session}
           changes={changes}
-          ticked={ticked}
+          states={changeStates}
         />
       </div>
     </section>
@@ -159,13 +162,13 @@ function ProposalTree({
   rows,
   session,
   changes,
-  ticked,
+  states,
 }: {
   treeId: string;
   rows: readonly VisibleSlot[];
   session: OptimizeSession;
   changes: ReadonlyMap<string, ChangedRow>;
-  ticked: ReadonlySet<string>;
+  states: ReadonlyMap<string, ChangeState>;
 }) {
   const keys = useTreeKeys(rows, treeId, null);
   if (rows.length === 0) {
@@ -199,7 +202,7 @@ function ProposalTree({
           row={row}
           session={session}
           change={changes.get(row.slot.path)}
-          checked={ticked.has(row.slot.path)}
+          state={states.get(row.slot.path)}
           tabbable={row.slot.path === keys.tabStop}
           onFocus={() => keys.setFocusedPath(row.slot.path)}
           onKeyDown={(e) => onKeyDown(e, index)}
@@ -214,7 +217,7 @@ function ProposalRow({
   row,
   session,
   change,
-  checked,
+  state,
   tabbable,
   onFocus,
   onKeyDown,
@@ -223,7 +226,8 @@ function ProposalRow({
   row: VisibleSlot;
   session: OptimizeSession;
   change: ChangedRow | undefined;
-  checked: boolean;
+  /** How the change shows: ticked when it lands on the build Apply makes. */
+  state: ChangeState | undefined;
   tabbable: boolean;
   onFocus: () => void;
   onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => void;
@@ -231,6 +235,7 @@ function ProposalRow({
 }) {
   const { slot } = row;
   const label = slot.label || slot.nameId;
+  const checked = state?.landed ?? false;
   const pin = pinStateOf(session.constraints.pinnedSlots.get(slot.path));
   const pinnable = session.isPinnable(slot.path);
   const currentId = session.currentOn[slot.path];
@@ -248,6 +253,7 @@ function ProposalRow({
   const name = [
     `${label}${slot.required ? ", required" : ""}: ${part}`,
     change !== undefined ? `was ${change.currentName ?? "empty"}` : null,
+    state?.note ?? null,
     effect !== "" ? `recoil ${effect}${effectDir === null ? "" : ` ${effectDir}`}` : null,
     // A slot kept empty already says so as its part.
     part === "kept empty" ? null : PIN_NOTE[pin],
@@ -266,6 +272,7 @@ function ProposalRow({
       // Nothing is selected here: a row is ticked (`aria-checked`), never selected.
       aria-selected={false}
       aria-checked={change !== undefined ? checked : undefined}
+      data-locked={state?.disabled ? "" : undefined}
       aria-keyshortcuts={pinnable ? "F L E" : undefined}
       tabIndex={tabbable ? 0 : -1}
       data-slot-path={slot.path}
@@ -287,11 +294,13 @@ function ProposalRow({
           tabIndex={-1}
           aria-label={`Accept the ${label} change`}
           checked={checked}
+          disabled={state?.disabled ?? false}
+          title={state?.note ?? undefined}
           onChange={() => {
             session.toggleTick(slot.path);
             refocus();
           }}
-          className="size-[18px] accent-[var(--color-primary-text)]"
+          className="size-[18px] accent-[var(--color-primary-text)] disabled:opacity-50"
         />
       ) : (
         <span />
@@ -314,7 +323,9 @@ function ProposalRow({
           className={cn(
             "text-13 leading-snug",
             change !== undefined
-              ? "text-[var(--color-foreground)]"
+              ? checked
+                ? "text-[var(--color-foreground)]"
+                : "text-[var(--color-foreground-2)]"
               : part === "empty" || part === "kept empty"
                 ? "text-[var(--color-faint)]"
                 : "text-[var(--color-foreground-2)]",
@@ -322,6 +333,11 @@ function ProposalRow({
         >
           {part}
         </span>
+        {state?.note && (
+          <span data-note className="text-11 text-[var(--color-muted-foreground)]">
+            {state.note[0]!.toUpperCase() + state.note.slice(1)}
+          </span>
+        )}
       </span>
       <span className="col-span-full flex items-center justify-end gap-2 sm:col-span-1">
         {effect !== "" && (

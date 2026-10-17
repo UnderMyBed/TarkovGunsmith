@@ -30,6 +30,8 @@ export interface OptimizePanelProps {
   currentSpec: WeaponSpec;
   currentPrice: BuildPrice | null;
   onEditProfile: () => void;
+  /** Switch the search to the player's progression (theorycraft's "Use my progression"). */
+  onUseProgression: () => void;
   /** Leave optimize mode, keeping the build as it is. */
   onClose: () => void;
   /** Put the ticked changes on the build. */
@@ -48,6 +50,7 @@ export function OptimizePanel({
   currentSpec,
   currentPrice,
   onEditProfile,
+  onUseProgression,
   onClose,
   onApply,
 }: OptimizePanelProps): ReactElement {
@@ -102,7 +105,17 @@ export function OptimizePanel({
             className="h-11"
           />
         </label>
-        <ProfileLine gate={gate} sync={sync} onEditProfile={onEditProfile} />
+        <ProfileLine
+          gate={gate}
+          sync={sync}
+          onEditProfile={onEditProfile}
+          onUseProgression={onUseProgression}
+        />
+        {session.staleNote !== null && optimizer.state === "idle" && (
+          <p role="status" className="text-13 text-[var(--color-foreground-2)]">
+            {session.staleNote}
+          </p>
+        )}
         {/* Enabled while running: the solver is pure, so a new run just supersedes the old. */}
         <Button className="h-12 text-base" onClick={session.run}>
           {hasRun ? "Run again" : "Run"}
@@ -170,7 +183,7 @@ function ProposalCard({
   onDiscard: () => void;
 }) {
   const total = session.changes.size;
-  const ticked = session.ticked.size;
+  const ticked = session.landed;
   const objectiveLabel = OBJECTIVES.find((o) => o.value === objective)!.label.toLowerCase();
   const next = session.tickedBuild!;
   return (
@@ -207,7 +220,7 @@ function ProposalCard({
       )}
       <div className="flex flex-wrap gap-2">
         {total > 0 && (
-          <Button className="h-11 flex-[1_1_auto]" disabled={ticked === 0} onClick={onApply}>
+          <Button className="h-11 flex-[1_1_auto]" disabled={!session.netChange} onClick={onApply}>
             Apply ticked changes
           </Button>
         )}
@@ -271,15 +284,17 @@ export function ProfileLine({
   gate,
   sync,
   onEditProfile,
+  onUseProgression,
 }: {
   gate: PriceGate;
   sync: UseTarkovTrackerSyncResult;
   onEditProfile: () => void;
+  onUseProgression: () => void;
 }): ReactElement {
-  const link = (text: string): ReactNode => (
+  const link = (text: string, onClick: () => void): ReactNode => (
     <button
       type="button"
-      onClick={onEditProfile}
+      onClick={onClick}
       className="text-[var(--color-primary-text)] underline-offset-2 hover:underline"
     >
       {text}
@@ -288,7 +303,8 @@ export function ProfileLine({
   if (gate === null) {
     return (
       <p className="text-13 leading-normal text-[var(--color-foreground-2)]">
-        Theorycraft: every trader, flea and quest counts as open. {link("Use my progression")}
+        Theorycraft: every trader, flea and quest counts as open.{" "}
+        {link("Use my progression", onUseProgression)}
       </p>
     );
   }
@@ -300,31 +316,36 @@ export function ProfileLine({
     <p className="text-13 leading-normal text-[var(--color-foreground-2)]">
       My progression: PMC level <span className="font-mono tabular-nums">{gate.level}</span>, flea{" "}
       {gate.flea ? "on" : "off"}
-      {synced}. {link("Edit progression")}
+      {synced}. {link("Edit progression", onEditProfile)}
     </p>
   );
 }
 
 /** Where the optimizer stands, for the stat strip's end. */
 export function optimizeStatus(session: OptimizeSession): ReactNode {
-  const { optimizer, proposed, changes, ticked } = session;
+  const { optimizer, proposed, changes, landed, staleNote } = session;
+  if (staleNote !== null && optimizer.state === "idle") {
+    return <span className="text-[var(--color-foreground-2)]">{staleNote}</span>;
+  }
   if (optimizer.state === "running") {
     return <span className="text-[var(--color-muted-foreground)]">Solving…</span>;
   }
   if (proposed) {
     return (
       <>
-        <span className="text-[var(--color-muted-foreground)]">
-          {ticked.size === changes.size
-            ? "Showing the proposal"
-            : `Showing ${ticked.size} of ${changes.size} ticked changes`}
-        </span>
-        <span
-          className="font-mono text-[var(--color-primary-text)]"
-          title="The best build there is for this objective"
-        >
-          Exact
-        </span>
+        <span className="text-[var(--color-muted-foreground)]">Showing the proposal</span>
+        {landed === changes.size ? (
+          <span
+            className="font-mono text-[var(--color-primary-text)]"
+            title="The best build there is for this objective"
+          >
+            Exact
+          </span>
+        ) : (
+          <span className="font-mono text-[var(--color-foreground-2)]">
+            Partial: {landed} of {changes.size} changes
+          </span>
+        )}
       </>
     );
   }

@@ -232,6 +232,11 @@ export function BuilderPage({
           nameOf={nameOf}
           status={progressionStatus}
           onEditProfile={openProgression}
+          // As the mode switch's "My progression…": straight back to a stored profile, the
+          // panel only when there is none to switch to.
+          onUseProgression={() =>
+            progression.hasProfile ? progression.setMode("progression") : openProgression()
+          }
           onApply={(build) => {
             builder.acceptOptimized(build.attachments);
             handleExitOptimizer();

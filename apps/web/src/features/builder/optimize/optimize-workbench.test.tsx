@@ -81,6 +81,7 @@ const STATS: Record<string, [number, number, number]> = {
   "h-old": [0, 0, 0.2],
   "h-new": [5, -0.05, 0.2],
   fg: [1, 0, 0.05],
+  "r-1": [0, -0.02, 0.1],
 };
 const parts: AttachablePart[] = Object.entries(STATS).map(([id, [ergonomics, rcl, weight]]) => ({
   id,
@@ -128,7 +129,10 @@ const slotTree: WeaponTree = tinyTree("w1", [
   {
     nameId: "handguard",
     name: "Handguard",
-    items: [["h-old", [{ nameId: "foregrip", name: "Foregrip", items: ["fg"] }]], "h-new"],
+    items: [
+      ["h-old", [{ nameId: "foregrip", name: "Foregrip", items: ["fg"] }]],
+      ["h-new", [{ nameId: "rail", name: "Rail", required: true, items: ["r-1"] }]],
+    ],
   },
   { nameId: "stock", name: "Stock", required: true, items: [] },
 ]);
@@ -147,17 +151,18 @@ const sync: UseTarkovTrackerSyncResult = {
   disconnect: vi.fn(),
 };
 
-function renderWorkbench(
-  options: {
-    attachments?: Record<string, string>;
-    gate?: PriceGate;
-    onApply?: (build: BuildV6) => void;
-    onClose?: () => void;
-    onEditProfile?: () => void;
-  } = {},
-) {
+interface Options {
+  attachments?: Record<string, string>;
+  gate?: PriceGate;
+  onApply?: (build: BuildV6) => void;
+  onClose?: () => void;
+  onEditProfile?: () => void;
+  onUseProgression?: () => void;
+}
+
+function workbench(options: Options = {}) {
   const attachments = options.attachments ?? { muzzle: "m-old" };
-  return render(
+  return (
     <OptimizeWorkbench
       weapon={M4A1}
       weaponItem={weaponItem}
@@ -180,10 +185,16 @@ function renderWorkbench(
       boughtAsOf={() => null}
       nameOf={(id) => id}
       onEditProfile={options.onEditProfile ?? vi.fn()}
+      onUseProgression={options.onUseProgression ?? vi.fn()}
       onApply={options.onApply ?? vi.fn()}
       onClose={options.onClose ?? vi.fn()}
-    />,
+    />
   );
+}
+
+function renderWorkbench(options: Options = {}) {
+  const view = render(workbench(options));
+  return { ...view, update: (next: Options) => view.rerender(workbench(next)) };
 }
 
 const runButton = () => screen.getByRole("button", { name: /^Run( again)?$/ });
@@ -284,7 +295,7 @@ describe("OptimizeWorkbench", () => {
     fireEvent.keyDown(row("Handguard"), { key: " " });
     expect(row("Handguard")).toHaveAttribute("aria-checked", "false");
     expect(within(proposalCard()).getByText("1 of 2 ticked")).toBeInTheDocument();
-    expect(screen.getByText("Showing 1 of 2 ticked changes")).toBeInTheDocument();
+    expect(screen.getByText("Partial: 1 of 2 changes")).toBeInTheDocument();
     const next = specOf(["m-new"]);
     expect(strip("Vertical recoil")).toHaveTextContent(
       new RegExp(`^Vertical recoil${Number(next.verticalRecoil.toFixed(1))}`),
@@ -325,6 +336,136 @@ describe("OptimizeWorkbench", () => {
     const card = await screen.findByRole("region", { name: "Proposal" });
     expect(card).toHaveTextContent("No change beats this build on min recoil.");
     expect(within(card).queryByRole("button", { name: "Apply ticked changes" })).toBeNull();
+  });
+
+  it("summarises by the objective the result was run with, not the form's current one", async () => {
+    renderWorkbench();
+    fireEvent.click(screen.getByRole("radio", { name: "Max accuracy" }));
+    fireEvent.click(runButton());
+    const card = await screen.findByRole("region", { name: "Proposal" });
+    expect(card).toHaveTextContent(/Accuracy [\d.]+ → [\d.]+ MOA/);
+    fireEvent.click(screen.getByRole("radio", { name: "Min recoil" }));
+    expect(card).toHaveTextContent(/Accuracy [\d.]+ → [\d.]+ MOA/);
+    expect(card).not.toHaveTextContent("Vertical recoil");
+  });
+
+  describe("ticks show what Apply does", () => {
+    // The new handguard has a required rail and no foregrip slot.
+    const nested = { muzzle: "m-old", handguard: "h-old", "handguard/foregrip": "fg" };
+    const swap = {
+      ...proposal,
+      build: {
+        ...proposal.build,
+        attachments: { muzzle: "m-old", handguard: "h-new", "handguard/rail": "r-1" },
+      },
+    };
+    const checkbox = (slot: string) =>
+      screen.getByRole("checkbox", { name: `Accept the ${slot} change` });
+
+    async function proposeSwap(onApply = vi.fn()) {
+      solver.result = swap;
+      renderWorkbench({ attachments: nested, onApply });
+      fireEvent.click(runButton());
+      await screen.findByRole("region", { name: "Proposal" });
+      return onApply;
+    }
+
+    it("won't untick a required change alone while its parent change is ticked", async () => {
+      await proposeSwap();
+      expect(within(proposalCard()).getByText("3 of 3 ticked")).toBeInTheDocument();
+      expect(row("Rail")).toHaveAttribute(
+        "aria-label",
+        expect.stringContaining("required by the new Handguard"),
+      );
+      expect(checkbox("Rail")).toBeDisabled();
+      fireEvent.keyDown(row("Rail"), { key: " " });
+      expect(row("Rail")).toHaveAttribute("aria-checked", "true");
+    });
+
+    it("unticking a parent change unticks the changes that need it, and counts what lands", async () => {
+      const onApply = await proposeSwap();
+      fireEvent.keyDown(row("Handguard"), { key: " " });
+      expect(row("Handguard")).toHaveAttribute("aria-checked", "false");
+      for (const slot of ["Rail", "Foregrip"]) {
+        expect(row(slot)).toHaveAttribute("aria-checked", "false");
+        expect(row(slot)).toHaveAttribute(
+          "aria-label",
+          expect.stringContaining("needs the new Handguard"),
+        );
+      }
+      expect(within(proposalCard()).getByText("0 of 3 ticked")).toBeInTheDocument();
+      expect(screen.getByText("Partial: 0 of 3 changes")).toBeInTheDocument();
+      // Nothing would change: Apply is off rather than closing on the same build.
+      expect(screen.getByRole("button", { name: "Apply ticked changes" })).toBeDisabled();
+      expect(onApply).not.toHaveBeenCalled();
+    });
+
+    it("ticking a change ticks the parent change it needs", async () => {
+      const onApply = await proposeSwap();
+      fireEvent.keyDown(row("Handguard"), { key: " " });
+      fireEvent.keyDown(row("Rail"), { key: " " });
+      expect(row("Handguard")).toHaveAttribute("aria-checked", "true");
+      expect(row("Rail")).toHaveAttribute("aria-checked", "true");
+      // The foregrip goes with the new handguard, which has no slot for it.
+      expect(row("Foregrip")).toHaveAttribute("aria-checked", "true");
+      expect(row("Foregrip")).toHaveAttribute(
+        "aria-label",
+        expect.stringContaining("goes with the new Handguard"),
+      );
+      expect(within(proposalCard()).getByText("3 of 3 ticked")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Apply ticked changes" }));
+      expect((onApply.mock.calls[0]![0] as BuildV6).attachments).toEqual(swap.build.attachments);
+    });
+  });
+
+  describe("when what the run was solved for changes", () => {
+    it("drops the proposal when the build changes under it, and frees pins it no longer reaches", async () => {
+      const nested = { muzzle: "m-old", handguard: "h-old", "handguard/foregrip": "fg" };
+      const { update } = renderWorkbench({ attachments: nested });
+      fireEvent.keyDown(row("Foregrip"), { key: "l" });
+      fireEvent.keyDown(row("Muzzle"), { key: "l" });
+      fireEvent.click(runButton());
+      await screen.findByRole("region", { name: "Proposal" });
+
+      // As prices arriving re-seed the build with its preset.
+      update({ attachments: { muzzle: "m-old" } });
+      expect(screen.queryByRole("region", { name: "Proposal" })).toBeNull();
+      expect(screen.getByRole("region", { name: "Build stats" })).toBeInTheDocument();
+      expect(screen.getAllByText("The build changed. Run again.")).toHaveLength(2);
+      expect(row("Foregrip")).toBeUndefined();
+      expect(pinState("Muzzle")).toBe("Lock");
+      expect(screen.getByText("1 locked")).toBeInTheDocument();
+
+      fireEvent.click(runButton());
+      expect([...lastWorker().request!.constraints.pinnedSlots.keys()]).toEqual(["muzzle"]);
+      await screen.findByRole("region", { name: "Proposal" });
+      expect(screen.queryByText("The build changed. Run again.")).toBeNull();
+    });
+
+    it("drops the proposal when the progression changes, so it can't be applied", async () => {
+      const onApply = vi.fn();
+      const { update } = renderWorkbench({ onApply });
+      fireEvent.click(runButton());
+      await screen.findByRole("region", { name: "Proposal" });
+      update({ gate: null, onApply });
+      expect(screen.queryByRole("region", { name: "Proposal" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Apply ticked changes" })).toBeNull();
+      expect(screen.getAllByText("Progression changed. Run again.")).toHaveLength(2);
+      // Back to the old gate: the old run stays gone.
+      update({ onApply });
+      expect(screen.queryByRole("region", { name: "Proposal" })).toBeNull();
+    });
+
+    it("drops a run still going when the progression changes", () => {
+      workers.hold = true;
+      const { update } = renderWorkbench();
+      fireEvent.click(runButton());
+      const worker = lastWorker();
+      update({ gate: null });
+      expect(screen.queryByRole("status", { name: "Optimizer running" })).toBeNull();
+      act(() => worker.onmessage?.({ data: { type: "result", result: proposal } }));
+      expect(screen.queryByRole("region", { name: "Proposal" })).toBeNull();
+    });
   });
 
   describe("pins", () => {
@@ -392,6 +533,17 @@ describe("OptimizeWorkbench", () => {
       // The slots below leave the tree with their pins.
       expect(row("Foregrip")).toBeUndefined();
       expect(screen.getByText("1 kept empty")).toBeInTheDocument();
+    });
+
+    it("a slot kept empty has no rows below it: not expanded, and Right stays put", () => {
+      renderWorkbench({ attachments: { handguard: "h-old", "handguard/foregrip": "fg" } });
+      expect(row("Handguard")).toHaveAttribute("aria-expanded", "true");
+      fireEvent.keyDown(row("Handguard"), { key: "e" });
+      expect(row("Foregrip")).toBeUndefined();
+      expect(row("Handguard")).not.toHaveAttribute("aria-expanded");
+      row("Handguard").focus();
+      fireEvent.keyDown(row("Handguard"), { key: "ArrowRight" });
+      expect(row("Handguard")).toHaveFocus();
     });
 
     it("keeps the arrow keys moving between rows", () => {
@@ -516,7 +668,7 @@ describe("OptimizeWorkbench", () => {
         within(screen.getByRole("region", { name: "Build stats" })).getByText("No build"),
       ).toBeInTheDocument();
       expect(screen.queryByRole("region", { name: "Proposal" })).toBeNull();
-      fireEvent.click(within(alert).getByRole("button", { name: "Back to constraints" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Dismiss" }));
       expect(screen.queryByRole("alert")).toBeNull();
       expect(screen.getByText("Ready to run")).toBeInTheDocument();
     });
@@ -573,7 +725,7 @@ describe("OptimizeWorkbench", () => {
         { onEditProfile },
       );
       expect(alert).toHaveTextContent("No known price");
-      fireEvent.click(within(alert).getByRole("button", { name: "Edit profile" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Edit progression" }));
       expect(onEditProfile).toHaveBeenCalled();
     });
 
@@ -632,7 +784,7 @@ describe("OptimizeWorkbench", () => {
       );
       expect(alert).toHaveTextContent("No build fits together");
       expect(alert).toHaveTextContent("The solver's own words.");
-      fireEvent.click(within(alert).getByRole("button", { name: "Edit profile" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "Edit progression" }));
       expect(onEditProfile).toHaveBeenCalledTimes(1);
     });
 
@@ -655,12 +807,14 @@ describe("OptimizeWorkbench", () => {
 
   it("names theorycraft in the profile line, and offers the progression", () => {
     const onEditProfile = vi.fn();
-    renderWorkbench({ gate: null, onEditProfile });
+    const onUseProgression = vi.fn();
+    renderWorkbench({ gate: null, onEditProfile, onUseProgression });
     expect(
       screen.getByText(/^Theorycraft: every trader, flea and quest counts as open\./),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Use my progression" }));
-    expect(onEditProfile).toHaveBeenCalledTimes(1);
+    expect(onUseProgression).toHaveBeenCalledTimes(1);
+    expect(onEditProfile).not.toHaveBeenCalled();
   });
 
   it("names the progression the search reads", () => {

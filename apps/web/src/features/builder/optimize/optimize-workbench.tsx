@@ -35,6 +35,8 @@ export interface OptimizeWorkbenchProps {
   /** Shown above the build: progression prompts and sync state. */
   status?: ReactNode;
   onEditProfile: () => void;
+  /** Switch to the player's progression: straight to a stored profile, else the panel. */
+  onUseProgression: () => void;
   onApply: (build: BuildV6) => void;
   onClose: () => void;
 }
@@ -88,6 +90,7 @@ export function OptimizeWorkbench(props: OptimizeWorkbenchProps): ReactElement {
             currentSpec={props.currentSpec}
             currentPrice={props.currentPrice}
             onEditProfile={props.onEditProfile}
+            onUseProgression={props.onUseProgression}
             onClose={props.onClose}
             onApply={props.onApply}
           />

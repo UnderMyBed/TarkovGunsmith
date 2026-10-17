@@ -78,6 +78,7 @@ test.describe("builder optimize mode", () => {
     await expect(proposal(page)).toContainText(/Vertical recoil [\d.]+ → [\d.]+/);
     await expect(page.getByRole("region", { name: "Build stats, proposed" })).toBeVisible();
     await expect(page.getByText("Showing the proposal")).toBeVisible();
+    await expect(page.getByText("Exact", { exact: true })).toBeVisible();
 
     // A change at the top level with nothing under it: unticking it takes no other part along.
     const row = changedRows(page)
@@ -89,7 +90,7 @@ test.describe("builder optimize mode", () => {
     const kept = OPTIMIZER_CHANGED_SLOTS - 1;
     await expect(proposal(page)).toContainText(`${kept} of ${OPTIMIZER_CHANGED_SLOTS} ticked`);
     await expect(
-      page.getByText(`Showing ${kept} of ${OPTIMIZER_CHANGED_SLOTS} ticked changes`),
+      page.getByText(`Partial: ${kept} of ${OPTIMIZER_CHANGED_SLOTS} changes`),
     ).toBeVisible();
 
     await proposal(page).getByRole("button", { name: "Apply ticked changes" }).click();

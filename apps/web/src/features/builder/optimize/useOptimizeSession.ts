@@ -15,7 +15,7 @@ import {
 import type { OptimizationResult } from "@tarkov/optimizer";
 import { coversOf, priceBuild } from "../build-price.js";
 import { flattenProposalSlots, flattenVisibleSlots, type VisibleSlot } from "../slot-selection.js";
-import { buildFromSelection } from "./build-from-selection.js";
+import { appliedSelection, toggleChange, type ChangeState } from "./applied-selection.js";
 import {
   constraintsReducer,
   initialConstraintsState,
@@ -26,6 +26,55 @@ import {
 } from "./optimize-constraints-reducer.js";
 import { slotDiff, weaponChangeOf, type ChangedRow, type WeaponChange } from "./slot-diff.js";
 import { useOptimizer, type UseOptimizerReturn } from "./useOptimizer.js";
+
+/**
+ * How the ticked build buys the weapon, when not the way the current one does, with the cost
+ * left over after the changes that land on it (`weaponChangeOf`). Measured against the ticked
+ * build, never the full proposal: a change left out is not paid for.
+ */
+export function tickedWeaponChange(input: {
+  tree: WeaponTree;
+  parts: ReadonlyMap<string, AttachablePart>;
+  gate: PriceGate;
+  presets: readonly PricedPreset[];
+  weaponItem: WeaponListItem;
+  current: Readonly<Record<string, string>>;
+  currentPrice: BuildPrice | null;
+  ticked: Readonly<Record<string, string>>;
+  tickedPrice: BuildPrice | null;
+}): WeaponChange | null {
+  const { tree, parts, gate, presets, weaponItem, currentPrice, tickedPrice } = input;
+  const rows = slotDiff(input.current, input.ticked, tree, parts, gate, {
+    current: coversOf(currentPrice, presets),
+    proposed: coversOf(tickedPrice, presets),
+  });
+  return weaponChangeOf(currentPrice, tickedPrice, rows, (id) =>
+    id === null ? weaponItem.shortName : (presets.find((p) => p.id === id)?.shortName ?? id),
+  );
+}
+
+const NO_STATES: ReadonlyMap<string, ChangeState> = new Map();
+
+/**
+ * Rows with some left out (those below a slot kept empty): each row's place among its
+ * siblings and whether it still has rows below it, worked out again from the rows left.
+ */
+export function reindex(rows: readonly VisibleSlot[]): VisibleSlot[] {
+  const size = new Map<string | null, number>();
+  for (const row of rows) size.set(row.parentPath, (size.get(row.parentPath) ?? 0) + 1);
+  const parents = new Set(rows.map((row) => row.parentPath));
+  const at = new Map<string | null, number>();
+  return rows.map((row) => {
+    const pos = (at.get(row.parentPath) ?? 0) + 1;
+    at.set(row.parentPath, pos);
+    return {
+      ...row,
+      posInSet: pos,
+      setSize: size.get(row.parentPath)!,
+      hasChildren: parents.has(row.slot.path),
+    };
+  });
+}
 
 /** What a slot is pinned to in the tree: the solver's to choose, the build's part, or nothing. */
 export type PinState = "free" | "lock" | "empty";
@@ -70,9 +119,23 @@ export interface OptimizeSession {
   readonly rows: readonly VisibleSlot[];
   /** Slot path → the proposal's change there. Empty without a proposal. */
   readonly changes: ReadonlyMap<string, ChangedRow>;
-  readonly ticked: ReadonlySet<string>;
+  /**
+   * Slot path → how its change shows: ticked only when it lands on the build Apply makes
+   * ({@link appliedSelection}). Empty without a proposal.
+   */
+  readonly changeStates: ReadonlyMap<string, ChangeState>;
+  /** How many changes land on the build Apply makes. */
+  readonly landed: number;
+  /** Whether Apply would change the build at all. */
+  readonly netChange: boolean;
+  /** Tick or untick a change, with the changes it depends on or that depend on it. */
   readonly toggleTick: (path: string) => void;
-  /** The weapon bought another way by the proposal, when it is. */
+  /**
+   * Why an earlier proposal or run was dropped: the build or the progression changed under it,
+   * so it was solved for something that no longer holds. `null` once a new run starts.
+   */
+  readonly staleNote: string | null;
+  /** The weapon bought another way by the ticked build, when it is. */
   readonly weaponChange: WeaponChange | null;
   /** What Apply would make the build; `null` without a proposal. */
   readonly tickedBuild: TickedBuild | null;
@@ -107,7 +170,12 @@ export interface OptimizeSession {
 /**
  * Everything the workbench's optimize mode holds: the constraints, the run, which of the
  * proposal's changes are ticked, and the build those ticks make. One session per weapon: the
- * workbench mounts it keyed by the weapon, so pins never outlive the slots they name.
+ * workbench mounts it keyed by the weapon.
+ *
+ * A proposal holds only for the build and the progression it was solved for. When either
+ * changes under it (prices arriving re-seed a new build's preset; the user switches mode or
+ * edits the profile), the run is dropped — back to idle, with {@link OptimizeSession.staleNote}
+ * saying why — and pins on slots the build no longer reaches are removed.
  *
  * Every change starts ticked when a result arrives. The ticked build is the one Apply gives,
  * and its stats and price are what the stat strip and the Proposal card show.
@@ -116,13 +184,10 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
   const { weapon, weaponItem, slotTree, parts, gate, presets, pricesReady } = deps;
   const { currentBuild, currentPrice } = deps;
   const [constraints, dispatch] = useReducer(constraintsReducer, initialConstraintsState);
-  const optimizer = useOptimizer();
+  const raw = useOptimizer();
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
   const [confirmingPath, setConfirmingPath] = useState<string | null>(null);
-
-  const result = optimizer.result;
-  const proposed = result && result.ok ? result : null;
-  const failure = result && !result.ok ? result : null;
+  const [staleNote, setStaleNote] = useState<string | null>(null);
 
   const byId = useMemo(() => partsById(parts), [parts]);
   const nameOf = (id: string) => byId.get(id)?.name ?? id;
@@ -131,6 +196,50 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
     () => resolveBuild(slotTree, currentBuild.attachments, byId).attachments,
     [slotTree, currentBuild.attachments, byId],
   );
+  // What a run is solved for. A run started for other keys is not shown: see `live` below.
+  const buildKey = JSON.stringify(Object.entries(currentOn).sort(([a], [b]) => (a < b ? -1 : 1)));
+  const gateKey = JSON.stringify(gate);
+  const [ranFor, setRanFor] = useState<{ buildKey: string; gateKey: string } | null>(null);
+  const [seen, setSeen] = useState({ buildKey, gateKey });
+  if (seen.buildKey !== buildKey || seen.gateKey !== gateKey) {
+    // Adjusted during render, so no frame shows a proposal for the old build or gate.
+    setSeen({ buildKey, gateKey });
+    setTicked(new Set());
+    setConfirmingPath(null);
+    if (ranFor !== null && raw.state !== "idle") {
+      setStaleNote(
+        seen.gateKey !== gateKey
+          ? "Progression changed. Run again."
+          : "The build changed. Run again.",
+      );
+    }
+    // For good: going back to the old build or gate does not bring the old run back.
+    setRanFor(null);
+    if (seen.buildKey !== buildKey) {
+      const reach = new Set(flattenVisibleSlots(slotTree, currentOn).map((r) => r.slot.path));
+      const gone = [...constraints.pinnedSlots.keys()].filter((path) => !reach.has(path));
+      if (gone.length > 0) dispatch({ type: "UNPIN", slotPaths: gone });
+    }
+  }
+  // A run counts only for the build and gate it was solved for. One started for another (the
+  // worker may still be finishing it) shows as idle, and its result is never applied.
+  const live = ranFor !== null && ranFor.buildKey === buildKey && ranFor.gateKey === gateKey;
+  const optimizer: UseOptimizerReturn = live
+    ? raw
+    : {
+        ...raw,
+        state: "idle",
+        result: undefined,
+        objective: undefined,
+        pins: undefined,
+        progress: undefined,
+        error: undefined,
+      };
+
+  const result = optimizer.result;
+  const proposed = result && result.ok ? result : null;
+  const failure = result && !result.ok ? result : null;
+
   const proposedOn = useMemo(
     () =>
       proposed ? resolveBuild(slotTree, proposed.build.attachments, byId).attachments : currentOn,
@@ -168,17 +277,15 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
     setTicked(new Set(changedRows.map((row) => row.slotId)));
   }
 
-  const weaponChange = useMemo(
+  const applied = useMemo(
     () =>
-      weaponChangeOf(currentPrice, proposedPrice, changedRows, (id) =>
-        id === null ? weaponItem.shortName : (presets.find((p) => p.id === id)?.shortName ?? id),
-      ),
-    [currentPrice, proposedPrice, changedRows, presets, weaponItem],
+      proposed ? appliedSelection(currentBuild, proposed.build, ticked, slotTree, byId) : null,
+    [proposed, currentBuild, ticked, slotTree, byId],
   );
 
   const tickedBuild = useMemo((): TickedBuild | null => {
-    if (!proposed) return null;
-    const build = buildFromSelection(currentBuild, proposed.build, ticked, slotTree, byId);
+    if (!applied) return null;
+    const { build } = applied;
     const placed = resolveBuild(slotTree, build.attachments, byId).placed;
     return {
       build,
@@ -190,33 +297,44 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
         ? priceBuild(gate, weaponItem, slotTree, build.attachments, byId, presets)
         : null,
     };
-  }, [
-    proposed,
-    currentBuild,
-    ticked,
-    slotTree,
-    byId,
-    weapon,
-    pricesReady,
-    gate,
-    weaponItem,
-    presets,
-  ]);
+  }, [applied, slotTree, byId, weapon, pricesReady, gate, weaponItem, presets]);
+
+  // How the ticked build buys the weapon, against the changes that land on it: not the full
+  // proposal's.
+  const weaponChange = useMemo(
+    () =>
+      tickedBuild &&
+      tickedWeaponChange({
+        tree: slotTree,
+        parts: byId,
+        gate,
+        presets,
+        weaponItem,
+        current: currentBuild.attachments,
+        currentPrice,
+        ticked: tickedBuild.build.attachments,
+        tickedPrice: tickedBuild.price,
+      }),
+    [tickedBuild, slotTree, byId, gate, presets, weaponItem, currentBuild, currentPrice],
+  );
 
   const pins = constraints.pinnedSlots;
   const rows = useMemo(() => {
     const emptied = [...pins].filter(([, id]) => id === null).map(([path]) => path);
     // A slot kept empty has nothing below it. A change below one still shows: it is ticked, and
     // nothing ticked may be out of sight.
-    return flattenProposalSlots(slotTree, currentOn, proposedOn).filter(
+    const all = flattenProposalSlots(slotTree, currentOn, proposedOn);
+    const shown = all.filter(
       (row) =>
-        changes.has(row.slot.path) || !emptied.some((parent) => isBelow(row.slot.path, parent)),
+        !emptied.some((parent) => isBelow(row.slot.path, parent)) ||
+        [...changes.keys()].some((c) => c === row.slot.path || isBelow(c, row.slot.path)),
     );
+    return shown.length === all.length ? all : reindex(shown);
   }, [pins, slotTree, currentOn, proposedOn, changes]);
 
-  // Pins go only on slots the current build reaches. The build does not change within a session,
-  // so a pin never names a slot the tree has stopped showing; a slot only the proposal has may
-  // be gone after the next run.
+  // Pins go only on slots the current build reaches: a slot only the proposal has may be gone
+  // after the next run. When the build itself changes, pins it no longer reaches are removed
+  // (above), so no pin outlives its row.
   const pinnable = useMemo(
     () => new Map(flattenVisibleSlots(slotTree, currentOn).map((row) => [row.slot.path, row])),
     [slotTree, currentOn],
@@ -249,8 +367,10 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
     else apply(path, state);
   };
 
-  const runWith = (next: ConstraintsState) =>
-    optimizer.run(
+  const runWith = (next: ConstraintsState) => {
+    setRanFor({ buildKey, gateKey });
+    setStaleNote(null);
+    raw.run(
       toOptimizerInput(next, {
         weapon,
         weaponItem,
@@ -261,6 +381,7 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
         pricesReady,
       }),
     );
+  };
 
   return {
     tree: slotTree,
@@ -271,16 +392,14 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
     failure,
     rows,
     changes,
-    ticked,
+    changeStates: applied?.rows ?? NO_STATES,
+    landed: applied?.landed ?? 0,
+    netChange: applied?.changed ?? false,
     toggleTick: (path) => {
-      if (!changes.has(path)) return;
-      setTicked((prev) => {
-        const next = new Set(prev);
-        if (next.has(path)) next.delete(path);
-        else next.add(path);
-        return next;
-      });
+      if (!proposed) return;
+      setTicked((prev) => toggleChange(path, currentBuild, proposed.build, prev, slotTree, byId));
     },
+    staleNote,
     weaponChange,
     tickedBuild,
     currentOn,

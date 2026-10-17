@@ -278,6 +278,33 @@ describe("/builder on a first visit", () => {
   });
 });
 
+describe("/builder optimize mode, in theorycraft with a profile set", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("switches straight to the stored progression from the optimizer's profile line", async () => {
+    const user = userEvent.setup();
+    await renderRoute("/builder");
+    await screen.findByText("1 weapons");
+    await pickWeapon(user);
+    await screen.findByText("2 attached", { exact: true });
+    // Set a profile, then go back to theorycraft: the profile is kept, set aside.
+    await user.click(screen.getByRole("button", { name: "My progression…" }));
+    const panel = screen.getByRole("dialog", { name: "Your progression" });
+    await user.click(within(panel).getByRole("button", { name: "LL1" }));
+    await user.click(within(panel).getByRole("button", { name: "Done" }));
+    await user.click(screen.getByRole("button", { name: "Theorycraft" }));
+
+    await user.click(screen.getByRole("button", { name: "Optimize" }));
+    await user.click(await screen.findByRole("button", { name: "Use my progression" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "My progression…" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(await screen.findByRole("button", { name: "Edit progression" })).toBeInTheDocument();
+  });
+});
+
 describe("/builder draft", () => {
   async function pickFixture(user: ReturnType<typeof userEvent.setup>) {
     await screen.findByText("1 weapons available on your profile");
