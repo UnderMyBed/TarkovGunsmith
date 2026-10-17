@@ -170,8 +170,10 @@ export function buildSlotGraph(doc: ItemsDocument): SlotGraph {
  *
  * 1. A name no sibling shares is the label as-is.
  * 2. A shared name on a slot with exactly one allowed item is qualified by that item's short
- *    name: "Ch. Handle (B.A.D.)".
+ *    name: "Ch. Handle (B.A.D.)". A blank short name counts as missing: the item id stands in.
  * 3. Whatever still repeats is numbered in upstream order, every member: "Mount 1", "Mount 2".
+ *    A number whose label a sibling already holds is skipped, so a slot really named "Mount 1"
+ *    beside two "Mount" slots leaves them "Mount 2" and "Mount 3".
  */
 export function slotLabels(
   slots: readonly Pick<SlotDef, "name" | "allowedItemIds">[],
@@ -190,15 +192,20 @@ function labelled<T extends Pick<SlotDef, "name" | "allowedItemIds">>(
     const shared = slots.filter((s) => s.name === slot.name).length > 1;
     const label =
       shared && only !== undefined && rest.length === 0
-        ? `${slot.name} (${shortName(only)})`
+        ? `${slot.name} (${shortName(only).trim() || only})`
         : slot.name;
     return { slot, label };
   });
-  return qualified.map(({ slot, label }, i) => {
-    const same = qualified.filter((q) => q.label === label);
-    if (same.length < 2) return { slot, label };
-    const ordinal = qualified.slice(0, i + 1).filter((q) => q.label === label).length;
-    return { slot, label: `${label} ${ordinal}` };
+  const repeated = (label: string) => qualified.filter((q) => q.label === label).length > 1;
+  // Every final label so far, starting with the ones that need no number.
+  const taken = new Set(qualified.map((q) => q.label).filter((label) => !repeated(label)));
+  return qualified.map(({ slot, label }) => {
+    if (!repeated(label)) return { slot, label };
+    let ordinal = 1;
+    while (taken.has(`${label} ${ordinal}`)) ordinal++;
+    const numbered = `${label} ${ordinal}`;
+    taken.add(numbered);
+    return { slot, label: numbered };
   });
 }
 

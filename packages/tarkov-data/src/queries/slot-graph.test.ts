@@ -252,6 +252,19 @@ describe("slot labels", () => {
     ).toEqual(["Mount 1", "Tactical", "Mount 2", "Mount 3"]);
   });
 
+  it("skips a number a sibling's own name already holds", () => {
+    expect(
+      slotLabels([slot("Mount", "a", "b"), slot("Mount", "c", "d"), slot("Mount 1", "e")], short),
+    ).toEqual(["Mount 2", "Mount 3", "Mount 1"]);
+  });
+
+  it("falls back to the item id when its short name is blank", () => {
+    const blank = (id: string) => (id === "e" ? "" : "  ");
+    expect(
+      slotLabels([slot("Mount", "e"), slot("Mount", "w"), slot("Mount", "x", "y")], blank),
+    ).toEqual(["Mount (e)", "Mount (w)", "Mount"]);
+  });
+
   it("numbers single-item slots whose qualified labels still collide", () => {
     expect(slotLabels([slot("Stock", "s"), slot("Stock", "s")], short)).toEqual([
       "Stock (short-s) 1",
