@@ -317,6 +317,10 @@ export function compareJudged(a: Judged, b: Judged): number {
 
 export interface Relax {
   readonly budget?: boolean;
+  /**
+   * Make every pin optional: a build may break any of them, and a pinned part still sits at its
+   * own pin's path as the pin would place it, availability aside. Nowhere else.
+   */
   readonly pins?: boolean;
   readonly conflicts?: boolean;
   /** Pins, by path, to ignore. */
@@ -366,9 +370,12 @@ export function judge(
     kept.add(at);
   }
   // Copies a path supplies are spent in list order: the ones the profile cannot buy unpinned
-  // must take them, so the pinned copies, which can go unsupplied, come last.
+  // must take them, so the pinned copies, which can go unsupplied, come last. With the pins
+  // lifted, a part sits as pinned only at its own pin's path.
+  const pins = input.constraints.pinnedSlots;
   const unbuyablePin = (p: (typeof resolved.placed)[number]) =>
-    kept.has(p.path) && !itemAvailability(p.part, gate).available;
+    (kept.has(p.path) || (relax.pins === true && pins.get(p.path) === p.itemId)) &&
+    !itemAvailability(p.part, gate).available;
   const placed = [
     ...resolved.placed.filter((p) => !unbuyablePin(p)).map((p) => p.part),
     ...resolved.placed.filter(unbuyablePin).map((p) => ({ ...p.part, buyFor: [UNPRICED_OFFER] })),

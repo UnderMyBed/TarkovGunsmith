@@ -12,6 +12,10 @@ import type { BallisticWeapon } from "@tarkov/ballistics";
 export interface ConstraintsState {
   objective: Objective;
   budgetRub: number | undefined;
+  /**
+   * Slot path → the part to keep there, or `null` to leave it empty. A slot absent from the
+   * map is free: the solver's to choose. Starts empty — the optimizer pins nothing unasked.
+   */
   pinnedSlots: Map<string, string | null>;
 }
 
@@ -21,14 +25,22 @@ export const initialConstraintsState: ConstraintsState = {
   pinnedSlots: new Map(),
 };
 
+/** What a slot is pinned to: nothing (free), empty, or one part. */
+export type PinChoice = "free" | "empty" | { readonly itemId: string };
+
 export type ConstraintsAction =
   | { type: "SET_OBJECTIVE"; objective: Objective }
   | { type: "SET_BUDGET"; value: string }
-  | { type: "TOGGLE_PIN"; slotPath: string; defaultItemId?: string }
+  | { type: "SET_PIN"; slotPath: string; pin: PinChoice }
   /** Free these slots for the solver: their pins are removed, never set to empty. */
   | { type: "UNPIN"; slotPaths: readonly string[] }
-  | { type: "INIT_FROM_BUILD"; attachments: Readonly<Record<string, string>> }
+  | { type: "CLEAR_PINS" }
   | { type: "RESET" };
+
+/** Whether `path` lies strictly below `parent` in the slot tree. */
+export function isBelow(path: string, parent: string): boolean {
+  return path.startsWith(`${parent}/`);
+}
 
 export function constraintsReducer(
   state: ConstraintsState,
@@ -44,12 +56,17 @@ export function constraintsReducer(
       if (!Number.isFinite(parsed) || parsed < 0) return state;
       return { ...state, budgetRub: parsed };
     }
-    case "TOGGLE_PIN": {
+    case "SET_PIN": {
       const next = new Map(state.pinnedSlots);
-      if (next.has(action.slotPath)) {
-        next.delete(action.slotPath);
+      const { slotPath, pin } = action;
+      if (pin === "free") {
+        next.delete(slotPath);
+      } else if (pin === "empty") {
+        next.set(slotPath, null);
+        // An empty slot has nothing below it: a pin there could never hold.
+        for (const path of [...next.keys()]) if (isBelow(path, slotPath)) next.delete(path);
       } else {
-        next.set(action.slotPath, action.defaultItemId ?? null);
+        next.set(slotPath, pin.itemId);
       }
       return { ...state, pinnedSlots: next };
     }
@@ -58,13 +75,8 @@ export function constraintsReducer(
       for (const path of action.slotPaths) next.delete(path);
       return { ...state, pinnedSlots: next };
     }
-    case "INIT_FROM_BUILD": {
-      const next = new Map<string, string | null>();
-      for (const [slotPath, itemId] of Object.entries(action.attachments)) {
-        next.set(slotPath, itemId);
-      }
-      return { ...state, pinnedSlots: next };
-    }
+    case "CLEAR_PINS":
+      return { ...state, pinnedSlots: new Map() };
     case "RESET":
       return initialConstraintsState;
   }

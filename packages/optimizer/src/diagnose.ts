@@ -54,7 +54,8 @@ export function cheapestBuild(
  *
  * 1. the budget — a complete build exists without it. The message names the cheapest, or,
  *    when no build that keeps the pins has a known price, {@link unknownPriceVerdict}'s cause;
- * 2. the pins — a complete build exists without them (and the budget);
+ * 2. the pins — a complete build exists once some pins are dropped (and the budget). Named are
+ *    the pins the build that breaks the fewest breaks; dropping them is enough;
  * 3. a required slot — even ignoring conflicts, nothing obtainable fills it on any path;
  * 4. scarce copies — every required slot has a part, but parts that come only with the gun
  *    are needed more often than any way to buy it supplies them;
@@ -88,20 +89,24 @@ export function diagnose(
     }
     return unknownPriceVerdict(problem, tree, catalog, deadline);
   }
-  const bare = { ...problem, budget: undefined, pins: noPins };
-  if (problem.pins.size > 0 && solve(bare, tree, catalog, deadline) !== null) {
-    const paths = clashingPins(problem);
-    const names = paths.map((path) => {
-      const id = problem.pins.get(path);
-      return id === null || id === undefined ? `empty ${path}` : (catalog.get(id)?.name ?? id);
-    });
+  const soft = problem.pins.size > 0 ? fewestBrokenPins(problem, tree, catalog, deadline) : null;
+  if (soft !== null) {
+    const paths = [...problem.pins]
+      .filter(([path, id]) => holdsOn(tree, soft, path, id, catalog))
+      .filter(([path, id]) => (soft.attachments[path] ?? null) !== id)
+      .map(([path]) => path)
+      .sort();
+    // Never an empty pin: emptying an optional slot cannot stand in a build's way, so the
+    // build that breaks the fewest pins keeps every one.
+    const names = paths.map((path) => catalog.get(problem.pins.get(path)!)!.name);
     return {
       ok: false,
       reason: "pin-conflict",
       paths,
-      message: `No complete build keeps every pin. The pins that clash: ${names.join(", ")}. Unpin one and run it again.`,
+      message: `No complete build keeps every pin. Unpin ${names.join(", ")} and run it again.`,
     };
   }
+  const bare = { ...problem, budget: undefined, pins: noPins };
   const gap = requiredGap(bare);
   if (gap !== null) {
     const owner = gap.owner === "" ? tree.weaponName : catalog.get(gap.owner)!.name;
@@ -130,6 +135,35 @@ export function diagnose(
     reason: "no-valid-combinations",
     message: "Every complete build has parts that can't be fitted together.",
   };
+}
+
+/**
+ * The build, with no budget, that breaks the fewest pins, or `null` when even breaking every
+ * pin leaves none. A pinned part is placed at its own path as its pin would place it, and
+ * nowhere else unless the profile can get it: dropping exactly the pins this build breaks
+ * leaves a problem it solves.
+ */
+function fewestBrokenPins(
+  problem: Problem,
+  tree: WeaponTree,
+  catalog: ReadonlyMap<string, AttachablePart>,
+  deadline: number,
+): Found | null {
+  const flat = new Map<string, SolverPart>();
+  for (const [id, part] of problem.parts) flat.set(id, { ...part, stat: 0, key: "" });
+  return solve(
+    {
+      ...problem,
+      budget: undefined,
+      parts: flat,
+      multiplier: undefined,
+      rate: (_key, stat) => stat,
+      softPins: true,
+    },
+    tree,
+    catalog,
+    deadline,
+  );
 }
 
 /** The refusal for builds that keep the pins having no known price. */
@@ -301,29 +335,6 @@ function requiredPathTo(problem: Problem, ids: ReadonlySet<string>): string {
       }
     }
   }
-}
-
-/**
- * The pinned parts that clash with another pinned part; every pin when none clash pairwise
- * (pins can also rule each other out through the slots they force).
- */
-function clashingPins(problem: Problem): string[] {
-  const pinned = [...problem.pins].filter(
-    (entry): entry is [string, string] => entry[1] !== null && problem.parts.has(entry[1]),
-  );
-  const clashing = new Set<string>();
-  for (const [pa, a] of pinned) {
-    for (const [pb, b] of pinned) {
-      if (pa >= pb) continue;
-      const A = problem.parts.get(a)!;
-      const B = problem.parts.get(b)!;
-      if (A.conflictingItems.includes(b) || B.conflictingItems.includes(a)) {
-        clashing.add(pa).add(pb);
-      }
-    }
-  }
-  const all = [...problem.pins.keys()];
-  return (clashing.size > 0 ? [...clashing] : all).sort();
 }
 
 /**

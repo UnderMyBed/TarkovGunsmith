@@ -36,7 +36,8 @@ type Verdict = OptimizationReason | `infeasible-budget/${"over-budget" | "pins" 
  *     known price;
  *   - else the pins, when dropping every pin does;
  *   - else unpriced: no build has a known price, pinned or not;
- * - else the pins, when a build exists without them;
+ * - else the pins, when a build exists once some are broken: a pinned part placed at its own
+ *   pin's path as the pin would place it, and nowhere else unless the profile can get it;
  * - else a required slot, when none exists even with conflicts ignored;
  * - else conflicts.
  */
@@ -73,9 +74,10 @@ function verdictOf(result: Extract<ReturnType<typeof optimize>, { ok: false }>):
 }
 
 /**
- * Whether lifting what the failure names gives a build of known price: the pinned parts a
- * `pinned-unpriced` names (all of them unpriced pins), or the pins a `pins` budget failure
- * names.
+ * Whether lifting what the failure names is enough: for a `pin-conflict`, dropping the pins it
+ * names gives a build; for a `pinned-unpriced`, dropping the pinned parts it names (all of them
+ * unpriced pins) gives a build of known price; for a `pins` budget failure, dropping the pins
+ * it names does.
  */
 function namedPinsSuffice(
   c: RecordsCase,
@@ -83,6 +85,9 @@ function namedPinsSuffice(
 ): boolean {
   const pins = c.input.constraints.pinnedSlots;
   let drop: Set<string>;
+  if (result.reason === "pin-conflict") {
+    return buildsUnder(c, { budget: true, dropPins: new Set(result.paths) }).length > 0;
+  }
   if (result.reason === "pinned-unpriced") {
     const unpriced = unpricedPinPaths(c);
     const named = new Set(result.itemIds);

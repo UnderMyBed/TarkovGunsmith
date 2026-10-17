@@ -23,6 +23,7 @@ import {
 } from "./optimize-constraints-reducer.js";
 import { OPTIMIZER_TIMEOUT_MS } from "./optimize-protocol.js";
 import { OptimizeOutcome, OptimizeRunning } from "./optimize-outcome.js";
+import { OptimizePinReport } from "./optimize-pin-report.js";
 import { OptimizeConstraintsForm } from "./optimize-constraints-form.js";
 import { useOptimizer } from "./useOptimizer.js";
 import { OptimizeTriptych } from "./optimize-triptych.js";
@@ -104,27 +105,10 @@ export function OptimizeView({
   const optimizer = useOptimizer();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
-  // Pre-fill constraints pins from the user's current build. This used to be a mount-only
-  // effect (`[]` deps, "we only want this to run once") which silently went stale for any
-  // future caller that keeps OptimizeView mounted across a currentAttachments change — the
-  // exhaustive-deps rule was right to flag it even though today's one caller always remounts
-  // this component on entry, making the staleness latent rather than currently observable.
-  // Comparing against the previous prop during render (React's documented alternative to an
-  // effect for "adjust state when a prop changes" — see
-  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
-  // reacts correctly to that prop for as long as this component lives, and still fires
-  // exactly once on mount since `pinnedFrom` starts as `undefined`.
-  const [pinnedFrom, setPinnedFrom] = useState<Readonly<Record<string, string>> | undefined>(
-    undefined,
-  );
-  if (currentAttachments !== pinnedFrom) {
-    setPinnedFrom(currentAttachments);
-    dispatch({ type: "INIT_FROM_BUILD", attachments: currentAttachments });
-  }
-
   const proposed = optimizer.result && optimizer.result.ok ? optimizer.result : null;
 
   const byId = useMemo(() => partsById(parts), [parts]);
+  const nameOf = (id: string) => byId.get(id)?.name ?? id;
 
   const optimizedPrice = useMemo(
     () =>
@@ -273,6 +257,8 @@ export function OptimizeView({
             state={state}
             dispatch={dispatch}
             slotTree={slotTree}
+            attachments={currentAttachments}
+            nameOf={nameOf}
             pricesReady={pricesReady}
           />
           <ProfileReadout gate={gate} sync={sync} onEditProfile={onEditProfile} />
@@ -294,7 +280,7 @@ export function OptimizeView({
               error={optimizer.error}
               theorycraft={gate === null}
               pinnedSlots={optimizer.pins ?? state.pinnedSlots}
-              nameOf={(id) => byId.get(id)?.name ?? id}
+              nameOf={nameOf}
               timeoutMs={OPTIMIZER_TIMEOUT_MS}
               onRunWithoutBudget={() => changeAndRun({ type: "SET_BUDGET", value: "" })}
               onUnpin={(paths) => changeAndRun({ type: "UNPIN", slotPaths: paths })}
@@ -309,6 +295,15 @@ export function OptimizeView({
               priceCurrent={totalOf(currentPrice)}
               priceOptimized={totalOf(optimizedPrice)}
               running={optimizer.state === "running"}
+            />
+          )}
+          {proposed && (
+            <OptimizePinReport
+              pins={proposed.pins}
+              slotTree={slotTree}
+              proposed={proposed.build.attachments}
+              current={currentAttachments}
+              nameOf={nameOf}
             />
           )}
 

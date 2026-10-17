@@ -178,6 +178,18 @@ function renderView(
 }
 
 const runButton = () => screen.getByRole("button", { name: /RE-RUN OPTIMIZATION/i });
+/** Set a slot's pin in the tree: FREE, LOCK or EMPTY. */
+function pin(slot: string, choice: "FREE" | "LOCK" | "EMPTY") {
+  fireEvent.click(
+    within(screen.getByRole("radiogroup", { name: `${slot} pin` })).getByRole("radio", {
+      name: choice,
+    }),
+  );
+}
+const pinState = (slot: string) =>
+  within(screen.getByRole("radiogroup", { name: `${slot} pin` }))
+    .getAllByRole<HTMLInputElement>("radio")
+    .find((r) => r.checked)?.value;
 const lastWorker = () => workers.started[workers.started.length - 1] as FakeWorker;
 
 describe("OptimizeView", () => {
@@ -192,10 +204,11 @@ describe("OptimizeView", () => {
   it("runs the solver in the worker with the form's constraints and the Builder's time limit", async () => {
     renderView();
     fireEvent.click(runButton());
+    // Nothing is pinned unless the user pins it.
     expect(lastWorker().request).toMatchObject({
       objective: "min-recoil",
       timeoutMs: 2000,
-      constraints: { profile, pinnedSlots: new Map([["muzzle", "m-old"]]) },
+      constraints: { profile, pinnedSlots: new Map() },
     });
     await waitFor(() =>
       expect(screen.getByTestId("triptych-optimized-ergo")).toHaveTextContent("58"),
@@ -236,6 +249,18 @@ describe("OptimizeView", () => {
     fireEvent.click(runButton());
     // V+H 150 + 300 → 120 + 260.
     expect(await screen.findByText(/RECOIL V\+H Δ/)).toHaveTextContent("RECOIL V+H Δ · −70");
+  });
+
+  it("sends the pins set in the tree, and shows which the result kept", async () => {
+    solver.result = { ...proposal, pins: { honoured: ["muzzle"], dropped: [] } };
+    renderView();
+    expect(screen.queryByRole("region", { name: "Pins" })).toBeNull();
+    pin("Muzzle", "LOCK");
+    fireEvent.click(runButton());
+    expect([...lastWorker().request!.constraints.pinnedSlots]).toEqual([["muzzle", "m-old"]]);
+    const report = await screen.findByRole("region", { name: "Pins" });
+    expect(report).toHaveTextContent("1 KEPT");
+    expect(report).toHaveTextContent("KEPTMuzzlePart m-new");
   });
 
   describe("while it runs", () => {
@@ -296,9 +321,11 @@ describe("OptimizeView", () => {
     async function fail(
       result: OptimizationResult,
       options: Parameters<typeof renderView>[0] = {},
+      lock: readonly string[] = [],
     ) {
       solver.result = result;
       renderView(options);
+      for (const slot of lock) pin(slot, "LOCK");
       fireEvent.click(runButton());
       return screen.findByRole("alert");
     }
@@ -350,6 +377,7 @@ describe("OptimizeView", () => {
             "No complete build that keeps your pins has a known price on this profile, so none can be shown to fit a budget.",
         },
         { attachments: { muzzle: "m-old", handguard: "h-old" } },
+        ["Muzzle", "Handguard"],
       );
       expect(alert).toHaveTextContent("NO KNOWN PRICE");
       expect(alert).toHaveTextContent("Unpin slots, or run without a budget.");
@@ -384,63 +412,74 @@ describe("OptimizeView", () => {
     });
 
     it("names the pins the run used, though the form has moved on", async () => {
-      const alert = await fail({
-        ok: false,
-        reason: "pin-conflict",
-        paths: ["muzzle"],
-        message: "No complete build keeps every pin. The pins that clash: Part m-old.",
-      });
+      const alert = await fail(
+        {
+          ok: false,
+          reason: "pin-conflict",
+          paths: ["muzzle"],
+          message: "No complete build keeps every pin. Unpin Part m-old and run it again.",
+        },
+        {},
+        ["Muzzle"],
+      );
       // The form frees the slot after the run: the outcome still names the run's pin.
-      fireEvent.click(screen.getByRole("checkbox", { name: /MUZZLE/i }));
-      expect(screen.getByRole("checkbox", { name: /MUZZLE/i })).not.toBeChecked();
+      pin("Muzzle", "FREE");
+      expect(pinState("Muzzle")).toBe("free");
       expect(within(alert).getByRole("button", { name: "UNPIN Part m-old" })).toBeVisible();
     });
 
     it("unpins a pinned part nobody prices, leaving the slot free rather than empty", async () => {
-      const alert = await fail({
-        ok: false,
-        reason: "pinned-unpriced",
-        itemIds: ["m-old"],
-        message: "No price you can pay is known for Part m-old. Unpin it or clear the budget.",
-      });
+      const alert = await fail(
+        {
+          ok: false,
+          reason: "pinned-unpriced",
+          itemIds: ["m-old"],
+          message: "No price you can pay is known for Part m-old. Unpin it or clear the budget.",
+        },
+        {},
+        ["Muzzle"],
+      );
+      expect(lastWorker().request?.constraints.pinnedSlots.get("muzzle")).toBe("m-old");
       expect(alert).toHaveTextContent("PINNED PART UNPRICED");
       expect(within(alert).getByRole("button", { name: "RUN WITHOUT A BUDGET" })).toBeVisible();
       solver.result = undefined;
       fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part m-old" }));
       // Free for the solver: no pin at all, not a pin to empty.
       expect(lastWorker().request?.constraints.pinnedSlots.has("muzzle")).toBe(false);
-      expect(screen.getByRole("checkbox", { name: /MUZZLE/i })).not.toBeChecked();
+      expect(pinState("Muzzle")).toBe("free");
     });
 
-    it("offers to unpin each clashing pin by name", async () => {
+    it("unpins every pin a build needs gone, together", async () => {
       const alert = await fail(
         {
           ok: false,
           reason: "pin-conflict",
           paths: ["handguard", "muzzle"],
           message:
-            "No complete build keeps every pin. The pins that clash: Part h-old, Part m-old.",
+            "No complete build keeps every pin. Unpin Part h-old, Part m-old and run it again.",
         },
         { attachments: { muzzle: "m-old", handguard: "h-old" } },
+        ["Muzzle", "Handguard"],
       );
       expect(alert).toHaveTextContent("PINS CLASH");
-      expect(alert).toHaveTextContent("Unpin one of them.");
+      expect(alert).toHaveTextContent("Unpin all of them.");
       solver.result = undefined;
-      fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part h-old" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part h-old, Part m-old" }));
       const pins = lastWorker().request?.constraints.pinnedSlots;
-      expect(pins && [...pins]).toEqual([["muzzle", "m-old"]]);
+      expect(pins && [...pins]).toEqual([]);
+      expect(pinState("Muzzle")).toBe("free");
+      expect(pinState("Handguard")).toBe("free");
     });
 
     it("names an empty pin by its slot", async () => {
-      // Re-checking a slot with no part pins it empty (the #227 bug this view still carries).
       solver.result = {
         ok: false,
         reason: "pin-conflict",
         paths: ["handguard"],
-        message: "No complete build keeps every pin. The pins that clash: empty handguard.",
+        message: "No complete build keeps every pin. Unpin empty handguard and run it again.",
       };
       renderView();
-      fireEvent.click(screen.getByRole("checkbox", { name: /HANDGUARD/i }));
+      pin("Handguard", "EMPTY");
       fireEvent.click(runButton());
       const alert = await screen.findByRole("alert");
       expect(within(alert).getByRole("button", { name: "UNPIN EMPTY handguard" })).toBeVisible();

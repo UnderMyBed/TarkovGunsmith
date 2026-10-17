@@ -67,6 +67,12 @@ export interface Problem {
   readonly rate: (key: string, stat: number) => number;
   /** Max-accuracy only: the MOA of a build with this key and no accuracy modifiers. */
   readonly multiplier?: (key: string) => number;
+  /**
+   * Pins as preferences rather than rules: at a pinned path the pinned part is offered as a pin
+   * places it, availability gate skipped, and so is every other choice, each adding 1 to the
+   * build's stat. With every other stat zeroed, the best build breaks the fewest pins.
+   */
+  readonly softPins?: boolean;
   /** Told each time the search takes a candidate build. */
   readonly tick?: () => void;
 }

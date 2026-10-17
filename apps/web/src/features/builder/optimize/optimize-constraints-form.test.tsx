@@ -8,7 +8,12 @@ import { initialConstraintsState } from "./optimize-constraints-reducer.js";
 
 afterEach(() => cleanup());
 
-const TREE = { weaponId: "w1", weaponName: "W", slots: [] } as unknown as WeaponTree;
+const TREE = {
+  weaponId: "w1",
+  weaponName: "W",
+  slots: [],
+  graph: { owners: {} },
+} as unknown as WeaponTree;
 
 describe("OptimizeConstraintsForm", () => {
   it("offers all four objectives", () => {
@@ -17,6 +22,8 @@ describe("OptimizeConstraintsForm", () => {
         state={initialConstraintsState}
         dispatch={() => {}}
         slotTree={TREE}
+        attachments={{}}
+        nameOf={(id) => id}
         pricesReady
       />,
     );

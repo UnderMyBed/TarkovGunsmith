@@ -208,16 +208,24 @@ export function relaxedBest(
         options.push({ ...inner, how: { t: "slot", itemId: id, inner } });
       }
     };
-    const pin = problem.pins.get(at);
-    if (pin !== undefined && pinHonourable(problem, slot, pin)) {
-      if (pin === null) options.push(EMPTY_SLOT);
-      else if (allowed(pin)) take(pin, true);
-    } else {
-      if (!slot.required) options.push(EMPTY_SLOT);
+    const raw = problem.pins.get(at);
+    const pin = raw !== undefined && pinHonourable(problem, slot, raw) ? raw : undefined;
+    if (pin === null) options.push(EMPTY_SLOT);
+    else if (pin !== undefined && allowed(pin)) take(pin, true);
+    if (pin === undefined || problem.softPins === true) {
+      const kept = options.length;
+      if (!slot.required && pin !== null) options.push(EMPTY_SLOT);
       for (const id of slot.allowedItemIds) {
         const part = problem.parts.get(id);
-        if (part === undefined || !(part.available || covered(id)) || !allowed(id)) continue;
+        if (id === pin || part === undefined) continue;
+        if (!(part.available || covered(id)) || !allowed(id)) continue;
         take(id, false);
+      }
+      // Soft pins: every choice that breaks the pin costs one.
+      if (pin !== undefined) {
+        for (let i = kept; i < options.length; i++) {
+          options[i] = { ...options[i]!, stat: options[i]!.stat + 1 };
+        }
       }
     }
     const value = prune(options, problem.budget);
