@@ -50,8 +50,10 @@ interface MutableBest {
  * branch whose deeper parts would have won. A result may also leave a
  * required slot empty or contain conflicting parts. #225 owns all three.
  *
- * Tie-breaking: lower price wins; then lexicographic order of the sorted
- * attachments map ensures determinism.
+ * Ties: the first leaf found at a given score wins, in candidate sort
+ * order. A later leaf with an equal score is pruned before it is visited
+ * (see tieBreakBetter, a dormant safeguard that would rank ties by price,
+ * then by attachments, if that pruning ever changed).
  */
 export function branchAndBound(state: BnbState, slots: readonly SlotNode[]): BnbBest | null {
   const best: { value: MutableBest | null } = { value: null };

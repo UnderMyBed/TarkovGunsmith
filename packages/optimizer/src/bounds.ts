@@ -142,11 +142,12 @@ function barrelExtremes(parts: ReadonlyMap<string, AttachablePart>): BarrelExtre
  *
  * where D_lo / D_hi are D at the smallest and largest `deviationMax` in reach (D grows with
  * it), and C_hi = the weapon's `centerOfImpact` + the largest barrel's anywhere in the catalog.
- * The last step needs the bracket non-negative and C_r ≤ C_hi, which rest on facts about the
- * data, each measured on the live document: a build mounts at most one barrel (the only part
- * type with a `centerOfImpact`; `pnpm verify:upstream` checks every weapon), and every SUM of
- * accuracy modifiers a build can reach lies in (−1, 1), so 1 − a_r ≤ 2 and 1 − a_r − A⁺ ≥ 0.
- * Per part the live range is −0.05..0.1.
+ * The last step needs the bracket non-negative and C_r ≤ C_hi, which rest on two facts about
+ * the data that `pnpm verify:upstream` checks over every weapon's slot graph (conflicts ignored,
+ * so it over-estimates): a build mounts at most one barrel, the only part type with a
+ * `centerOfImpact`; and the summed `accuracyModifier` of any build lies in (−1, 1), so
+ * 1 − a_r ≤ 2 and 1 − a_r − A⁺ ≥ 0. It also checks every mod, barrel, sight and magazine's own
+ * `accuracyModifier` is a fraction in [−1, 1].
  */
 function accuracyBound(
   weapon: BallisticWeapon,

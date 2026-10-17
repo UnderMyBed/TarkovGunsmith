@@ -105,21 +105,21 @@ It is not a one-character change. Multiplying by 100 at the adapter is correct i
 
 Measured on the live document (2026-10-17). Units differ by field, and two of the fields that look alike are on different scales: `velocity` is top-level and a **percent**, while every modifier under `properties` is a **fraction**.
 
-| Field                  | Where                       | Unit                  | Live range                                           |
-| ---------------------- | --------------------------- | --------------------- | ---------------------------------------------------- |
-| `centerOfImpact`       | weapon, barrel              | cm of spread at 100 m | weapon 0–0.7, barrel 0.011–0.75                      |
-| `deviationCurve`       | weapon                      | dimensionless         | 1–3.5                                                |
-| `deviationMax`         | barrel (weapon too, unused) | dimensionless         | 7.5–33                                               |
-| `accuracyModifier`     | every mod                   | fraction, + is better | −0.05–0.06                                           |
-| `velocity` (top-level) | weapon, every mod           | percent               | weapon −17.9–20, barrel −54–18.9, other mods −33–1.5 |
-| `initialSpeed`         | ammo                        | m/s                   |                                                      |
-| `defaultAmmo`          | weapon                      | an ammo item id       |                                                      |
-| `fireRate`             | weapon only                 | rounds per minute     | 10–1200                                              |
-| `effectiveDistance`    | weapon only                 | m                     | 50–1000                                              |
-| `sightingRange`        | weapon, sight               | m                     | weapon 100, sight 0–2000                             |
-| `capacity`             | magazine                    | rounds                |                                                      |
-| `loadModifier`         | magazine                    | fraction              | −0.35–0.25                                           |
-| `malfunctionChance`    | magazine                    | fraction              | 0–0.5                                                |
+| Field                  | Where                       | Unit                  | Live range                                                                  |
+| ---------------------- | --------------------------- | --------------------- | --------------------------------------------------------------------------- |
+| `centerOfImpact`       | weapon, barrel              | cm of spread at 100 m | weapon 0–0.7, barrel 0.011–0.75                                             |
+| `deviationCurve`       | weapon                      | dimensionless         | 1–3.5                                                                       |
+| `deviationMax`         | barrel (weapon too, unused) | dimensionless         | 7.5–33                                                                      |
+| `accuracyModifier`     | every mod                   | fraction, + is better | −0.05–0.1 (weapon mods −0.05–0.06, barrels to 0.1); a build's sum −0.05–0.2 |
+| `velocity` (top-level) | weapon, every mod           | percent               | weapon −17.9–20, barrel −54–18.9, other mods −33–1.5                        |
+| `initialSpeed`         | ammo                        | m/s                   |                                                                             |
+| `defaultAmmo`          | weapon                      | an ammo item id       |                                                                             |
+| `fireRate`             | weapon only                 | rounds per minute     | 10–1200                                                                     |
+| `effectiveDistance`    | weapon only                 | m                     | 50–1000                                                                     |
+| `sightingRange`        | weapon, sight               | m                     | weapon 100, sight 0–2000                                                    |
+| `capacity`             | magazine                    | rounds                |                                                                             |
+| `loadModifier`         | magazine                    | fraction              | −0.35–0.25                                                                  |
+| `malfunctionChance`    | magazine                    | fraction              | 0–0.5                                                                       |
 
 How `weaponSpec` combines them:
 
@@ -130,7 +130,7 @@ How `weaponSpec` combines them:
 - **Fire rate and effective distance** come from the weapon alone; no part carries either field.
 - **Magazine** stats are those of the part in the weapon's own `mod_magazine` slot. Upstream reports `capacity` 0 for the M32A1's cylinder. `loadModifier` is shown signed, as upstream reports it. **Which direction is faster loading is not verified.**
 
-`pnpm verify:upstream` checks each scale and scope above, the at-most-one-barrel property over every weapon's slot graph, and every preset's MOA against upstream's `moa` × (1 − Σ`accuracyModifier`) to within 0.006.
+`pnpm verify:upstream` checks each scale and scope above, two properties over every weapon's slot graph (at most one barrel, and a build's summed `accuracyModifier` inside (−1, 1)), and every preset's MOA against upstream's `moa` × (1 − Σ`accuracyModifier`) to within 0.006.
 
 ---
 

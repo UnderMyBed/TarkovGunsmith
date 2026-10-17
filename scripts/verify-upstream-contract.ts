@@ -143,7 +143,14 @@ async function main(): Promise<void> {
   );
   notes.push(`recoilModifier range [${recoilMin}, ${recoilMax}] (fraction)`);
 
-  const accuracyModifiers = propsOfType("ItemPropertiesWeaponMod")
+  // Every slot-attachable part type: barrels carry one too (up to 0.1 live).
+  const accuracyModifiers = [
+    "ItemPropertiesWeaponMod",
+    "ItemPropertiesBarrel",
+    "ItemPropertiesScope",
+    "ItemPropertiesMagazine",
+  ]
+    .flatMap(propsOfType)
     .map((p) => p["accuracyModifier"])
     .filter((v): v is number => typeof v === "number");
   const accMin = Math.min(...accuracyModifiers);
@@ -457,7 +464,7 @@ async function checkBuilderSnapshot(): Promise<void> {
   const weapons = snapshotWeaponList(snapshot, prices.prices);
   const catalog = snapshotPartCatalog(snapshot, prices.prices);
   checkPresets(documents.items, snapshot.presets, weapons, catalog);
-  checkBarrelsPerWeapon(documents.items, weapons, catalog);
+  checkSlotGraphBounds(documents.items, weapons, catalog);
 }
 
 /**
@@ -551,24 +558,16 @@ function checkPresets(
 }
 
 /**
- * No weapon can mount two barrels at once. The optimizer's max-accuracy bound
- * (`packages/optimizer/src/bounds.ts`) takes the build's `centerOfImpact` as the weapon's plus
- * ONE barrel's; a second barrel would make that bound prune better builds.
- *
- * Counted over the slot graph with conflicts ignored, so it over-counts if anything: a weapon
- * passes only if no chain of allowed items could hold a second barrel.
+ * The most of `value` any build of a weapon can collect: per slot, the best of leaving it empty
+ * or fitting one allowed item (its own value plus the best of its sub-slots), summed over slots.
+ * Conflicts are ignored, so it over-estimates if anything.
  */
-function checkBarrelsPerWeapon(
-  doc: ItemsDocument,
-  weapons: readonly WeaponListItem[],
-  parts: readonly AttachablePart[],
-): void {
-  const graph = buildSlotGraph(doc);
-  const barrels = new Set(
-    parts.filter((p) => p.properties.propertiesType === "ItemPropertiesBarrel").map((p) => p.id),
-  );
+function slotGraphMaximum(
+  graph: ReturnType<typeof buildSlotGraph>,
+  value: (itemId: string) => number,
+): (weaponId: string) => number {
   const memo = new Map<string, number>();
-  const maxBarrels = (ownerId: string, visiting: Set<string>): number => {
+  const maximum = (ownerId: string, visiting: Set<string>): number => {
     const hit = memo.get(ownerId);
     if (hit !== undefined) return hit;
     if (visiting.has(ownerId)) return 0;
@@ -577,7 +576,7 @@ function checkBarrelsPerWeapon(
     for (const slot of graph.owners[ownerId]?.slots ?? []) {
       let best = 0;
       for (const id of slot.allowedItemIds) {
-        best = Math.max(best, (barrels.has(id) ? 1 : 0) + maxBarrels(id, visiting));
+        best = Math.max(best, value(id) + maximum(id, visiting));
       }
       total += best;
     }
@@ -585,8 +584,38 @@ function checkBarrelsPerWeapon(
     memo.set(ownerId, total);
     return total;
   };
-  const over = weapons.filter((w) => maxBarrels(w.id, new Set()) > 1);
-  const most = Math.max(0, ...weapons.map((w) => maxBarrels(w.id, new Set())));
+  return (weaponId) => maximum(weaponId, new Set());
+}
+
+/**
+ * The two facts the optimizer's max-accuracy bound (`packages/optimizer/src/bounds.ts`) rests on,
+ * over every weapon's slot graph with conflicts ignored (so a weapon passes only if no chain of
+ * allowed items breaks them):
+ *
+ * - no weapon can mount two barrels — the bound takes the build's `centerOfImpact` as the
+ *   weapon's plus ONE barrel's;
+ * - the summed `accuracyModifier` of any build lies in (-1, 1) — the bound needs 1 − a ≤ 2 and
+ *   1 − a ≥ 0 for every running and final sum a.
+ */
+function checkSlotGraphBounds(
+  doc: ItemsDocument,
+  weapons: readonly WeaponListItem[],
+  parts: readonly AttachablePart[],
+): void {
+  const graph = buildSlotGraph(doc);
+  const byId = partsById(parts);
+  const accuracy = (id: string) => {
+    const part = byId.get(id);
+    return part === undefined ? 0 : adaptMod(part).accuracyModifier;
+  };
+  const barrels = slotGraphMaximum(graph, (id) =>
+    byId.get(id)?.properties.propertiesType === "ItemPropertiesBarrel" ? 1 : 0,
+  );
+  const highest = slotGraphMaximum(graph, accuracy);
+  const lowest = slotGraphMaximum(graph, (id) => -accuracy(id));
+
+  const over = weapons.filter((w) => barrels(w.id) > 1);
+  const most = Math.max(0, ...weapons.map((w) => barrels(w.id)));
   check(
     "bounds/barrels-per-weapon",
     over.length === 0,
@@ -597,6 +626,18 @@ function checkBarrelsPerWeapon(
         .join(", ")}`,
   );
   notes.push(`barrels: at most ${most} per weapon over ${weapons.length} weapons`);
+
+  const sumMax = Math.max(0, ...weapons.map((w) => highest(w.id)));
+  const sumMin = -Math.max(0, ...weapons.map((w) => lowest(w.id)));
+  check(
+    "bounds/accuracy-sum",
+    sumMax < 1 && sumMin > -1,
+    `a build's summed accuracyModifier can reach [${sumMin}, ${sumMax}], outside (-1, 1) — ` +
+      `the optimizer's max-accuracy bound assumes it stays inside`,
+  );
+  notes.push(
+    `summed accuracyModifier per build within [${sumMin.toFixed(3)}, ${sumMax.toFixed(3)}] (conflicts ignored)`,
+  );
 }
 
 function report(): void {
