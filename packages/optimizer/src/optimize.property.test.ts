@@ -3,6 +3,7 @@ import {
   compareJudged,
   judge,
   randomRecords,
+  weaponPrice,
   weaponUnobtainable,
   type Judged,
   type RecordsCase,
@@ -15,27 +16,48 @@ import type { OptimizationReason } from "./types.js";
 const CASES = 400;
 const MAX_BUILDS = 20_000;
 
-/** Whether some build passes the Builder's rules once `relax` lifts some of them. */
-function someBuild(c: RecordsCase, relax: Relax): boolean {
-  return c.builds.some((b) => {
-    const judged = judge(c, b, relax);
-    return judged !== null && judged !== "pinned";
-  });
+/** Every build that passes the Builder's rules once `relax` lifts some of them. */
+function buildsUnder(c: RecordsCase, relax: Relax): Judged[] {
+  return c.builds.flatMap((b) => judge(c, b, relax) ?? []);
 }
 
 /**
- * The reasons that are true of a case with no build: the budget when one exists without it,
- * else the pins when one exists without them, else a required slot when none exists even
- * with conflicts ignored, else conflicts.
+ * The reasons that are true of a case with no build:
+ *
+ * - the weapon, when no way to buy it is open;
+ * - the budget, when a build exists without it. Its cause is the pins when the cheapest such
+ *   builds (fewest parts of unknown price, then fewest roubles) all carry a pinned part nobody
+ *   prices, and the budget itself when none does; either, when some do. A gun over the budget
+ *   or of unknown price, or a build of known price, makes it the budget whatever the pins;
+ * - else the pins, when a build exists without them;
+ * - else a required slot, when none exists even with conflicts ignored;
+ * - else conflicts.
  */
 function trueReasons(c: RecordsCase): readonly OptimizationReason[] {
   if (weaponUnobtainable(c)) return ["weapon-unavailable"];
   const { budgetRub, pinnedSlots } = c.input.constraints;
-  if (budgetRub !== undefined && someBuild(c, { budget: true })) {
-    return ["infeasible-budget", "pinned-unpriced"];
+  if (budgetRub !== undefined) {
+    const free = buildsUnder(c, { budget: true });
+    if (free.length > 0) {
+      const gun = weaponPrice(c);
+      if (gun === null || gun > budgetRub || free.some((j) => j.unknown === 0)) {
+        return ["infeasible-budget"];
+      }
+      const least = Math.min(...free.map((j) => j.unknown));
+      const fewest = free.filter((j) => j.unknown === least);
+      const rub = Math.min(...fewest.map((j) => j.known));
+      const cheapest = fewest.filter((j) => j.known === rub);
+      if (cheapest.every((j) => j.pinnedUnpriced)) return ["pinned-unpriced"];
+      if (cheapest.every((j) => !j.pinnedUnpriced)) return ["infeasible-budget"];
+      return ["pinned-unpriced", "infeasible-budget"];
+    }
   }
-  if (pinnedSlots.size > 0 && someBuild(c, { budget: true, pins: true })) return ["pin-conflict"];
-  if (!someBuild(c, { budget: true, pins: true, conflicts: true })) return ["required-slot"];
+  if (pinnedSlots.size > 0 && buildsUnder(c, { budget: true, pins: true }).length > 0) {
+    return ["pin-conflict"];
+  }
+  if (buildsUnder(c, { budget: true, pins: true, conflicts: true }).length === 0) {
+    return ["required-slot"];
+  }
   return ["no-valid-combinations"];
 }
 
@@ -62,17 +84,9 @@ describe("optimize — exact against brute force, from upstream-shaped records",
       const c = randomRecords(rnd, MAX_BUILDS);
       if (c === null) continue;
       let best: Judged | null = null;
-      let pinned = false;
-      for (const build of c.builds) {
-        const judged = judge(c, build);
-        if (judged === "pinned") pinned = true;
-        else if (judged !== null && (best === null || compareJudged(judged, best) < 0)) {
-          best = judged;
-        }
+      for (const judged of buildsUnder(c, {})) {
+        if (best === null || compareJudged(judged, best) < 0) best = judged;
       }
-      // A pinned part the profile cannot buy is placed at an unknown price, which the oracle's
-      // price rule cannot express; such cases are left to the unit tests.
-      if (pinned) continue;
       const result = optimize(c.input);
       const label = `case ${t}`;
       if (best === null) {
@@ -86,8 +100,7 @@ describe("optimize — exact against brute force, from upstream-shaped records",
         if (!result.ok) continue;
         const mine = judge(c, result.build.attachments);
         expect(mine, label).not.toBeNull();
-        expect(mine, label).not.toBe("pinned");
-        expect(compareJudged(mine as Judged, best), label).toBe(0);
+        expect(compareJudged(mine!, best), label).toBe(0);
         tally.feasible++;
       }
       tally.compared++;
@@ -105,6 +118,7 @@ describe("optimize — exact against brute force, from upstream-shaped records",
     for (const reason of [
       "weapon-unavailable",
       "infeasible-budget",
+      "pinned-unpriced",
       "pin-conflict",
       "required-slot",
       "no-valid-combinations",

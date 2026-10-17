@@ -3,8 +3,10 @@ import {
   buildPriceUnder,
   buildSlotGraph,
   itemAvailability,
+  priceUnder,
   resolveBuild,
   selectWeaponTree,
+  weaponPaths,
   type AttachablePart,
   type AvailabilityInput,
   type BuyForEntry,
@@ -22,8 +24,9 @@ import type { Objective, OptimizationInput } from "../types.js";
  * Random optimizer inputs in upstream's shapes — part records with trader offers, presets
  * sold as offers on the weapon, a profile or theorycraft, pins, budgets — and an oracle that
  * judges every build of one by the Builder's own rules: `resolveBuild` for conflicts, empty
- * required slots and orphans, `buildPriceUnder` for the price, `weaponSpec` for the objective.
- * It shares nothing with the solver but those rules and the input.
+ * required slots and orphans, `buildPriceUnder` (and the `weaponPaths` it buys the weapon by)
+ * for the price, `itemAvailability` and `priceUnder` for what a profile can get, `weaponSpec`
+ * for the objective. It shares nothing with the solver but those rules and the input.
  */
 
 export const PROFILE: PlayerProfile = {
@@ -303,6 +306,8 @@ export interface Judged {
   /** The roubles that are known. */
   readonly known: number;
   readonly count: number;
+  /** A part kept on a pin has no price the profile can pay, and no way to buy the gun supplies it. */
+  readonly pinnedUnpriced: boolean;
 }
 
 /** Best rating (MOA within a float tolerance), then fewest unknown prices, then roubles, then parts. */
@@ -318,17 +323,20 @@ export interface Relax {
   readonly conflicts?: boolean;
 }
 
+/** A listing the profile can use, at no known price: how a pinned part is placed. */
+const UNPRICED_OFFER: BuyForEntry = offer(null, 1);
+
 /**
  * How the Builder scores this build, or `null` when it is not one the optimizer may return:
  * a conflict, an empty required slot, an orphan, a broken pin, a part no weapon path can get,
- * or over the budget. `"pinned"` when a pinned part the profile cannot buy is on it: the
- * optimizer places such a part at an unknown price, which `buildPriceUnder` cannot express.
+ * or over the budget. A part kept on a pin skips the availability gate: where the profile
+ * cannot buy it, it is priced as a listing of unknown price, as the optimizer places it.
  */
 export function judge(
   c: RecordsCase,
   attachments: Readonly<Record<string, string>>,
   relax: Relax = {},
-): Judged | null | "pinned" {
+): Judged | null {
   const { input, graph, catalog } = c;
   const gate = input.constraints.profile;
   const resolved = resolveBuild(input.slotTree, attachments, catalog);
@@ -344,7 +352,7 @@ export function judge(
     }
   };
   walk("w", "");
-  let pinnedUnavailable = false;
+  const kept = new Set<string>();
   for (const [at, pin] of relax.pins ? [] : input.constraints.pinnedSlots) {
     const s = visible.get(at);
     if (s === undefined) continue;
@@ -354,19 +362,30 @@ export function judge(
     }
     if (!catalog.has(pin) || !s.allowedItemIds.includes(pin)) continue;
     if (resolved.attachments[at] !== pin) return null;
-    if (!itemAvailability(catalog.get(pin)!, gate).available) pinnedUnavailable = true;
+    kept.add(at);
   }
-  const placed = resolved.placed.map((p) => p.part);
-  const price = buildPriceUnder(gate, {
-    weapon: { ...input.weaponItem, id: "w" },
-    parts: placed,
-    presets: input.presets,
-  });
-  if (price.status === "unobtainable") return pinnedUnavailable ? "pinned" : null;
+  // Copies a path supplies are spent in list order: the ones the profile cannot buy unpinned
+  // must take them, so the pinned copies, which can go unsupplied, come last.
+  const unbuyablePin = (p: (typeof resolved.placed)[number]) =>
+    kept.has(p.path) && !itemAvailability(p.part, gate).available;
+  const placed = [
+    ...resolved.placed.filter((p) => !unbuyablePin(p)).map((p) => p.part),
+    ...resolved.placed.filter(unbuyablePin).map((p) => ({ ...p.part, buyFor: [UNPRICED_OFFER] })),
+  ];
+  const weapon = { ...input.weaponItem, id: "w" };
+  const price = buildPriceUnder(gate, { weapon, parts: placed, presets: input.presets });
+  if (price.status === "unobtainable") return null;
   const budget = input.constraints.budgetRub;
   if (!relax.budget && budget !== undefined) {
     if (price.status !== "priced" || price.totalRUB > budget) return null;
   }
+  const paths = weaponPaths(gate, weapon, input.presets);
+  const pinnedUnpriced = resolved.placed.some(
+    (p) =>
+      kept.has(p.path) &&
+      priceUnder(gate, p.part) === null &&
+      paths.every((path) => (path.covers.get(p.itemId) ?? 0) === 0),
+  );
   const spec = weaponSpec(input.weapon, placed.map(adaptMod));
   const rating = {
     "min-recoil": spec.verticalRecoil,
@@ -379,7 +398,18 @@ export function judge(
     unknown: price.status === "priced" ? 0 : price.unpriced.length,
     known: price.status === "priced" ? price.totalRUB : price.knownRUB,
     count: placed.length,
+    pinnedUnpriced,
   };
+}
+
+/** The cheapest way to buy the weapon alone, or `null` when its price is unknown or none is open. */
+export function weaponPrice(c: RecordsCase): number | null {
+  const price = buildPriceUnder(c.input.constraints.profile, {
+    weapon: { ...c.input.weaponItem, id: "w" },
+    parts: [],
+    presets: c.input.presets,
+  });
+  return price.status === "priced" ? price.totalRUB : null;
 }
 
 /** Whether no way to buy the weapon is open to the profile. */
