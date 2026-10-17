@@ -24,6 +24,15 @@ import { useV1Migration } from "./useV1Migration.js";
 import { useSnapshotOrphans } from "./useSnapshotOrphans.js";
 import { conflictReasonFor } from "./conflict-reason.js";
 
+/**
+ * A weapon the picker lists. `lockedBy` is set only on the current weapon when the profile
+ * cannot obtain it and the picker is filtered to available weapons: it stays listed so the
+ * picker still names what is on screen.
+ */
+export type WeaponOption = WeaponListItem & {
+  readonly lockedBy: Extract<ReturnType<typeof itemAvailability>, { available: false }> | null;
+};
+
 const EMPTY_PARTS: AttachablePart[] = [];
 
 export interface UseBuilderStateArgs {
@@ -43,7 +52,7 @@ export interface UseBuilderStateResult {
   isLoading: boolean;
   error: Error | null;
 
-  weaponOptions: WeaponListItem[];
+  weaponOptions: WeaponOption[];
   weaponId: string;
   handleWeaponChange: (weaponId: string) => void;
   showAllWeapons: boolean;
@@ -134,12 +143,20 @@ export function useBuilderState({
     return map;
   }, [weapons.data, profile]);
 
-  const weaponOptions = useMemo(() => {
+  const weaponOptions = useMemo((): WeaponOption[] => {
     if (!weapons.data) return [];
     const sorted = [...weapons.data].sort((a, b) => a.name.localeCompare(b.name));
-    if (showAllWeapons) return sorted;
-    return sorted.filter((w) => weaponAvailabilityById.get(w.id)?.available === true);
-  }, [weapons.data, weaponAvailabilityById, showAllWeapons]);
+    if (showAllWeapons) return sorted.map((w) => ({ ...w, lockedBy: null }));
+    const out: WeaponOption[] = [];
+    for (const w of sorted) {
+      const availability = weaponAvailabilityById.get(w.id);
+      if (availability?.available === true) out.push({ ...w, lockedBy: null });
+      else if (w.id === weaponId && availability !== undefined) {
+        out.push({ ...w, lockedBy: availability });
+      }
+    }
+    return out;
+  }, [weapons.data, weaponAvailabilityById, showAllWeapons, weaponId]);
 
   const selectedWeapon = useMemo(
     () => weapons.data?.find((w) => w.id === weaponId),

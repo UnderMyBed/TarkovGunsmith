@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fixtureSnapshot } from "../__test-utils__/fixture-snapshot.js";
+import { expandSlots } from "../queries/slot-graph.js";
 import { BuildV6, ORPHANED_CAP } from "../build-schema.js";
 import {
   orphanUnknownParts,
@@ -30,8 +31,27 @@ describe("snapshotSlotGraph", () => {
     expect(graph.owners).toBe(snapshot.slots);
     for (const owner of Object.values(graph.owners)) {
       for (const slot of owner.slots) {
-        for (const id of slot.allowedItemIds) expect(graph.itemNames[id]).toBeDefined();
+        for (const id of slot.allowedItemIds) {
+          expect(graph.itemNames[id]).toBeDefined();
+          expect(graph.itemShortNames[id]).toBeDefined();
+        }
       }
+    }
+  });
+
+  it("gives every owner's slots distinct labels across the whole capture", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    const graph = snapshotSlotGraph(snapshot);
+    const owners = Object.keys(graph.owners);
+    // The capture holds owners whose upstream names repeat (the M4A1's two "Ch. Handle").
+    const repeated = owners.filter((id) => {
+      const names = graph.owners[id]!.slots.map((s) => s.name);
+      return new Set(names).size !== names.length;
+    });
+    expect(repeated.length).toBeGreaterThan(0);
+    for (const id of owners) {
+      const labels = expandSlots(graph, id, "").map((s) => s.label);
+      expect(new Set(labels).size, id).toBe(labels.length);
     }
   });
 });

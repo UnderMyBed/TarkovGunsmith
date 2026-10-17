@@ -27,7 +27,11 @@ function derive(snapshot: BuilderSnapshot): Derived {
   const hit = derived.get(snapshot);
   if (hit !== undefined) return hit;
   const itemNames: Record<string, string> = {};
-  for (const part of snapshot.parts) itemNames[part.id] = part.name;
+  const itemShortNames: Record<string, string> = {};
+  for (const part of snapshot.parts) {
+    itemNames[part.id] = part.name;
+    itemShortNames[part.id] = part.shortName;
+  }
   const weaponNames = new Map(snapshot.weapons.map((w) => [w.id, w.name]));
   const names = new Map<string, string>([
     ...Object.entries(snapshot.ingredientNames),
@@ -37,7 +41,7 @@ function derive(snapshot: BuilderSnapshot): Derived {
   const out: Derived = {
     // Every item a reachable slot allows is a part (the generator guarantees it), so the
     // part names are exactly the graph's `itemNames`.
-    graph: { owners: snapshot.slots, itemNames },
+    graph: { owners: snapshot.slots, itemNames, itemShortNames },
     names,
     parts: new Map(snapshot.parts.map((p) => [p.id, p])),
     weaponNames,
