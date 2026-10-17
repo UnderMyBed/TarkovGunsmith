@@ -8,7 +8,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   buildBuilderSnapshot,
   DEFAULT_PROFILE,
-  MARQUEE_QUEST_NORMALIZED_NAMES,
   staticBuilderDataSource,
   TarkovDataProvider,
   type BuilderDataSource,
@@ -96,8 +95,8 @@ const TRADERS_DOC: Record<string, unknown> = {
   "t-mechanic": { id: "t-mechanic", name: "Mechanic", normalizedName: "mechanic" },
 };
 
-/* Two marquee quests and one ordinary one, so the Marquee / All / Incomplete filters each
- * have something to include and something to exclude. */
+/* Three quests, so the All / Incomplete filters and the search each have something to include
+ * and something to exclude. */
 const TASKS_DOC = {
   tasks: {
     t1: {
@@ -146,7 +145,17 @@ function createTasksData(mode?: "error" | "pending"): BuilderDataSource {
     },
     "fixtures",
   );
-  return staticBuilderDataSource(snapshot, prices);
+  // The generator validates the documents, then keeps only tasks that gate an offer. No item
+  // here carries one, so the gating list is supplied as the validated tasks would read.
+  const tasks: TaskListItem[] = Object.values(TASKS_DOC.tasks).map((t) => ({
+    id: t.id,
+    name: t.name,
+    normalizedName: t.normalizedName,
+    kappaRequired: t.kappaRequired,
+    trader: { normalizedName: t.trader === "t-mechanic" ? "mechanic" : "prapor" },
+  }));
+  expect(snapshot.tasks).toEqual([]);
+  return staticBuilderDataSource({ ...snapshot, tasks }, prices);
 }
 
 /** The editor reads no upstream resource itself; every request is a test bug. */
@@ -217,6 +226,23 @@ function lastProfile(onChange: ReturnType<typeof vi.fn>): PlayerProfile {
 }
 
 describe("ProfileEditor — mode", () => {
+  it("says what each mode assumes about quests", async () => {
+    const user = userEvent.setup();
+    renderEditor();
+    expect(
+      screen.getByText(
+        "Basic checks trader loyalty only. A quest-locked trader offer counts as unlocked once you reach its loyalty level.",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Advanced" }));
+    expect(
+      screen.getByText(
+        "Advanced also checks quests. Tick the ones you've completed, or import them from TarkovTracker.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("switches the profile between basic and advanced from the header", async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor();
@@ -283,8 +309,8 @@ describe("ProfileEditor — TarkovTracker", () => {
           state: "synced",
           lastSyncedAt: Date.now(),
           questCount: 12,
+          questTotal: 71,
           playerLevel: 30,
-          unmappedCount: 0,
         },
       }),
     });
@@ -397,15 +423,13 @@ describe("ProfileEditor — quests", () => {
     return { user, ...rendered };
   }
 
-  it("shows marquee quests by default and the rest only under All", async () => {
-    const { user } = await renderQuests();
+  it("lists every quest that gates gear, with no cap and no curated subset", async () => {
+    await renderQuests();
 
     expect(await screen.findByLabelText("Gunsmith - Master Part 1")).toBeInTheDocument();
     expect(screen.getByLabelText("Setup")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Debut")).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "All" }));
     expect(screen.getByLabelText("Debut")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Marquee/ })).not.toBeInTheDocument();
   });
 
   it("drops already-completed quests under Incomplete", async () => {
@@ -442,16 +466,15 @@ describe("ProfileEditor — quests", () => {
     expect(setup).not.toBeChecked();
   });
 
-  it("counts completed quests overall and against the marquee list", async () => {
-    await renderQuests({ profile: { completedQuests: ["setup", "debut"] } });
+  it("counts completed quests against the gating list only", async () => {
+    // "retired-quest" is stored from an older list and gates nothing: it stays, uncounted.
+    const { user, onChange } = await renderQuests({
+      profile: { completedQuests: ["setup", "debut", "retired-quest"] },
+    });
 
-    expect(await screen.findByText(/2 complete/)).toBeInTheDocument();
-    // "debut" is not a marquee quest, so only one of the two counts toward the marquee tally.
-    expect(
-      screen.getByRole("button", {
-        name: `Marquee (1/${String(MARQUEE_QUEST_NORMALIZED_NAMES.length)})`,
-      }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/2 of 3 complete/)).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Setup"));
+    expect(lastProfile(onChange).completedQuests).toEqual(["debut", "retired-quest"]);
   });
 
   it("says the quest list is still loading while it is in flight", async () => {
@@ -463,9 +486,7 @@ describe("ProfileEditor — quests", () => {
     await renderQuests({ builderData: createTasksData("error") });
 
     expect(
-      await screen.findByText(
-        "Couldn't load quest list — toggles still work against cached slugs.",
-      ),
+      await screen.findByText("Couldn't load the quest list. Reload the page."),
     ).toBeInTheDocument();
     // The controls stay — a failed list must not take the section down with it.
     expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument();

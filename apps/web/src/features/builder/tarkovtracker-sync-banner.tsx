@@ -95,13 +95,12 @@ export function TarkovTrackerSyncBanner({
   }
 
   if (detail.state === "synced") {
-    const unmapped = detail.unmappedCount > 0 ? ` · ${detail.unmappedCount} UNMAPPED` : "";
     return (
       <Shell tone="amber">
         <div className="flex flex-col gap-0.5 text-xs">
           <span className="font-mono uppercase tracking-wider text-[var(--color-primary)]">
-            ▲ TARKOVTRACKER · {detail.questCount} QUESTS · PMC LV {detail.playerLevel}
-            {unmapped}
+            ▲ TARKOVTRACKER · {detail.questCount}/{detail.questTotal} GEAR QUESTS · PMC LV{" "}
+            {detail.playerLevel}
           </span>
           <span className="text-[var(--color-muted-foreground)]">
             Last sync {relativeTime(detail.lastSyncedAt)}. Trader LLs not synced — set manually.

@@ -3,6 +3,7 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } fro
 import { describeBuildPrice, type PricesStatus } from "./build-price.js";
 import { PricesLine } from "./prices-line.js";
 import { formatRequirement } from "./slot-tree.js";
+import { useQuestName } from "./quest-names.js";
 import type { WeaponOption } from "./useBuilderState.js";
 
 export interface WeaponPanelProps {
@@ -63,6 +64,7 @@ export function WeaponPanel({
   boughtAs,
   nameOf,
 }: WeaponPanelProps) {
+  const questName = useQuestName();
   const availableCount = weaponOptions.filter((w) => w.lockedBy === null).length;
   return (
     <Card>
@@ -92,7 +94,7 @@ export function WeaponPanel({
             <option key={w.id} value={w.id}>
               {w.lockedBy === null
                 ? w.name
-                : `${w.name} — LOCKED · ${formatRequirement(w.lockedBy)}`}
+                : `${w.name} — LOCKED · ${formatRequirement(w.lockedBy, questName)}`}
             </option>
           ))}
         </select>

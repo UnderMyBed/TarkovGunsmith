@@ -7,6 +7,7 @@ import {
   ShapeMismatchError,
   TokenInvalidError,
   type PlayerProfile,
+  type RawProgression,
   type TaskListItem,
 } from "@tarkov/data";
 
@@ -30,9 +31,11 @@ export type SyncState =
   | {
       state: "synced";
       lastSyncedAt: number;
+      /** Completed quests among the ones that gate gear. */
       questCount: number;
+      /** How many quests gate gear. */
+      questTotal: number;
       playerLevel: number;
-      unmappedCount: number;
     }
   | { state: "error"; kind: SyncErrorKind; message: string };
 
@@ -86,36 +89,48 @@ export function useTarkovTrackerSync(args: UseTarkovTrackerSyncArgs): UseTarkovT
     propsRef.current = args;
   });
 
-  const doSync = useCallback(async (token: string) => {
-    setSyncState({ state: "syncing" });
-    try {
-      const raw = await fetchProgression(token);
-      const tasks = propsRef.current.tasks;
-      if (tasks === undefined) {
-        // Tasks not loaded yet — surface as syncing. The caller re-invokes
-        // once useTasks.data resolves.
-        setSyncState({ state: "syncing" });
-        return;
-      }
-      const result = mapRawToProfile(raw, tasks);
-      propsRef.current.onChange({
-        ...propsRef.current.profile,
-        completedQuests: result.profile.completedQuests,
-        flea: result.profile.flea,
-        level: result.profile.level,
-      });
-      setSyncState({
-        state: "synced",
-        lastSyncedAt: Date.now(),
-        questCount: result.meta.questCount,
-        playerLevel: result.meta.playerLevel,
-        unmappedCount: result.meta.unmappedCount,
-      });
-    } catch (err) {
-      const classified = classifyError(err);
-      setSyncState({ state: "error", ...classified });
-    }
+  // A progression fetched before the task list loaded, waiting to be mapped onto it.
+  const pendingRaw = useRef<RawProgression | null>(null);
+
+  const finish = useCallback((raw: RawProgression, tasks: readonly TaskListItem[]) => {
+    pendingRaw.current = null;
+    const result = mapRawToProfile(raw, tasks);
+    propsRef.current.onChange({
+      ...propsRef.current.profile,
+      completedQuests: result.profile.completedQuests,
+      flea: result.profile.flea,
+      level: result.profile.level,
+    });
+    setSyncState({
+      state: "synced",
+      lastSyncedAt: Date.now(),
+      questCount: result.meta.questCount,
+      questTotal: result.meta.questTotal,
+      playerLevel: result.meta.playerLevel,
+    });
   }, []);
+
+  const doSync = useCallback(
+    async (token: string) => {
+      setSyncState({ state: "syncing" });
+      try {
+        const raw = await fetchProgression(token);
+        const tasks = propsRef.current.tasks;
+        // The task list is still loading: stay `syncing` and finish when it arrives (below).
+        if (tasks === undefined) pendingRaw.current = raw;
+        else finish(raw, tasks);
+      } catch (err) {
+        const classified = classifyError(err);
+        setSyncState({ state: "error", ...classified });
+      }
+    },
+    [finish],
+  );
+
+  const { tasks } = args;
+  useEffect(() => {
+    if (tasks !== undefined && pendingRaw.current !== null) finish(pendingRaw.current, tasks);
+  }, [tasks, finish]);
 
   const connect = useCallback(
     async (token: string) => {
@@ -139,6 +154,7 @@ export function useTarkovTrackerSync(args: UseTarkovTrackerSyncArgs): UseTarkovT
   }, [doSync]);
 
   const disconnect = useCallback(() => {
+    pendingRaw.current = null;
     try {
       window.localStorage.removeItem(STORAGE_KEY);
     } catch {

@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { act, cleanup, renderHook, render, screen } from "@testing-library/react";
-import type { PlayerProfile } from "@tarkov/data";
+import type { PlayerProfile, TaskListItem } from "@tarkov/data";
 import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
 import { TarkovTrackerSyncBanner } from "./tarkovtracker-sync-banner.js";
 
@@ -71,5 +71,68 @@ describe("TarkovTrackerSyncBanner — connected", () => {
     expect(screen.getByText(/TARKOVTRACKER · CONNECTED/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Re-sync" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+  });
+});
+
+describe("useTarkovTrackerSync — the quest list loads after the progression", () => {
+  const progression = {
+    tasksProgress: [
+      { id: "5a03296886f774569778596a", complete: true },
+      { id: "5936d90786f7742b1420ba5b", complete: true },
+    ],
+    taskObjectivesProgress: [],
+    hideoutModulesProgress: [],
+    hideoutPartsProgress: [],
+    displayName: "SyncUser",
+    userId: "sync",
+    playerLevel: 30,
+    gameEdition: 1,
+    pmcFaction: "USEC",
+  };
+  const tasks: TaskListItem[] = [
+    {
+      id: "5a03296886f774569778596a",
+      name: "I Need More Power",
+      normalizedName: "i-need-more-power",
+      kappaRequired: true,
+      trader: { normalizedName: "peacekeeper" },
+    },
+  ];
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("waits in syncing, then finishes once the tasks arrive instead of sticking", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(progression), { status: 200 })),
+    );
+    const onChange = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ list }: { list: TaskListItem[] | undefined }) =>
+        useTarkovTrackerSync({ profile, onChange, tasks: list }),
+      { initialProps: { list: undefined as TaskListItem[] | undefined } },
+    );
+
+    await act(() => result.current.connect("tt-token"));
+    expect(result.current.state).toBe("syncing");
+    expect(onChange).not.toHaveBeenCalled();
+
+    rerender({ list: tasks });
+    expect(result.current.detail).toMatchObject({
+      state: "synced",
+      questCount: 1,
+      questTotal: 1,
+      playerLevel: 30,
+    });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]![0]).toMatchObject({
+      completedQuests: ["i-need-more-power"],
+      level: 30,
+      flea: true,
+    });
+
+    // A later task-list change does not replay the finished sync.
+    rerender({ list: [...tasks] });
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });
