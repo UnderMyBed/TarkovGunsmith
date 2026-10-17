@@ -144,8 +144,9 @@ export function watchDevServers(servers: readonly DevServer[]): () => void {
         stop();
         process.stderr.write(deathReport(server));
         // Interrupt the run as Ctrl-C would: Playwright stops scheduling tests, runs its
-        // teardown and reports what ran. Every test after this point would only fail on a
-        // refused connection.
+        // teardown, and reports the failures so far with a summary of what did not run. Every
+        // test after this point would only fail on a refused connection. (Nothing else in the
+        // runner may exit on SIGINT first — see the launch options in `global-setup.ts`.)
         process.kill(process.pid, "SIGINT");
         return;
       }

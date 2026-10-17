@@ -36,12 +36,22 @@ export default async function globalSetup(): Promise<() => void> {
   return watchDevServers(servers);
 }
 
-// No launch options on purpose: `devices["Desktop Chrome"]` sets no `channel`, so a bare
-// `chromium.launch()` resolves to the very binary the specs will use. A preflight that
-// launched something else could pass while every test still failed.
+// No `channel` or `executablePath` on purpose: `devices["Desktop Chrome"]` sets neither, so this
+// launch resolves to the very binary the specs will use. A preflight that launched something
+// else could pass while every test still failed.
+//
+// The signal options are off because this launch runs in the runner process. Left at their
+// defaults, playwright-core installs a SIGINT handler that outlives the browser (the webServer
+// processes share its kill list) and calls `process.exit(130)` on the interrupt the server
+// watch sends — before Playwright prints the failures and the summary. They do not affect which
+// binary is launched.
 async function preflightBrowser(): Promise<void> {
   try {
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({
+      handleSIGINT: false,
+      handleSIGTERM: false,
+      handleSIGHUP: false,
+    });
     await browser.close();
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
