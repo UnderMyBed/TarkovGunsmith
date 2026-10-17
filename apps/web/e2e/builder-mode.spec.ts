@@ -1,7 +1,15 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { fixtureBuildableWeaponCount } from "./upstream-fixtures.js";
-import { openProgression, pickWeapon, progressionPanel, weaponPicker } from "./builder-helpers.js";
+import {
+  openProgression,
+  pickWeapon,
+  progressionPanel,
+  weaponPicker,
+  selectSlot,
+  partRow,
+  slotRow,
+} from "./builder-helpers.js";
 
 /**
  * The Builder's mode (#241): a first visit is theorycraft, with every weapon open and a prompt
@@ -34,17 +42,15 @@ async function expectWeaponCount(page: Page, text: string, timeout?: number): Pr
   await page.keyboard.press("Escape");
 }
 
-/** The ELCAN option in the M4A1's receiver scope slot, the slot opened. */
+/** The ELCAN's row in the inspector, with the M4A1's receiver scope slot selected. */
 async function elcanOption(page: Page) {
-  await page.locator('details[data-slot-path="mod_reciever"] > summary').click();
-  const slot = page.locator('details[data-slot-path="mod_reciever/mod_scope"]');
-  await slot.locator(":scope > summary").click();
-  return slot.getByRole("button", { name: ELCAN });
+  await selectSlot(page, "mod_reciever/mod_scope");
+  return partRow(page, ELCAN);
 }
 
 async function pickM4A1(page: Page): Promise<void> {
   await pickWeapon(page);
-  await expect(page.locator('details[data-slot-path="mod_reciever"]')).toBeVisible();
+  await expect(slotRow(page, "mod_reciever")).toBeVisible();
 }
 
 const modeButton = (page: Page, name: "Theorycraft" | "My progression…") =>

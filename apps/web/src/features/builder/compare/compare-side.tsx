@@ -24,9 +24,13 @@ import {
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import { Card, CardContent, SectionTitle, WeaponSilhouette } from "@tarkov/ui";
 import { adaptMod, adaptWeapon } from "../../data-adapters/adapters.js";
+import { SlotInspector } from "../slot-inspector.js";
+import { useSlotSelection } from "../slot-selection.js";
 import { SlotTree } from "../slot-tree.js";
 import { OrphanedBanner } from "../orphaned-banner.js";
 import { conflictReasonFor, fittedConflictReasonFor } from "../conflict-reason.js";
+
+const NO_ATTACHMENTS: Readonly<Record<string, string>> = {};
 
 export interface CompareSideProps {
   /** Display label for this column (A = left, B = right). */
@@ -49,6 +53,8 @@ export interface CompareSideProps {
    * seed: the owner of the side's state redoes a seed made before live prices arrived.
    */
   onWeaponSeeded: (weaponId: string) => void;
+  /** Whether live prices are in: only then does the side's inspector offer sorting by price. */
+  pricesReady: boolean;
 }
 
 /**
@@ -68,6 +74,7 @@ export function CompareSide({
   diff,
   onBuildChange,
   onWeaponSeeded,
+  pricesReady,
 }: CompareSideProps): ReactElement {
   const weapons = useWeaponList();
   const mods = usePartCatalog();
@@ -116,6 +123,9 @@ export function CompareSide({
   }, [mods.data, profile]);
 
   const getAvailability = (id: string): ItemAvailability | null => availabilityById.get(id) ?? null;
+
+  const selection = useSlotSelection(tree.data, attachments ?? NO_ATTACHMENTS);
+  const selectedSlot = selection.selected?.slot ?? null;
 
   /** The side after `action`, through the same reducer the Builder uses; metadata kept. */
   function apply(current: BuildV6, action: BuildAction): BuildV6 {
@@ -233,14 +243,30 @@ export function CompareSide({
                 </p>
               )}
               {tree.data && (
-                <SlotTree
-                  tree={tree.data}
-                  attachments={build.attachments}
+                <div className="-mx-5 border-y border-[var(--color-border)] py-1.5">
+                  <SlotTree
+                    selection={selection}
+                    attachments={build.attachments}
+                    getAvailability={getAvailability}
+                    getFittedConflict={getFittedConflict}
+                    diff={diff ?? undefined}
+                    label={`Build ${label} slots`}
+                  />
+                </div>
+              )}
+              {tree.data && selectedSlot && (
+                <SlotInspector
+                  weaponId={build.weaponId}
+                  id={selection.inspectorId}
+                  slot={selectedSlot}
+                  fittedId={build.attachments[selectedSlot.path] ?? null}
+                  parts={byId}
                   onAttach={handleAttach}
                   getAvailability={getAvailability}
                   getConflict={getConflict}
-                  getFittedConflict={getFittedConflict}
-                  diff={diff ?? undefined}
+                  mode={profile ? "progression" : "theorycraft"}
+                  pricesReady={pricesReady}
+                  onEscape={selection.focusTreeRow}
                 />
               )}
             </>

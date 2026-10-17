@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { BuilderMode, ItemAvailability, WeaponTree } from "@tarkov/data";
 import { Pill } from "@tarkov/ui";
+import type { SlotSelection } from "./slot-selection.js";
 import { SlotTree } from "./slot-tree.js";
 import { shownAvailability } from "./shown-availability.js";
 import { OrphanedBanner } from "./orphaned-banner.js";
@@ -11,17 +12,16 @@ export interface BuildPanelProps {
   attachments: Readonly<Record<string, string>>;
   /** Parts on the weapon (`useBuilderState`'s `attachedCount`), not raw attachment keys. */
   attachedCount: number;
-  onAttach: (path: string, itemId: string | null) => void;
+  /** Which slot the tree has selected: `useSlotSelection`, shared with the inspector. */
+  selection: SlotSelection;
   /** Each part's availability under the Builder's gate (`useBuilderState`'s `gate`). */
   getAvailability: (itemId: string) => ItemAvailability | null;
   /**
-   * In theorycraft no part is shown locked or dimmed for availability, including the parts
-   * nobody sells (`no-sources`, `flea-unlisted`) that even an open gate cannot buy: the mode
-   * promises everything unlocked. A part that clashes with the build is still dimmed.
+   * In theorycraft no fitted part is shown Locked, including the parts nobody sells
+   * (`no-sources`, `flea-unlisted`) that even an open gate cannot buy: the mode promises
+   * everything unlocked.
    */
   mode: BuilderMode;
-  /** See `SlotTree`'s `getConflict`. */
-  getConflict: (path: string, itemId: string) => string | null;
   /** See `SlotTree`'s `getFittedConflict`. */
   getFittedConflict?: (path: string) => string | null;
   orphaned: readonly string[];
@@ -37,20 +37,16 @@ export interface BuildPanelProps {
 
 /**
  * The workbench's Build panel: the slot tree, with the part count, the incomplete and conflict
- * flags and the preset dropdown in its header, and the orphaned-part banner under it.
- *
- * Owns the "Show all items" toggle locally: it only sets whether a part the profile cannot get
- * is dimmed, which is not a mode and nothing outside this panel reads. It is offered in
- * progression only; theorycraft shows every part undimmed and without a Locked pill.
+ * flags and the preset dropdown in its header, and the orphaned-part banner under it. Parts are
+ * picked in the slot inspector beside it, for the slot selected here.
  */
 export function BuildPanel({
   tree,
   attachments,
   attachedCount,
-  onAttach,
+  selection,
   getAvailability,
   mode,
-  getConflict,
   getFittedConflict,
   orphaned,
   modNames,
@@ -59,8 +55,6 @@ export function BuildPanel({
   missingRequired = [],
   conflicts = [],
 }: BuildPanelProps) {
-  const [showAll, setShowAll] = useState(false);
-  const theorycraft = mode === "theorycraft";
   const availabilityOf = (itemId: string) => shownAvailability(mode, getAvailability(itemId));
 
   return (
@@ -92,32 +86,23 @@ export function BuildPanel({
               </Pill>
             )}
           </div>
-          {mode === "progression" && (
-            <label className="flex items-center gap-2 text-12">
-              <input
-                type="checkbox"
-                checked={showAll}
-                onChange={(e) => setShowAll(e.target.checked)}
-              />
-              <span>Show all items</span>
-            </label>
-          )}
         </div>
         {presets}
       </div>
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3 py-1.5">
         {tree.data && (
           <SlotTree
-            tree={tree.data}
+            selection={selection}
             attachments={attachments}
-            onAttach={onAttach}
             getAvailability={availabilityOf}
-            getConflict={getConflict}
             getFittedConflict={getFittedConflict}
-            showAll={theorycraft || showAll}
           />
         )}
-        <OrphanedBanner orphanedIds={orphaned} names={modNames} onDismiss={onDismissOrphaned} />
+        {orphaned.length > 0 && (
+          <div className="px-4 pb-2.5">
+            <OrphanedBanner orphanedIds={orphaned} names={modNames} onDismiss={onDismissOrphaned} />
+          </div>
+        )}
       </div>
     </section>
   );

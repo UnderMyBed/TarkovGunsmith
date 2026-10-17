@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import type { WeaponSpec } from "@tarkov/ballistics";
 import type { BuildPrice } from "@tarkov/data";
-import { Button, cn } from "@tarkov/ui";
+import { Button } from "@tarkov/ui";
 import { buildPriceParts, type PricesStatus } from "./build-price.js";
 import { ergonomicsFloorNote, shownErgonomics } from "./ergonomics.js";
 import { signedPercent } from "./details-panel.js";
+import { Delta, type Direction } from "./delta.js";
 
 export interface StatStripProps {
   /** Current build spec (weapon + current mods). */
@@ -22,8 +23,6 @@ export interface StatStripProps {
   /** Opens the optimizer. Omitted, the strip offers no Optimize (the optimizer is open). */
   onOptimize?: (() => void) | undefined;
 }
-
-type Direction = "better" | "worse" | null;
 
 /** To one decimal, dropping a trailing ".0" (119, not 119.0). */
 export function oneDecimal(value: number): string {
@@ -54,24 +53,6 @@ export function formatPercent(current: number, stock: number): string {
 export function direction(delta: number, higherIsWorse: boolean): Direction {
   if (Math.abs(delta) < 0.005) return null;
   return delta > 0 !== higherIsWorse ? "better" : "worse";
-}
-
-function Delta({ text, dir }: { text: string; dir: Direction }) {
-  if (text === "") return null;
-  return (
-    <span
-      className={cn(
-        "font-semibold",
-        dir === "better" && "text-[var(--color-better)]",
-        dir === "worse" && "text-[var(--color-worse)]",
-      )}
-      title={dir ?? undefined}
-    >
-      {text}
-      {/* The colour is not the only signal: the direction is spoken and on hover too. */}
-      {dir !== null && <span className="sr-only"> {dir}</span>}
-    </span>
-  );
 }
 
 function Cell({

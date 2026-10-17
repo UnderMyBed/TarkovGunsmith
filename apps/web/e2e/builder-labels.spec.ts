@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
-import { M4A1_LABEL, pickWeapon, weaponPicker } from "./builder-helpers.js";
+import { M4A1_LABEL, pickWeapon, slotRow, weaponPicker } from "./builder-helpers.js";
 
 /**
  * The picker names the weapon on screen even when the profile cannot buy it (#222), and no two
@@ -11,10 +11,10 @@ const M4A1 = "5447a9cd4bdc2dbd208b4567";
 
 /** Every visible slot row as [parent path, label]. */
 async function slotRows(page: Page): Promise<[string, string][]> {
-  return page.locator("details[data-slot-path]").evaluateAll((nodes) =>
+  return page.locator('[role="treeitem"][data-slot-path]').evaluateAll((nodes) =>
     nodes.map((node) => {
       const path = node.getAttribute("data-slot-path") ?? "";
-      const label = node.querySelector(":scope > summary > span:nth-of-type(2)")?.textContent;
+      const label = node.querySelector("[data-slot-label]")?.textContent;
       return [path.split("/").slice(0, -1).join("/"), label ?? ""] as [string, string];
     }),
   );
@@ -47,11 +47,11 @@ test.describe("Builder weapon picker and slot labels", () => {
       await expect(picker).toHaveValue(M4A1_LABEL, { timeout: 15_000 });
       // The closed picker says what locks the weapon on screen, and so does its option.
       await expect(
-        page.getByText("Locked · peacekeeper LL2 barter", { exact: true }).first(),
+        page.getByText("Locked · Peacekeeper LL2 barter", { exact: true }).first(),
       ).toBeVisible();
       await picker.click();
       await expect(page.getByRole("listbox").getByRole("option", { selected: true })).toHaveText(
-        `${M4A1_LABEL}Locked · peacekeeper LL2 barter`,
+        `${M4A1_LABEL}Locked · Peacekeeper LL2 barter`,
       );
       await expect(
         page.getByRole("button", { name: "My progression…", pressed: true }),
@@ -62,7 +62,7 @@ test.describe("Builder weapon picker and slot labels", () => {
   test("no two slot rows under one parent share a label on the M4A1", async ({ page }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     await pickWeapon(page);
-    await expect(page.locator('details[data-slot-path="mod_reciever/mod_barrel"]')).toBeAttached({
+    await expect(slotRow(page, "mod_reciever/mod_barrel")).toBeAttached({
       timeout: 15_000,
     });
 

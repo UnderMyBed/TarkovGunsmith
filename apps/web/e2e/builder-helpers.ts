@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect } from "./upstream.js";
 
 /**
@@ -82,4 +82,59 @@ export function stat(page: Page, label: string) {
   return page
     .locator("dl > div")
     .filter({ has: page.locator("dt").getByText(label, { exact: true }) });
+}
+
+/** Where the slot tree and its inspector live: the page, or one side of Compare. */
+type Root = Page | Locator;
+
+/** The slot tree's row for `path`: a `treeitem` carrying the slot path. */
+export function slotRow(root: Root, path: string) {
+  return root.locator(`[role="treeitem"][data-slot-path="${path}"]`);
+}
+
+/** The part fitted in the slot at `path`, as its tree row names it (absent when empty). */
+export function fittedPart(root: Root, path: string) {
+  return slotRow(root, path).locator("[data-fitted-part]");
+}
+
+/** Every tree row's path, in the order the tree shows them. */
+export async function slotPaths(root: Root): Promise<string[]> {
+  return await root
+    .locator('[role="treeitem"][data-slot-path]')
+    .evaluateAll((rows) => rows.map((row) => row.getAttribute("data-slot-path") ?? ""));
+}
+
+/** Select the slot at `path` in the tree, which shows its parts in the inspector. */
+export async function selectSlot(root: Root, path: string): Promise<void> {
+  const row = slotRow(root, path);
+  await row.click();
+  await expect(row).toHaveAttribute("aria-selected", "true");
+}
+
+/** The slot inspector: the region named "<slot> options". */
+export function inspector(root: Root) {
+  return root.getByRole("region", { name: / options$/ });
+}
+
+/** The inspector's row for the part whose text matches `name` (a part name, or its start). */
+export function partRow(root: Root, name: string | RegExp) {
+  return inspector(root).getByRole("list", { name: "Parts" }).getByRole("listitem").filter({
+    hasText: name,
+  });
+}
+
+/** A part row's action: "Fit", or "Fitted" on the part in the slot. */
+export function fitButton(root: Root, name: string | RegExp) {
+  return partRow(root, name).first().locator("[data-part-action]");
+}
+
+/**
+ * Select the slot at `path` and fit the first part matching `name`, unless it is fitted there
+ * already; waits for it to show as fitted.
+ */
+export async function fitPart(root: Root, path: string, name: string | RegExp): Promise<void> {
+  await selectSlot(root, path);
+  const action = fitButton(root, name);
+  if ((await action.innerText()) !== "Fitted") await action.click();
+  await expect(action).toHaveText("Fitted");
 }

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createTestBuilderData } from "../../../test/test-builder-data.js";
 import { createTestClient } from "../../../test/test-client.js";
@@ -327,8 +327,8 @@ describe("CompareWorkspace seeding before live prices arrive", () => {
     expect((await savedRight(user))?.attachments).toEqual(DEFAULT_ATTACHMENTS);
   });
 
-  it("keeps a part attached after the pick when prices arrive", async () => {
-    const user = userEvent.setup();
+  /** A tree, weapon and parts complete enough for the side's stats and price to work out. */
+  function stockM4A1() {
     trees = {
       [WEAPON]: tinyTree(WEAPON, [
         { nameId: "mod_muzzle", items: ["mod-muzzle"] },
@@ -384,15 +384,20 @@ describe("CompareWorkspace seeding before live prices arrive", () => {
       isLoading: false,
       error: null,
     };
+  }
+
+  it("keeps a part attached after the pick when prices arrive", async () => {
+    const user = userEvent.setup();
+    stockM4A1();
     handOff(FLEA_PROFILE);
     const { container, rerender } = render(<CompareWorkspace />);
     await pickOnB(user);
     const muzzle = container.querySelector<HTMLElement>(
-      'details[data-slot-path="mod_muzzle"] > summary',
+      '[role="treeitem"][data-slot-path="mod_muzzle"]',
     );
     if (muzzle === null) throw new Error("side B's muzzle slot is not rendered");
     await user.click(muzzle);
-    await user.click(screen.getByRole("button", { name: /mod-muzzle/ }));
+    await user.click(screen.getByRole("button", { name: /^Fit mod-muzzle/ }));
     // No save before the prices: a save would commit the seed by itself.
     const edited = { ...FLEA_ATTACHMENTS, ...PRAPOR_ATTACHMENTS };
 
@@ -422,6 +427,22 @@ describe("CompareWorkspace seeding before live prices arrive", () => {
       expect(pair.right?.attachments).toEqual(FLEA_ATTACHMENTS);
     },
   );
+
+  it("offers sorting a side's parts by price only once prices are in", async () => {
+    const user = userEvent.setup();
+    stockM4A1();
+    handOff(FLEA_PROFILE);
+    const { rerender } = render(<CompareWorkspace />);
+    await pickOnB(user);
+    const priceOption = () =>
+      within(screen.getByRole("combobox", { name: "Sort by" })).queryByRole("option", {
+        name: "Price",
+      });
+    expect(priceOption()).not.toBeInTheDocument();
+
+    deliverPrices(rerender);
+    expect(priceOption()).toBeInTheDocument();
+  });
 
   it("treats a save as committing both sides: a seed is not redone after it", async () => {
     const user = userEvent.setup();

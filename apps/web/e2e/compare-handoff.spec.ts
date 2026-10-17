@@ -1,6 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
-import { openProgression, pickWeapon, progressionPanel, weaponPicker } from "./builder-helpers.js";
+import {
+  openProgression,
+  pickWeapon,
+  progressionPanel,
+  weaponPicker,
+  partRow,
+  selectSlot,
+} from "./builder-helpers.js";
 
 /**
  * Handing a build from the Builder to Compare (#258): in progression the Builder's profile
@@ -14,12 +21,10 @@ test.use({ playerProfile: "fresh" });
 /** Peacekeeper LL3 only in the captures: open in theorycraft, locked on LL2 (see builder-mode). */
 const ELCAN = /^ELCAN SpecterDR 1x\/4x scope(?! \()/;
 
-/** The ELCAN option in the receiver scope slot under `root`, the slot opened. */
+/** The ELCAN's inspector row under `root`, with the receiver scope slot selected. */
 async function elcanOption(root: Locator) {
-  await root.locator('details[data-slot-path="mod_reciever"] > summary').first().click();
-  const slot = root.locator('details[data-slot-path="mod_reciever/mod_scope"]').first();
-  await slot.locator(":scope > summary").click();
-  return slot.getByRole("button", { name: ELCAN });
+  await selectSlot(root, "mod_reciever/mod_scope");
+  return partRow(root, ELCAN);
 }
 
 /** Pick the M4A1 in the Builder and return its cost line once prices are in. */

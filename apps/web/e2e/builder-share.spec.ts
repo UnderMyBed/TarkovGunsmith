@@ -1,7 +1,15 @@
 import type { Page, Route } from "@playwright/test";
 import { test, expect, expectNoLiveThirdParty, installUpstreamBoundary } from "./upstream.js";
 import { capturedItemName } from "./upstream-fixtures.js";
-import { expectPreset, M4A1_LABEL, pickWeapon, weaponPicker } from "./builder-helpers.js";
+import {
+  expectPreset,
+  M4A1_LABEL,
+  pickWeapon,
+  weaponPicker,
+  fitButton,
+  selectSlot,
+  slotRow,
+} from "./builder-helpers.js";
 
 /**
  * Share links: what a reader opens is the build that was shared.
@@ -62,16 +70,15 @@ function attached(page: Page, count: number) {
 
 /**
  * Each slot row's path and the name of the part fitted there, read from the row's own item
- * cell (`slot-tree.tsx`: the summary's third span, whose first child is the fitted part's
- * name). Rows with nothing fitted are left out.
+ * cell (`slot-tree.tsx`: the `data-fitted-part` span). Rows with nothing fitted are left out.
  */
 function fittedParts(page: Page): Promise<Record<string, string>> {
   return page.evaluate(() =>
     Object.fromEntries(
-      Array.from(document.querySelectorAll<HTMLElement>("details[data-slot-path]")).flatMap((d) => {
-        const name = d.querySelector(
-          ":scope > summary > span:nth-of-type(3) > span:first-child:not(.italic)",
-        )?.textContent;
+      Array.from(
+        document.querySelectorAll<HTMLElement>('[role="treeitem"][data-slot-path]'),
+      ).flatMap((d) => {
+        const name = d.querySelector("[data-fitted-part]")?.textContent;
         return name ? [[d.dataset.slotPath ?? "", name]] : [];
       }),
     ),
@@ -92,23 +99,21 @@ async function stats(page: Page): Promise<Record<string, string>> {
   return out;
 }
 
-/** Each slot row's path and what its summary says is fitted there. */
+/** Each slot row's path and what its tree row says is fitted there. */
 function slotRows(page: Page): Promise<Record<string, string>> {
   return page.evaluate(() =>
     Object.fromEntries(
-      Array.from(document.querySelectorAll<HTMLElement>("details[data-slot-path]")).map((d) => [
-        d.dataset.slotPath ?? "",
-        d.querySelector(":scope > summary")?.textContent ?? "",
-      ]),
+      Array.from(document.querySelectorAll<HTMLElement>('[role="treeitem"][data-slot-path]')).map(
+        (d) => [d.dataset.slotPath ?? "", d.textContent ?? ""],
+      ),
     ),
   );
 }
 
 async function fitPart(page: Page, slotPath: string, name: string) {
-  const slot = page.locator(`[data-slot-path="${slotPath}"]`);
-  await slot.locator("> summary").click();
-  await slot.getByRole("button", { name }).first().click();
-  await expect(slot.locator("> summary")).toContainText(name);
+  await selectSlot(page, slotPath);
+  await fitButton(page, name).click();
+  await expect(slotRow(page, slotPath)).toContainText(name);
 }
 
 function serve(page: Page, id: string, body: unknown) {

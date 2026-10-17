@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { BuilderMode, ItemAvailability, WeaponTree } from "@tarkov/data";
 import { tinyTree } from "../../test/tiny-tree.js";
-import { BuildPanel } from "./build-panel.js";
+import { BuildPanel, type BuildPanelProps } from "./build-panel.js";
+import { useSlotSelection } from "./slot-selection.js";
 
 afterEach(() => cleanup());
 
@@ -21,20 +22,24 @@ const TREE = tinyTree(
 const NO_SOURCES: ItemAvailability = { available: false, reason: "no-sources" };
 const ON_FLEA: ItemAvailability = { available: true, kind: "flea", priceRUB: 4_500 };
 
+/** The panel with a real selection over `attachments`, as the Builder page wires it. */
+function Panel(props: Omit<BuildPanelProps, "selection">) {
+  const selection = useSlotSelection(props.tree.data, props.attachments);
+  return <BuildPanel {...props} selection={selection} />;
+}
+
 function renderPanel(
   mode: BuilderMode,
-  conflictWith: string | null = null,
+  attachments: Record<string, string> = {},
   flags: { missingRequired?: string[]; conflicts?: string[] } = {},
 ) {
   render(
-    <BuildPanel
+    <Panel
       tree={{ data: TREE, isLoading: false, error: null } as UseQueryResult<WeaponTree, Error>}
-      attachments={{}}
-      attachedCount={0}
-      onAttach={vi.fn()}
+      attachments={attachments}
+      attachedCount={Object.keys(attachments).length}
       getAvailability={(id) => (id === "mod-orphan" ? NO_SOURCES : ON_FLEA)}
       mode={mode}
-      getConflict={(_, id) => (id === conflictWith ? "Conflicts with Stock" : null)}
       orphaned={[]}
       modNames={NAMES}
       onDismissOrphaned={vi.fn()}
@@ -44,35 +49,29 @@ function renderPanel(
   );
 }
 
-const option = (name: RegExp) => screen.getByRole("button", { name });
+const muzzleRow = () => screen.getByRole("treeitem", { name: /^mod_muzzle/ });
 
 describe("BuildPanel", () => {
-  it("in theorycraft, shows a part nobody sells neither dimmed nor Locked", () => {
+  it("shows the slot tree, the first slot selected", () => {
     renderPanel("theorycraft");
-    const orphan = option(/Discontinued muzzle brake/);
-    expect(within(orphan).queryByText("Locked")).not.toBeInTheDocument();
-    expect(within(orphan).queryByText("No sources")).not.toBeInTheDocument();
-    // Dimming has no accessible signal; its class is the only observable.
-    expect(orphan).not.toHaveClass("opacity-40");
-    // An available part keeps its source pill.
-    expect(within(option(/Zenit DTK-1/)).getByText("Flea")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Show all items")).not.toBeInTheDocument();
+    expect(screen.getByRole("tree", { name: "Slots" })).toBeInTheDocument();
+    expect(muzzleRow()).toHaveAttribute("aria-selected", "true");
   });
 
-  it("in theorycraft, still dims a part that clashes with the build", () => {
-    renderPanel("theorycraft", "mod-dtk");
-    expect(option(/Zenit DTK-1/)).toHaveClass("opacity-40");
+  it("in theorycraft, shows a fitted part nobody sells without a Locked pill", () => {
+    renderPanel("theorycraft", { mod_muzzle: "mod-orphan" });
+    expect(within(muzzleRow()).getByText("Discontinued muzzle brake")).toBeInTheDocument();
+    expect(within(muzzleRow()).queryByText("Locked")).not.toBeInTheDocument();
   });
 
-  it("in progression, dims it and marks it Locked with why, unless Show all items is on", () => {
-    renderPanel("progression");
-    const orphan = option(/Discontinued muzzle brake/);
-    expect(within(orphan).getByText("Locked")).toBeInTheDocument();
-    expect(within(orphan).getByText("No sources")).toBeInTheDocument();
-    expect(orphan).toHaveClass("opacity-40");
+  it("in progression, marks a fitted part the profile cannot get Locked", () => {
+    renderPanel("progression", { mod_muzzle: "mod-orphan" });
+    expect(within(muzzleRow()).getByText("Locked")).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByLabelText("Show all items"));
-    expect(option(/Discontinued muzzle brake/)).not.toHaveClass("opacity-40");
+  it("carries the fitted part's source in its row", () => {
+    renderPanel("progression", { mod_muzzle: "mod-dtk" });
+    expect(within(muzzleRow()).getByText("Flea")).toBeInTheDocument();
   });
 
   it("carries the preset control in its header", () => {
@@ -83,13 +82,13 @@ describe("BuildPanel", () => {
   });
 
   it("flags an incomplete build, naming the empty required slots", () => {
-    renderPanel("theorycraft", null, { missingRequired: ["Barrel", "Gas block"] });
+    renderPanel("theorycraft", {}, { missingRequired: ["Barrel", "Gas block"] });
     const pill = screen.getByText("Incomplete · 2 required empty");
     expect(pill).toHaveAttribute("title", "Required slots empty: Barrel, Gas block");
   });
 
   it("flags clashing parts, listing each pair", () => {
-    renderPanel("theorycraft", null, { conflicts: ["ADAR stock × M4SS"] });
+    renderPanel("theorycraft", {}, { conflicts: ["ADAR stock × M4SS"] });
     expect(screen.getByText("Conflict · 1")).toHaveAttribute("title", "ADAR stock × M4SS");
   });
 

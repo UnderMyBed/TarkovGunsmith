@@ -1,329 +1,237 @@
-import {
-  expandSlots,
-  type SlotNode,
-  type WeaponTree,
-  type ItemAvailability,
-  type SlotDiffMap,
-} from "@tarkov/data";
-import { Pill, focusRing } from "@tarkov/ui";
+import { useState, type KeyboardEvent } from "react";
+import type { ItemAvailability, SlotDiffMap, SlotDiffStatus } from "@tarkov/data";
+import { Pill, cn, focusRing } from "@tarkov/ui";
 import { useQuestName, type QuestName } from "./quest-names.js";
+import type { SlotSelection, VisibleSlot } from "./slot-selection.js";
 import { availabilityLabel } from "./shown-availability.js";
-
-// ---------- Keyboard navigation handler ----------
-
-function handleSlotTreeKeyDown(e: React.KeyboardEvent<HTMLUListElement>) {
-  const root = e.currentTarget;
-  const key = e.key;
-
-  if (key !== "ArrowDown" && key !== "ArrowUp" && key !== "ArrowLeft" && key !== "ArrowRight") {
-    return;
-  }
-
-  // Disabled options (a conflicting part) are skipped: focus() on one is a no-op, so including
-  // them would strand ArrowDown on the option above.
-  const targets = Array.from(
-    root.querySelectorAll<HTMLElement>(
-      "details[data-slot-path] > summary, details[data-slot-path] > div button:not(:disabled)",
-    ),
-  );
-  const active = document.activeElement as HTMLElement | null;
-  const idx = active ? targets.indexOf(active) : -1;
-
-  if (key === "ArrowDown") {
-    const next = targets[Math.min(idx + 1, targets.length - 1)];
-    if (next && next !== active) {
-      e.preventDefault();
-      next.focus();
-    }
-    return;
-  }
-
-  if (key === "ArrowUp") {
-    const prev = targets[Math.max(idx - 1, 0)];
-    if (prev && prev !== active) {
-      e.preventDefault();
-      prev.focus();
-    }
-    return;
-  }
-
-  // ArrowRight / ArrowLeft only affect summary elements.
-  if (!active || active.tagName !== "SUMMARY") return;
-
-  const details = active.closest<HTMLDetailsElement>("details[data-slot-path]");
-  if (!details || details.tagName !== "DETAILS") return;
-
-  if (key === "ArrowRight" && !details.open) {
-    e.preventDefault();
-    details.open = true;
-    return;
-  }
-
-  if (key === "ArrowLeft" && details.open) {
-    e.preventDefault();
-    details.open = false;
-    return;
-  }
-}
+import { traderLabel } from "./where-to-get.js";
 
 // ---------- Types ----------
 
 export interface SlotTreeProps {
-  tree: WeaponTree;
+  /** The rows, and which one is selected: `useSlotSelection`. */
+  selection: SlotSelection;
   attachments: Readonly<Record<string, string>>;
-  onAttach: (path: string, itemId: string | null) => void;
   getAvailability?: (itemId: string) => ItemAvailability | null;
-  showAll?: boolean;
+  /** Compare's per-slot statuses: a row that differs from the other build is marked. */
   diff?: SlotDiffMap;
-  /**
-   * Why `itemId` cannot go at `path` given the rest of the build, or `null` when it can.
-   * A conflicting option is shown disabled with this reason beside it.
-   */
-  getConflict?: (path: string, itemId: string) => string | null;
   /**
    * Why the part already fitted at `path` clashes with another part on the weapon, or `null`.
    * A saved build, a preset or an optimizer result can hold such a pair; it is shown, not removed.
    */
   getFittedConflict?: (path: string) => string | null;
+  /** The tree's accessible name. */
+  label?: string;
 }
 
-// ---------- SlotTree root ----------
+const DIFF_NOTE = {
+  differs: "differs from the other build",
+  "left-only": "filled only in this build",
+  "right-only": "filled only in this build",
+} as const;
 
+// ---------- SlotTree ----------
+
+/**
+ * The build's slots as a WAI-ARIA tree, always expanded to the fitted parts: one row per slot
+ * with its label (required marked), the part fitted there or "empty", and that part's
+ * availability. Activating a row selects the slot for the inspector beside it.
+ *
+ * The rows are flat `treeitem`s whose hierarchy is carried by `aria-level`, `aria-posinset`
+ * and `aria-setsize`. Every row is rendered, so arrow-key traversal never lands on a hidden
+ * one. One row is in the tab order at a time (roving tabindex):
+ * - Up / Down / Home / End move between rows;
+ * - Right moves to a row's first child, Left to its parent;
+ * - Enter or Space selects the row and moves focus into the inspector.
+ */
 export function SlotTree({
-  tree,
+  selection,
   attachments,
-  onAttach,
   getAvailability,
-  showAll,
   diff,
-  getConflict,
   getFittedConflict,
+  label = "Slots",
 }: SlotTreeProps) {
-  if (tree.slots.length === 0) {
+  const { rows, selected } = selection;
+  // The row that holds the tab stop: the last one focused while it is still on the tree,
+  // otherwise the selected one.
+  const [focusedPath, setFocusedPath] = useState<string | null>(null);
+  if (rows.length === 0) {
     return (
       <p className="text-xs text-[var(--color-muted-foreground)]">This weapon has no mod slots.</p>
     );
   }
-  // Every target this handler delegates to (details>summary, and the mod-picker buttons
-  // below) is a native element that's already fully keyboard-operable on its own
-  // (Enter/Space toggles a <details>, activates a <button>). handleSlotTreeKeyDown only adds
-  // an arrow-key roving-focus shortcut across those already-accessible descendants; it is
-  // not the sole path to interacting with the tree, so this <ul> isn't standing in as an
-  // ARIA widget that would need role="tree" (which, done properly, means every row also
-  // needs role="treeitem" + aria-expanded/aria-level — a real feature, not a fix for this
-  // lint finding; noting it as a follow-up rather than building it here).
+  const tabStop =
+    (focusedPath !== null && rows.some((r) => r.slot.path === focusedPath) ? focusedPath : null) ??
+    selected?.slot.path ??
+    rows[0]!.slot.path;
+
+  const focusRow = (index: number) => {
+    const row = rows[index];
+    if (!row) return;
+    document
+      .getElementById(selection.treeId)
+      ?.querySelector<HTMLElement>(
+        `[role="treeitem"][data-slot-path="${CSS.escape(row.slot.path)}"]`,
+      )
+      ?.focus();
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>, index: number) => {
+    const row = rows[index]!;
+    switch (e.key) {
+      case "ArrowDown":
+        focusRow(Math.min(index + 1, rows.length - 1));
+        break;
+      case "ArrowUp":
+        focusRow(Math.max(index - 1, 0));
+        break;
+      case "Home":
+        focusRow(0);
+        break;
+      case "End":
+        focusRow(rows.length - 1);
+        break;
+      case "ArrowRight":
+        if (row.hasChildren) focusRow(index + 1);
+        break;
+      case "ArrowLeft":
+        if (row.parentPath !== null) {
+          focusRow(rows.findIndex((r) => r.slot.path === row.parentPath));
+        }
+        break;
+      case "Enter":
+      case " ":
+        selection.activate(row.slot.path);
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  };
+
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- see above
-    <ul className="flex flex-col" onKeyDown={handleSlotTreeKeyDown}>
-      {tree.slots.map((slot) => (
+    <div id={selection.treeId} role="tree" aria-label={label} className="flex flex-col">
+      {rows.map((row, index) => (
         <SlotRow
-          key={slot.path}
-          tree={tree}
-          slot={slot}
-          ancestors={ROOT_ANCESTORS}
+          key={row.slot.path}
+          row={row}
+          selected={row.slot.path === selected?.slot.path}
+          tabbable={row.slot.path === tabStop}
           attachments={attachments}
-          onAttach={onAttach}
           getAvailability={getAvailability}
-          showAll={showAll}
-          depth={0}
-          diff={diff}
-          getConflict={getConflict}
+          diffStatus={diff?.get(row.slot.path)}
           getFittedConflict={getFittedConflict}
+          onSelect={() => selection.select(row.slot.path)}
+          onFocus={() => setFocusedPath(row.slot.path)}
+          onKeyDown={(e) => onKeyDown(e, index)}
         />
       ))}
-    </ul>
+    </div>
   );
 }
 
 // ---------- SlotRow ----------
 
-const ROOT_ANCESTORS: ReadonlySet<string> = new Set();
-
 function SlotRow({
-  tree,
-  slot,
-  ancestors,
+  row,
+  selected,
+  tabbable,
   attachments,
-  onAttach,
   getAvailability,
-  showAll,
-  depth,
-  diff,
-  getConflict,
+  diffStatus,
   getFittedConflict,
+  onSelect,
+  onFocus,
+  onKeyDown,
 }: {
-  tree: WeaponTree;
-  slot: SlotNode;
-  /** Item ids attached above this row. One of them is never expanded again here. */
-  ancestors: ReadonlySet<string>;
+  row: VisibleSlot;
+  selected: boolean;
+  tabbable: boolean;
   attachments: Readonly<Record<string, string>>;
-  onAttach: (path: string, itemId: string | null) => void;
-  getAvailability?: (itemId: string) => ItemAvailability | null;
-  showAll?: boolean;
-  depth: number;
-  diff?: SlotDiffMap;
-  getConflict?: (path: string, itemId: string) => string | null;
-  getFittedConflict?: (path: string) => string | null;
+  getAvailability?: ((itemId: string) => ItemAvailability | null) | undefined;
+  diffStatus: SlotDiffStatus | undefined;
+  getFittedConflict?: ((path: string) => string | null) | undefined;
+  onSelect: () => void;
+  onFocus: () => void;
+  onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => void;
 }) {
-  const questName = useQuestName();
-  const selectedId = attachments[slot.path] ?? null;
-  const selectedItem = selectedId ? slot.allowedItems.find((i) => i.id === selectedId) : null;
-  // The attached part's own slots, expanded on demand from the graph — barrels, scopes and
-  // magazines included, at any depth. A part attached beneath itself is not expanded again.
-  const childSlots =
-    selectedItem && !ancestors.has(selectedItem.id)
-      ? expandSlots(tree.graph, selectedItem.id, slot.path)
-      : [];
-  const selectedAvailability =
-    selectedItem && getAvailability ? getAvailability(selectedItem.id) : null;
-
-  const fittedConflict = selectedItem ? (getFittedConflict?.(slot.path) ?? null) : null;
-  const indentPx = depth * 20;
-  const diffStatus = diff?.get(slot.path);
-  const diffDataAttr = diffStatus ? { "data-diff": diffStatus } : {};
+  const { slot } = row;
+  const fittedId = attachments[slot.path] ?? null;
+  const fitted = fittedId ? slot.allowedItems.find((i) => i.id === fittedId) : undefined;
+  const availability = fitted && getAvailability ? getAvailability(fitted.id) : null;
+  const fittedConflict = fitted ? (getFittedConflict?.(slot.path) ?? null) : null;
+  // Spelled out, because the cells' text would otherwise run together ("Muzzleempty").
+  const name = [
+    `${slot.label}${slot.required ? ", required" : ""}: ${fitted ? fitted.name : "empty"}`,
+    availability ? availabilityLabel(availability) : null,
+    fittedConflict,
+    diffStatus !== undefined && diffStatus !== "equal" ? DIFF_NOTE[diffStatus] : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(", ");
 
   return (
-    <li>
-      <details
-        data-slot-path={slot.path}
-        {...diffDataAttr}
-        className="group border-b border-[var(--color-border)] data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-l-2 data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-l-2 data-[diff=right-only]:border-[var(--color-primary)]"
+    <div
+      role="treeitem"
+      aria-label={name}
+      aria-level={row.level}
+      aria-posinset={row.posInSet}
+      aria-setsize={row.setSize}
+      aria-selected={selected}
+      aria-expanded={row.hasChildren ? true : undefined}
+      tabIndex={tabbable ? 0 : -1}
+      data-slot-path={slot.path}
+      data-diff={diffStatus}
+      onClick={onSelect}
+      onFocus={onFocus}
+      onKeyDown={onKeyDown}
+      className={cn(
+        "grid min-h-11 cursor-pointer grid-cols-[minmax(84px,112px)_minmax(0,1fr)_auto] items-center gap-x-2.5 border-l-2 border-transparent py-1.5 pr-4 transition-colors sm:gap-x-3",
+        "data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-[var(--color-primary)]",
+        selected ? "bg-[var(--color-selected)]" : "hover:bg-[var(--color-muted)]",
+        focusRing,
+        "focus-visible:ring-offset-0 focus-visible:ring-inset",
+      )}
+      style={{ paddingLeft: `${14 + (row.level - 1) * 18}px` }}
+    >
+      <span
+        title={slot.label}
+        className={cn(
+          "truncate text-12",
+          selected
+            ? "font-bold text-[var(--color-primary-text)]"
+            : "font-medium text-[var(--color-muted-foreground)]",
+        )}
       >
-        <summary
-          tabIndex={0}
-          className={`flex cursor-pointer items-center gap-3 py-2 pr-3 hover:bg-[var(--color-muted)] transition-colors ${
-            depth === 0 ? "sticky top-0 z-10 bg-[var(--color-background)]" : ""
-          }`}
-          style={{ paddingLeft: `${12 + indentPx}px` }}
-        >
-          <span
-            aria-hidden
-            className="font-mono text-[var(--color-primary-text)] text-xs group-open:rotate-90 transition-transform inline-block w-[10px]"
-          >
-            ▸
-          </span>
-          <span className="text-11 text-[var(--color-muted-foreground)] min-w-[140px]">
-            {slot.label}
-          </span>
-          <span className="flex-1 text-sm truncate">
-            {selectedItem ? (
-              <>
-                <span className="text-[var(--color-foreground)]">{selectedItem.name}</span>
-                {fittedConflict !== null && (
-                  <span className="ml-2 text-11 text-[var(--color-destructive)]">
-                    {fittedConflict}
-                  </span>
-                )}
-              </>
-            ) : (
-              <span className="italic text-[var(--color-faint)]">
-                — empty —
-                {slot.required && (
-                  <span className="not-italic ml-2 text-11 text-[var(--color-destructive)]">
-                    Required
-                  </span>
-                )}
+        <span data-slot-label>{slot.label}</span>
+        {slot.required && <span aria-hidden> *</span>}
+      </span>
+      <span className="min-w-0 text-13 leading-snug">
+        {fitted ? (
+          <>
+            <span data-fitted-part className="text-[var(--color-foreground)]">
+              {fitted.name}
+            </span>
+            {fittedConflict !== null && (
+              <span className="block text-11 text-[var(--color-destructive)]">
+                {fittedConflict}
               </span>
             )}
+          </>
+        ) : (
+          <span className="text-[var(--color-faint)]">
+            empty
+            {slot.required && (
+              <span className="ml-2 text-11 text-[var(--color-destructive)]">Required</span>
+            )}
           </span>
-          {selectedItem && <AvailabilityPill availability={selectedAvailability} />}
-          <span className="text-11 text-[var(--color-faint)] whitespace-nowrap">
-            {slot.allowedItems.length} opt{slot.allowedItems.length === 1 ? "" : "s"}
-          </span>
-        </summary>
-        <div
-          className="border-t border-[var(--color-border)] py-2"
-          style={{ paddingLeft: `${24 + indentPx}px` }}
-        >
-          {slot.allowedItems.length === 0 ? (
-            slot.allowedCategories.length > 0 ? (
-              <p className="p-2 text-11 text-[var(--color-faint)]">
-                <span className="text-[var(--color-foreground)]">Accepts</span>
-                {" · "}
-                {slot.allowedCategories.map((c) => c.name).join(" · ")}
-              </p>
-            ) : (
-              <p className="p-2 text-11 text-[var(--color-faint)]">
-                No explicit allowed items or categories.
-              </p>
-            )
-          ) : (
-            <ul className="flex flex-col">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onAttach(slot.path, null)}
-                  className={`w-full px-3 py-1.5 text-left text-sm border-l-2 ${focusRing} ${
-                    !selectedId
-                      ? "border-[var(--color-primary)] bg-[var(--color-muted)] text-[var(--color-primary-text)]"
-                      : "border-transparent hover:bg-[var(--color-muted)]"
-                  }`}
-                >
-                  <span className="text-11">— none —</span>
-                </button>
-              </li>
-              {slot.allowedItems.map((item) => {
-                const availability = getAvailability?.(item.id) ?? null;
-                const isSelected = selectedId === item.id;
-                const conflict = isSelected ? null : (getConflict?.(slot.path, item.id) ?? null);
-                const dim = conflict !== null || (!showAll && availability?.available === false);
-                const requirementLabel =
-                  availability && !availability.available
-                    ? formatRequirement(availability, questName)
-                    : null;
-                return (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => onAttach(slot.path, item.id)}
-                      disabled={conflict !== null}
-                      className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm border-l-2 ${focusRing} ${
-                        isSelected
-                          ? "border-[var(--color-primary)] bg-[var(--color-muted)]"
-                          : "border-transparent hover:bg-[var(--color-muted)] disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                      } ${dim ? "opacity-40" : ""}`}
-                    >
-                      <span className="truncate">{item.name}</span>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {conflict !== null && (
-                          <span className="text-11 text-[var(--color-faint)]">{conflict}</span>
-                        )}
-                        {conflict === null && requirementLabel && (
-                          <span className="text-11 text-[var(--color-faint)]">
-                            {requirementLabel}
-                          </span>
-                        )}
-                        <AvailabilityPill availability={availability} />
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {selectedItem && childSlots.length > 0 && (
-            <ul className="flex flex-col mt-2 border-t border-[var(--color-border)]">
-              {childSlots.map((child) => (
-                <SlotRow
-                  key={child.path}
-                  tree={tree}
-                  slot={child}
-                  ancestors={new Set([...ancestors, selectedItem.id])}
-                  attachments={attachments}
-                  onAttach={onAttach}
-                  getAvailability={getAvailability}
-                  showAll={showAll}
-                  depth={depth + 1}
-                  diff={diff}
-                  getConflict={getConflict}
-                  getFittedConflict={getFittedConflict}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-      </details>
-    </li>
+        )}
+      </span>
+      <span className="justify-self-end">
+        {fitted && <AvailabilityPill availability={availability} />}
+      </span>
+    </div>
   );
 }
 
@@ -350,13 +258,13 @@ export function formatRequirement(a: ItemAvailability, questName: QuestName): st
   if (a.available) return "";
   switch (a.reason) {
     case "trader-ll-required":
-      return `${a.traderNormalizedName} LL${a.minLevel}${a.payment === "barter" ? " barter" : ""}`;
+      return `${traderLabel(a.traderNormalizedName)} LL${a.minLevel}${a.payment === "barter" ? " barter" : ""}`;
     case "quest-required": {
       const name = questName(a.questNormalizedName);
       return name === undefined ? "Quest" : `Quest: ${name}`;
     }
     case "untracked-trader":
-      return `${a.traderNormalizedName} LL${a.minLevel} (not in profile)`;
+      return `${traderLabel(a.traderNormalizedName)} LL${a.minLevel} (not in profile)`;
     case "flea-level-required":
       return `Flea level ${a.minPlayerLevel}`;
     case "flea-unlisted":

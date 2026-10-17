@@ -93,9 +93,9 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
       "bg-[color-mix(in_srgb,var(--color-better)_10%,transparent)]",
       "bg-[color-mix(in_srgb,var(--color-worse)_10%,transparent)]",
       "py-[2px]",
-      "text-[var(--color-foreground-2)]",
     ],
   ],
+  // `text-[var(--color-foreground-2)]` is not guarded: the slot inspector sets its figures in it.
   // `bg-[var(--color-border)]` is not guarded: apps/web paints with it too, so apps/web's own
   // scan emits it either way.
   ["section-title.tsx", ["my-8", "h-px"]],
@@ -112,8 +112,8 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
 const UNGUARDABLE: ReadonlyMap<string, string> = new Map([
   [
     "tarkov-icon.tsx",
-    "Its only class is `inline-block`, which apps/web uses directly in three places " +
-      "(charts.tsx, profile-editor.tsx, slot-tree.tsx). The app's own scan emits it either " +
+    "Its only class is `inline-block`, which apps/web uses directly in two places " +
+      "(charts-page.tsx and profile-editor.tsx). The app's own scan emits it either " +
       "way, so it cannot detect whether packages/ui is scanned.",
   ],
 ]);

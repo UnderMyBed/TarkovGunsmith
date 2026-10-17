@@ -1,7 +1,7 @@
 import type { ConsoleMessage, Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { ROUTES } from "./routes.js";
-import { expectPreset, pickWeapon, stat } from "./builder-helpers.js";
+import { expectPreset, pickWeapon, stat, fitButton, slotRow } from "./builder-helpers.js";
 
 /**
  * The site at phone width (the `phone` project in `playwright.config.ts`: 390 × 844, touch,
@@ -52,15 +52,12 @@ test.describe("phone width", () => {
     await expect(stat(page, "Fire rate").locator("dd").first()).toHaveText("800 rpm");
     await expect(stat(page, "Capacity").locator("dd").first()).toHaveText("30 rds");
 
-    // Swap the STANAG for the PMAG by touch: open the magazine slot and tap the part.
-    const magazine = page.locator('[data-slot-path="mod_magazine"]');
-    await magazine.locator("> summary").tap();
-    await magazine
-      .getByRole("button", {
-        name: /AR-15 5\.56x45 Magpul PMAG 30 GEN M3 W STANAG 30-round magazine/,
-      })
-      .tap();
-    await expect(magazine.locator("> summary")).toContainText("PMAG 30 GEN M3");
+    // Swap the STANAG for the PMAG by touch: select the magazine slot and tap Fit on the part.
+    const magazine = slotRow(page, "mod_magazine");
+    await magazine.tap();
+    await expect(magazine).toHaveAttribute("aria-selected", "true");
+    await fitButton(page, /AR-15 5\.56x45 Magpul PMAG 30 GEN M3 W STANAG 30-round magazine/).tap();
+    await expect(magazine).toContainText("PMAG 30 GEN M3");
     await expectPreset(page, /^Custom parts$/, 5_000);
 
     // Once a weapon is picked, the workbench bar, the stat strip and the slot rows must still

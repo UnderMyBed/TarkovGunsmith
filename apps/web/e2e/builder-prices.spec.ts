@@ -1,7 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { upstreamFixtureBody } from "./upstream-fixtures.js";
-import { pickWeapon, stat, weaponPicker } from "./builder-helpers.js";
+import { pickWeapon, stat, weaponPicker, slotRow } from "./builder-helpers.js";
 
 /**
  * Live prices (#212): a Web Worker fetches upstream's `items` document and posts back only the
@@ -15,7 +15,7 @@ const M4A1 = "5447a9cd4bdc2dbd208b4567";
 async function pickM4A1(page: Page): Promise<void> {
   await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
   await pickWeapon(page);
-  await expect(page.locator('details[data-slot-path="mod_reciever"]')).toBeVisible();
+  await expect(slotRow(page, "mod_reciever")).toBeVisible();
 }
 
 test.describe("Builder prices", () => {

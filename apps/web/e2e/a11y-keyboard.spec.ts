@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
-import { pickWeapon } from "./builder-helpers.js";
+import { pickWeapon, fitButton, fitPart, inspector, selectSlot } from "./builder-helpers.js";
 
 /**
  * Browser half of GitHub issue #174 — keyboard and screen-reader correctness.
@@ -87,24 +87,14 @@ test.describe("Builder slot tree arrow keys", () => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     await pickWeapon(page);
 
-    const fit = async (path: string, name: RegExp) => {
-      const region = page.locator(`details[data-slot-path="${path}"]`);
-      await region.locator(":scope > summary").click();
-      await region.locator(":scope > div").getByRole("button", { name }).first().click();
-    };
-    await fit("mod_reciever", /M4A1 5\.56x45 upper receiver/);
-    await fit("mod_reciever/mod_barrel", /10\.3 inch barrel/);
+    await fitPart(page, "mod_reciever", /M4A1 5\.56x45 upper receiver/);
+    await fitPart(page, "mod_reciever/mod_barrel", /10\.3 inch barrel/);
 
-    const handguard = page.locator('details[data-slot-path="mod_reciever/mod_handguard"]');
-    await handguard.locator(":scope > summary").click();
-    await expect(
-      handguard
-        .locator(":scope > div")
-        .getByRole("button", { name: /Aeroknox AX-15 10\.5 inch M-LOK handguard/ }),
-    ).toBeDisabled();
+    await selectSlot(page, "mod_reciever/mod_handguard");
+    await expect(fitButton(page, /Aeroknox AX-15 10\.5 inch M-LOK handguard/)).toBeDisabled();
 
     // An enabled option directly above a run of disabled ones, and the next enabled option.
-    const options = handguard.locator(":scope > div button");
+    const options = inspector(page).locator("[data-part-action]");
     const disabled = await options.evaluateAll((buttons) =>
       buttons.map((b) => (b as HTMLButtonElement).disabled),
     );

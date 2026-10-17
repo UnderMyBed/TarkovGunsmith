@@ -396,6 +396,7 @@ export function CompareWorkspace({
             diff={diff}
             onBuildChange={(b: BuildV6 | null) => editSide("left", b)}
             onWeaponSeeded={leftSeed.seeded}
+            pricesReady={prices.state === "ready"}
           />
           <CompareSide
             label="B"
@@ -405,6 +406,7 @@ export function CompareWorkspace({
             diff={diff}
             onBuildChange={(b: BuildV6 | null) => editSide("right", b)}
             onWeaponSeeded={rightSeed.seeded}
+            pricesReady={prices.state === "ready"}
           />
         </div>
       </div>

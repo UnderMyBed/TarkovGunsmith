@@ -148,7 +148,9 @@ test.describe("smoke — builder interaction", () => {
 
     // After selection the Build panel shows "Loading slot tree…" then the tree. Assert the
     // tree renders without the page throwing a console error along the way.
-    await expect(page.locator("details[data-slot-path]").first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('[role="treeitem"][data-slot-path]').first()).toBeVisible({
+      timeout: 20_000,
+    });
 
     // Fail loudly on GraphQL / network errors rendered as card text. The recent
     // WeaponTree parse-error bug surfaced here, not in the console.
@@ -497,36 +499,22 @@ test.describe("smoke — slot-tree keyboard nav", () => {
 
     await pickFirstWeapon(page);
 
-    // Wait for the slot tree to render — at least two slot summaries must appear
-    // so ArrowDown has somewhere to go.
-    const summaries = page.locator("details[data-slot-path] > summary");
+    // Wait for the slot tree to render — at least two slot rows must appear so ArrowDown has
+    // somewhere to go. Every row is rendered (the tree is always expanded), so none is hidden.
+    const summaries = page.locator('[role="treeitem"][data-slot-path]');
     await expect(summaries.first()).toBeVisible({ timeout: 20_000 });
     await expect.poll(async () => await summaries.count(), { timeout: 10_000 }).toBeGreaterThan(1);
 
-    // Click the first summary to open its <details> panel. This makes the item
-    // buttons inside the panel visible and focusable, which is required for
-    // the keyboard handler to move focus to the next interactive target. With
-    // the panel closed, the buttons are hidden and focus() on them is a no-op.
-    await summaries.first().click();
-    // Wait for the panel to open (the div inside <details> becomes visible).
-    await expect(page.locator("details[data-slot-path]").first().locator("> div")).toBeVisible({
-      timeout: 5_000,
-    });
-
-    // Re-focus the summary (clicking it may have shifted focus to a button inside).
     await summaries.first().focus();
 
-    // Use locator.press() to fire ArrowDown directly on the first summary.
-    // The keydown bubbles up to the <ul>'s onKeyDown handler which moves focus
-    // to the next target in DOM order (the first visible button inside the open
-    // panel, or the next summary if the panel is empty).
+    // Use locator.press() to fire ArrowDown directly on the first row; the tree moves focus to
+    // the next row in order.
     await summaries.first().press("ArrowDown");
 
-    // The active element should no longer be the first summary — the keyboard
-    // handler moves focus to the next target in the tree.
+    // The active element should no longer be the first row.
     const activeIsFirst = await page.evaluate(() => {
       const summaryEls = Array.from(
-        document.querySelectorAll<HTMLElement>("details[data-slot-path] > summary"),
+        document.querySelectorAll<HTMLElement>('[role="treeitem"][data-slot-path]'),
       );
       const first = summaryEls[0];
       return document.activeElement === first;

@@ -1,7 +1,13 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { fixturePresetPartCount } from "./upstream-fixtures.js";
-import { choosePreset, expectPreset, pickWeapon, presetSelect } from "./builder-helpers.js";
+import {
+  choosePreset,
+  expectPreset,
+  pickWeapon,
+  presetSelect,
+  slotRow,
+} from "./builder-helpers.js";
 
 /**
  * New builds start from the weapon's default preset (#216), placed from upstream's own preset
@@ -31,9 +37,7 @@ test.describe("Builder presets", () => {
 
     await expect(attached(page, CARBINE_PARTS)).toBeVisible({ timeout: 15_000 });
     await expectPreset(page, /^M4A1 Carbine/);
-    await expect(
-      page.locator('details[data-slot-path="mod_reciever/mod_barrel"] > summary'),
-    ).toContainText("14.5 inch barrel");
+    await expect(slotRow(page, "mod_reciever/mod_barrel")).toContainText("14.5 inch barrel");
   });
 
   test("Empty clears the weapon, and a preset applies in one click", async ({ page }) => {

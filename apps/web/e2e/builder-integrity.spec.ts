@@ -1,5 +1,6 @@
 import type { Page, Route } from "@playwright/test";
 import { test, expect } from "./upstream.js";
+import { slotRow } from "./builder-helpers.js";
 
 /**
  * Build integrity (#219): what a saved build holds is either on the weapon or listed as
@@ -134,15 +135,10 @@ test.describe("Builder build integrity", () => {
     await expect(flag).toHaveAttribute("title", "ADAR wood × M4SS");
     // Flagged, not removed: both parts stay on the weapon.
     await expect(attached(page, 5)).toBeVisible();
+    await expect(slotRow(page, "mod_pistol_grip").getByText("Conflicts with M4SS")).toBeVisible();
+    // The M4SS row, nested under the Stock row, names the other side.
     await expect(
-      page.locator('[data-slot-path="mod_pistol_grip"] > summary').getByText("Conflicts with M4SS"),
-    ).toBeVisible();
-    // The M4SS row sits inside the collapsed Stock row; open it to see the other side.
-    await page.locator('[data-slot-path="mod_stock"] > summary').click();
-    await expect(
-      page
-        .locator('[data-slot-path="mod_stock/mod_stock_000"] > summary')
-        .getByText("Conflicts with ADAR wood"),
+      slotRow(page, "mod_stock/mod_stock_000").getByText("Conflicts with ADAR wood"),
     ).toBeVisible();
   });
 
