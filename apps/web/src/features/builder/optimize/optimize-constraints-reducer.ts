@@ -1,4 +1,10 @@
-import type { AttachablePart, PlayerProfile, WeaponTree } from "@tarkov/data";
+import type {
+  AttachablePart,
+  PriceGate,
+  PricedPreset,
+  WeaponListItem,
+  WeaponTree,
+} from "@tarkov/data";
 import type { Objective, OptimizationInput } from "@tarkov/optimizer";
 import type { BallisticWeapon } from "@tarkov/ballistics";
 
@@ -58,9 +64,16 @@ export function constraintsReducer(
 
 export interface OptimizerInputDeps {
   weapon: BallisticWeapon;
+  /** The weapon's own record: its offers count toward the budget. */
+  weaponItem: WeaponListItem;
   slotTree: WeaponTree;
   parts: readonly AttachablePart[];
-  profile: PlayerProfile;
+  /** Whose gates the search and the budget read: the profile, or `null` in theorycraft. */
+  gate: PriceGate;
+  /** The weapon's presets, so the budget does not pay twice for parts a preset comes with. */
+  presets: readonly PricedPreset[];
+  /** Without live prices no build can be shown to fit a budget, so none is sent. */
+  pricesReady: boolean;
 }
 
 /**
@@ -73,13 +86,15 @@ export function toOptimizerInput(
 ): OptimizationInput {
   return {
     weapon: deps.weapon,
+    weaponItem: deps.weaponItem,
     slotTree: deps.slotTree,
     parts: deps.parts,
+    presets: deps.presets,
     objective: state.objective,
     constraints: {
-      profile: deps.profile,
+      profile: deps.gate,
       pinnedSlots: state.pinnedSlots,
-      ...(state.budgetRub !== undefined ? { budgetRub: state.budgetRub } : {}),
+      ...(state.budgetRub !== undefined && deps.pricesReady ? { budgetRub: state.budgetRub } : {}),
     },
   };
 }

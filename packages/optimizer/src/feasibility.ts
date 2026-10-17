@@ -1,17 +1,5 @@
 import { itemAvailability } from "@tarkov/data";
-import type { AttachablePart, PlayerProfile, SlotNode } from "@tarkov/data";
-
-/**
- * Returns the cheapest RUB price at which `item` is obtainable under the
- * given player profile, or `null` if the item is unavailable OR obtainable only at an
- * unknown price (a barter whose ingredient has no flea price). Callers that need to tell
- * those apart ask `itemAvailability` — see the budget check in `branch-and-bound.ts`.
- */
-export function cheapestPrice(item: AttachablePart, profile: PlayerProfile): number | null {
-  const avail = itemAvailability(item, profile);
-  if (!avail.available) return null;
-  return avail.priceRUB;
-}
+import type { AttachablePart, PriceGate, SlotNode } from "@tarkov/data";
 
 /**
  * Returns the set of decisions the DFS must explore for a slot.
@@ -25,7 +13,7 @@ export function cheapestPrice(item: AttachablePart, profile: PlayerProfile): num
 export function slotCandidates(
   slot: SlotNode,
   parts: ReadonlyMap<string, AttachablePart>,
-  profile: PlayerProfile,
+  profile: PriceGate,
   pinnedSlots: ReadonlyMap<string, string | null>,
 ): readonly (AttachablePart | null)[] {
   const pin = pinnedSlots.get(slot.path);

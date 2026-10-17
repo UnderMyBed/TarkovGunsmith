@@ -34,10 +34,12 @@ function callWith(id: string) {
 describe("/og/build/:id — id validation", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.stubGlobal(
-      "caches",
-      { default: { match: vi.fn(() => Promise.resolve(undefined)), put: vi.fn(() => Promise.resolve(undefined)) } },
-    );
+    vi.stubGlobal("caches", {
+      default: {
+        match: vi.fn(() => Promise.resolve(undefined)),
+        put: vi.fn(() => Promise.resolve(undefined)),
+      },
+    });
     vi.spyOn(console, "log").mockImplementation(() => undefined);
   });
 

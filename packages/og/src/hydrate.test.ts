@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { hydrateBuildCard, hydratePairCard } from "./hydrate.js";
-import type { HydrateBuildArgs } from "./hydrate.js";
+import type { HydrateBuildArgs, HydrateSideArgs } from "./hydrate.js";
 import { m4a1Build, m4a1Weapon, m4a1Mods } from "./__fixtures__/m4a1-build.js";
+
+const args: HydrateBuildArgs = {
+  build: m4a1Build,
+  weapon: m4a1Weapon,
+  mods: m4a1Mods,
+  priceRub: null,
+};
 
 describe("hydrateBuildCard", () => {
   it("uses BuildV6.name as title and weapon shortName as subtitle", () => {
-    const vm = hydrateBuildCard({ build: m4a1Build, weapon: m4a1Weapon, mods: m4a1Mods });
+    const vm = hydrateBuildCard(args);
     expect(vm.title).toBe("RECOIL KING");
     expect(vm.subtitle).toBe("M4A1");
   });
@@ -15,29 +22,25 @@ describe("hydrateBuildCard", () => {
       build: { ...m4a1Build, name: "" },
       weapon: m4a1Weapon,
       mods: m4a1Mods,
+      priceRub: null,
     });
     expect(vm.title).toBe("M4A1");
     expect(vm.subtitle).toBeNull();
   });
 
   it("counts attachments", () => {
-    const vm = hydrateBuildCard({ build: m4a1Build, weapon: m4a1Weapon, mods: m4a1Mods });
+    const vm = hydrateBuildCard(args);
     expect(vm.modCount).toBe(3);
   });
 
-  it("sums buyFor prices to priceRub", () => {
-    const vm = hydrateBuildCard({ build: m4a1Build, weapon: m4a1Weapon, mods: m4a1Mods });
-    expect(vm.priceRub).toBe(12_000 + 42_000 + 36_000);
-  });
-
-  it("returns null priceRub when any mod is missing buyFor", () => {
-    const mods = m4a1Mods.map((m, i) => (i === 0 ? { ...m, buyFor: [] } : m));
-    const vm = hydrateBuildCard({ build: m4a1Build, weapon: m4a1Weapon, mods });
-    expect(vm.priceRub).toBeNull();
+  it("prints the total the caller priced, and no total when it is not known", () => {
+    const priced = hydrateBuildCard({ ...args, priceRub: 187_240 });
+    expect(priced.priceRub).toBe(187_240);
+    expect(hydrateBuildCard({ ...args, priceRub: null }).priceRub).toBeNull();
   });
 
   it("computes stats via weaponSpec aggregation", () => {
-    const vm = hydrateBuildCard({ build: m4a1Build, weapon: m4a1Weapon, mods: m4a1Mods });
+    const vm = hydrateBuildCard(args);
     // 48 + 15 + 8 + 7 = 78
     expect(vm.stats.ergo).toBe(78);
     // Recoil sum is -0.23 + -0.225 + -0.04 = -0.495, so 119 * 0.505 = 60.095.
@@ -52,7 +55,7 @@ describe("hydrateBuildCard", () => {
   });
 
   it("sets availability to FLEA by default (no profileSnapshot)", () => {
-    const vm = hydrateBuildCard({ build: m4a1Build, weapon: m4a1Weapon, mods: m4a1Mods });
+    const vm = hydrateBuildCard(args);
     expect(vm.availability).toBe("FLEA");
   });
 
@@ -64,6 +67,7 @@ describe("hydrateBuildCard", () => {
       build: m4a1Build,
       weapon: { ...m4a1Weapon, properties: null },
       mods: m4a1Mods,
+      priceRub: null,
     });
     expect(vm.stats.ergo).toBeNull();
     expect(vm.stats.recoilV).toBeNull();
@@ -79,7 +83,7 @@ describe("hydrateBuildCard", () => {
     // each of ergonomicsDelta/recoilModifier/accuracyModifier, not the weapon-level
     // null-properties case above.
     const mods = m4a1Mods.map((m, i) => (i === 0 ? { ...m, properties: null } : m));
-    const vm = hydrateBuildCard({ build: m4a1Build, weapon: m4a1Weapon, mods });
+    const vm = hydrateBuildCard({ ...args, mods });
     // The first mod's ergo(+15)/recoilV(-0.23)/recoilH(-0.23) contribution drops to
     // zero; its weight (0.499) still counts since `weight` lives outside `properties`.
     expect(vm.stats.ergo).toBe(48 + 8 + 7);
@@ -90,10 +94,10 @@ describe("hydrateBuildCard", () => {
 });
 
 describe("hydratePairCard", () => {
-  const leftArgs: HydrateBuildArgs = { build: m4a1Build, weapon: m4a1Weapon, mods: m4a1Mods };
+  const leftArgs: HydrateSideArgs = { build: m4a1Build, weapon: m4a1Weapon, mods: m4a1Mods };
   // A second, distinct HydrateBuildArgs so "both sides populated" isn't the same
   // object hydrated twice — falls back to weapon.shortName since name is empty.
-  const rightArgs: HydrateBuildArgs = {
+  const rightArgs: HydrateSideArgs = {
     build: { ...m4a1Build, name: "" },
     weapon: m4a1Weapon,
     mods: m4a1Mods,

@@ -1,5 +1,5 @@
 import { barrelDeviation, CM_PER_MOA_AT_100M, type BallisticWeapon } from "@tarkov/ballistics";
-import type { AttachablePart, PlayerProfile, SlotNode } from "@tarkov/data";
+import type { AttachablePart, PriceGate, SlotNode } from "@tarkov/data";
 import { adaptMod } from "@tarkov/data";
 import { slotCandidates } from "./feasibility.js";
 import type { Objective } from "./types.js";
@@ -15,7 +15,7 @@ import type { Objective } from "./types.js";
 export function lowerBoundForRemaining(
   remaining: readonly SlotNode[],
   parts: ReadonlyMap<string, AttachablePart>,
-  profile: PlayerProfile,
+  profile: PriceGate,
   pinnedSlots: ReadonlyMap<string, string | null>,
   objective: Objective,
   weapon: BallisticWeapon,
@@ -165,7 +165,7 @@ function accuracyBound(
 function bestContribution(
   slot: SlotNode,
   parts: ReadonlyMap<string, AttachablePart>,
-  profile: PlayerProfile,
+  profile: PriceGate,
   pinnedSlots: ReadonlyMap<string, string | null>,
   stat: (mod: AttachablePart | null) => number,
   pick: (...values: number[]) => number,

@@ -81,6 +81,7 @@ export const ITEMS_DOCUMENT: {
       // Top-level and a PERCENT, unlike the fraction-scale `properties` modifiers.
       velocity: 0,
       minLevelForFlea: 0,
+      lastLowPrice: 40_000,
       avg24hPrice: 42_000,
       properties: {
         propertiesType: "ItemPropertiesWeapon",
@@ -135,6 +136,7 @@ export const ITEMS_DOCUMENT: {
       types: ["mods"],
       velocity: 0,
       minLevelForFlea: 0,
+      lastLowPrice: 4_200,
       avg24hPrice: 4_500,
       // Upstream sends both on every item, empty or not.
       conflictingItems: [],
@@ -171,6 +173,7 @@ export const ITEMS_DOCUMENT: {
       // unavailable so SlotTree's "Show all items" toggle and itemAvailability's
       // "trader-ll-required" reason both have something real to render.
       minLevelForFlea: 15,
+      lastLowPrice: 9_000,
       avg24hPrice: 9_500,
       // Upstream sends both on every item, empty or not.
       conflictingItems: [],
@@ -205,6 +208,7 @@ export const ITEMS_DOCUMENT: {
       normalizedName: "colt-m4a1-556x45-assault-rifle-default",
       types: ["preset"],
       minLevelForFlea: 0,
+      lastLowPrice: 57_000,
       avg24hPrice: 60_000,
       containsItems: [
         { item: "w-m4a1", count: 1 },
@@ -238,6 +242,7 @@ export const ITEMS_DOCUMENT: {
       normalizedName: "colt-m4a1-556x45-assault-rifle-stock",
       types: ["preset"],
       minLevelForFlea: 15,
+      lastLowPrice: 52_000,
       avg24hPrice: 55_000,
       containsItems: [
         { item: "w-m4a1", count: 1 },

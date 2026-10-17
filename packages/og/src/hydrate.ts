@@ -26,15 +26,11 @@ export interface HydrateWeapon {
   } | null;
 }
 
-/**
- * GraphQL-shaped mod row the hydrator expects. `buyFor` is the trader/flea
- * offer list; the minimum `priceRUB` across offers is used for `priceRub`.
- */
+/** GraphQL-shaped mod row the hydrator expects. */
 export interface HydrateMod {
   id: string;
   shortName: string;
   weight: number;
-  buyFor: { priceRUB: number }[];
   properties: {
     ergonomics?: number;
     recoilModifier?: number;
@@ -54,6 +50,12 @@ export interface HydrateBuildArgs {
   build: BuildV6;
   weapon: HydrateWeapon;
   mods: readonly HydrateMod[];
+  /**
+   * What the build costs — the weapon or preset plus its parts — or `null` when that is not
+   * known. The caller prices it with `@tarkov/data`'s `buildPriceUnder`, the Builder's own
+   * rule; the card only prints it.
+   */
+  priceRub: number | null;
 }
 
 /**
@@ -78,10 +80,6 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
   const title = hasName ? (build.name as string) : weapon.shortName;
   const subtitle = hasName ? weapon.shortName : null;
 
-  const priceRub = attachedMods.every((m) => m.buyFor.length > 0)
-    ? attachedMods.reduce((sum, m) => sum + Math.min(...m.buyFor.map((b) => b.priceRUB)), 0)
-    : null;
-
   const spec = weapon.properties
     ? weaponSpec(
         {
@@ -104,7 +102,7 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
         // `accuracyModifier` are fractions on both sides. Stays inline rather
         // than using @tarkov/data's `adaptMod` because `HydrateMod` is a
         // deliberately looser Pages-Function shape, not an `AttachablePart` —
-        // optional properties, `shortName`, and a `buyFor` price list.
+        // optional properties and `shortName`.
         attachedMods.map((m) => ({
           id: m.id,
           name: m.shortName,
@@ -133,14 +131,17 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
     subtitle,
     modCount,
     availability: "FLEA",
-    priceRub,
+    priceRub: args.priceRub,
     stats,
   };
 }
 
+/** One side of a pair card. The pair card shows no price. */
+export type HydrateSideArgs = Omit<HydrateBuildArgs, "priceRub">;
+
 export interface HydratePairArgs {
-  left: HydrateBuildArgs | null;
-  right: HydrateBuildArgs | null;
+  left: HydrateSideArgs | null;
+  right: HydrateSideArgs | null;
 }
 
 /**
@@ -151,8 +152,8 @@ export interface HydratePairArgs {
  * const vm = hydratePairCard({ left, right });
  */
 export function hydratePairCard(args: HydratePairArgs): PairCardViewModel {
-  const makeSide = (a: HydrateBuildArgs): SideViewModel => {
-    const vm = hydrateBuildCard(a);
+  const makeSide = (a: HydrateSideArgs): SideViewModel => {
+    const vm = hydrateBuildCard({ ...a, priceRub: null });
     return {
       weapon: a.weapon.shortName,
       modCount: vm.modCount,

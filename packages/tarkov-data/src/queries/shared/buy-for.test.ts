@@ -4,12 +4,8 @@ import {
   buyForEntrySchema,
   createOfferCollector,
   createOfferResolver,
-  extractPrices,
-  fleaPriceFromTuple,
-  fleaPriceRUB,
   offerPriceIds,
   priceOffers,
-  traderOfferKey,
   type BarterCostItem,
   type BuyForTask,
   type BuyForTrader,
@@ -104,16 +100,36 @@ describe("resolveBuyFor", () => {
     });
   });
 
-  it("emits a flea entry for a flea-tradeable item", () => {
+  it("emits a flea entry for a flea-tradeable item, priced at its lastLowPrice", () => {
+    const entries = resolveOwn(
+      {
+        types: ["mods"],
+        buyFromTrader: [],
+        minLevelForFlea: 15,
+        lastLowPrice: 4200,
+        avg24hPrice: 5000,
+      },
+      traders,
+      tasks,
+    );
+    expect(entries).toContainEqual({
+      priceRUB: 4200,
+      currency: "RUB",
+      vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 15 },
+    });
+  });
+
+  it("marks the flea entry unlisted when upstream saw no listing, whatever avg24hPrice says", () => {
     const entries = resolveOwn(
       { types: ["mods"], buyFromTrader: [], minLevelForFlea: 15, avg24hPrice: 5000 },
       traders,
       tasks,
     );
     expect(entries).toContainEqual({
-      priceRUB: 5000,
+      priceRUB: null,
       currency: "RUB",
       vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 15 },
+      unlisted: true,
     });
   });
 
@@ -229,7 +245,7 @@ describe("resolveBuyFor — defensive edge cases", () => {
     expect(entries.some((e) => e.vendor.__typename === "FleaMarket")).toBe(true);
   });
 
-  it("falls back to lastLowPrice for the flea entry when avg24hPrice is absent", () => {
+  it("prices the flea entry from lastLowPrice alone", () => {
     const entries = resolveOwn(
       { types: ["mods"], buyFromTrader: [], lastLowPrice: 777 },
       traders,
@@ -237,15 +253,6 @@ describe("resolveBuyFor — defensive edge cases", () => {
     );
     const flea = entries.find((e) => e.vendor.__typename === "FleaMarket");
     expect(flea?.priceRUB).toBe(777);
-  });
-});
-
-describe("fleaPriceRUB", () => {
-  it("prefers avg24hPrice, falls back to lastLowPrice, and is null when neither exists", () => {
-    expect(fleaPriceRUB({ avg24hPrice: 19126, lastLowPrice: 13555 })).toBe(19126);
-    expect(fleaPriceRUB({ lastLowPrice: 13555 })).toBe(13555);
-    expect(fleaPriceRUB({})).toBeNull();
-    expect(fleaPriceRUB(null)).toBeNull();
   });
 });
 
@@ -328,7 +335,8 @@ describe("createOfferResolver (captured documents)", () => {
     });
     const barter = offers.find((o) => o.vendor.__typename === "TraderBarter");
     expect(barter).toMatchObject({
-      priceRUB: 18944,
+      // One Screw nut at its lastLowPrice (its avg24hPrice is 18,944).
+      priceRUB: 21111,
       currency: null,
       vendor: { barterId: "6ad1e5d8ef48f022220a28931", minTraderLevel: 1, offeredCount: 1 },
       preset: { id: "58414967245977598f1ad391" },
@@ -344,7 +352,8 @@ describe("createOfferResolver (captured documents)", () => {
         o.vendor.__typename === "TraderBarter" && o.vendor.barterId === "6ad1e61cef48f022220a4ec81",
     );
     expect(carbine).toMatchObject({
-      priceRUB: 3 * 19126 + 18504,
+      // Three PC CPUs and a CPU fan at their lastLowPrice, not their avg24hPrice.
+      priceRUB: 3 * 13555 + 20000,
       vendor: { normalizedName: "peacekeeper", minTraderLevel: 2, costUnavailableReason: null },
       preset: { id: "5af08cf886f774223c269184" },
     });
@@ -470,75 +479,6 @@ describe("createOfferResolver — malformed records", () => {
   });
 });
 
-describe("traderOfferKey", () => {
-  it("joins seller, trader, level, quest gate and currency", () => {
-    expect(
-      traderOfferKey("item", {
-        trader: "tr",
-        minTraderLevel: 2,
-        taskUnlock: "task",
-        currency: "USD",
-        priceRUB: 1,
-      }),
-    ).toBe("item|tr|2|task|USD");
-  });
-
-  it("leaves absent or non-scalar fields empty", () => {
-    expect(traderOfferKey("item", { trader: "tr", taskUnlock: null, currency: {} })).toBe(
-      "item|tr|||",
-    );
-    expect(traderOfferKey("item", null)).toBe("item||||");
-  });
-});
-
-describe("extractPrices", () => {
-  const offer = (priceRUB: unknown) => ({
-    trader: "tr",
-    minTraderLevel: 1,
-    taskUnlock: null,
-    currency: "RUB",
-    priceRUB,
-  });
-
-  it("reads flea fields and keyed trader prices for the ids asked for", () => {
-    const items: Record<string, unknown> = {
-      a: { lastLowPrice: 10, avg24hPrice: 12, lastOfferCount: 3, buyFromTrader: [offer(500)] },
-      b: { avg24hPrice: "n/a", buyFromTrader: "none" },
-      unasked: { lastLowPrice: 1 },
-    };
-    const { table, conflicts } = extractPrices((id) => items[id], ["a", "b", "missing"]);
-    expect(table.items).toEqual({ a: [10, 12, 3], b: [null, null, null] });
-    expect(table.trader).toEqual({ "a|tr|1||RUB": 500 });
-    expect(conflicts).toEqual([]);
-  });
-
-  it("shares one price between exact duplicates, and skips malformed offers", () => {
-    const items: Record<string, unknown> = {
-      a: { buyFromTrader: [offer(500), offer(500), null, "x"] },
-    };
-    const { table, conflicts } = extractPrices((id) => items[id], ["a"]);
-    expect(table.trader).toEqual({ "a|tr|1||RUB": 500 });
-    expect(conflicts).toEqual([]);
-  });
-
-  it("prices an ambiguous key null, keeps it null, and reports it", () => {
-    const items: Record<string, unknown> = {
-      a: { buyFromTrader: [offer(500), offer(600), offer(500)] },
-    };
-    const { table, conflicts } = extractPrices((id) => items[id], ["a"]);
-    expect(table.trader["a|tr|1||RUB"]).toBeNull();
-    expect(conflicts).toEqual(["a|tr|1||RUB"]);
-  });
-});
-
-describe("fleaPriceFromTuple", () => {
-  it("prefers avg24hPrice, and is null for an item the table does not hold", () => {
-    expect(fleaPriceFromTuple(undefined)).toBeNull();
-    expect(fleaPriceFromTuple([5, null, 1])).toBe(5);
-    expect(fleaPriceFromTuple([5, 7, 1])).toBe(7);
-  });
-});
-
 describe("offerPriceIds / priceOffers", () => {
   const cash: UnpricedOffer = {
     kind: "cash",
@@ -587,6 +527,36 @@ describe("offerPriceIds / priceOffers", () => {
       { priceRUB: 150, currency: null, vendor: { ...barter.vendor, costUnavailableReason: null } },
       { priceRUB: 900, currency: "RUB", vendor: flea.vendor },
     ]);
+  });
+
+  it("marks the flea entry unlisted only when the table holds the item with no listing", () => {
+    const nameOf = () => "Nuts";
+    const unlisted = priceOffers(
+      "gun",
+      [flea],
+      { items: { gun: [null, 5000, 2] }, trader: {} },
+      nameOf,
+    );
+    expect(unlisted).toEqual([
+      { priceRUB: null, currency: "RUB", vendor: flea.vendor, unlisted: true },
+    ]);
+    const absent = priceOffers("gun", [flea], { items: {}, trader: {} }, nameOf);
+    expect(absent).toEqual([{ priceRUB: null, currency: "RUB", vendor: flea.vendor }]);
+  });
+
+  it("prices every offer unknown, and marks nothing unlisted, without a table", () => {
+    const priced = priceOffers("gun", [cash, barter, flea], null, () => "Nuts");
+    expect(priced).toEqual([
+      { priceRUB: null, currency: "RUB", vendor: cash.vendor, preset: cash.preset },
+      {
+        priceRUB: null,
+        currency: null,
+        vendor: { ...barter.vendor, costUnavailableReason: "prices have not loaded" },
+      },
+      { priceRUB: null, currency: "RUB", vendor: flea.vendor },
+    ]);
+    const presetBarter: UnpricedOffer = { ...barter, preset: cash.preset };
+    expect(priceOffers("gun", [presetBarter], null, () => "Nuts")[0]?.preset).toEqual(cash.preset);
   });
 
   it("collects nothing for a non-object item", () => {

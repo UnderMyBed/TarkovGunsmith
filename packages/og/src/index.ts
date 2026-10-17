@@ -7,5 +7,11 @@ export { pairCard } from "./pair-card.js";
 export { initResvg, renderPng } from "./render.js";
 export { truncate } from "./truncate.js";
 export type { BuildCardViewModel, PairCardViewModel, SideViewModel } from "./view-model.js";
-export type { HydrateMod, HydrateWeapon, HydrateBuildArgs, HydratePairArgs } from "./hydrate.js";
+export type {
+  HydrateMod,
+  HydrateWeapon,
+  HydrateBuildArgs,
+  HydratePairArgs,
+  HydrateSideArgs,
+} from "./hydrate.js";
 export { embeddedFonts, embeddedFallbackPng } from "./embedded-fonts.js";

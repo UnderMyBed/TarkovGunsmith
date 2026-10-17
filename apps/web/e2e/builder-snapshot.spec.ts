@@ -43,9 +43,10 @@ test.describe("Builder snapshot", () => {
       year: "numeric",
       timeZone: "UTC",
     }).format(new Date(SNAPSHOT.dataAsOf));
-    const stamp = page.locator(`time[datetime="${SNAPSHOT.dataAsOf}"]`);
-    await expect(stamp).toHaveText(label);
-    await expect(page.getByText(/^Data as of/)).toBeVisible();
+    // The prices line carries a timestamp too: from the same capture here, so the same one.
+    const dataLine = page.getByText(/^Data as of/);
+    await expect(dataLine).toBeVisible();
+    await expect(dataLine.locator(`time[datetime="${SNAPSHOT.dataAsOf}"]`)).toHaveText(label);
 
     await page.waitForLoadState("networkidle");
     expect([...new Set(upstream)]).toEqual(["/regular/items"]);

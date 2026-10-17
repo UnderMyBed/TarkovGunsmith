@@ -19,10 +19,10 @@ import {
 import { selectWeaponPresets } from "../queries/presets.js";
 import {
   createOfferCollector,
-  extractPrices,
   offerPriceIds,
   type UnpricedOffer,
 } from "../queries/shared/buy-for.js";
+import { extractPrices, newestUpdated } from "../prices/table.js";
 import {
   BUILDER_SNAPSHOT_SCHEMA,
   type BuilderPrices,
@@ -267,7 +267,7 @@ export function buildBuilderSnapshot(
       fail(untranslated(`tasks/${key}`, "name"));
   }
 
-  let newest = Number.NEGATIVE_INFINITY;
+  const newest = newestUpdated(items);
   const updatedOf = new Map<string, number>();
   const weapons: SnapshotWeapon[] = [];
   const allParts = new Map<string, SnapshotPart>();
@@ -278,7 +278,6 @@ export function buildBuilderSnapshot(
     const updated = Date.parse(String((raw as { updated?: unknown } | null)?.updated));
     if (!Number.isNaN(updated)) {
       updatedOf.set(key, updated);
-      if (updated > newest) newest = updated;
     }
 
     const type = propertiesTypeOf(raw);
@@ -306,7 +305,7 @@ export function buildBuilderSnapshot(
       else fail(`items/${key} (${type}): properties.baseItem is not a string`);
     }
   }
-  if (newest === Number.NEGATIVE_INFINITY) fail("items: no item carries an `updated` timestamp");
+  if (newest === null) fail("items: no item carries an `updated` timestamp");
 
   // Walk the slot graph from the buildable weapons. Everything a weapon can reach must be a
   // part, or it would be an option the Builder offers but cannot price, gate or add up.
@@ -467,7 +466,8 @@ export function buildBuilderSnapshot(
   }
   throwIfProblems();
 
-  const dataAsOf = new Date(newest).toISOString();
+  // `throwIfProblems` above has already failed the build when no item carries a timestamp.
+  const dataAsOf = newest!;
   const snapshot: BuilderSnapshot = {
     schema: BUILDER_SNAPSHOT_SCHEMA,
     source,

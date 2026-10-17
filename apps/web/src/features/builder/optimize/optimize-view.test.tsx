@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { OptimizeView } from "./optimize-view.js";
-import type { PlayerProfile, WeaponTree, BuildV6 } from "@tarkov/data";
+import type { PlayerProfile, WeaponListItem, WeaponTree, BuildV6 } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
 import { tinyTree } from "../../../test/tiny-tree.js";
@@ -34,6 +34,7 @@ vi.mock("@tarkov/optimizer", () => ({
 }));
 
 const weapon = { id: "w1" } as unknown as BallisticWeapon;
+const weaponItem = { id: "w1", shortName: "W", types: [], buyFor: [] } as unknown as WeaponListItem;
 const slotTree: WeaponTree = tinyTree("w1", [
   { nameId: "muzzle", name: "Muzzle", items: [] },
   { nameId: "handguard", name: "Handguard", items: [] },
@@ -65,9 +66,13 @@ describe("OptimizeView", () => {
     render(
       <OptimizeView
         weapon={weapon}
+        weaponItem={weaponItem}
         slotTree={slotTree}
         parts={[]}
         profile={profile}
+        gate={profile}
+        presets={[]}
+        pricesReady
         sync={sync}
         currentAttachments={{ muzzle: "m-old" }}
         currentBuild={{
@@ -78,7 +83,7 @@ describe("OptimizeView", () => {
           createdAt: "2026-04-22T00:00:00Z",
         }}
         currentStats={currentStats}
-        currentPrice={10_000}
+        currentPrice={{ status: "priced", totalRUB: 10_000, presetId: null }}
         onAccept={vi.fn()}
         onExit={vi.fn()}
         onEditProfile={vi.fn()}
@@ -94,9 +99,13 @@ describe("OptimizeView", () => {
     render(
       <OptimizeView
         weapon={weapon}
+        weaponItem={weaponItem}
         slotTree={slotTree}
         parts={[]}
         profile={profile}
+        gate={profile}
+        presets={[]}
+        pricesReady
         sync={sync}
         currentAttachments={{ muzzle: "m-old" }}
         currentBuild={{
@@ -107,7 +116,7 @@ describe("OptimizeView", () => {
           createdAt: "2026-04-22T00:00:00Z",
         }}
         currentStats={currentStats}
-        currentPrice={10_000}
+        currentPrice={{ status: "priced", totalRUB: 10_000, presetId: null }}
         onAccept={vi.fn()}
         onExit={vi.fn()}
         onEditProfile={vi.fn()}
@@ -126,9 +135,13 @@ describe("OptimizeView", () => {
     render(
       <OptimizeView
         weapon={weapon}
+        weaponItem={weaponItem}
         slotTree={slotTree}
         parts={[]}
         profile={profile}
+        gate={profile}
+        presets={[]}
+        pricesReady
         sync={sync}
         currentAttachments={{ muzzle: "m-old", handguard: "h-old" }}
         currentBuild={{
@@ -139,7 +152,7 @@ describe("OptimizeView", () => {
           createdAt: "2026-04-22T00:00:00Z",
         }}
         currentStats={currentStats}
-        currentPrice={10_000}
+        currentPrice={{ status: "priced", totalRUB: 10_000, presetId: null }}
         onAccept={onAccept}
         onExit={vi.fn()}
         onEditProfile={vi.fn()}

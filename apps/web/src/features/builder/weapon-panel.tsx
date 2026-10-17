@@ -1,4 +1,7 @@
+import type { BuildPrice } from "@tarkov/data";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@tarkov/ui";
+import { describeBuildPrice, type PricesStatus } from "./build-price.js";
+import { PricesLine } from "./prices-line.js";
 import { formatRequirement } from "./slot-tree.js";
 import type { WeaponOption } from "./useBuilderState.js";
 
@@ -18,6 +21,14 @@ export interface WeaponPanelProps {
   onEmbedProfileOnSaveChange: (embed: boolean) => void;
   /** When the Builder's data was taken from upstream (ISO 8601), once it has loaded. */
   dataAsOf: string | null;
+  /** Where live prices stand. */
+  prices: PricesStatus;
+  /** What the selected build costs, once it can be worked out. */
+  buildPrice: BuildPrice | null;
+  /** The preset the cost buys the weapon as, when it is one. */
+  boughtAs: string | null;
+  /** Names an item id in the cost line. */
+  nameOf: (id: string) => string;
 }
 
 const DATA_DATE = new Intl.DateTimeFormat("en-GB", {
@@ -26,6 +37,8 @@ const DATA_DATE = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
   timeZone: "UTC",
 });
+
+const META = "font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]";
 
 /**
  * The "Weapon" card: picker + profile-filtered availability toggle, plus (once a weapon is
@@ -45,6 +58,10 @@ export function WeaponPanel({
   embedProfileOnSave,
   onEmbedProfileOnSaveChange,
   dataAsOf,
+  prices,
+  buildPrice,
+  boughtAs,
+  nameOf,
 }: WeaponPanelProps) {
   const availableCount = weaponOptions.filter((w) => w.lockedBy === null).length;
   return (
@@ -57,10 +74,11 @@ export function WeaponPanel({
             : `${availableCount} weapons ${showAllWeapons ? "(all)" : "available on your profile"}`}
         </CardDescription>
         {dataAsOf !== null && (
-          <p className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
+          <p className={META}>
             Data as of <time dateTime={dataAsOf}>{DATA_DATE.format(new Date(dataAsOf))}</time>
           </p>
         )}
+        <PricesLine prices={prices} />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <select
@@ -86,6 +104,15 @@ export function WeaponPanel({
           />
           <span>Show all weapons (including locked by profile)</span>
         </label>
+        {hasSelectedWeapon && buildPrice !== null && prices.state === "ready" && (
+          <p className="flex flex-wrap items-baseline gap-x-2 text-sm" data-testid="build-cost">
+            <span className={META}>Build cost</span>
+            <span className="font-mono tabular-nums">{describeBuildPrice(buildPrice, nameOf)}</span>
+            {buildPrice.status !== "unobtainable" && boughtAs !== null && (
+              <span className={META}>bought as {boughtAs}</span>
+            )}
+          </p>
+        )}
         {hasSelectedWeapon && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">

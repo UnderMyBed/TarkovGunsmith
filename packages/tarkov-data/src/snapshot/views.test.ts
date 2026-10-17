@@ -94,6 +94,25 @@ describe("snapshotPriceIds", () => {
 });
 
 describe("snapshotWeaponPresets", () => {
+  it("leaves every preset price unknown, none unlisted, before prices arrive", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    const entries = Object.values(snapshotWeaponPresets(snapshot, null)).flatMap((list) =>
+      list.flatMap((p) => p.buyFor),
+    );
+    expect(entries.length).toBeGreaterThan(0);
+    expect(entries.every((e) => e.priceRUB === null && e.unlisted === undefined)).toBe(true);
+  });
+
+  it("marks a preset's flea entry unlisted when the table holds it with no listing", async () => {
+    const { snapshot, prices } = await fixtureSnapshot();
+    const table = {
+      ...prices.prices,
+      items: { ...prices.prices.items, [M4A1_CARBINE]: [null, 96166, 0] as const },
+    };
+    const carbine = snapshotWeaponPresets(snapshot, table)[M4A1]?.[0];
+    expect(carbine?.buyFor.at(-1)).toMatchObject({ priceRUB: null, unlisted: true });
+  });
+
   it("gives each preset its weapon's offers tagged with it, then its own flea listing", async () => {
     const { snapshot, prices } = await fixtureSnapshot();
     const byWeapon = snapshotWeaponPresets(snapshot, prices.prices);
@@ -110,9 +129,10 @@ describe("snapshotWeaponPresets", () => {
         tagged.map(() => preset.id),
       );
     }
-    // The Carbine's flea listing needs level 25 and is priced at the preset's own figure.
+    // The Carbine's flea listing needs level 25 and is priced at the preset's own lowest
+    // listing (its 24-hour average in the capture is 96,166).
     expect(byWeapon[M4A1]?.[0]?.buyFor.at(-1)).toEqual({
-      priceRUB: 96166,
+      priceRUB: 26666,
       currency: "RUB",
       vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 25 },
     });
@@ -122,7 +142,7 @@ describe("snapshotWeaponPresets", () => {
         TT_GOLDEN_DEFAULT,
         [
           {
-            priceRUB: 37045,
+            priceRUB: 31109,
             currency: "RUB",
             vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 0 },
           },

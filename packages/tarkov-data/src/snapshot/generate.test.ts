@@ -13,6 +13,7 @@ import { snapshotPartCatalog, snapshotWeaponList } from "./views.js";
 import { UPSTREAM_FLOORS } from "./limits.js";
 import type { Barter } from "../queries/barters.js";
 import type { ItemsDocument } from "../queries/documents.js";
+import type { PriceTable } from "../prices/table.js";
 
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
 const PM = "5448bd6b4bdc2dfc2f8b4569";
@@ -98,14 +99,32 @@ describe("buildBuilderSnapshot over the captured documents", () => {
     // legacy-buy-for.json is what main's `fetchOfferResolver` (at 2b8c53b, before the split
     // into unpriced offers plus a price table) returned for each of these items over these
     // same captures. Pinned values, so the split cannot drift by agreeing with itself.
+    //
+    // That resolver read the flea price as `avg24hPrice ?? lastLowPrice`; the price model now
+    // reads `lastLowPrice` (#212). Pricing from a table with each tuple's first field set to
+    // the old reading reproduces the old figures exactly, so the pin still checks the split.
+    // The `unlisted` mark is new: it may appear only where the old resolver had no flea price.
     const { snapshot, prices } = buildBuilderSnapshot(await docs(), "fixtures");
+    const oldReading: PriceTable = {
+      trader: prices.prices.trader,
+      items: Object.fromEntries(
+        Object.entries(prices.prices.items).map(([id, [low, avg, count]]) => [
+          id,
+          [avg ?? low, avg, count] as const,
+        ]),
+      ),
+    };
     const items = [
-      ...snapshotWeaponList(snapshot, prices.prices),
-      ...snapshotPartCatalog(snapshot, prices.prices),
+      ...snapshotWeaponList(snapshot, oldReading),
+      ...snapshotPartCatalog(snapshot, oldReading),
     ];
     expect(items.map((i) => i.id).sort()).toEqual(Object.keys(legacyBuyFor).sort());
     for (const item of items) {
-      expect(item.buyFor, item.id).toEqual(legacyBuyFor[item.id as keyof typeof legacyBuyFor]);
+      const entries = (item.buyFor ?? []).map(({ unlisted, ...entry }) => {
+        if (unlisted === true) expect(entry.priceRUB, item.id).toBeNull();
+        return entry;
+      });
+      expect(entries, item.id).toEqual(legacyBuyFor[item.id as keyof typeof legacyBuyFor]);
     }
   });
 

@@ -2,12 +2,12 @@ import type { AttachablePart } from "../queries/parts.js";
 import type { WeaponListItem } from "../queries/weaponList.js";
 import { expandSlots, type SlotGraph, type WeaponTree } from "../queries/slot-graph.js";
 import {
-  fleaPriceFromTuple,
   offerPriceIds,
+  priceFleaOffer,
   priceOffers,
   type BuyForEntry,
-  type PriceTable,
 } from "../queries/shared/buy-for.js";
+import type { PriceTable } from "../prices/table.js";
 import type { WeaponPreset } from "../queries/presets.js";
 import type { BuilderSnapshot, SnapshotPart } from "./types.js";
 import { ORPHANED_CAP } from "../build-schema.js";
@@ -50,7 +50,7 @@ function derive(snapshot: BuilderSnapshot): Derived {
   return out;
 }
 
-function pricedOffers(snapshot: BuilderSnapshot, id: string, prices: PriceTable) {
+function pricedOffers(snapshot: BuilderSnapshot, id: string, prices: PriceTable | null) {
   const { names } = derive(snapshot);
   const offers = snapshot.offers[id];
   // The generator records offers for every weapon and part, even an empty list.
@@ -58,10 +58,13 @@ function pricedOffers(snapshot: BuilderSnapshot, id: string, prices: PriceTable)
   return priceOffers(id, offers, prices, (key) => names.get(key));
 }
 
-/** The part catalog: every snapshot part with its offers priced from `prices`. */
+/**
+ * The part catalog: every snapshot part with its offers priced from `prices`, or with every
+ * price unknown when `prices` is `null` (live prices loading or failed).
+ */
 export function snapshotPartCatalog(
   snapshot: BuilderSnapshot,
-  prices: PriceTable,
+  prices: PriceTable | null,
 ): AttachablePart[] {
   return snapshot.parts.map((part) => ({
     ...part,
@@ -75,7 +78,7 @@ export function snapshotPartCatalog(
  */
 export function snapshotPart(
   snapshot: BuilderSnapshot,
-  prices: PriceTable,
+  prices: PriceTable | null,
   id: string,
 ): AttachablePart | undefined {
   const part = derive(snapshot).parts.get(id);
@@ -85,7 +88,7 @@ export function snapshotPart(
 /** The buildable weapons, each with its offers priced from `prices`. */
 export function snapshotWeaponList(
   snapshot: BuilderSnapshot,
-  prices: PriceTable,
+  prices: PriceTable | null,
 ): WeaponListItem[] {
   return snapshot.weapons.map((weapon) => ({
     ...weapon,
@@ -136,7 +139,7 @@ export interface PricedPreset extends WeaponPreset {
 /** Weapon id → its presets (default first), each with its offers priced from `prices`. */
 export function snapshotWeaponPresets(
   snapshot: BuilderSnapshot,
-  prices: PriceTable,
+  prices: PriceTable | null,
 ): Record<string, PricedPreset[]> {
   const out: Record<string, PricedPreset[]> = {};
   for (const [weaponId, list] of Object.entries(snapshot.presets)) {
@@ -144,15 +147,18 @@ export function snapshotWeaponPresets(
     out[weaponId] = list.map(({ flea, ...preset }) => {
       const buyFor = weaponOffers.filter((entry) => entry.preset?.id === preset.id);
       if (flea !== null) {
-        buyFor.push({
-          priceRUB: fleaPriceFromTuple(prices.items[preset.id]),
-          currency: "RUB",
-          vendor: {
-            __typename: "FleaMarket",
-            normalizedName: "flea-market",
-            minPlayerLevel: flea.minPlayerLevel,
-          },
-        });
+        // The preset's own listing, priced by the same rule as any flea offer.
+        buyFor.push(
+          priceFleaOffer(
+            preset.id,
+            {
+              __typename: "FleaMarket",
+              normalizedName: "flea-market",
+              minPlayerLevel: flea.minPlayerLevel,
+            },
+            prices,
+          ),
+        );
       }
       return { ...preset, buyFor };
     });

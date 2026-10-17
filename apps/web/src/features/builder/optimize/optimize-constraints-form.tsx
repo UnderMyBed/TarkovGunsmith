@@ -19,9 +19,16 @@ interface Props {
   state: ConstraintsState;
   dispatch: (action: ConstraintsAction) => void;
   slotTree: WeaponTree;
+  /** A budget is checked against live prices, so the field waits for them. */
+  pricesReady: boolean;
 }
 
-export function OptimizeConstraintsForm({ state, dispatch, slotTree }: Props): ReactElement {
+export function OptimizeConstraintsForm({
+  state,
+  dispatch,
+  slotTree,
+  pricesReady,
+}: Props): ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -50,7 +57,9 @@ export function OptimizeConstraintsForm({ state, dispatch, slotTree }: Props): R
         <Input
           type="number"
           min={0}
-          placeholder="No cap"
+          aria-label="Budget"
+          disabled={!pricesReady}
+          placeholder={pricesReady ? "No cap" : "Budget needs prices"}
           value={state.budgetRub !== undefined ? String(state.budgetRub) : ""}
           onChange={(e) => dispatch({ type: "SET_BUDGET", value: e.target.value })}
         />

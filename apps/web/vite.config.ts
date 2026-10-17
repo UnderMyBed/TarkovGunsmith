@@ -20,6 +20,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // The price worker (`src/prices.worker.ts`) is a module worker, so its chunk is ES too.
+  worker: { format: "es" },
   server: {
     port: 5173,
     proxy: {

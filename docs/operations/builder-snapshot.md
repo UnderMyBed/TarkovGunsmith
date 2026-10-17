@@ -9,9 +9,15 @@ from `json.tarkov.dev` at runtime. The decision and its reasons are in
 | `/data/builder-snapshot.json` | Buildable weapons, every part a weapon's slots reach, the slot graph, each weapon's presets, every offer without its price, traders, tasks, and `dataAsOf` | The SPA (Builder, Compare) and the OG card Functions |
 | `/data/builder-prices.json`   | The prices of those offers, as of the same documents                                                                                                       | The OG card Functions only                           |
 
-The SPA prices offers from live data: it fetches the raw `items` document (no translations) and
-reads only its price fields, refreshed hourly. A share card is cached for 30 days, so it prices
-from the release-time file.
+The SPA prices offers from live data: a Web Worker fetches the raw `items` document (no
+translations) and posts back only the price fields of the snapshot's ids, so the parse never
+runs on the main thread. Prices load when a Builder page first needs them. They are fetched
+again only once they are more than an hour old and the window regains focus or a page that
+reads them mounts; nothing polls. Each load is one request: the browser's HTTP cache answers
+when the last fetch from upstream was within the hour (the SPA keeps that time in
+`localStorage`), and otherwise the request goes out with `no-cache`. If that request fails, a
+second one asks the HTTP cache for whatever copy it holds, within 5 s; the prices then show that
+copy's age. A share card is cached for 30 days, so it prices from the release-time file.
 
 `dataAsOf` is the newest `updated` timestamp in the items document. Upstream refreshes some item
 every few minutes, so in practice it is when the snapshot was taken, not when the game last

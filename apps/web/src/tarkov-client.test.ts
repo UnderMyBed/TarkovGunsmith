@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   builderData,
   BUILDER_SNAPSHOT_URL,
+  localFetchedAtStore,
   tarkovClient,
   TARKOV_JSON_API_BASE,
 } from "./tarkov-client.js";
@@ -21,5 +22,46 @@ describe("builderData", () => {
     expect(BUILDER_SNAPSHOT_URL).toBe("/data/builder-snapshot.json");
     expect(typeof builderData.snapshot).toBe("function");
     expect(typeof builderData.prices).toBe("function");
+  });
+});
+
+describe("localFetchedAtStore", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function storage(fail: boolean) {
+    const data = new Map<string, string>();
+    return {
+      getItem: (key: string) => {
+        if (fail) throw new DOMException("blocked", "SecurityError");
+        return data.get(key) ?? null;
+      },
+      setItem: (key: string, value: string) => {
+        if (fail) throw new DOMException("blocked", "SecurityError");
+        data.set(key, value);
+      },
+    };
+  }
+
+  it("keeps the last fetch time across stores, as across page loads", () => {
+    vi.stubGlobal("localStorage", storage(false));
+    expect(localFetchedAtStore().get()).toBeNull();
+    localFetchedAtStore().set(1_792_198_082_000);
+    expect(localFetchedAtStore().get()).toBe(1_792_198_082_000);
+  });
+
+  it("ignores a stored time in the future, from a skewed clock or a corrupt value", () => {
+    vi.stubGlobal("localStorage", storage(false));
+    localStorage.setItem("tarkov:prices-fetched-at", "9e15");
+    expect(localFetchedAtStore().get()).toBeNull();
+    localStorage.setItem("tarkov:prices-fetched-at", String(Date.now() + 60_000));
+    expect(localFetchedAtStore().get()).toBeNull();
+  });
+
+  it("lasts as long as the page where storage is refused", () => {
+    vi.stubGlobal("localStorage", storage(true));
+    const store = localFetchedAtStore();
+    expect(store.get()).toBeNull();
+    store.set(1_792_198_082_000);
+    expect(store.get()).toBe(1_792_198_082_000);
   });
 });

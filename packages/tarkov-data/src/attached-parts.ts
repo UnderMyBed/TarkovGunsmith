@@ -89,8 +89,3 @@ export function attachedParts(
   }
   return { entries, missing };
 }
-
-/** The flea-market price of one part in RUB, or 0 when it has no flea offer. */
-export function fleaPriceRub(part: AttachablePart): number {
-  return (part.buyFor ?? []).find((b) => b.vendor.__typename === "FleaMarket")?.priceRUB ?? 0;
-}

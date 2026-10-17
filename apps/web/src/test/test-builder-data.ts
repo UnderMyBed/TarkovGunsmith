@@ -22,7 +22,7 @@ export async function createTestBuilderData(client: TarkovJsonClient): Promise<B
       await fetchSnapshotDocuments(client),
       "fixtures",
     );
-    return staticBuilderDataSource(snapshot, prices.prices);
+    return staticBuilderDataSource(snapshot, prices);
   } catch (error) {
     // Only an upstream failure is the intended error state. Anything else — drift in the
     // hand fixtures, a generator bug — fails the test that built this, rather than quietly

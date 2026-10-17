@@ -28,6 +28,7 @@ import { usePartCatalog } from "./usePartCatalog.js";
 import { useTasks } from "./useTasks.js";
 import { useTraders } from "./useTraders.js";
 import { useWeaponList } from "./useWeaponList.js";
+import { useLivePrices } from "./useLivePrices.js";
 import { useWeaponPresets } from "./useWeaponPresets.js";
 import { useBuilderSnapshot } from "./useBuilderSnapshot.js";
 import { fixtureBuilderData, fixtureSnapshot } from "../__test-utils__/fixture-snapshot.js";
@@ -169,20 +170,64 @@ async function rejectBuilderHook(hook: () => { error: Error | null; isError: boo
 }
 
 describe("Builder hooks", () => {
-  it("usePartCatalog prices the snapshot's parts", async () => {
+  it("usePartCatalog prices the snapshot's parts once live prices arrive", async () => {
     const { snapshot, prices } = await fixtureSnapshot();
-    expect(await resolveBuilderHook(() => usePartCatalog())).toEqual(
-      snapshotPartCatalog(snapshot, prices.prices),
+    const { result } = renderHook(() => usePartCatalog(), {
+      wrapper: withTarkovProvider(fixtureClient(), await fixtureBuilderData()),
+    });
+    await waitFor(() =>
+      expect(result.current.data).toEqual(snapshotPartCatalog(snapshot, prices.prices)),
     );
     expect(await rejectBuilderHook(() => usePartCatalog())).toBe("game data down");
   });
 
-  it("useWeaponList prices the snapshot's weapons", async () => {
+  it("useWeaponList prices the snapshot's weapons once live prices arrive", async () => {
     const { snapshot, prices } = await fixtureSnapshot();
-    expect(await resolveBuilderHook(() => useWeaponList())).toEqual(
-      snapshotWeaponList(snapshot, prices.prices),
+    const { result } = renderHook(() => useWeaponList(), {
+      wrapper: withTarkovProvider(fixtureClient(), await fixtureBuilderData()),
+    });
+    await waitFor(() =>
+      expect(result.current.data).toEqual(snapshotWeaponList(snapshot, prices.prices)),
     );
     expect(await rejectBuilderHook(() => useWeaponList())).toBe("game data down");
+  });
+
+  it("serves the weapons and parts before prices arrive, every price unknown", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    const waiting: BuilderDataSource = {
+      snapshot: () => Promise.resolve(snapshot),
+      prices: () => new Promise(() => undefined),
+    };
+    const { result } = renderHook(() => ({ parts: usePartCatalog(), weapons: useWeaponList() }), {
+      wrapper: withTarkovProvider(fixtureClient(), waiting),
+    });
+    await waitFor(() => expect(result.current.parts.isSuccess).toBe(true));
+    expect(result.current.parts.data).toEqual(snapshotPartCatalog(snapshot, null));
+    expect(result.current.weapons.data).toEqual(snapshotWeaponList(snapshot, null));
+  });
+
+  it("keeps serving them, unpriced, when prices fail; useLivePrices reports why", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    const noPrices: BuilderDataSource = {
+      snapshot: () => Promise.resolve(snapshot),
+      prices: () => Promise.reject(new Error("json.tarkov.dev answered 503")),
+    };
+    const { result } = renderHook(() => ({ parts: usePartCatalog(), prices: useLivePrices() }), {
+      wrapper: withTarkovProvider(fixtureClient(), noPrices),
+    });
+    await waitFor(() => expect(result.current.prices.isError).toBe(true), { timeout: 5000 });
+    expect(result.current.prices.error?.message).toBe("json.tarkov.dev answered 503");
+    expect(result.current.parts.isSuccess).toBe(true);
+    expect(result.current.parts.data).toEqual(snapshotPartCatalog(snapshot, null));
+  });
+
+  it("useLivePrices returns the table and its age", async () => {
+    const { prices } = await fixtureSnapshot();
+    expect(await resolveBuilderHook(() => useLivePrices())).toEqual({
+      table: prices.prices,
+      asOf: prices.dataAsOf,
+      fetchedAt: Date.parse(prices.dataAsOf),
+    });
   });
 
   it("useWeaponPresets prices the snapshot's presets", async () => {

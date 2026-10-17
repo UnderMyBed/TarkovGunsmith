@@ -29,6 +29,10 @@ function props(overrides: Partial<WeaponPanelProps> = {}): WeaponPanelProps {
     embedProfileOnSave: false,
     onEmbedProfileOnSaveChange: () => {},
     dataAsOf: null,
+    prices: { state: "loading" },
+    buildPrice: null,
+    boughtAs: null,
+    nameOf: (id) => id,
     ...overrides,
   };
 }
@@ -61,5 +65,72 @@ describe("WeaponPanel", () => {
     );
     // The count is of weapons the profile can obtain; the locked current one is not among them.
     expect(screen.getByText("1 weapons available on your profile")).toBeInTheDocument();
+  });
+
+  it("says where prices stand, and shows a cost only once they are in", () => {
+    const priced = {
+      hasSelectedWeapon: true,
+      buildPrice: { status: "priced" as const, totalRUB: 52_999, presetId: "p" },
+      boughtAs: "AKM Default",
+    };
+    const { rerender } = render(<WeaponPanel {...props(priced)} />);
+    expect(screen.getByText("Prices loading…")).toBeInTheDocument();
+    expect(screen.queryByTestId("build-cost")).not.toBeInTheDocument();
+
+    rerender(
+      <WeaponPanel
+        {...props({
+          ...priced,
+          prices: { state: "error", message: "json.tarkov.dev answered 503" },
+        })}
+      />,
+    );
+    expect(
+      screen.getByText("Prices unavailable: json.tarkov.dev answered 503"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("build-cost")).not.toBeInTheDocument();
+
+    const asOf = "2026-10-17T01:50:29.000Z";
+    rerender(<WeaponPanel {...props({ ...priced, prices: { state: "ready", asOf } })} />);
+    expect(screen.getByText(/^Prices as of/).querySelector("time")).toHaveAttribute(
+      "datetime",
+      asOf,
+    );
+    expect(screen.getByTestId("build-cost")).toHaveTextContent(
+      "Build cost₽52,999bought as AKM Default",
+    );
+  });
+
+  it("names what keeps a build from a total", () => {
+    const ready = {
+      hasSelectedWeapon: true,
+      prices: { state: "ready" as const, asOf: "2026-10-17T01:50:29.000Z" },
+    };
+    const names: Record<string, string> = { stock: "Phase5 Mini Stock", gun: "AKM" };
+    const nameOf = (id: string) => names[id] ?? id;
+    const { rerender } = render(
+      <WeaponPanel
+        {...props({
+          ...ready,
+          nameOf,
+          boughtAs: "AKM Default",
+          buildPrice: { status: "unknown", knownRUB: 763_842, unpriced: ["stock"], presetId: "p" },
+        })}
+      />,
+    );
+    expect(screen.getByTestId("build-cost")).toHaveTextContent(
+      "Build cost₽763,842 known; no price for Phase5 Mini Stockbought as AKM Default",
+    );
+    rerender(
+      <WeaponPanel
+        {...props({
+          ...ready,
+          nameOf,
+          boughtAs: null,
+          buildPrice: { status: "unobtainable", missing: ["gun"] },
+        })}
+      />,
+    );
+    expect(screen.getByTestId("build-cost")).toHaveTextContent("Build costCan't be bought: AKM");
   });
 });

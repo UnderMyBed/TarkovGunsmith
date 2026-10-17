@@ -2,20 +2,25 @@ import type { HydrateMod, HydrateWeapon } from "@tarkov/og";
 import type { AvailabilityMod, AvailabilityOffer } from "./og-availability.js";
 import {
   adaptMod,
+  buildPriceUnder,
   mountedAttachments,
   parseBuilderPrices,
   parseBuilderSnapshot,
   snapshotPart,
+  snapshotWeaponList,
+  snapshotWeaponPresets,
   snapshotWeaponTree,
+  type AttachablePart,
   type BuilderPrices,
   type BuilderSnapshot,
   type BuyForEntry,
+  type PriceGate,
 } from "@tarkov/data";
 
 /**
- * The mods returned here serve two consumers: `hydrateBuildCard` totals `buyFor[].priceRUB`
- * (priced offers only), and `availabilityPillText` reads `offers` (every offer, priced or not).
- * This intersection type lets TypeScript see that one row satisfies both contracts.
+ * The mods returned here serve two consumers: `hydrateBuildCard` draws their stats, and
+ * `availabilityPillText` reads `offers` (every offer, priced or not). This intersection type
+ * lets TypeScript see that one row satisfies both contracts.
  */
 export type OgMod = HydrateMod & AvailabilityMod;
 
@@ -76,6 +81,11 @@ interface Args {
   weaponId: string;
   /** The saved build's attachments, slot path → item id. */
   attachments: Readonly<Record<string, string>>;
+  /**
+   * Whose gates price the card: the author's embedded profile, or `null` (theorycraft, the
+   * cheapest path anyone can use) for a build saved without one.
+   */
+  gate: PriceGate;
 }
 
 /**
@@ -94,15 +104,6 @@ function availabilityOffers(buyFor: readonly BuyForEntry[]): AvailabilityOffer[]
 }
 
 /**
- * The prices the card totals: only the priced offers. A part with none leaves the card's
- * total out rather than counting it at 0 — `hydrateBuildCard` omits the total when any mod
- * has no price.
- */
-function cardPrices(buyFor: readonly BuyForEntry[]): { priceRUB: number }[] {
-  return buyFor.flatMap((entry) => (entry.priceRUB === null ? [] : [{ priceRUB: entry.priceRUB }]));
-}
-
-/**
  * The weapon and mounted parts of a saved build, as the card draws them.
  *
  * @throws When the build's weapon is not in the snapshot.
@@ -115,10 +116,15 @@ export function fetchOgRowsForBuild(
   mods: OgMod[];
   /** The attachments actually on the weapon (`mountedAttachments`); the card counts these. */
   attachments: Record<string, string>;
+  /**
+   * The build's price under `args.gate` by the Builder's own rule (`buildPriceUnder`): weapon
+   * or preset plus parts, at the release's prices. `null` unless every price is known.
+   */
+  priceRub: number | null;
 } {
   const { snapshot } = data;
   const table = data.prices.prices;
-  const found = snapshot.weapons.find((w) => w.id === args.weaponId);
+  const found = snapshotWeaponList(snapshot, table).find((w) => w.id === args.weaponId);
   if (found === undefined) throw new Error(`og: weapon ${args.weaponId} not found`);
 
   const weapon: HydrateWeapon = {
@@ -150,12 +156,14 @@ export function fetchOgRowsForBuild(
   );
 
   const mods: OgMod[] = [];
+  const priced = new Map<string, AttachablePart>();
   for (const id of new Set(Object.values(attachments))) {
     // The same part record and adapter the Builder uses, so a barrel, scope or magazine counts
     // here exactly as it does on the page, and cylinder ammo adds weight but no stat modifiers.
     // An id the snapshot does not hold (gone upstream) is left off the card.
     const part = snapshotPart(snapshot, table, id);
     if (part === undefined) continue;
+    priced.set(id, part);
     const stats = adaptMod(part);
     mods.push({
       id,
@@ -170,10 +178,18 @@ export function fetchOgRowsForBuild(
       deviationMax: stats.deviationMax,
       velocity: stats.velocity,
       sightingRange: stats.sightingRange,
-      buyFor: cardPrices(part.buyFor ?? []),
       offers: availabilityOffers(part.buyFor ?? []),
     });
   }
 
-  return { weapon, mods, attachments };
+  // One entry per filled slot, so a part fitted twice is paid for twice, as in the Builder.
+  const parts = Object.values(attachments).flatMap((id) => {
+    const part = priced.get(id);
+    return part === undefined ? [] : [part];
+  });
+  // The weapon's presets, as the Builder passes them (`priceBuild`): a build bought as a preset
+  // does not pay again for the parts it comes with.
+  const presets = snapshotWeaponPresets(snapshot, table)[args.weaponId] ?? [];
+  const price = buildPriceUnder(args.gate, { weapon: found, parts, presets });
+  return { weapon, mods, attachments, priceRub: price.status === "priced" ? price.totalRUB : null };
 }

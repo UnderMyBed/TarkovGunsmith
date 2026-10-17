@@ -146,7 +146,7 @@ function createTasksData(mode?: "error" | "pending"): BuilderDataSource {
     },
     "fixtures",
   );
-  return staticBuilderDataSource(snapshot, prices.prices);
+  return staticBuilderDataSource(snapshot, prices);
 }
 
 /** The editor reads no upstream resource itself; every request is a test bug. */

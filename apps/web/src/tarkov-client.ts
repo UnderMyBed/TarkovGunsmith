@@ -1,5 +1,5 @@
-import { createBuilderDataSource, createTarkovClient } from "@tarkov/data";
-import type { BuilderDataSource, TarkovJsonClient } from "@tarkov/data";
+import { createBuilderDataSource, createTarkovClient, memoryFetchedAtStore } from "@tarkov/data";
+import type { BuilderDataSource, FetchedAtStore, TarkovJsonClient } from "@tarkov/data";
 
 /**
  * Base URL for the tarkov.dev JSON API, including game mode.
@@ -15,8 +15,49 @@ export const BUILDER_SNAPSHOT_URL = "/data/builder-snapshot.json";
 
 export const tarkovClient: TarkovJsonClient = createTarkovClient(TARKOV_JSON_API_BASE);
 
-/** The Builder's game data from the snapshot, priced from upstream's live items document. */
+const FETCHED_AT_KEY = "tarkov:prices-fetched-at";
+
+/**
+ * When prices were last fetched from upstream, kept in `localStorage` so the next page load
+ * lets the HTTP cache answer within the hour. Where storage is unavailable (private windows,
+ * blocked site data) it lasts as long as the page, which costs one uncached fetch per load.
+ */
+export function localFetchedAtStore(): FetchedAtStore {
+  const memory = memoryFetchedAtStore();
+  return {
+    get: () => {
+      try {
+        const value = Number(localStorage.getItem(FETCHED_AT_KEY));
+        // A time in the future is not a fetch that happened: a skewed clock or a corrupt value.
+        return Number.isFinite(value) && value > 0 && value <= Date.now() ? value : memory.get();
+      } catch {
+        return memory.get();
+      }
+    },
+    set: (fetchedAt) => {
+      memory.set(fetchedAt);
+      try {
+        localStorage.setItem(FETCHED_AT_KEY, String(fetchedAt));
+      } catch {
+        // Storage refused: the in-memory copy above still serves this page.
+      }
+    },
+  };
+}
+
+/**
+ * The Builder's game data from the snapshot, priced from upstream's live items document in a
+ * Web Worker (`prices.worker.ts`). Where `Worker` does not exist — Node, the unit tests — the
+ * prices are fetched on the calling thread instead.
+ */
 export const builderData: BuilderDataSource = createBuilderDataSource({
   snapshotUrl: BUILDER_SNAPSHOT_URL,
   itemsUrl: `${TARKOV_JSON_API_BASE}items`,
+  fetchedAtStore: localFetchedAtStore(),
+  ...(typeof Worker === "undefined"
+    ? {}
+    : {
+        createPriceWorker: () =>
+          new Worker(new URL("./prices.worker.ts", import.meta.url), { type: "module" }),
+      }),
 });

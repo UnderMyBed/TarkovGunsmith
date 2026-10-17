@@ -22,6 +22,8 @@ function makeState(overrides: Partial<BnbState> = {}): BnbState {
     pinnedSlots: new Map(),
     objective: "min-recoil",
     budgetRub: undefined,
+    // One free way to buy the weapon: these tests are about the parts.
+    paths: [{ price: 0, covers: new Map() }],
     deadline: Number.POSITIVE_INFINITY,
     onNodeVisit: () => true,
     ...overrides,
@@ -200,7 +202,7 @@ describe("branchAndBound", () => {
 
   it("handles a pinned item that is unavailable under the player profile (priceOrNull=null path)", () => {
     // Pin muzzle to a specific item; use fleaOff so the item isn't
-    // available — `cheapestPrice` returns null, DFS proceeds at price 0.
+    // available — it has no price under the profile, which is never 0.
     // Also exercises the `?? []` fallback when the pinned item id isn't
     // found in slot.allowedItems (since pinning bypasses the compatibility
     // filter in slotCandidates).
@@ -214,7 +216,8 @@ describe("branchAndBound", () => {
     );
     expect(best).not.toBeNull();
     expect(best!.attachments.muzzle).toBe("muzzle_brake");
-    expect(best!.price).toBe(0); // pinned-unavailable item billed at 0
+    // No budget, so the unknown price rules nothing out; it is still not billed at 0.
+    expect(best!.price).toBe(Number.POSITIVE_INFINITY);
   });
 
   it("picks the lexicographically-smaller build on a score+price tie (tie-break branch)", () => {
@@ -384,7 +387,7 @@ describe("branchAndBound — unpriced but obtainable candidates", () => {
     expect(best!.attachments.muzzle).toBe("muzzle_brake");
   });
 
-  it("still honours a pin on it under a budget", () => {
+  it("cannot show a pin on it fits a budget (optimize refuses that run first)", () => {
     const best = branchAndBound(
       makeState({
         parts: partsById(mods),
@@ -393,6 +396,50 @@ describe("branchAndBound — unpriced but obtainable candidates", () => {
       }),
       SMALL_TREE.slots,
     );
+    expect(best).toBeNull();
+  });
+
+  it("takes it free on a path that supplies it, and charges it on one that does not", () => {
+    const supplied = { price: 4000, covers: new Map([["muzzle_brake", 1]]) };
+    const best = branchAndBound(
+      makeState({
+        parts: partsById(mods),
+        budgetRub: 5000,
+        paths: [{ price: 1000, covers: new Map() }, supplied],
+      }),
+      SMALL_TREE.slots,
+    );
+    // The brake is free through the 4000 path (grip 900 on top: 4900); on the 1000 path its
+    // unknown price could never fit.
     expect(best!.attachments.muzzle).toBe("muzzle_brake");
+    expect(best!.price).toBe(4900);
+  });
+});
+
+describe("branchAndBound — the weapon's price counts against the budget", () => {
+  it("leaves less of the budget for parts", () => {
+    // brake 1500 + grip 900 + stock 2200 = 4600: fits 5000 with a free gun, not with a 1000 one.
+    const free = branchAndBound(makeState({ budgetRub: 5000 }), SMALL_TREE.slots);
+    expect(Object.keys(free!.attachments)).toHaveLength(3);
+    const paid = branchAndBound(
+      makeState({ budgetRub: 5000, paths: [{ price: 1000, covers: new Map() }] }),
+      SMALL_TREE.slots,
+    );
+    expect(Object.keys(paid!.attachments).length).toBeLessThan(3);
+    expect(paid!.price).toBeLessThanOrEqual(5000);
+  });
+
+  it("uses the cheapest path, and an unknown path price never fits", () => {
+    const best = branchAndBound(
+      makeState({
+        budgetRub: 5000,
+        paths: [
+          { price: Number.POSITIVE_INFINITY, covers: new Map() },
+          { price: 400, covers: new Map() },
+        ],
+      }),
+      SMALL_TREE.slots,
+    );
+    expect(best!.price).toBe(5000);
   });
 });

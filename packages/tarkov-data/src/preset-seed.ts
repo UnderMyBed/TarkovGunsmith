@@ -1,5 +1,5 @@
 import type { PlayerProfile } from "./build-schema.js";
-import { itemAvailability, type ItemAvailability } from "./item-availability.js";
+import { itemAvailability, type ItemAvailability, type PriceGate } from "./item-availability.js";
 import type { BuyForEntry } from "./queries/shared/buy-for.js";
 import type { WeaponPreset } from "./queries/presets.js";
 
@@ -12,20 +12,21 @@ import type { WeaponPreset } from "./queries/presets.js";
 export type BuilderMode = "theorycraft" | "progression";
 
 /**
- * Whether the profile can buy this preset as a whole: its trader offers and barters (the
- * entries its weapon's offers carry tagged with this preset) and its own flea listing, as
- * `snapshotWeaponPresets` prices them. The flea listing is the preset's, not the weapon's:
- * an assembled preset is listed on the flea in its own right, at its own price (329 of the
- * 399 live weapon presets are), while the weapon's flea offer is the bare receiver's.
+ * Whether `gate` (a profile, or `null` in theorycraft) can buy this preset as a whole: its
+ * trader offers and barters (the entries its weapon's offers carry tagged with this preset)
+ * and its own flea listing, as `snapshotWeaponPresets` prices them. An assembled preset is
+ * listed on the flea under its own id (329 of the 399 live weapon presets are). The weapon's
+ * own flea price is not a bare receiver's: wherever both are listed it equals the default
+ * preset's (143 of 143 on 2026-10-17), so the default's listing prices the same thing.
  *
  * `types` is empty because the snapshot already left out the flea listing of a preset upstream
  * flags `noFlea`, which is the only thing `itemAvailability` reads `types` for.
  */
 export function presetAvailability(
   preset: { readonly buyFor: readonly BuyForEntry[] },
-  profile: PlayerProfile,
+  gate: PriceGate,
 ): ItemAvailability {
-  return itemAvailability({ buyFor: preset.buyFor, types: [] }, profile);
+  return itemAvailability({ buyFor: preset.buyFor, types: [] }, gate);
 }
 
 export interface PresetSeed {

@@ -86,18 +86,21 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     const data = await loadOgData(env.ASSETS, request.url);
     const dataMs = Date.now() - dataStartedAt;
     const rows = fetchOgRowsForBuild(
-      { weaponId: build.weaponId, attachments: build.attachments },
+      {
+        weaponId: build.weaponId,
+        attachments: build.attachments,
+        // The author's profile when the build carries one, else the cheapest path anyone can use.
+        gate: build.profileSnapshot ?? null,
+      },
       data,
     );
     const vm = hydrateBuildCard({
       build: { ...build, attachments: rows.attachments },
       weapon: rows.weapon,
+      priceRub: rows.priceRub,
       mods: rows.mods,
     });
-    vm.availability = availabilityPillText(
-      rows.mods,
-      build.profileSnapshot ?? DEFAULT_PROFILE,
-    );
+    vm.availability = availabilityPillText(rows.mods, build.profileSnapshot ?? DEFAULT_PROFILE);
 
     const png = await renderPng(buildCard(vm), embeddedFonts(), { width: 1200, height: 630 });
     const body = new Uint8Array(png);

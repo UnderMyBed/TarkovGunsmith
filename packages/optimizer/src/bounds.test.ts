@@ -4,7 +4,12 @@ import { lowerBoundForRemaining } from "./bounds.js";
 import { slotCandidates } from "./feasibility.js";
 import { optimize } from "./optimize.js";
 import { M4A1_MODS, M4A1_TREE, M4A1_WEAPON } from "./__fixtures__/m4a1-like.js";
-import { SMALL_WEAPON, SMALL_MODS, SMALL_TREE } from "./__fixtures__/small-weapon.js";
+import {
+  SMALL_WEAPON,
+  SMALL_WEAPON_ITEM,
+  SMALL_MODS,
+  SMALL_TREE,
+} from "./__fixtures__/small-weapon.js";
 import { adaptMod, partsById, type AttachablePart, type PlayerProfile } from "@tarkov/data";
 
 const PARTS = partsById(SMALL_MODS);
@@ -234,6 +239,8 @@ describe("the max-accuracy bound is admissible", { timeout: 60_000 }, () => {
   function solve(catalog: readonly AttachablePart[], pins: ReadonlyMap<string, string | null>) {
     return optimize({
       weapon: M4A1_WEAPON,
+      // No budget, so the weapon's offers only break ties: any obtainable gun will do.
+      weaponItem: SMALL_WEAPON_ITEM,
       slotTree: M4A1_TREE,
       parts: [...catalog],
       constraints: { profile, pinnedSlots: new Map(pins) },

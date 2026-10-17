@@ -4,21 +4,14 @@ export {
   createOfferCollector,
   createOfferResolver,
   barterCostRUB,
-  extractPrices,
-  fleaPriceFromTuple,
-  fleaPriceRUB,
   offerPriceIds,
   priceOffers,
-  priceTupleOf,
-  traderOfferKey,
 } from "./queries/shared/buy-for.js";
 export type {
   BuyForEntry,
   Vendor,
   BuyForTrader,
   BuyForTask,
-  ExtractedPrices,
-  ItemPriceTuple,
   OfferCollector,
   OfferPreset,
   OfferResolver,
@@ -26,9 +19,9 @@ export type {
   BarterCost,
   BarterCostInput,
   BarterCostItem,
-  PriceTable,
   UnpricedOffer,
 } from "./queries/shared/buy-for.js";
+export * from "./prices/index.js";
 export type { TarkovJsonClient } from "./client.js";
 export { mergeTranslations } from "./translations.js";
 export type { TranslatedDocument } from "./translations.js";
@@ -50,12 +43,7 @@ export type { Barter, BarterItem } from "./queries/barters.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
 export { partsById, isModLikePart } from "./queries/parts.js";
 export type { AttachablePart, AttachablePartType, ModLikePart } from "./queries/parts.js";
-export {
-  attachedParts,
-  fleaPriceRub,
-  mountedAttachments,
-  withAttachment,
-} from "./attached-parts.js";
+export { attachedParts, mountedAttachments, withAttachment } from "./attached-parts.js";
 export { conflictsWith } from "./conflicts.js";
 export type { Conflict, ConflictContext, ConflictFields } from "./conflicts.js";
 export type { AttachedParts, AttachedPartEntry, KnownItems } from "./attached-parts.js";
@@ -84,6 +72,7 @@ export { useWeapon } from "./hooks/useWeapon.js";
 export { useWeaponList } from "./hooks/useWeaponList.js";
 export { useWeaponPresets } from "./hooks/useWeaponPresets.js";
 export { usePartCatalog } from "./hooks/usePartCatalog.js";
+export { useLivePrices } from "./hooks/useLivePrices.js";
 export { useSaveBuild } from "./hooks/useSaveBuild.js";
 export { useLoadBuild } from "./hooks/useLoadBuild.js";
 export { useLoadPair } from "./hooks/useLoadPair.js";
@@ -144,8 +133,27 @@ export {
   snapshotWeaponTree,
 } from "./snapshot/views.js";
 export type { PricedPreset } from "./snapshot/views.js";
-export { createBuilderDataSource, staticBuilderDataSource } from "./snapshot/source.js";
-export type { BuilderDataSource, BuilderDataSourceOptions } from "./snapshot/source.js";
+export {
+  createBuilderDataSource,
+  memoryFetchedAtStore,
+  staticBuilderDataSource,
+} from "./snapshot/source.js";
+export { requestPricesFromWorker } from "./snapshot/source.js";
+export type {
+  BuilderDataSource,
+  BuilderDataSourceOptions,
+  FetchedAtStore,
+  PriceWorker,
+} from "./snapshot/source.js";
+export { buildPriceUnder, builderMode, priceGate, priceUnder, weaponPaths } from "./price-under.js";
+export type {
+  BuildPrice,
+  BuildPriceInput,
+  PresetContents,
+  PricedPart,
+  PriceGate,
+  WeaponPath,
+} from "./price-under.js";
 export { useBuilderSnapshot } from "./hooks/useBuilderSnapshot.js";
 
 // Weapon tree (slot-based compatibility)
@@ -180,7 +188,7 @@ export type { SlotNodeForMigration } from "./build-migrations.js";
 
 // Progression gating
 export { itemAvailability } from "./item-availability.js";
-export type { ItemAvailability, TraderPayment } from "./item-availability.js";
+export type { AvailabilityInput, ItemAvailability, TraderPayment } from "./item-availability.js";
 export { MARQUEE_QUEST_NORMALIZED_NAMES } from "./marquee-quests.js";
 export { isProfileTrader, tradersSchema } from "./queries/traders.js";
 export type { TraderListItem } from "./queries/traders.js";

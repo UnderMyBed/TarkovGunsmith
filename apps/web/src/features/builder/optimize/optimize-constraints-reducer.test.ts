@@ -5,7 +5,7 @@ import {
   toOptimizerInput,
   type ConstraintsState,
 } from "./optimize-constraints-reducer.js";
-import type { PlayerProfile } from "@tarkov/data";
+import type { PlayerProfile, WeaponListItem } from "@tarkov/data";
 
 const profile: PlayerProfile = {
   mode: "basic",
@@ -102,6 +102,13 @@ describe("constraintsReducer", () => {
 });
 
 describe("toOptimizerInput", () => {
+  const weaponItem = {
+    id: "w1",
+    shortName: "W",
+    types: [],
+    buyFor: [],
+  } as unknown as WeaponListItem;
+
   it("builds an OptimizationInput from ConstraintsState + deps", () => {
     const state: ConstraintsState = {
       objective: "min-recoil",
@@ -124,9 +131,12 @@ describe("toOptimizerInput", () => {
         sightingRange: 0,
         defaultAmmo: null,
       },
+      weaponItem,
       slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
       parts: [],
-      profile,
+      gate: profile,
+      presets: [],
+      pricesReady: true,
     });
     expect(out.objective).toBe("min-recoil");
     expect(out.constraints.budgetRub).toBe(50000);
@@ -152,10 +162,36 @@ describe("toOptimizerInput", () => {
         sightingRange: 0,
         defaultAmmo: null,
       },
+      weaponItem,
       slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
       parts: [],
-      profile,
+      gate: profile,
+      presets: [],
+      pricesReady: true,
     });
     expect(out.constraints.budgetRub).toBeUndefined();
+  });
+
+  it("sends no budget until live prices have loaded, and gates on null in theorycraft", () => {
+    const state: ConstraintsState = { ...initialConstraintsState, budgetRub: 50000 };
+    const out = toOptimizerInput(state, {
+      weapon: {
+        id: "w1",
+        name: "W",
+        baseErgonomics: 0,
+        baseVerticalRecoil: 0,
+        baseHorizontalRecoil: 0,
+        baseWeight: 0,
+        baseAccuracy: 0,
+      },
+      weaponItem,
+      slotTree: { weaponId: "w1", weaponName: "W", slots: [] },
+      parts: [],
+      gate: null,
+      presets: [],
+      pricesReady: false,
+    });
+    expect(out.constraints.budgetRub).toBeUndefined();
+    expect(out.constraints.profile).toBeNull();
   });
 });

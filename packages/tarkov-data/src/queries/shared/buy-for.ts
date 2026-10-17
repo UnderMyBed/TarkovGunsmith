@@ -1,5 +1,11 @@
 import { z } from "zod";
 import type { Barter } from "../barters.js";
+import {
+  extractPrices,
+  fleaPriceFromTuple,
+  traderOfferKey,
+  type PriceTable,
+} from "../../prices/table.js";
 
 const taskUnlockSchema = z
   .object({
@@ -71,6 +77,12 @@ export const buyForEntrySchema = z.object({
   priceRUB: z.number().int().nullable(),
   currency: z.string().nullable(),
   vendor: vendorSchema,
+  /**
+   * Set on a flea entry when the price table holds the item and upstream saw no listing
+   * (`lastLowPrice` is `null`): the item cannot be bought on the flea right now. A flea entry
+   * priced `null` without it only means the price is not known.
+   */
+  unlisted: z.literal(true).optional(),
   /** Absent on the item's own offers; set when the offer sells a preset built on the item. */
   preset: offerPresetSchema.optional(),
 });
@@ -93,7 +105,7 @@ export interface BuyForTask {
 
 type TraderOfferVendor = Extract<Vendor, { __typename: "TraderOffer" }>;
 type TraderBarterVendor = Extract<Vendor, { __typename: "TraderBarter" }>;
-type FleaMarketVendor = Extract<Vendor, { __typename: "FleaMarket" }>;
+export type FleaMarketVendor = Extract<Vendor, { __typename: "FleaMarket" }>;
 
 /**
  * One acquisition offer with everything except its price.
@@ -122,134 +134,13 @@ export type UnpricedOffer =
     }
   | { readonly kind: "flea"; readonly vendor: FleaMarketVendor };
 
-/**
- * Raw flea fields for one item, exactly as upstream sends them: `[lastLowPrice, avg24hPrice,
- * lastOfferCount]`. Which of them counts as "the" flea price is {@link fleaPriceFromTuple}'s
- * call, not the table's.
- */
-export type ItemPriceTuple = readonly [
-  lastLowPrice: number | null,
-  avg24hPrice: number | null,
-  lastOfferCount: number | null,
-];
-
-/**
- * Every price the Builder needs, separated from the offers it prices.
- *
- * `items` holds flea fields per item id; `trader` holds each cash offer's `priceRUB` under its
- * {@link traderOfferKey}. Produced by {@link extractPrices} from a raw items document.
- */
-export interface PriceTable {
-  readonly items: Readonly<Record<string, ItemPriceTuple>>;
-  readonly trader: Readonly<Record<string, number | null>>;
-}
-
-export interface ExtractedPrices {
-  readonly table: PriceTable;
-  /**
-   * Keys where two upstream offers collided with different prices. Such a key is priced
-   * `null` in the table: an ambiguous price is not a price. The snapshot generator fails on
-   * any; the runtime price path has nothing better to do than leave them unpriced.
-   */
-  readonly conflicts: readonly string[];
-}
-
+/** The fields of one raw `buyFromTrader` entry that offer collection reads. */
 interface RawTraderOffer {
   trader?: unknown;
   priceRUB?: unknown;
   currency?: unknown;
   minTraderLevel?: unknown;
   taskUnlock?: unknown;
-}
-
-const keyPart = (value: unknown): string =>
-  typeof value === "string" || typeof value === "number" ? String(value) : "";
-
-/**
- * The identity of one `buyFromTrader` offer: seller (the item, or the preset that sells it),
- * trader id, loyalty level, quest gate and currency.
- *
- * Upstream offers carry no id of their own. These five fields tell every live offer apart
- * except exact duplicates, which upstream does send (four items on 2026-10-16, each listed
- * twice at the same price) and which therefore share one price.
- */
-export function traderOfferKey(sellerId: string, offer: unknown): string {
-  const o = (offer ?? {}) as RawTraderOffer;
-  return [
-    sellerId,
-    keyPart(o.trader),
-    keyPart(o.minTraderLevel),
-    keyPart(o.taskUnlock),
-    keyPart(o.currency),
-  ].join("|");
-}
-
-const numberOrNull = (value: unknown): number | null => (typeof value === "number" ? value : null);
-
-/** The raw flea fields of one upstream item. */
-export function priceTupleOf(item: object): ItemPriceTuple {
-  const { lastLowPrice, avg24hPrice, lastOfferCount } = item as Record<string, unknown>;
-  return [numberOrNull(lastLowPrice), numberOrNull(avg24hPrice), numberOrNull(lastOfferCount)];
-}
-
-/**
- * The flea price in roubles: `avg24hPrice`, else `lastLowPrice`, else `null`.
- *
- * The one rule for which flea field counts. Issue #212 changes it to `lastLowPrice`.
- */
-export function fleaPriceFromTuple(tuple: ItemPriceTuple | undefined): number | null {
-  if (tuple === undefined) return null;
-  return tuple[1] ?? tuple[0];
-}
-
-/** An upstream item's flea price in roubles — {@link fleaPriceFromTuple} over its own fields. */
-export function fleaPriceRUB(item: unknown): number | null {
-  if (item === null || typeof item !== "object") return null;
-  return fleaPriceFromTuple(priceTupleOf(item));
-}
-
-/**
- * Read every price for `ids` out of an upstream items document.
- *
- * `lookup` returns the raw (untranslated is fine — no price field is translated) upstream
- * item for an id, or `undefined`. An id the document does not hold gets no entry, which
- * {@link priceOffers} reads as "not in the items document". Three callers share this: the
- * snapshot generator (release-time prices for the OG cards), the SPA's price fetch, and the
- * price Web Worker issue #212 adds.
- *
- * `sellerIds`, when given, limits trader offers to those ids: a barter ingredient is valued
- * at its flea price only, so its own trader offers are read by nothing, and a disagreement
- * among them must not count as a conflict. Without it every id's trader offers are read.
- */
-export function extractPrices(
-  lookup: (id: string) => unknown,
-  ids: Iterable<string>,
-  sellerIds?: ReadonlySet<string>,
-): ExtractedPrices {
-  const items: Record<string, ItemPriceTuple> = {};
-  const trader: Record<string, number | null> = {};
-  const conflicts = new Set<string>();
-  for (const id of ids) {
-    const raw = lookup(id);
-    if (raw === null || typeof raw !== "object") continue;
-    items[id] = priceTupleOf(raw);
-    if (sellerIds !== undefined && !sellerIds.has(id)) continue;
-    const { buyFromTrader } = raw as { buyFromTrader?: unknown };
-    if (!Array.isArray(buyFromTrader)) continue;
-    for (const offer of buyFromTrader as unknown[]) {
-      if (offer === null || typeof offer !== "object") continue;
-      const key = traderOfferKey(id, offer);
-      const price = numberOrNull((offer as RawTraderOffer).priceRUB);
-      if (conflicts.has(key)) continue;
-      if (key in trader && trader[key] !== price) {
-        conflicts.add(key);
-        trader[key] = null;
-        continue;
-      }
-      trader[key] = price;
-    }
-  }
-  return { table: { items, trader }, conflicts: [...conflicts].sort() };
 }
 
 /**
@@ -321,10 +212,11 @@ export interface BarterCostInput {
  * The rouble value of one barter, per unit received: Σ(required count × flea price) ÷
  * offered count, rounded to a whole rouble.
  *
- * A placeholder valuation over the existing flea read, not a price model — the single price
- * model is issue #218's, and it replaces this function. Returns `null` with a reason when any
- * required item has no flea price: GP coins (every Ref barter), dogtags, and a handful of quest
- * items. A partial sum would understate the cost, so none is given.
+ * Each required item is valued at its flea price ({@link fleaPriceFromTuple}): the snapshot
+ * holds no trader offers for ingredients. Returns `null` with a reason when any required item
+ * has no flea price: GP coins (every Ref barter), dogtags, and a handful of quest items. Such
+ * a barter is still a way to obtain the item, at a cost that is not known; a partial sum would
+ * understate the cost, so none is given.
  */
 export function barterCostRUB(
   barter: BarterCostInput,
@@ -533,20 +425,25 @@ export function createOfferCollector(
 /**
  * Join prices onto one item's offers, producing the `buyFor` list every consumer reads.
  *
+ * `prices` is `null` while live prices are loading, or after they failed to load: every
+ * entry is then priced `null`, which reads as "obtainable, price not known".
+ *
  * - A cash offer takes its `priceKey`'s price, or `null` when the table has none (the offer
  *   is gone upstream since the snapshot was taken, or its key is ambiguous).
  * - A barter is valued by {@link barterCostRUB} over its required items' flea prices. `nameOf`
  *   names a required item, or returns `undefined` for one the game data does not hold.
- * - The flea offer takes the item's own flea price.
+ * - The flea offer takes the item's own flea price. When the table holds the item and that
+ *   price is `null`, the entry is marked `unlisted`.
  *
  * Order is preserved, so the output matches what the offers were collected in.
  */
 export function priceOffers(
   itemId: string,
   offers: readonly UnpricedOffer[],
-  prices: PriceTable,
+  prices: PriceTable | null,
   nameOf: (id: string) => string | undefined,
 ): BuyForEntry[] {
+  if (prices === null) return offers.map(unknownPrice);
   const flea = (id: string) => fleaPriceFromTuple(prices.items[id]);
   const costLookup = (id: string): BarterCostItem | undefined => {
     const name = nameOf(id);
@@ -581,8 +478,41 @@ export function priceOffers(
         ...preset,
       };
     }
-    return { priceRUB: flea(itemId), currency: "RUB", vendor: offer.vendor };
+    return priceFleaOffer(itemId, offer.vendor, prices);
   });
+}
+
+/**
+ * One flea-market entry for `itemId`, priced at its own flea price: `null` with no table, and
+ * marked `unlisted` when the table holds the item and that price is `null`.
+ */
+export function priceFleaOffer(
+  itemId: string,
+  vendor: FleaMarketVendor,
+  prices: PriceTable | null,
+): BuyForEntry {
+  if (prices === null) return { priceRUB: null, currency: "RUB", vendor };
+  const priceRUB = fleaPriceFromTuple(prices.items[itemId]);
+  const listed = priceRUB !== null || prices.items[itemId] === undefined;
+  return { priceRUB, currency: "RUB", vendor, ...(listed ? {} : { unlisted: true as const }) };
+}
+
+/** An offer whose price is not known because there is no price table. */
+function unknownPrice(offer: UnpricedOffer): BuyForEntry {
+  const preset =
+    offer.kind !== "flea" && offer.preset !== undefined ? { preset: offer.preset } : {};
+  if (offer.kind === "cash") {
+    return { priceRUB: null, currency: offer.currency, vendor: offer.vendor, ...preset };
+  }
+  if (offer.kind === "barter") {
+    return {
+      priceRUB: null,
+      currency: null,
+      vendor: { ...offer.vendor, costUnavailableReason: "prices have not loaded" },
+      ...preset,
+    };
+  }
+  return priceFleaOffer("", offer.vendor, null);
 }
 
 /** Every acquisition offer for one upstream item, priced. */

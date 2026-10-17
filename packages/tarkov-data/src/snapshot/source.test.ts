@@ -1,8 +1,14 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fixtureSnapshot } from "../__test-utils__/fixture-snapshot.js";
-import { TarkovApiError } from "../client.js";
 import itemsCapture from "../__fixtures__/items-sample.json" with { type: "json" };
-import { createBuilderDataSource, staticBuilderDataSource } from "./source.js";
+import { PriceFetchError, type PriceReply, type PriceRequest } from "../prices/fetch.js";
+import {
+  createBuilderDataSource,
+  memoryFetchedAtStore,
+  requestPricesFromWorker,
+  staticBuilderDataSource,
+  type PriceWorker,
+} from "./source.js";
 
 const SNAPSHOT_URL = "/data/builder-snapshot.json";
 const ITEMS_URL = "https://json.tarkov.dev/regular/items";
@@ -39,7 +45,24 @@ async function fakeUpstream() {
   };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+// The captured document is current at its own `asOf`, so one price load is one request.
+beforeEach(async () => {
+  const { prices } = await fixtureSnapshot();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(prices.dataAsOf));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+// Fetched now, which the fake clock holds at the capture's own `asOf`.
+const live = (prices: { prices: unknown; dataAsOf: string }) => ({
+  table: prices.prices,
+  asOf: prices.dataAsOf,
+  fetchedAt: Date.parse(prices.dataAsOf),
+});
 
 describe("createBuilderDataSource", () => {
   it("loads the snapshot once and prices from the raw items document", async () => {
@@ -53,7 +76,7 @@ describe("createBuilderDataSource", () => {
     expect(await source.snapshot()).toEqual(up.snapshot);
     // The items capture is the untranslated envelope, and no price field is translated, so
     // the live path prices exactly what the generator priced.
-    expect(await source.prices()).toEqual(up.prices.prices);
+    expect(await source.prices()).toEqual(live(up.prices));
     await source.prices();
     expect(up.calls).toEqual([SNAPSHOT_URL, ITEMS_URL]);
   });
@@ -69,6 +92,51 @@ describe("createBuilderDataSource", () => {
     await source.prices();
     await source.prices();
     expect(up.calls.filter((u) => u === ITEMS_URL)).toHaveLength(2);
+  });
+
+  it("keeps the time of the last fetch, so the next load within the hour may use the cache", async () => {
+    const up = await fakeUpstream();
+    const caches: (RequestCache | undefined)[] = [];
+    const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) => {
+      if (urlOf(input) === ITEMS_URL) caches.push(init?.cache);
+      return up.fetchImpl(input, init);
+    }) as typeof fetch;
+    const stored: number[] = [];
+    const store = memoryFetchedAtStore();
+    const source = createBuilderDataSource({
+      snapshotUrl: SNAPSHOT_URL,
+      itemsUrl: ITEMS_URL,
+      fetchImpl,
+      priceTtlMs: 0,
+      fetchedAtStore: {
+        get: () => store.get(),
+        set: (at) => {
+          stored.push(at);
+          store.set(at);
+        },
+      },
+    });
+    await source.prices();
+    await source.prices();
+    expect(caches).toEqual(["no-cache", "default"]);
+    expect(stored).toEqual([Date.now(), Date.now()]);
+  });
+
+  it("records no fetch time for a copy the cache served after upstream failed", async () => {
+    const up = await fakeUpstream();
+    const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) =>
+      urlOf(input) === ITEMS_URL && init?.cache === "no-cache"
+        ? Promise.reject(new TypeError("Failed to fetch"))
+        : up.fetchImpl(input, init)) as typeof fetch;
+    const stored: number[] = [];
+    const source = createBuilderDataSource({
+      snapshotUrl: SNAPSHOT_URL,
+      itemsUrl: ITEMS_URL,
+      fetchImpl,
+      fetchedAtStore: { get: () => null, set: (at) => stored.push(at) },
+    });
+    expect(await source.prices()).toMatchObject({ asOf: up.prices.dataAsOf, fetchedAt: null });
+    expect(stored).toEqual([]);
   });
 
   it("fails a snapshot load loudly and retries it next time", async () => {
@@ -92,13 +160,13 @@ describe("createBuilderDataSource", () => {
       fetchImpl: up.fetchImpl,
     });
     up.setItems({}, 503);
-    await expect(source.prices()).rejects.toBeInstanceOf(TarkovApiError);
+    await expect(source.prices()).rejects.toBeInstanceOf(PriceFetchError);
     up.setItems({ data: {} });
     await expect(source.prices()).rejects.toThrow("The items document has no data.items map");
     up.setItems(null);
     await expect(source.prices()).rejects.toThrow("no data.items map");
     up.setItems(itemsCapture.document);
-    expect(await source.prices()).toEqual(up.prices.prices);
+    expect(await source.prices()).toEqual(live(up.prices));
   });
 
   it("keeps a newer price load when an older one fails after it", async () => {
@@ -110,6 +178,8 @@ describe("createBuilderDataSource", () => {
         first = false;
         return new Promise<Response>((_, reject) => (rejectFirst = reject));
       }
+      // Nor does the HTTP cache hold a copy for the failed load to fall back on.
+      if (init?.cache === "force-cache") return Promise.reject(new TypeError("no cached copy"));
       return up.fetchImpl(input, init);
     }) as typeof fetch;
     const source = createBuilderDataSource({
@@ -124,7 +194,9 @@ describe("createBuilderDataSource", () => {
     const newer = source.prices();
     rejectFirst(new Error("slow and failed"));
     await expect(older).rejects.toThrow("slow and failed");
-    expect(await newer).toEqual(up.prices.prices);
+    // `vi.waitFor` moves the clock on, so only the table and its age are compared.
+    const { table, asOf } = live(up.prices);
+    expect(await newer).toMatchObject({ table, asOf });
   });
 
   it("uses the global fetch when given none", async () => {
@@ -138,8 +210,106 @@ describe("createBuilderDataSource", () => {
 describe("staticBuilderDataSource", () => {
   it("hands back what it was given", async () => {
     const { snapshot, prices } = await fixtureSnapshot();
-    const source = staticBuilderDataSource(snapshot, prices.prices);
+    const source = staticBuilderDataSource(snapshot, prices);
     expect(await source.snapshot()).toBe(snapshot);
-    expect(await source.prices()).toBe(prices.prices);
+    expect(await source.prices()).toEqual({
+      table: prices.prices,
+      asOf: prices.dataAsOf,
+      fetchedAt: Date.parse(prices.dataAsOf),
+    });
+  });
+});
+
+/** A stand-in Worker: records what it was sent and lets the test answer. */
+function fakeWorker() {
+  const sent: PriceRequest[] = [];
+  let terminated = 0;
+  const worker = {
+    onmessage: null,
+    onerror: null,
+    onmessageerror: null,
+    postMessage: (request: PriceRequest) => sent.push(request),
+    terminate: () => void terminated++,
+  } as unknown as PriceWorker;
+  return {
+    worker,
+    sent,
+    terminated: () => terminated,
+    reply: (data: PriceReply) => {
+      worker.onmessage?.call(worker as Worker, { data } as MessageEvent<PriceReply>);
+    },
+    fail: (message: string) => {
+      worker.onerror?.call(worker as Worker, { message } as ErrorEvent);
+    },
+    garble: () => {
+      worker.onmessageerror?.call(worker as Worker, {} as MessageEvent);
+    },
+  };
+}
+
+describe("requestPricesFromWorker", () => {
+  const request: PriceRequest = { itemsUrl: ITEMS_URL, ids: ["a"], lastFetchedAt: null };
+  const prices = {
+    table: { items: { a: [1, 2, 3] as const }, trader: {} },
+    asOf: "2026-10-17T00:00:00.000Z",
+    fetchedAt: Date.parse("2026-10-17T00:05:00.000Z"),
+  };
+
+  it("posts the request, resolves the reply, and terminates the worker", async () => {
+    const w = fakeWorker();
+    const pending = requestPricesFromWorker(() => w.worker, request);
+    expect(w.sent).toEqual([request]);
+    w.reply({ ok: true, prices });
+    expect(await pending).toEqual(prices);
+    expect(w.terminated()).toBe(1);
+  });
+
+  it("rejects with the worker's own message when it could not read prices", async () => {
+    const w = fakeWorker();
+    const pending = requestPricesFromWorker(() => w.worker, request);
+    w.reply({ ok: false, message: "json.tarkov.dev answered 503 Service Unavailable" });
+    await expect(pending).rejects.toThrow(
+      new PriceFetchError("json.tarkov.dev answered 503 Service Unavailable"),
+    );
+    expect(w.terminated()).toBe(1);
+  });
+
+  it("rejects when the worker fails, rather than fetching on the main thread", async () => {
+    const w = fakeWorker();
+    const pending = requestPricesFromWorker(() => w.worker, request);
+    w.fail("SyntaxError: bad bundle");
+    await expect(pending).rejects.toThrow("The price worker failed: SyntaxError: bad bundle");
+    const silent = fakeWorker();
+    const again = requestPricesFromWorker(() => silent.worker, request);
+    silent.fail("");
+    await expect(again).rejects.toThrow("The price worker failed: it did not start");
+    expect(w.terminated() + silent.terminated()).toBe(2);
+  });
+
+  it("rejects a reply it cannot read", async () => {
+    const w = fakeWorker();
+    const pending = requestPricesFromWorker(() => w.worker, request);
+    w.garble();
+    await expect(pending).rejects.toThrow("The price worker's reply could not be read");
+    expect(w.terminated()).toBe(1);
+  });
+
+  it("is what the data source uses when given a worker, with the snapshot's price ids", async () => {
+    const up = await fakeUpstream();
+    const w = fakeWorker();
+    const source = createBuilderDataSource({
+      snapshotUrl: SNAPSHOT_URL,
+      itemsUrl: ITEMS_URL,
+      fetchImpl: up.fetchImpl,
+      createPriceWorker: () => w.worker,
+    });
+    const pending = source.prices();
+    await vi.waitFor(() => expect(w.sent).toHaveLength(1));
+    expect(w.sent[0]?.itemsUrl).toBe(ITEMS_URL);
+    expect(w.sent[0]?.ids.length).toBeGreaterThan(0);
+    w.reply({ ok: true, prices });
+    expect(await pending).toEqual(prices);
+    // The main thread never asked upstream itself.
+    expect(up.calls).toEqual([SNAPSHOT_URL]);
   });
 });
