@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.22.0...v1.22.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **builder:** round the header's current ergonomics and recoil to one decimal ([#271](https://github.com/UnderMyBed/TarkovGunsmith/issues/271)) ([3243a72](https://github.com/UnderMyBed/TarkovGunsmith/commit/3243a7224a7528e610d549cf7a52b45c8d655da1))
+
 ## [1.22.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.21.0...v1.22.0) (2026-10-17)
 
 
