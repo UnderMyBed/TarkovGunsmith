@@ -9,7 +9,7 @@ spec:
   timeout: 10000
   enabled: true
   probes:
-    - Atlanta
+    - Ohio
   alertSensitivity: none
   basicMetricsOnly: true
   labels:

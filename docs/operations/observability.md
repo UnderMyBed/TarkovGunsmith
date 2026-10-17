@@ -55,7 +55,7 @@ No event carries a build name or note, a TarkovTracker token or profile, or a us
 | `tarkovgunsmith-site` | `GET https://tarkovgunsmith.undermybed.dev/builder`     | HTTP 200                |
 | `tarkovgunsmith-api`  | `GET https://api.tarkovgunsmith.undermybed.dev/healthz` | HTTP 200 with body `ok` |
 
-Both run every 5 minutes from one probe (Atlanta): about 17k executions a month against 100k
+Both run every 5 minutes from one probe (Ohio): about 17k executions a month against 100k
 included.
 
 ### Alerting
