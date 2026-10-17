@@ -16,6 +16,8 @@ import {
  * nothing is now a failure rather than a silent pass.
  */
 
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 async function pickFirstWeapon(page: Page): Promise<string | null> {
   // Several <select> elements render on /builder (profile trader-LL selects in
   // a collapsed <details> above). Filter to the one with the "Select weapon"
@@ -175,6 +177,72 @@ test.describe("builder optimizer diff view", () => {
       .poll(async () => await page.locator('[aria-label^="Accept "]').count(), { timeout: 15_000 })
       .toBe(OPTIMIZER_CHANGED_SLOTS);
     await expect(page.getByText(/^RECOIL V\+H Δ · −/)).toBeVisible();
+  });
+
+  test("a nested slot can be pinned, emptied with its parent, and is kept by the result", async ({
+    page,
+  }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    const picker = page
+      .locator("select")
+      .filter({ has: page.locator('option:has-text("Select weapon")') })
+      .first();
+    await expect
+      .poll(async () => await picker.locator("option").count(), { timeout: 15_000 })
+      .toBeGreaterThan(1);
+    await picker.selectOption(await picker.locator("option").nth(1).getAttribute("value"));
+    // A new build starts from the weapon's default preset: parts nested a few levels deep.
+    await expect(page.getByText(/^[1-9]\d* attached$/)).toBeVisible();
+
+    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    const tree = page.getByRole("list", { name: "Pinned slots" });
+    await expect(page.getByText("Nothing pinned")).toBeVisible();
+
+    // The first nested slot that holds a part, and the slot that owns it.
+    const nested = tree.locator('li[data-slot-path*="/"]').filter({
+      has: page.getByRole("radio", { name: "LOCK", disabled: false }),
+    });
+    const child = nested.first();
+    const childPath = (await child.getAttribute("data-slot-path"))!;
+    const parentPath = childPath.split("/").slice(0, -1).join("/");
+    const parent = tree.locator(`li[data-slot-path="${parentPath}"]`);
+    const childGroup = child.getByRole("radiogroup");
+    const childName = ((await childGroup.getAttribute("aria-label")) ?? "").replace(/ pin$/, "");
+    const parentName = (
+      (await parent.getByRole("radiogroup").getAttribute("aria-label")) ?? ""
+    ).replace(/ pin$/, "");
+
+    await childGroup.getByRole("radio", { name: "LOCK" }).check({ force: true });
+    await expect(page.getByText("1 slot pinned")).toBeVisible();
+
+    // Emptying the parent takes the nested lock with it, in view.
+    const parentEmpty = parent.getByRole("radio", { name: "EMPTY" });
+    if (await parentEmpty.isEnabled()) {
+      await parentEmpty.check({ force: true });
+      await expect(tree.locator(`li[data-slot-path="${childPath}"]`)).toHaveCount(0);
+      await expect(page.getByText("1 slot pinned")).toBeVisible();
+      await parent.getByRole("radio", { name: "FREE" }).check({ force: true });
+      await expect(
+        tree.locator(`li[data-slot-path="${childPath}"]`).getByRole("radio", { name: "FREE" }),
+      ).toBeChecked();
+      await expect(page.getByText("Nothing pinned")).toBeVisible();
+      await tree
+        .locator(`li[data-slot-path="${childPath}"]`)
+        .getByRole("radio", { name: "LOCK" })
+        .check({ force: true });
+    }
+
+    // Lock the parent too, so the nested path exists in every build the solver may return.
+    await parent.getByRole("radio", { name: "LOCK" }).check({ force: true });
+    await expect(page.getByText("2 slots pinned")).toBeVisible();
+    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+
+    const report = page.getByRole("region", { name: "Pins" });
+    await expect(report).toContainText("2 KEPT", { timeout: 15_000 });
+    await expect(report.getByRole("listitem").filter({ hasText: /^KEPT/ })).toHaveText([
+      new RegExp(`^KEPT${escape(parentName)}`),
+      new RegExp(`^KEPT${escape(parentName)} › ${escape(childName)}`),
+    ]);
   });
 
   test("← EDITOR discards and returns to editor without merging", async ({ page }) => {

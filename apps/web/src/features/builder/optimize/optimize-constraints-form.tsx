@@ -3,6 +3,7 @@ import type { Objective } from "@tarkov/optimizer";
 import type { WeaponTree } from "@tarkov/data";
 import { Input, SectionTitle } from "@tarkov/ui";
 import type { ConstraintsAction, ConstraintsState } from "./optimize-constraints-reducer.js";
+import { OptimizePinTree } from "./optimize-pin-tree.js";
 
 const OBJECTIVES: readonly { value: Objective; label: string }[] = [
   { value: "min-recoil", label: "Min recoil" },
@@ -15,6 +16,10 @@ interface Props {
   state: ConstraintsState;
   dispatch: (action: ConstraintsAction) => void;
   slotTree: WeaponTree;
+  /** The current build, which the pin tree follows. */
+  attachments: Readonly<Record<string, string>>;
+  /** A part's display name. */
+  nameOf: (id: string) => string;
   /** A budget is checked against live prices, so the field waits for them. */
   pricesReady: boolean;
 }
@@ -23,6 +28,8 @@ export function OptimizeConstraintsForm({
   state,
   dispatch,
   slotTree,
+  attachments,
+  nameOf,
   pricesReady,
 }: Props): ReactElement {
   return (
@@ -64,27 +71,16 @@ export function OptimizeConstraintsForm({
       <div className="flex flex-col gap-2">
         <SectionTitle index={3} title="Pinned slots" />
         <p className="text-xs text-[var(--color-muted-foreground)]">
-          Un-check a slot to let the solver pick a different item for it.
+          Free slots are the solver&apos;s to choose. Lock keeps the part you have; Empty leaves the
+          slot bare.
         </p>
-        <ul className="flex flex-col gap-1 border border-dashed border-[var(--color-border)] p-2">
-          {slotTree.slots.map((slot) => (
-            <li key={slot.path} className="flex items-center justify-between font-mono text-sm">
-              <label className="flex items-center gap-2 flex-1">
-                <input
-                  type="checkbox"
-                  checked={state.pinnedSlots.has(slot.path)}
-                  onChange={() => dispatch({ type: "TOGGLE_PIN", slotPath: slot.path })}
-                />
-                <span className="uppercase tracking-wider">{slot.label || slot.nameId}</span>
-              </label>
-              <span className="text-[var(--color-muted-foreground)]">
-                {state.pinnedSlots.has(slot.path)
-                  ? (state.pinnedSlots.get(slot.path) ?? "(empty)")
-                  : "solver"}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <OptimizePinTree
+          slotTree={slotTree}
+          attachments={attachments}
+          pinnedSlots={state.pinnedSlots}
+          nameOf={nameOf}
+          dispatch={dispatch}
+        />
       </div>
     </div>
   );

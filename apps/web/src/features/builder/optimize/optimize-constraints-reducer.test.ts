@@ -53,42 +53,45 @@ describe("constraintsReducer", () => {
     expect(nan).toBe(initialConstraintsState);
   });
 
-  it("TOGGLE_PIN removes a pinned slot", () => {
+  it("SET_PIN locks a part, frees a slot, and never pins empty by freeing", () => {
+    const locked = constraintsReducer(initialConstraintsState, {
+      type: "SET_PIN",
+      slotPath: "muzzle",
+      pin: { itemId: "brake" },
+    });
+    expect([...locked.pinnedSlots]).toEqual([["muzzle", "brake"]]);
+    const freed = constraintsReducer(locked, { type: "SET_PIN", slotPath: "muzzle", pin: "free" });
+    expect(freed.pinnedSlots.size).toBe(0);
+    // Freeing a free slot leaves it free, not pinned empty.
+    const again = constraintsReducer(freed, { type: "SET_PIN", slotPath: "muzzle", pin: "free" });
+    expect(again.pinnedSlots.has("muzzle")).toBe(false);
+  });
+
+  it("SET_PIN empty clears every pin below that slot, and only below it", () => {
     const state: ConstraintsState = {
       ...initialConstraintsState,
-      pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
+      pinnedSlots: new Map<string, string | null>([
+        ["receiver", "upper"],
+        ["receiver/barrel", "b"],
+        ["receiver/barrel/muzzle", null],
+        ["receiver_other", "x"],
+        ["stock", "s"],
+      ]),
     };
-    const removed = constraintsReducer(state, { type: "TOGGLE_PIN", slotPath: "muzzle" });
-    expect(removed.pinnedSlots.has("muzzle")).toBe(false);
+    const next = constraintsReducer(state, { type: "SET_PIN", slotPath: "receiver", pin: "empty" });
+    expect([...next.pinnedSlots]).toEqual([
+      ["receiver", null],
+      ["receiver_other", "x"],
+      ["stock", "s"],
+    ]);
   });
 
-  it("TOGGLE_PIN adds a slot with a default item id when provided", () => {
-    const state = initialConstraintsState;
-    const added = constraintsReducer(state, {
-      type: "TOGGLE_PIN",
-      slotPath: "muzzle",
-      defaultItemId: "muzzle_brake",
-    });
-    expect(added.pinnedSlots.get("muzzle")).toBe("muzzle_brake");
-  });
-
-  it("TOGGLE_PIN adds a slot with null (empty pin) when no default provided", () => {
-    const added = constraintsReducer(initialConstraintsState, {
-      type: "TOGGLE_PIN",
-      slotPath: "muzzle",
-    });
-    expect(added.pinnedSlots.has("muzzle")).toBe(true);
-    expect(added.pinnedSlots.get("muzzle")).toBeNull();
-  });
-
-  it("INIT_FROM_BUILD populates pinnedSlots with all currently-attached mods", () => {
-    const state = constraintsReducer(initialConstraintsState, {
-      type: "INIT_FROM_BUILD",
-      attachments: { muzzle: "brake", grip: "vgrip" },
-    });
-    expect(state.pinnedSlots.get("muzzle")).toBe("brake");
-    expect(state.pinnedSlots.get("grip")).toBe("vgrip");
-    expect(state.pinnedSlots.size).toBe(2);
+  it("CLEAR_PINS frees every slot", () => {
+    const state: ConstraintsState = {
+      ...initialConstraintsState,
+      pinnedSlots: new Map([["muzzle", "brake"]]),
+    };
+    expect(constraintsReducer(state, { type: "CLEAR_PINS" }).pinnedSlots.size).toBe(0);
   });
 
   it("UNPIN frees each slot for the solver, never pinning one to empty", () => {
