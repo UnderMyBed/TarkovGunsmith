@@ -73,6 +73,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
   const id = useId();
   const labelId = `${id}-label`;
   const listId = `${id}-list`;
+  const descriptionId = `${id}-description`;
   const optionId = (index: number) => `${id}-option-${index}`;
 
   const [open, setOpen] = useState(false);
@@ -91,15 +92,18 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
         : options.filter((o) => matches(o, query.trim())),
     [options, query],
   );
+  // The highlight, clamped to the list as it stands: typing, or options changing while the list
+  // is open, can shrink it under the index. -1 when nothing is highlighted or nothing is shown.
+  const current = Math.min(active, shown.length - 1);
 
   // Keep the highlighted option in view as the arrow keys move it through a long list.
   useEffect(() => {
-    if (!open || active < 0) return;
+    if (!open || current < 0) return;
     // Optional call: jsdom implements no scrolling.
-    document.getElementById(optionId(active))?.scrollIntoView?.({ block: "nearest" });
+    document.getElementById(optionId(current))?.scrollIntoView?.({ block: "nearest" });
     // optionId is derived from `id`, which never changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, active]);
+  }, [open, current]);
 
   function close(): void {
     setOpen(false);
@@ -118,22 +122,24 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>): void {
+    // Keys pressed while an input method composes text belong to the composition.
+    if (e.nativeEvent.isComposing) return;
     const last = shown.length - 1;
     switch (e.key) {
       case "ArrowDown": {
         e.preventDefault();
         if (!open) openAt(startIndex());
-        else setActive(Math.min(last, active + 1));
+        else setActive(Math.min(last, current + 1));
         return;
       }
       case "ArrowUp": {
         e.preventDefault();
         if (!open) openAt(startIndex());
-        else setActive(Math.max(0, active - 1));
+        else setActive(Math.max(0, current - 1));
         return;
       }
       case "Enter": {
-        const option = open ? shown[active] : undefined;
+        const option = open && current >= 0 ? shown[current] : undefined;
         if (option === undefined) return;
         e.preventDefault();
         pick(option);
@@ -169,7 +175,8 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
             aria-expanded={open}
             aria-controls={listId}
             aria-autocomplete="list"
-            aria-activedescendant={open && active >= 0 ? optionId(active) : undefined}
+            aria-activedescendant={open && current >= 0 ? optionId(current) : undefined}
+            aria-describedby={selected?.description !== undefined ? descriptionId : undefined}
             autoComplete="off"
             spellCheck={false}
             disabled={disabled}
@@ -188,7 +195,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
             className="w-full truncate bg-transparent text-sm font-bold text-[var(--color-foreground)] outline-none placeholder:font-normal placeholder:text-[var(--color-faint)] disabled:cursor-not-allowed"
           />
           {selected?.description !== undefined && (
-            <span className="text-11 text-[var(--color-faint)]">{selected.description}</span>
+            <span id={descriptionId} className="text-11 text-[var(--color-faint)]">
+              {selected.description}
+            </span>
           )}
         </span>
         {shortcut !== undefined && (
@@ -239,7 +248,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
               onMouseMove={() => setActive(index)}
               className={cn(
                 "flex cursor-pointer flex-col px-3 py-2 text-13",
-                index === active && "bg-[var(--color-selected)]",
+                index === current && "bg-[var(--color-selected)]",
                 option.value === value && "font-bold text-[var(--color-primary-text)]",
               )}
             >
@@ -256,6 +265,15 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
           <p className="px-3 py-2 text-13 text-[var(--color-muted-foreground)]">{emptyText}</p>
         )}
       </div>
+      {/* What the typed text leaves in the list, spoken: the highlight alone says nothing when
+          the list empties. Silent while the list is closed. */}
+      <span role="status" className="sr-only">
+        {!open
+          ? ""
+          : shown.length === 0
+            ? emptyText
+            : `${shown.length} ${shown.length === 1 ? "option" : "options"}`}
+      </span>
     </div>
   );
 });

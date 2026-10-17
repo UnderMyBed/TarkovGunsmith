@@ -75,7 +75,12 @@ describe("/builder commits the build it hands on", () => {
     await pickFixtureWeapon(user);
 
     await user.click(screen.getByRole("button", { name: "Share build" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Build URL copied");
+    // The toast is a status; so is the weapon picker's (silent) result count.
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("Build URL copied")),
+      ).toBe(true),
+    );
     expect(calls).toEqual(["commit", "POST"]);
   });
 

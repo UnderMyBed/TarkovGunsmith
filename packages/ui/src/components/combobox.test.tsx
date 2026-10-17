@@ -68,6 +68,8 @@ describe("Combobox", () => {
       .filter((el) => el.closest("[role='listbox']") === null);
     expect(shown).toHaveLength(1);
     expect(shown[0]).toBeVisible();
+    // The lock reason is spoken with the input, not only drawn under it.
+    expect(input()).toHaveAccessibleDescription("locked · Peacekeeper LL3");
   });
 
   it("shows the placeholder with nothing selected", () => {
@@ -101,10 +103,60 @@ describe("Combobox", () => {
     render(<Harness />);
     await user.type(input(), "zzz");
     expect(optionNames()).toEqual([]);
-    expect(screen.getByText("No match")).toBeVisible();
+    expect(screen.getByText("No match", { selector: "p" })).toBeVisible();
+    // Spoken, and the highlight points at no option, since there is none.
+    expect(screen.getByRole("status")).toHaveTextContent("No match");
+    expect(input()).not.toHaveAttribute("aria-activedescendant");
+    // ArrowUp and ArrowDown on the empty list highlight nothing either.
+    await user.keyboard("{ArrowUp}");
+    expect(input()).not.toHaveAttribute("aria-activedescendant");
+    await user.keyboard("{ArrowDown}");
+    expect(input()).not.toHaveAttribute("aria-activedescendant");
     // Enter with nothing highlighted picks nothing.
     await user.keyboard("{Enter}");
     expect(input()).toHaveValue("zzz");
+  });
+
+  it("speaks how many options the typed text leaves, and nothing while closed", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    expect(screen.getByRole("status")).toHaveTextContent(/^$/);
+    await user.type(input(), "assault");
+    expect(screen.getByRole("status")).toHaveTextContent("2 options");
+    await user.type(input(), " colt");
+    expect(screen.getByRole("status")).toHaveTextContent("1 option");
+  });
+
+  it("clamps the highlight when typing shrinks the list under it", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    input().focus();
+    await user.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}");
+    expect(input()).toHaveAttribute("aria-activedescendant", screen.getAllByRole("option")[2]!.id);
+    await user.type(input(), "colt");
+    const only = screen.getByRole("option");
+    expect(only).toHaveTextContent(/Colt M4A1/);
+    expect(input()).toHaveAttribute("aria-activedescendant", only.id);
+  });
+
+  it("clamps the highlight when the options shrink while the list is open", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <Combobox label="Weapon" options={OPTIONS} value="" onChange={() => {}} />,
+    );
+    input().focus();
+    await user.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}");
+    rerender(
+      <Combobox label="Weapon" options={OPTIONS.slice(0, 1)} value="" onChange={() => {}} />,
+    );
+    expect(input()).toHaveAttribute("aria-activedescendant", screen.getByRole("option").id);
+    await user.keyboard("{Enter}");
+  });
+
+  it("ignores keys pressed while an input method composes", () => {
+    render(<Harness />);
+    fireEvent.keyDown(input(), { key: "ArrowDown", isComposing: true });
+    expect(input()).toHaveAttribute("aria-expanded", "false");
   });
 
   it("moves the highlight with the arrow keys and picks with Enter", async () => {

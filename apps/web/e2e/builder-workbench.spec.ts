@@ -38,7 +38,10 @@ test.describe("Workbench weapon picker", () => {
 
     // A search abandoned with Escape leaves the weapon on screen as it was.
     await picker.fill("zzz");
-    await expect(page.getByText("No weapon matches")).toBeVisible();
+    await expect(page.locator("p", { hasText: "No weapon matches" })).toBeVisible();
+    // Spoken too, and the highlight points at no option.
+    await expect(page.getByRole("status").filter({ hasText: "No weapon matches" })).toHaveCount(1);
+    await expect(picker).not.toHaveAttribute("aria-activedescendant");
     await page.keyboard.press("Escape");
     await expect(picker).toHaveValue(M4A1_LABEL);
   });
