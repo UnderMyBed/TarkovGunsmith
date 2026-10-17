@@ -132,7 +132,9 @@ describe("lowerBoundForRemaining", () => {
  * must be at most the best MOA any completion of it reaches. A bound above that would prune the
  * better build.
  */
-describe("the max-accuracy bound is admissible", () => {
+// An exhaustive walk of 10,000+ nodes: about 0.3 s locally, but over 5 s on a CI runner under
+// coverage with every package's suite running at once.
+describe("the max-accuracy bound is admissible", { timeout: 60_000 }, () => {
   const BARRELS = [
     // AR-15 10.3", 14.5" and Hanson Carbine Pro 16" barrels, live 2026-10-17.
     { centerOfImpact: 0.07, deviationMax: 22, accuracyModifier: 0 },
