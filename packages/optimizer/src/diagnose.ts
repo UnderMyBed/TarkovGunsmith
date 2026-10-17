@@ -73,11 +73,76 @@ export function diagnose(
       message: `Nothing you can get fits the ${gap.slot.name} slot, and the ${owner} needs one.`,
     };
   }
+  const scarce = scarceParts(bare, tree, catalog, deadline);
+  if (scarce !== null) {
+    const names = scarce.ids.map((id) => catalog.get(id)!.name).join(", ");
+    return {
+      ok: false,
+      reason: "required-slot",
+      slotPath: scarce.path,
+      message:
+        scarce.ids.length === 1
+          ? `You can get the ${names} only with the gun, at most ${scarce.most} per gun, and every complete build needs more.`
+          : `You can get ${names} only with the gun, and every complete build needs more of them than it comes with.`,
+    };
+  }
   return {
     ok: false,
     reason: "no-valid-combinations",
     message: "Every complete build has parts that can't be fitted together.",
   };
+}
+
+/**
+ * When no build exists even with conflicts ignored, yet every required slot has something to
+ * fill it ({@link requiredGap} found none empty), the short supply is copies: a part nobody
+ * sells that a preset supplies, needed more often than any preset supplies it. Names the one
+ * part whose short supply alone is the cause, else all such parts; `null` when conflicts are
+ * the cause after all.
+ */
+function scarceParts(
+  problem: Problem,
+  tree: WeaponTree,
+  catalog: ReadonlyMap<string, AttachablePart>,
+  deadline: number,
+): { ids: string[]; most: number; path: string } | null {
+  const loose = new Map<string, SolverPart>();
+  for (const [id, part] of problem.parts) {
+    loose.set(id, { ...part, conflictingItems: [], conflictingSlotIds: [] });
+  }
+  // `resolveBuild` reads conflicts from the catalog: without them it reports none.
+  const none = new Map<string, AttachablePart>();
+  for (const [id, part] of catalog) {
+    none.set(id, { ...part, conflictingItems: [], conflictingSlotIds: [] });
+  }
+  const free = (parts: ReadonlyMap<string, SolverPart>) =>
+    solve({ ...problem, parts }, tree, none, deadline) !== null;
+  if (free(loose)) return null;
+  const covered = (id: string) => Math.max(...problem.paths.map((p) => p.covers.get(id) ?? 0));
+  const candidates = [...loose.values()].filter((p) => !p.available && covered(p.id) > 0);
+  const alone = candidates.find((c) => free(new Map(loose).set(c.id, { ...c, available: true })));
+  const ids = alone === undefined ? candidates.map((c) => c.id) : [alone.id];
+  return { ids, most: covered(ids[0]!), path: requiredPathTo(problem, new Set(ids)) };
+}
+
+/** The first required slot, breadth first from the weapon, that takes one of `ids`. */
+function requiredPathTo(problem: Problem, ids: ReadonlySet<string>): string {
+  // One exists: a part short only in copies sits in a required slot, or a build could skip it.
+  const queue: [readonly SlotDef[], string][] = [[problem.rootSlots, ""]];
+  const seen = new Set<string>();
+  for (;;) {
+    const [slots, base] = queue.shift()!;
+    for (const slot of slots) {
+      const at = base === "" ? slot.nameId : `${base}/${slot.nameId}`;
+      if (slot.required && slot.allowedItemIds.some((id) => ids.has(id))) return at;
+      for (const id of slot.allowedItemIds) {
+        const part = problem.parts.get(id);
+        if (part === undefined || seen.has(id)) continue;
+        seen.add(id);
+        queue.push([part.slots, at]);
+      }
+    }
+  }
 }
 
 /**

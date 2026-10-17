@@ -1,5 +1,6 @@
 import {
   adaptMod,
+  itemAvailability,
   partsById,
   priceUnder,
   resolveBuild,
@@ -10,7 +11,7 @@ import { weaponSpec } from "@tarkov/ballistics";
 import { diagnose, rub } from "./diagnose.js";
 import { pinReport } from "./pins.js";
 import { buildProblem, UNKNOWN_PRICE, type Problem } from "./problem.js";
-import { SolveTimeout } from "./relaxed.js";
+import { pinHonourable, SolveTimeout } from "./relaxed.js";
 import { solve } from "./solve.js";
 import type { OptimizationInput, OptimizationResult } from "./types.js";
 
@@ -20,7 +21,9 @@ type Refusal = Extract<OptimizationResult, { reason: "infeasible-budget" | "pinn
 
 /**
  * Why a budget run cannot start, or `null` when it can: the gun alone is over budget or has
- * no known price, or a pinned part has no price the profile can pay that no path supplies free.
+ * no known price, or a part pinned to one of the weapon's own slots — a path every build has —
+ * has no price the profile can pay and no path supplies it free. A pin deeper down holds only
+ * where its path exists, so a build without that path may still fit; the search decides those.
  */
 function refuseBudget(
   input: OptimizationInput,
@@ -44,22 +47,42 @@ function refuseBudget(
       message: `The cheapest ${name} you can get costs ${rub(cheapest)}, over the ${rub(budgetRub)} budget.`,
     };
   }
-  const unpriced: AttachablePart[] = [];
-  for (const id of new Set(input.constraints.pinnedSlots.values())) {
+  const unpriced = new Map<string, AttachablePart>();
+  for (const [path, id] of input.constraints.pinnedSlots) {
     if (id === null) continue;
-    const part = catalog.get(id);
-    if (part === undefined) continue;
-    if (priceUnder(input.constraints.profile, part) !== null) continue;
+    const slot = problem.rootSlots.find((s) => s.nameId === path);
+    if (slot === undefined || !pinHonourable(problem, slot, id)) continue;
+    if (priceUnder(input.constraints.profile, catalog.get(id)!) !== null) continue;
     if (problem.paths.some((p) => (p.covers.get(id) ?? 0) > 0)) continue;
-    unpriced.push(part);
+    unpriced.set(id, catalog.get(id)!);
   }
-  if (unpriced.length === 0) return null;
+  if (unpriced.size === 0) return null;
+  const parts = [...unpriced.values()];
   return {
     ok: false,
     reason: "pinned-unpriced",
-    itemIds: unpriced.map((p) => p.id),
-    message: `No price you can pay is known for ${unpriced.map((p) => p.name).join(", ")}. Unpin ${unpriced.length === 1 ? "it" : "them"} or clear the budget.`,
+    itemIds: parts.map((p) => p.id),
+    message: `No price you can pay is known for ${parts.map((p) => p.name).join(", ")}. Unpin ${parts.length === 1 ? "it" : "them"} or clear the budget.`,
   };
+}
+
+/** Why the weapon cannot be bought: the cause a player can act on, if there is one. */
+function unavailableMessage(input: OptimizationInput): string {
+  const name = input.weaponItem.shortName;
+  const availability = itemAvailability(input.weaponItem, input.constraints.profile);
+  if (
+    input.constraints.profile === null ||
+    (!availability.available && availability.reason === "no-sources")
+  ) {
+    // Theorycraft opens every gate, so only a weapon nothing sells is refused there.
+    return `No trader or flea listing sells the ${name}.`;
+  }
+  if (!availability.available && availability.reason === "untracked-trader") {
+    const trader = availability.traderNormalizedName;
+    const named = trader.charAt(0).toUpperCase() + trader.slice(1);
+    return `Only ${named} sells the ${name}${availability.payment === "barter" ? ", by barter" : ""}, and no trader level you can set reaches ${named}.`;
+  }
+  return `You can't get the ${name} on this profile.`;
 }
 
 /**
@@ -72,25 +95,19 @@ export function optimize(input: OptimizationInput): OptimizationResult {
   const catalog = partsById(input.parts);
   const problem = buildProblem(input, catalog);
   if (problem.paths.length === 0) {
-    const name = input.weaponItem.shortName;
-    return {
-      ok: false,
-      reason: "weapon-unavailable",
-      // Theorycraft opens every gate, so only a weapon nothing sells is refused there.
-      message:
-        input.constraints.profile === null
-          ? `No trader or flea listing sells the ${name}.`
-          : `You can't get the ${name} on this profile.`,
-    };
-  }
-  const budgetRub = input.constraints.budgetRub;
-  if (budgetRub !== undefined) {
-    const refusal = refuseBudget(input, problem, budgetRub, catalog);
-    if (refusal !== null) return refusal;
+    return { ok: false, reason: "weapon-unavailable", message: unavailableMessage(input) };
   }
 
   const tree = input.slotTree;
   try {
+    const budgetRub = input.constraints.budgetRub;
+    const refusal =
+      budgetRub === undefined ? null : refuseBudget(input, problem, budgetRub, catalog);
+    if (refusal !== null) {
+      // The budget is only the cause if some build exists without it.
+      const free = solve({ ...problem, budget: undefined }, tree, catalog, deadline);
+      return free === null ? diagnose(problem, tree, catalog, deadline) : refusal;
+    }
     const found = solve(problem, tree, catalog, deadline);
     if (found === null) return diagnose(problem, tree, catalog, deadline);
     const { placed, attachments } = resolveBuild(tree, found.attachments, catalog);

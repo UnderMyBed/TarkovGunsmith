@@ -283,18 +283,60 @@ describe("optimize — max-accuracy", () => {
 });
 
 describe("optimize — what it refuses", () => {
-  it("refuses a gun the profile can't get", () => {
-    const locked = { ...SMALL_WEAPON_ITEM, buyFor: [] };
-    const refusal = {
-      ok: false,
-      reason: "weapon-unavailable",
-      message: "You can't get the TR on this profile.",
+  it("refuses a gun the profile can't get, naming why", () => {
+    const refusal = { ok: false, reason: "weapon-unavailable" };
+    // Prapor sells it at LL4; the profile is LL1.
+    const highLevel = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: SMALL_WEAPON_ITEM.buyFor!.map((e) =>
+        e.vendor.__typename === "TraderOffer"
+          ? { ...e, vendor: { ...e.vendor, minTraderLevel: 4 } }
+          : e,
+      ),
     };
-    expect(run({ weaponItem: locked })).toEqual(refusal);
-    expect(run({ weaponItem: locked, budgetRub: 50_000 })).toEqual(refusal);
-    expect(run({ weaponItem: locked, profile: null })).toEqual({
+    const gated = { ...refusal, message: "You can't get the TR on this profile." };
+    expect(run({ weaponItem: highLevel })).toEqual(gated);
+    expect(run({ weaponItem: highLevel, budgetRub: 50_000 })).toEqual(gated);
+    // Nothing sells it: no profile, nor theorycraft, reaches it.
+    const unsold = { ...SMALL_WEAPON_ITEM, buyFor: [] };
+    const nobody = { ...refusal, message: "No trader or flea listing sells the TR." };
+    expect(run({ weaponItem: unsold })).toEqual(nobody);
+    expect(run({ weaponItem: unsold, profile: null })).toEqual(nobody);
+    // Only Ref sells it, by barter: no trader level a profile holds reaches him.
+    const refOnly = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: [
+        {
+          priceRUB: 50_000,
+          currency: "RUB",
+          vendor: {
+            __typename: "TraderBarter" as const,
+            normalizedName: "ref",
+            minTraderLevel: 1,
+            taskUnlock: null,
+            trader: { normalizedName: "ref" },
+            barterId: "b1",
+            offeredCount: 1,
+            requiredItems: [],
+            costUnavailableReason: null,
+          },
+        },
+      ],
+    };
+    expect(run({ weaponItem: refOnly })).toEqual({
       ...refusal,
-      message: "No trader or flea listing sells the TR.",
+      message: "Only Ref sells the TR, by barter, and no trader level you can set reaches Ref.",
+    });
+    expect(run({ weaponItem: refOnly, profile: null }).ok).toBe(true);
+    const refCash = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: SMALL_WEAPON_ITEM.buyFor!.map((e) => ({
+        ...e,
+        vendor: { ...e.vendor, normalizedName: "ref", trader: { normalizedName: "ref" } },
+      })),
+    };
+    expect(run({ weaponItem: refCash })).toMatchObject({
+      message: "Only Ref sells the TR, and no trader level you can set reaches Ref.",
     });
   });
 
@@ -335,6 +377,30 @@ describe("optimize — what it refuses", () => {
     expect(
       run({ profile: fleaOff, budgetRub: 50_000, pins: { muzzle: "muzzle_brake" } }),
     ).toMatchObject({ message: /Unpin it or clear the budget/ });
+  });
+
+  it("lets the search keep a pin with no payable price that a build can leave off", () => {
+    // The pin holds only where handguard/foregrip exists: hg2 has no foregrip slot.
+    const parts = [
+      part("hg1", { recoil: -0.05 }),
+      part("hg2", { recoil: -0.04 }),
+      part("fg", { recoil: -0.01, price: null }),
+    ];
+    const slotTree = tree([
+      { nameId: "handguard", items: [["hg1", [{ nameId: "foregrip", items: ["fg"] }]], "hg2"] },
+    ]);
+    const pins = { "handguard/foregrip": "fg" };
+    expect(ok(run({ parts, slotTree, pins, budgetRub: 50_000 })).build.attachments).toEqual({
+      handguard: "hg2",
+    });
+    expect(ok(run({ parts, slotTree, pins })).build.attachments).toEqual({
+      handguard: "hg1",
+      "handguard/foregrip": "fg",
+    });
+    // A pin the slot cannot take is dropped, not refused.
+    expect(
+      ok(run({ profile: fleaOff, budgetRub: 50_000, pins: { grip: "muzzle_brake" } })).pins.dropped,
+    ).toEqual([{ path: "grip", itemId: "muzzle_brake", reason: "not-allowed" }]);
   });
 
   it("runs a budget with a pinned part it can price, or one a bought preset supplies", () => {
@@ -504,6 +570,103 @@ describe("optimize — why no build exists", () => {
         parts: [part("a", { price: "unsold" }), part("b", { price: "unsold" })],
       }),
     ).toMatchObject({ ok: false, reason: "required-slot", slotPath: "front" });
+  });
+
+  it("names a required slot before the budget when no build exists at any budget", () => {
+    const unsoldStock = [...SMALL_MODS.slice(0, 3), part("stock_standard", { price: "unsold" })];
+    const gap = {
+      ok: false,
+      reason: "required-slot",
+      slotPath: "stock",
+      message: "Nothing you can get fits the stock slot, and the Test Rifle needs one.",
+    };
+    expect(run({ slotTree: stockRequired, parts: unsoldStock, budgetRub: 9_999 })).toEqual(gap);
+    expect(
+      run({
+        slotTree: stockRequired,
+        parts: unsoldStock,
+        profile: fleaOff,
+        budgetRub: 50_000,
+        pins: { muzzle: "muzzle_brake" },
+      }),
+    ).toEqual(gap);
+  });
+
+  it("names a part needed more often than the presets that supply it", () => {
+    const offer = SMALL_WEAPON_ITEM.buyFor![0]!;
+    const withPresets = (ids: string[]) => ({
+      ...SMALL_WEAPON_ITEM,
+      buyFor: [offer, ...ids.map((id) => ({ ...offer, preset: { id, normalizedName: id } }))],
+    });
+    const one = tree([
+      { nameId: "front", required: true, items: ["p4"] },
+      { nameId: "back", required: true, items: ["p4"] },
+    ]);
+    expect(
+      run({
+        slotTree: one,
+        parts: [part("p4", { price: "unsold" })],
+        weaponItem: withPresets(["pa", "pb"]),
+        presets: [
+          { id: "pa", attachments: { front: "p4" } },
+          { id: "pb", attachments: { back: "p4" } },
+        ],
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "required-slot",
+      slotPath: "front",
+      message:
+        "You can get the p4 only with the gun, at most 1 per gun, and every complete build needs more.",
+    });
+    // Deeper down: the first required slot that takes it is named.
+    const nested = tree([
+      {
+        nameId: "receiver",
+        required: true,
+        items: [
+          [
+            "upper",
+            [
+              { nameId: "front", required: true, items: ["p4"] },
+              { nameId: "back", required: true, items: ["p4"] },
+            ],
+          ],
+        ],
+      },
+      { nameId: "side", items: ["upper", "uncatalogued"] },
+    ]);
+    expect(
+      run({
+        slotTree: nested,
+        parts: [part("upper"), part("p4", { price: "unsold" })],
+        weaponItem: withPresets(["pa", "pb"]),
+        presets: [
+          { id: "pa", attachments: { receiver: "upper", "receiver/front": "p4" } },
+          { id: "pb", attachments: { receiver: "upper", "receiver/back": "p4" } },
+        ],
+      }),
+    ).toMatchObject({ reason: "required-slot", slotPath: "receiver/front" });
+    const two = tree([
+      { nameId: "a", required: true, items: ["p"] },
+      { nameId: "b", required: true, items: ["p"] },
+      { nameId: "c", required: true, items: ["q"] },
+      { nameId: "d", required: true, items: ["q"] },
+    ]);
+    expect(
+      run({
+        slotTree: two,
+        parts: [part("p", { price: "unsold" }), part("q", { price: "unsold" })],
+        weaponItem: withPresets(["pa"]),
+        presets: [{ id: "pa", attachments: { a: "p", c: "q" } }],
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "required-slot",
+      slotPath: "a",
+      message:
+        "You can get p, q only with the gun, and every complete build needs more of them than it comes with.",
+    });
   });
 
   it("says the parts clash when every complete build has a conflict", () => {
