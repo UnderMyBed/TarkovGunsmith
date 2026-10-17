@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { tinyTree } from "../../test/tiny-tree.js";
-import { flattenVisibleSlots, resolveSelection } from "./slot-selection.js";
+import { flattenProposalSlots, flattenVisibleSlots, resolveSelection } from "./slot-selection.js";
 
 const TREE = tinyTree("w", [
   {
@@ -16,6 +16,7 @@ const TREE = tinyTree("w", [
           { nameId: "mod_handguard", items: ["rail"] },
         ],
       ],
+      ["upper-2", [{ nameId: "mod_scope", items: ["optic"] }]],
     ],
   },
   { nameId: "mod_stock", items: ["stock"] },
@@ -70,5 +71,32 @@ describe("resolveSelection", () => {
     expect(resolveSelection(rows, null)?.slot.path).toBe("mod_reciever");
     expect(resolveSelection(rows, "elsewhere")?.slot.path).toBe("mod_reciever");
     expect(resolveSelection([], "mod_reciever")).toBeNull();
+  });
+});
+
+describe("flattenProposalSlots", () => {
+  const current = { mod_reciever: "upper", "mod_reciever/mod_barrel": "barrel" };
+
+  it("is the current build's rows when nothing is proposed differently", () => {
+    expect(flattenProposalSlots(TREE, current, current)).toEqual(
+      flattenVisibleSlots(TREE, current),
+    );
+  });
+
+  it("shows the slots of both parts where the builds differ, the current part's first", () => {
+    const rows = flattenProposalSlots(TREE, current, { mod_reciever: "upper-2" });
+    expect(rows.map((r) => [r.slot.path, r.level, r.parentPath])).toEqual([
+      ["mod_reciever", 1, null],
+      ["mod_reciever/mod_barrel", 2, "mod_reciever"],
+      ["mod_reciever/mod_barrel/mod_muzzle", 3, "mod_reciever/mod_barrel"],
+      ["mod_reciever/mod_handguard", 2, "mod_reciever"],
+      ["mod_reciever/mod_scope", 2, "mod_reciever"],
+      ["mod_stock", 1, null],
+    ]);
+  });
+
+  it("shows a slot only the proposal fills", () => {
+    const rows = flattenProposalSlots(TREE, { mod_reciever: "upper" }, current);
+    expect(rows.map((r) => r.slot.path)).toContain("mod_reciever/mod_barrel/mod_muzzle");
   });
 });

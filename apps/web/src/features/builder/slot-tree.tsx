@@ -53,31 +53,90 @@ export function SlotTree({
   label = "Slots",
 }: SlotTreeProps) {
   const { rows, selected } = selection;
-  // The row that holds the tab stop: the last one focused while it is still on the tree,
-  // otherwise the selected one.
-  const [focusedPath, setFocusedPath] = useState<string | null>(null);
+  const keys = useTreeKeys(rows, selection.treeId, selected?.slot.path ?? null);
   if (rows.length === 0) {
     return (
       <p className="text-xs text-[var(--color-muted-foreground)]">This weapon has no mod slots.</p>
     );
   }
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>, index: number) => {
+    if (keys.navigate(e, index)) return;
+    if (e.key !== "Enter" && e.key !== " ") return;
+    selection.activate(rows[index]!.slot.path);
+    e.preventDefault();
+  };
+
+  return (
+    <div id={selection.treeId} role="tree" aria-label={label} className="flex flex-col">
+      {rows.map((row, index) => (
+        <SlotRow
+          key={row.slot.path}
+          row={row}
+          selected={row.slot.path === selected?.slot.path}
+          tabbable={row.slot.path === keys.tabStop}
+          attachments={attachments}
+          getAvailability={getAvailability}
+          diffStatus={diff?.get(row.slot.path)}
+          getFittedConflict={getFittedConflict}
+          onSelect={() => selection.select(row.slot.path)}
+          onFocus={() => keys.setFocusedPath(row.slot.path)}
+          onKeyDown={(e) => onKeyDown(e, index)}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ---------- useTreeKeys ----------
+
+/** What the roving focus needs to know of a row: where it sits in the hierarchy. */
+export interface TreeRowShape {
+  readonly slot: { readonly path: string };
+  readonly parentPath: string | null;
+  readonly hasChildren: boolean;
+}
+
+/** Focus the row at `path` in the tree with id `treeId`. */
+export function focusTreeRow(treeId: string, path: string): void {
+  document
+    .getElementById(treeId)
+    ?.querySelector<HTMLElement>(`[role="treeitem"][data-slot-path="${CSS.escape(path)}"]`)
+    ?.focus();
+}
+
+/**
+ * The roving tab stop and arrow keys of a flat WAI-ARIA tree, shared by every tree of slot rows:
+ * one row in the tab order at a time — the last one focused while it is still on the tree,
+ * otherwise `preferred`, otherwise the first.
+ * - Up / Down / Home / End move between rows;
+ * - Right moves to a row's first child, Left to its parent.
+ *
+ * `navigate` handles those keys (and prevents their default) and returns whether it did, so a
+ * tree adds its own keys after it.
+ */
+export function useTreeKeys(
+  rows: readonly TreeRowShape[],
+  treeId: string,
+  preferred: string | null,
+): {
+  readonly tabStop: string | null;
+  readonly setFocusedPath: (path: string) => void;
+  readonly navigate: (e: KeyboardEvent<HTMLElement>, index: number) => boolean;
+} {
+  const [focusedPath, setFocusedPath] = useState<string | null>(null);
   const tabStop =
     (focusedPath !== null && rows.some((r) => r.slot.path === focusedPath) ? focusedPath : null) ??
-    selected?.slot.path ??
-    rows[0]!.slot.path;
+    (preferred !== null && rows.some((r) => r.slot.path === preferred) ? preferred : null) ??
+    rows[0]?.slot.path ??
+    null;
 
   const focusRow = (index: number) => {
     const row = rows[index];
-    if (!row) return;
-    document
-      .getElementById(selection.treeId)
-      ?.querySelector<HTMLElement>(
-        `[role="treeitem"][data-slot-path="${CSS.escape(row.slot.path)}"]`,
-      )
-      ?.focus();
+    if (row) focusTreeRow(treeId, row.slot.path);
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>, index: number) => {
+  const navigate = (e: KeyboardEvent<HTMLElement>, index: number): boolean => {
     const row = rows[index]!;
     switch (e.key) {
       case "ArrowDown":
@@ -100,35 +159,14 @@ export function SlotTree({
           focusRow(rows.findIndex((r) => r.slot.path === row.parentPath));
         }
         break;
-      case "Enter":
-      case " ":
-        selection.activate(row.slot.path);
-        break;
       default:
-        return;
+        return false;
     }
     e.preventDefault();
+    return true;
   };
 
-  return (
-    <div id={selection.treeId} role="tree" aria-label={label} className="flex flex-col">
-      {rows.map((row, index) => (
-        <SlotRow
-          key={row.slot.path}
-          row={row}
-          selected={row.slot.path === selected?.slot.path}
-          tabbable={row.slot.path === tabStop}
-          attachments={attachments}
-          getAvailability={getAvailability}
-          diffStatus={diff?.get(row.slot.path)}
-          getFittedConflict={getFittedConflict}
-          onSelect={() => selection.select(row.slot.path)}
-          onFocus={() => setFocusedPath(row.slot.path)}
-          onKeyDown={(e) => onKeyDown(e, index)}
-        />
-      ))}
-    </div>
-  );
+  return { tabStop, setFocusedPath, navigate };
 }
 
 // ---------- SlotRow ----------

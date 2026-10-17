@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { WeaponSpec } from "@tarkov/ballistics";
 import type { BuildPrice } from "@tarkov/data";
 import { Button } from "@tarkov/ui";
-import { buildPriceParts, type PricesStatus } from "./build-price.js";
+import { buildPriceParts, formatRub, totalOf, type PricesStatus } from "./build-price.js";
 import { ergonomicsFloorNote, shownErgonomics } from "./ergonomics.js";
 import { signedPercent } from "./details-panel.js";
 import { Delta, type Direction } from "./delta.js";
@@ -22,6 +22,20 @@ export interface StatStripProps {
   nameOf: (id: string) => string;
   /** Opens the optimizer. Omitted, the strip offers no Optimize (the optimizer is open). */
   onOptimize?: (() => void) | undefined;
+  /**
+   * A build the optimizer proposes. Given, each figure is the proposal's, set against the
+   * current build's (`spec`, `buildPrice`) rather than the stock weapon's.
+   */
+  proposal?: StripProposal | undefined;
+  /** Where the optimizer stands, at the strip's end in place of Optimize. */
+  status?: ReactNode;
+}
+
+export interface StripProposal {
+  readonly spec: WeaponSpec;
+  /** `null` until it can be worked out. */
+  readonly buildPrice: BuildPrice | null;
+  readonly boughtAs: string | null;
 }
 
 /** To one decimal, dropping a trailing ".0" (119, not 119.0). */
@@ -103,6 +117,18 @@ function AgainstStock({ stock, delta, dir }: { stock: string; delta: string; dir
   );
 }
 
+/** "was 48", then the delta from it, numbers in the numeric face. */
+function AgainstCurrent({ was, delta, dir }: { was: string; delta: string; dir: Direction }) {
+  return (
+    <>
+      was <span className="font-mono tabular-nums">{was}</span>{" "}
+      <span className="font-mono tabular-nums">
+        <Delta text={delta} dir={dir} />
+      </span>
+    </>
+  );
+}
+
 /**
  * The workbench's stat strip: the six figures a build is judged by, each with its stock value and
  * a delta coloured, and named, better or worse. The Optimize action sits at its end.
@@ -120,7 +146,42 @@ export function StatStrip({
   boughtAs,
   nameOf,
   onOptimize,
+  proposal,
+  status,
 }: StatStripProps) {
+  const end =
+    onOptimize !== undefined ? (
+      <div className="flex flex-[0_0_auto] items-center px-4 py-3 sm:px-6">
+        <Button
+          variant="secondary"
+          className="h-12 border-2 border-[var(--color-primary)] px-5 text-base font-bold text-[var(--color-primary-text)]"
+          onClick={onOptimize}
+        >
+          <svg aria-hidden width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1l6 6-6 6-6-6z" stroke="currentColor" strokeWidth="1.6" />
+          </svg>
+          Optimize
+        </Button>
+      </div>
+    ) : status !== undefined ? (
+      <div className="flex flex-[0_0_auto] flex-col justify-center gap-1 px-4 py-3 text-12 sm:px-6">
+        {status}
+      </div>
+    ) : null;
+
+  if (proposal !== undefined) {
+    return (
+      <ProposalStrip
+        current={spec}
+        currentPrice={buildPrice}
+        proposal={proposal}
+        prices={prices}
+        nameOf={nameOf}
+        end={end}
+      />
+    );
+  }
+
   const ergo = shownErgonomics(spec.ergonomics);
   const stockErgo = stockSpec === null ? null : shownErgonomics(stockSpec.ergonomics);
 
@@ -187,21 +248,144 @@ export function StatStrip({
         />
         <CostCell prices={prices} buildPrice={buildPrice} boughtAs={boughtAs} nameOf={nameOf} />
       </dl>
-      {onOptimize && (
-        <div className="flex flex-[0_0_auto] items-center px-4 py-3 sm:px-6">
-          <Button
-            variant="secondary"
-            className="h-12 border-2 border-[var(--color-primary)] px-5 text-base font-bold text-[var(--color-primary-text)]"
-            onClick={onOptimize}
-          >
-            <svg aria-hidden width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1l6 6-6 6-6-6z" stroke="currentColor" strokeWidth="1.6" />
-            </svg>
-            Optimize
-          </Button>
-        </div>
-      )}
+      {end}
     </section>
+  );
+}
+
+/**
+ * The strip while a proposal shows: the proposed build's figures, each against the current
+ * build's. Ergonomics is floored as everywhere (`ergonomics.ts`), its delta too.
+ */
+function ProposalStrip({
+  current,
+  currentPrice,
+  proposal,
+  prices,
+  nameOf,
+  end,
+}: {
+  current: WeaponSpec;
+  currentPrice: BuildPrice | null;
+  proposal: StripProposal;
+  prices: PricesStatus;
+  nameOf: (id: string) => string;
+  end: ReactNode;
+}) {
+  const next = proposal.spec;
+  const ergo = shownErgonomics(next.ergonomics);
+  const was = shownErgonomics(current.ergonomics);
+  const one = (value: number, from: number, higherIsWorse: boolean) => (
+    <AgainstCurrent
+      was={oneDecimal(from)}
+      delta={formatDelta(value - from, 1, true)}
+      dir={direction(value - from, higherIsWorse)}
+    />
+  );
+  const two = (value: number, from: number) => (
+    <AgainstCurrent
+      was={from.toFixed(2)}
+      delta={formatDelta(value - from, 2)}
+      dir={direction(value - from, true)}
+    />
+  );
+  return (
+    <section
+      aria-label="Build stats, proposed"
+      className="flex flex-wrap items-stretch border-b border-[var(--color-border)] bg-[var(--color-muted)]"
+    >
+      <dl className="-mb-px flex min-w-0 flex-[1_1_640px] flex-wrap">
+        <Cell
+          label="Ergonomics"
+          value={oneDecimal(ergo)}
+          title={ergonomicsFloorNote(next.ergonomics)}
+          sub={one(ergo, was, false)}
+        />
+        <Cell
+          label="Vertical recoil"
+          value={oneDecimal(next.verticalRecoil)}
+          sub={one(next.verticalRecoil, current.verticalRecoil, true)}
+        />
+        <Cell
+          label="Horizontal recoil"
+          value={oneDecimal(next.horizontalRecoil)}
+          sub={one(next.horizontalRecoil, current.horizontalRecoil, true)}
+        />
+        <Cell
+          label="Weight"
+          value={next.weight.toFixed(2)}
+          unit="kg"
+          sub={two(next.weight, current.weight)}
+        />
+        <Cell
+          label="Accuracy"
+          value={next.accuracy.toFixed(2)}
+          unit="MOA"
+          sub={two(next.accuracy, current.accuracy)}
+        />
+        <ProposedCostCell
+          prices={prices}
+          current={currentPrice}
+          proposal={proposal}
+          nameOf={nameOf}
+        />
+      </dl>
+      {end}
+    </section>
+  );
+}
+
+/** "₽787.0k": a rouble difference, to the nearest hundred. */
+export function formatRubDelta(delta: number): string {
+  if (Math.abs(delta) < 50) return "";
+  return `${delta > 0 ? "+" : "−"}${(Math.abs(delta) / 1000).toFixed(1)}k`;
+}
+
+function ProposedCostCell({
+  prices,
+  current,
+  proposal,
+  nameOf,
+}: {
+  prices: PricesStatus;
+  current: BuildPrice | null;
+  proposal: StripProposal;
+  nameOf: (id: string) => string;
+}) {
+  if (prices.state !== "ready" || proposal.buildPrice === null) {
+    return <CostCell prices={prices} buildPrice={null} boughtAs={null} nameOf={nameOf} />;
+  }
+  const { figure, note } = buildPriceParts(proposal.buildPrice, nameOf);
+  const from = totalOf(current);
+  const to = totalOf(proposal.buildPrice);
+  const as =
+    proposal.buildPrice.status !== "unobtainable" && proposal.boughtAs !== null
+      ? `as the ${proposal.boughtAs} preset`
+      : null;
+  const against =
+    from === null ? null : (
+      <AgainstCurrent
+        was={formatRub(from)}
+        delta={to === null ? "" : formatRubDelta(to - from)}
+        dir={to === null ? null : direction(to - from, true)}
+      />
+    );
+  const rest = [as, note].filter((s): s is string => s !== null).join(" · ");
+  return (
+    <Cell
+      testId="build-cost"
+      label="Cost"
+      value={figure ?? "—"}
+      sub={
+        against === null && rest === "" ? undefined : (
+          <>
+            {against}
+            {against !== null && rest !== "" && " · "}
+            {rest}
+          </>
+        )
+      }
+    />
   );
 }
 
