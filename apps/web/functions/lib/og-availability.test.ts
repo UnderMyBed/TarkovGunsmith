@@ -19,8 +19,8 @@ const defaultProfile: PlayerProfile = {
 describe("availabilityPillText", () => {
   it("clamps LL1-accessible mods to the LL2 pill (no LL1 pill in the spec)", () => {
     const mods: AvailabilityMod[] = [
-      { id: "a", buyFor: [{ vendor: { normalizedName: "prapor" }, priceRUB: 100 }] },
-      { id: "b", buyFor: [{ vendor: { normalizedName: "skier" }, priceRUB: 100 }] },
+      { id: "a", offers: [{ vendor: { normalizedName: "prapor" } }] },
+      { id: "b", offers: [{ vendor: { normalizedName: "skier" } }] },
     ];
     expect(
       availabilityPillText(mods, {
@@ -32,7 +32,7 @@ describe("availabilityPillText", () => {
 
   it("returns FLEA when any mod is flea-only", () => {
     const mods: AvailabilityMod[] = [
-      { id: "a", buyFor: [{ vendor: { normalizedName: "flea-market" }, priceRUB: 100 }] },
+      { id: "a", offers: [{ vendor: { normalizedName: "flea-market" } }] },
     ];
     expect(availabilityPillText(mods, defaultProfile)).toBe("FLEA");
   });
@@ -41,7 +41,7 @@ describe("availabilityPillText", () => {
     const mods: AvailabilityMod[] = [
       {
         id: "a",
-        buyFor: [{ vendor: { normalizedName: "peacekeeper" }, priceRUB: 100, minTraderLevel: 4 }],
+        offers: [{ vendor: { normalizedName: "peacekeeper" }, minTraderLevel: 4 }],
       },
     ];
     expect(availabilityPillText(mods, defaultProfile)).toBe("LL4");

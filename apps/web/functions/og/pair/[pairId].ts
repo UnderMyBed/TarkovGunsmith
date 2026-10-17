@@ -2,7 +2,7 @@
  * Cloudflare Pages Function — renders the Open Graph share card PNG for a
  * saved build pair at `/og/pair/:pairId`.
  *
- * Mirrors `/og/build/:id` but hydrates both sides in parallel. Either side
+ * Mirrors `/og/build/:id` but hydrates both sides. Either side
  * may be null (single-sided pair) — `hydratePairCard` tolerates that. The
  * upstream Worker returns a `BuildPairV1` JSON body with `left`/`right`
  * each potentially `null`.
@@ -22,19 +22,15 @@ import {
 } from "@tarkov/og";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
 import { type BuildV6, DEFAULT_PROFILE } from "@tarkov/data";
-import { fetchOgRowsForBuild, type OgMod } from "../../lib/og-graphql.js";
+import { fetchOgRowsForBuild, loadOgData, type OgData, type OgMod } from "../../lib/og-graphql.js";
 import { availabilityPillText } from "../../lib/og-availability.js";
 import { isValidBuildId } from "../../lib/build-id.js";
 import { buildsApiBase } from "../../lib/builds-api.js";
 
 export interface Env {
   BUILDS_API_URL?: string;
-  /**
-   * Optional override for the json.tarkov.dev base this card reads item stats from. Unset in
-   * production; the e2e suite binds it to a local fixture server so the pre-merge gate never
-   * depends on upstream being reachable. See `apps/web/functions/lib/og-graphql.ts`.
-   */
-  TARKOV_JSON_API_BASE?: string;
+  /** The deploy's static assets, which hold the build-time snapshot the card is drawn from. */
+  ASSETS: Fetcher;
 }
 
 interface PairRecord {
@@ -66,11 +62,11 @@ interface SideArgs {
   mods: OgMod[];
 }
 
-async function hydrateSide(build: BuildV6 | null, baseUrl?: string): Promise<SideArgs | null> {
+function hydrateSide(build: BuildV6 | null, data: OgData): SideArgs | null {
   if (!build) return null;
-  const rows = await fetchOgRowsForBuild(
+  const rows = fetchOgRowsForBuild(
     { weaponId: build.weaponId, attachments: build.attachments },
-    baseUrl,
+    data,
   );
   return {
     build: { ...build, attachments: rows.attachments },
@@ -105,10 +101,11 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     // a no-op (same pattern as apps/web/functions/lib/og-graphql.ts).
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     const pair = (await upstream.json()) as PairRecord;
-    const [leftArgs, rightArgs] = await Promise.all([
-      hydrateSide(pair.left, env.TARKOV_JSON_API_BASE),
-      hydrateSide(pair.right, env.TARKOV_JSON_API_BASE),
-    ]);
+    const dataStartedAt = Date.now();
+    const data = await loadOgData(env.ASSETS, request.url);
+    const dataMs = Date.now() - dataStartedAt;
+    const leftArgs = hydrateSide(pair.left, data);
+    const rightArgs = hydrateSide(pair.right, data);
     const vm = hydratePairCard({ left: leftArgs, right: rightArgs });
 
     if (vm.left && leftArgs) {
@@ -127,7 +124,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     const png = await renderPng(pairCard(vm), embeddedFonts(), { width: 1200, height: 630 });
     const body = new Uint8Array(png);
     const res = new Response(body, { status: 200, headers: HEADERS_PNG });
-    console.log(JSON.stringify({ route: "og/pair", id, status: 200, ms: Date.now() - startedAt }));
+    console.log(
+      JSON.stringify({ route: "og/pair", id, status: 200, ms: Date.now() - startedAt, dataMs }),
+    );
     await cache.put(cacheKey, res.clone());
     return res;
   } catch (err) {

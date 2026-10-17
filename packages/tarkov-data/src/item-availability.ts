@@ -239,7 +239,7 @@ export function itemAvailability(
         sawFleaPath = true;
         if (isFleaBlacklisted(item)) continue;
         if (!profile.flea) continue;
-        // Upstream's `minLevelForFlea`, mapped onto the vendor by `resolveBuyFor`. Absent
+        // Upstream's `minLevelForFlea`, mapped onto the vendor by `createOfferCollector`. Absent
         // and 0 both mean "no level requirement", and `?? 1` collapses them onto the
         // profile's own floor of 1 so neither can accidentally gate anything.
         const minPlayerLevel = vendor.minPlayerLevel ?? 1;

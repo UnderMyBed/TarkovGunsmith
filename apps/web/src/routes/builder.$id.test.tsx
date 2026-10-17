@@ -68,15 +68,15 @@ describe("/builder/$id", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 
-  it("loads a v6 build: shows the load notice, hydrates the weapon + known attachment, and flags an unresolvable mod as upstream drift", async () => {
+  it("loads a v6 build: shows the load notice, hydrates the weapon + known attachment, and orphans an id the game data no longer holds", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
         jsonResponse({
           version: 6,
           weaponId: "w-m4a1",
-          // mod-muzzle resolves against the fixture weapon tree; "mod-vanished" does not —
-          // it exercises `upstreamDrift`'s "N mods couldn't be resolved" path.
+          // mod-muzzle resolves against the fixture weapon tree; "mod-vanished" is in no
+          // snapshot, so it is moved off the weapon into the orphaned list on load.
           attachments: { mod_muzzle: "mod-muzzle", mod_stock: "mod-vanished" },
           orphaned: [],
           createdAt: new Date().toISOString(),
@@ -88,14 +88,11 @@ describe("/builder/$id", () => {
     expect(await screen.findByText(/Loaded build/)).toBeInTheDocument();
     expect(screen.getByText(VALID_ID)).toBeInTheDocument();
 
-    // Weapon hydrated from `initialWeaponId` — BuildHeader shows its name once weapons.data
-    // resolves, and the slot tree reports both attachments (mod-vanished still occupies its
-    // slot path; only the *availability* lookup fails for it, not placement).
-    expect(await screen.findByText("2 attached")).toBeInTheDocument();
-
-    // upstreamDrift: 1 of the 2 attached mod ids isn't in the fixture mod list.
-    expect(await screen.findByText(/1 mod couldn't be resolved/)).toBeInTheDocument();
-    expect(screen.getByText(/Viewing what still exists\./)).toBeInTheDocument();
+    expect(await screen.findByText("1 attached")).toBeInTheDocument();
+    expect(
+      await screen.findByText(/1 mod from the saved build couldn't be placed on this weapon\./),
+    ).toBeInTheDocument();
+    expect(screen.getByText("mod-vanished — not a part the Builder knows")).toBeInTheDocument();
   });
 
   it("loads a v1 build and migrates its flat modIds into slot attachments once the tree resolves", async () => {

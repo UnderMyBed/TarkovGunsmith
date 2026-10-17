@@ -11,6 +11,12 @@
     "types": ["node", "react", "vite/client", "@cloudflare/workers-types"],
     "moduleResolution": "Bundler"
   },
-  "include": ["src/**/*", "functions/**/*.ts", "vite.config.ts", "vitest.config.ts"],
+  "include": [
+    "src/**/*",
+    "functions/**/*.ts",
+    "scripts/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }

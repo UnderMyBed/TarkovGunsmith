@@ -9,10 +9,13 @@ They exist so the suite does not depend on upstream being reachable. The GraphQL
 used to call went down for over a month; tests that need a live API stop being tests the moment
 that happens.
 
-Two consumers read them: this package's unit tests via `client.ts`, and the Playwright suite via
-`apps/web/e2e/upstream-fixtures.ts`, which serves the raw envelopes back to the browser and to the
-OG Pages Functions. Trimming an item out of `items-sample.json` can therefore empty a picker in an
-e2e spec — `apps/web/e2e/upstream.ts` documents which content the specs depend on.
+Three consumers read them: this package's unit tests via `client.ts`; every `apps/web` build
+other than the release deploy, which generates the Builder snapshot from them
+(`apps/web/scripts/builder-snapshot.ts`); and the Playwright suite via
+`apps/web/e2e/upstream-fixtures.ts`, which serves the raw envelopes to the browser. Trimming an
+item out of `items-sample.json` can therefore empty a picker in an e2e spec —
+`apps/web/e2e/upstream.ts` documents which content the specs depend on. Snapshot generation is
+strict, so an item the captures add must match its schema in full or every build fails.
 
 `items-sample.json` deliberately includes item types the selectors must _reject_ as well as ones
 they must accept — a grenade, a helmet and an armor attachment alongside ammo, armor, weapons and
@@ -38,6 +41,18 @@ Carbine default, the M4A1 SOPMOD II and the golden TT-33's default) is in the ca
 `selectWeaponPresets` places all four. The golden TT's preset is sold only on the flea
 market, which is what `preset-seed.test.ts` reads it for. The preset parts also widen the
 M4A1's and PM's slot options in the e2e suite.
+
+Added 2026-10-16 with the Builder snapshot's strict generation, which requires every captured
+offer's quest lock to resolve: the tasks "I Need More Power" (`5a03296886f774569778596a`), "Night
+Sweep" (`60e71c11d54b755a3b53eb65`) and "Gunsmith Master - Part 7" (`5b477f7686f7744d1b23c4d2`),
+which captured offers are locked behind; and the PVS-7 Wilcox adapter (`5c11046cd174af02a012e42b`), a
+helmet mount — part-typed, flea-priced, and reached by no weapon slot — for the barter-ingredient
+tests.
+
+`legacy-buy-for.json` pins what the offer resolver returned for every fixture weapon and part
+before offers were split from prices (main at `2b8c53b`, over these same captures).
+`generate.test.ts` checks the snapshot against it. Regenerate it only when a capture changes
+those items' offers, and from the pre-split resolver, never from the code under test.
 
 `preset-oracle-sample.json` holds six upstream weapon presets with their base weapons and every
 part they list, captured 2026-10-16, for `preset-oracle.test.ts`: the presets' own ergonomics and

@@ -64,12 +64,12 @@ Smoke-level Chromium tests live at `apps/web/e2e/`. Run:
 - `pnpm --filter @tarkov/web build` — **required before the line below.** Playwright's `webServer` runs `wrangler pages dev dist`, which serves the built output. `playwright.config.ts` checks for `dist/index.html` while the config is still evaluating, so an unbuilt tree stops immediately with the command that fixes it.
 - `pnpm --filter @tarkov/web test:e2e` — run the suite.
 
-Playwright starts three webServers: `wrangler pages dev dist` on 4173, the builds-api Worker on 8787, and `e2e/upstream-fixture-server.ts` on 8790. CI runs the suite as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `smoke.spec.ts`. Any new route added to `__root.tsx` nav must also be added there.
+Playwright starts two webServers: `wrangler pages dev dist` on 4173 and the builds-api Worker on 8787. CI runs the suite as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `smoke.spec.ts`. Any new route added to `__root.tsx` nav must also be added there.
 
 **No spec may depend on a live third party.** Game data is served from the captures in `packages/tarkov-data/src/__fixtures__/`, not from `json.tarkov.dev`:
 
 - Import `test` / `expect` from `./upstream.js`, never from `@playwright/test`. That module intercepts the browser's upstream calls, stubs the `assets.tarkov.dev` image CDN, and **fails the test** on any other live host the page reaches, naming the URL.
-- The OG Pages Functions fetch upstream server-side, where `page.route` can't reach them; they read the fixture server instead via the `TARKOV_JSON_API_BASE` binding set in `playwright.config.ts`.
+- The build generates the Builder snapshot (`/data/builder-snapshot.json`, `/data/builder-prices.json`) from the same captures — `scripts/builder-snapshot.ts`, `TARKOV_SNAPSHOT_SOURCE` defaulting to `fixtures`. The SPA and the OG Pages Functions read it, so neither reaches upstream for it. See `docs/operations/builder-snapshot.md`.
 - Google Fonts is the one allowed live host — the font tests below assert the real `<link>` resolves.
 - Because the data is fixed, assertions are exact. `expect(rows).toBeGreaterThan(50)` against whatever upstream shipped that morning is not a contract; derive the number from the capture (`fixtureItemCount`) or from the shared constants in `upstream.ts`.
 

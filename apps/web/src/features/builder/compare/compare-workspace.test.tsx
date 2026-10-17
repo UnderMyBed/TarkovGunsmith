@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import type * as TarkovData from "@tarkov/data";
+import { createTestBuilderData } from "../../../test/test-builder-data.js";
+import { createTestClient } from "../../../test/test-client.js";
+import * as TarkovData from "@tarkov/data";
 import type { BuildV6 } from "@tarkov/data";
 import { CompareWorkspace } from "./compare-workspace.js";
 
@@ -25,7 +27,16 @@ vi.mock("@tarkov/data", async () => {
     useWeaponTree: () => idleQuery,
     useSavePair: () => ({ mutate: vi.fn(), isPending: false, error: null }),
     useForkPair: () => ({ mutate: vi.fn(), isPending: false, error: null }),
+    useBuilderData: () => mockBuilderData,
   };
+});
+
+// The real snapshot the route tests run on, so the paste-url side resolves against real data.
+let mockBuilderData: TarkovData.BuilderDataSource;
+let realBuilderData: TarkovData.BuilderDataSource;
+beforeAll(async () => {
+  realBuilderData = await createTestBuilderData(createTestClient());
+  mockBuilderData = realBuilderData;
 });
 
 const leftBuild: BuildV6 = {
@@ -61,6 +72,82 @@ describe("CompareWorkspace sessionStorage prefill", () => {
     // markClean() ran in the `finally` block — a fresh clone from Builder should not start
     // the page in a "you have unsaved changes" state.
     expect(screen.queryByText(/unsaved/i)).not.toBeInTheDocument();
+  });
+
+  it("resolves a pasted right-hand build against the game data, orphaning unknown parts", async () => {
+    sessionStorage.setItem("compare:leftPrefill", JSON.stringify(leftBuild));
+    sessionStorage.setItem("compare:mode", "paste-url");
+    sessionStorage.setItem("compare:rightBuildId", "abcd2345");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              ...leftBuild,
+              weaponId: "w-right",
+              attachments: { mod_stock: "gone-part" },
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          ),
+        ),
+      ),
+    );
+    try {
+      render(<CompareWorkspace />);
+      // Side B holds the build with the unknown part moved off the weapon, as the Builder
+      // would load it: nothing attached, and the part named in its orphan banner.
+      expect(
+        await screen.findByText("gone-part — not a part the Builder knows"),
+      ).toBeInTheDocument();
+      expect(screen.getAllByText("0 attached")).toHaveLength(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  describe("when the pasted build cannot be read", () => {
+    const paste = (status: number) => {
+      sessionStorage.setItem("compare:leftPrefill", JSON.stringify(leftBuild));
+      sessionStorage.setItem("compare:mode", "paste-url");
+      sessionStorage.setItem("compare:rightBuildId", "abcd2345");
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() =>
+          Promise.resolve(
+            new Response(JSON.stringify({ ...leftBuild, weaponId: "w-right" }), { status }),
+          ),
+        ),
+      );
+    };
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      mockBuilderData = realBuilderData;
+    });
+
+    it("says the game data was updated when the snapshot is from another version", async () => {
+      mockBuilderData = {
+        ...realBuilderData,
+        snapshot: () => Promise.reject(new TarkovData.SnapshotVersionError(2)),
+      };
+      paste(200);
+      render(<CompareWorkspace />);
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Failed to load data: Game data was updated. Reload the page.",
+      );
+      expect(screen.getByText("empty")).toBeInTheDocument();
+    });
+
+    it("leaves side B empty and says nothing when only the build failed to load", async () => {
+      paste(404);
+      const loaded = vi.spyOn(realBuilderData, "snapshot");
+      render(<CompareWorkspace />);
+      await vi.waitFor(() => expect(loaded).toHaveBeenCalled());
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByText("empty")).toBeInTheDocument();
+      loaded.mockRestore();
+    });
   });
 
   it("does not touch sessionStorage when a loader-supplied initialPair is present", () => {

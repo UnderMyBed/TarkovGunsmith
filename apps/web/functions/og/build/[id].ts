@@ -6,7 +6,8 @@
  *   1. Check CF edge cache — return the cached PNG immediately on hit.
  *   2. `initResvg(wasmModule)` (idempotent across isolate).
  *   3. GET the build from the builds-api Worker; 404 → fallback PNG.
- *   4. Fetch GraphQL rows for the weapon + attached mods.
+ *   4. Load the build-time snapshot and prices from the deploy's own assets (once per
+ *      isolate) and draw the weapon + mounted mods from them.
  *   5. Hydrate the view model, overwrite `availability` with the
  *      trader-level summary computed from the actual `buyFor` offers.
  *   6. Render JSX → SVG → PNG at 1200×630.
@@ -31,19 +32,15 @@ import {
 } from "@tarkov/og";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
 import { type BuildV6, DEFAULT_PROFILE } from "@tarkov/data";
-import { fetchOgRowsForBuild } from "../../lib/og-graphql.js";
+import { fetchOgRowsForBuild, loadOgData } from "../../lib/og-graphql.js";
 import { availabilityPillText } from "../../lib/og-availability.js";
 import { isValidBuildId } from "../../lib/build-id.js";
 import { buildsApiBase } from "../../lib/builds-api.js";
 
 export interface Env {
   BUILDS_API_URL?: string;
-  /**
-   * Optional override for the json.tarkov.dev base this card reads item stats from. Unset in
-   * production; the e2e suite binds it to a local fixture server so the pre-merge gate never
-   * depends on upstream being reachable. See `apps/web/functions/lib/og-graphql.ts`.
-   */
-  TARKOV_JSON_API_BASE?: string;
+  /** The deploy's static assets, which hold the build-time snapshot the card is drawn from. */
+  ASSETS: Fetcher;
 }
 
 const HEADERS_PNG = {
@@ -85,9 +82,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     }
 
     const build = (await upstream.json()) as BuildV6;
-    const rows = await fetchOgRowsForBuild(
+    const dataStartedAt = Date.now();
+    const data = await loadOgData(env.ASSETS, request.url);
+    const dataMs = Date.now() - dataStartedAt;
+    const rows = fetchOgRowsForBuild(
       { weaponId: build.weaponId, attachments: build.attachments },
-      env.TARKOV_JSON_API_BASE,
+      data,
     );
     const vm = hydrateBuildCard({
       build: { ...build, attachments: rows.attachments },
@@ -103,7 +103,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
     const body = new Uint8Array(png);
     const res = new Response(body, { status: 200, headers: HEADERS_PNG });
     console.log(
-      JSON.stringify({ route: "og/build", id, status: 200, ms: Date.now() - startedAt }),
+      JSON.stringify({ route: "og/build", id, status: 200, ms: Date.now() - startedAt, dataMs }),
     );
     await cache.put(cacheKey, res.clone());
     return res;

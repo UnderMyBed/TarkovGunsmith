@@ -27,11 +27,14 @@ export type BuildV1 = z.infer<typeof BuildV1>;
  * current weapon tree — rendered as a dismissable banner so the user can
  * manually re-home them.
  */
+/** The most ids a build's `orphaned` list holds. Every build version since v2 enforces it. */
+export const ORPHANED_CAP = 64;
+
 export const BuildV2 = z.object({
   version: z.literal(2),
   weaponId: z.string().min(1),
   attachments: z.record(z.string().min(1), z.string().min(1)),
-  orphaned: z.array(z.string().min(1)).max(64),
+  orphaned: z.array(z.string().min(1)).max(ORPHANED_CAP),
   // UTC-only: Zod rejects timezone offsets by default; Date.toISOString() always produces a Z-suffix.
   createdAt: z.string().datetime(),
 });

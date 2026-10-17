@@ -7,6 +7,7 @@ import type {
   BuildV5,
   BuildV6,
 } from "./build-schema.js";
+import { ORPHANED_CAP } from "./build-schema.js";
 import { expandSlots, type SlotGraph, type WeaponTree } from "./queries/slot-graph.js";
 
 /**
@@ -19,8 +20,6 @@ export interface SlotNodeForMigration {
   readonly allowedItemIds: ReadonlySet<string>;
   readonly children: readonly SlotNodeForMigration[];
 }
-
-const ORPHANED_CAP = 64;
 
 /** The depth the v1 → v2 placement has always searched to. */
 const LEGACY_V1_DEPTH = 3;

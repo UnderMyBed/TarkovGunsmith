@@ -15058,6 +15058,145 @@
               "currencyItem": "5449016a4bdc2d6f028b456f"
             }
           ]
+        },
+        "5c11046cd174af02a012e42b": {
+          "id": "5c11046cd174af02a012e42b",
+          "name": "5c11046cd174af02a012e42b Name",
+          "shortName": "5c11046cd174af02a012e42b ShortName",
+          "normalizedName": "pvs-7-wilcox-adapter",
+          "description": "5c11046cd174af02a012e42b Description",
+          "updated": "2026-10-17T00:48:02.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.07,
+          "lastOfferCount": 3,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/PVS-7_Wilcox_Adapter",
+          "link": "https://tarkov.dev/item/pvs-7-wilcox-adapter",
+          "iconLink": "https://assets.tarkov.dev/5c11046cd174af02a012e42b-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5c11046cd174af02a012e42b-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5c11046cd174af02a012e42b-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5c11046cd174af02a012e42b-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5c11046cd174af02a012e42b-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5c11046cd174af02a012e42b-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 2454,
+          "categories": [
+            "55818b224bdc2dde698b456f",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f755f86f77447ec5d770e",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 7999,
+          "avg24hPrice": 11555,
+          "low24hPrice": 7999,
+          "high24hPrice": 16666,
+          "changeLast48h": -5516,
+          "changeLast48hPercent": -32.31,
+          "lastScan": "2026-10-17T00:38:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 0,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [
+              {
+                "id": "5c11046cd174af02a012e42d",
+                "nameId": "mod_nvg",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["5c110624d174af029e69734c"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_NVG"
+              }
+            ]
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 0,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 3068,
+              "priceRUB": 3068,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 20000,
+              "buyLimit": 3
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 981,
+              "priceRUB": 981,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 588,
+              "priceRUB": 588,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 957,
+              "priceRUB": 957,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 7,
+              "priceRUB": 883,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 1104,
+              "priceRUB": 1104,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 1177,
+              "priceRUB": 1177,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 981,
+              "priceRUB": 981,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
         }
       },
       "armorMaterials": {
@@ -16511,6 +16650,8 @@
     "5b3cadf35acfc400194776a0 Description": "Ornated side grips for the TT pistol. So fancy and swaggy.",
     "571a29dc2459771fb2755a6a Name": "TT 7.62x25 tt-105 8-round magazine",
     "571a29dc2459771fb2755a6a ShortName": "tt-105",
-    "571a29dc2459771fb2755a6a Description": "A standard late-issue 8-round magazine for the TT pistol. It comes without a lanyard ring."
+    "571a29dc2459771fb2755a6a Description": "A standard late-issue 8-round magazine for the TT pistol. It comes without a lanyard ring.",
+    "5c11046cd174af02a012e42b Name": "PVS-7 Wilcox Adapter",
+    "5c11046cd174af02a012e42b ShortName": "W-PVS7"
   }
 }

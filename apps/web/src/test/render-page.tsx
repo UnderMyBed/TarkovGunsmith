@@ -5,12 +5,13 @@ import {
   createRootRoute,
   createRouter,
 } from "@tanstack/react-router";
-import type { TarkovJsonClient } from "@tarkov/data";
+import type { BuilderDataSource, TarkovJsonClient } from "@tarkov/data";
 import { TarkovDataProvider } from "@tarkov/data";
 import { render } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { createTestClient } from "./test-client.js";
+import { createTestBuilderData } from "./test-builder-data.js";
 
 /**
  * Mount a page component that no longer has a route (the parked features under
@@ -19,10 +20,11 @@ import { createTestClient } from "./test-client.js";
  */
 export async function renderPage(
   page: ReactElement,
-  options?: { client?: TarkovJsonClient },
+  options?: { client?: TarkovJsonClient; builderData?: BuilderDataSource },
 ): Promise<RenderResult> {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const client = options?.client ?? createTestClient();
+  const builderData = options?.builderData ?? (await createTestBuilderData(client));
   const rootRoute = createRootRoute({ component: () => page });
   const router = createRouter({
     routeTree: rootRoute,
@@ -31,7 +33,7 @@ export async function renderPage(
   await router.load();
   return render(
     <QueryClientProvider client={queryClient}>
-      <TarkovDataProvider client={client}>
+      <TarkovDataProvider client={client} builderData={builderData}>
         <RouterProvider router={router} />
       </TarkovDataProvider>
     </QueryClientProvider>,

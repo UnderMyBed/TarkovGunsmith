@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { fixtureWeaponList } from "../__test-utils__/fixture-snapshot.js";
 import { fetchWeapon, weaponSchema } from "./weapon.js";
-import { fetchWeaponList } from "./weaponList.js";
 import { fixtureClient } from "../__fixtures__/client.js";
 
 const validItem = {
@@ -36,7 +36,7 @@ describe("weaponSchema", () => {
 
 describe("fetchWeapon", () => {
   it("returns the weapon for a known id", async () => {
-    const list = await fetchWeaponList(fixtureClient());
+    const list = await fixtureWeaponList(fixtureClient());
     const found = await fetchWeapon(fixtureClient(), list[0]!.id);
     expect(found.id).toBe(list[0]!.id);
     expect(found.properties.propertiesType).toBe("ItemPropertiesWeapon");

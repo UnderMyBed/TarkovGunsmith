@@ -1,9 +1,12 @@
 import { Card, CardContent, focusRing } from "@tarkov/ui";
 
 export interface OrphanedBannerProps {
-  /** Mod ids that couldn't be placed in the current slot tree. */
+  /**
+   * Mod ids from the saved build that are not on the weapon: ones no slot of this weapon takes,
+   * and ones the Builder's game data does not hold at all.
+   */
   orphanedIds: readonly string[];
-  /** Lookup: id → display name (from usePartCatalog). Unknown ids render as the raw id. */
+  /** Lookup: id → display name (from usePartCatalog). An id missing here is not a Builder part. */
   names: Readonly<Record<string, string>>;
   /** Fires when the user dismisses the banner — parent should clear orphaned from state. */
   onDismiss: () => void;
@@ -17,11 +20,11 @@ export function OrphanedBanner({ orphanedIds, names, onDismiss }: OrphanedBanner
         <div className="flex-1">
           <p className="text-sm font-medium">
             {orphanedIds.length} mod{orphanedIds.length === 1 ? "" : "s"} from the saved build
-            couldn't be placed in this weapon's slots.
+            couldn't be placed on this weapon.
           </p>
           <ul className="mt-2 text-xs text-[var(--color-muted-foreground)]">
             {orphanedIds.map((id) => (
-              <li key={id}>{names[id] ?? id}</li>
+              <li key={id}>{names[id] ?? `${id} — not a part the Builder knows`}</li>
             ))}
           </ul>
         </div>

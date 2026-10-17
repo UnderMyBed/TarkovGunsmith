@@ -44,6 +44,101 @@ describe("createTarkovClient", () => {
     expect(result.t1!.name).toBe("t1 Nickname");
   });
 
+  it("fails a resource whose translation document is missing when translations are required", async () => {
+    const client = createTarkovClient(
+      BASE,
+      stubFetch({
+        "/traders": { data: { t1: { name: "t1 Nickname" } }, translations: ["$.data.*.name"] },
+      }),
+      undefined,
+      { requireTranslations: true },
+    );
+    await expect(client.fetchResource("traders")).rejects.toMatchObject({
+      name: "TarkovApiError",
+      resource: "traders_en",
+      status: 404,
+      message: expect.stringContaining("404") as unknown,
+    });
+  });
+
+  it.each([
+    ["a body without `data`", { translations: { "t1 Nickname": "Prapor" } }, "no `data` object"],
+    ["an array for `data`", { data: ["Prapor"] }, "no `data` object"],
+    ["an empty `data`", { data: {} }, "`data` is empty"],
+  ])("fails a required translation document served 200 with %s", async (_label, body, reason) => {
+    const client = createTarkovClient(
+      BASE,
+      stubFetch({
+        "/traders": { data: { t1: { name: "t1 Nickname" } }, translations: ["$.data.*.name"] },
+        "/traders_en": body,
+      }),
+      undefined,
+      { requireTranslations: true },
+    );
+    await expect(client.fetchResource("traders")).rejects.toMatchObject({
+      name: "TarkovApiError",
+      resource: "traders_en",
+      status: 0,
+      message: expect.stringContaining(reason) as unknown,
+    });
+  });
+
+  it("leaves keys in place for a malformed translation document when not required", async () => {
+    const client = createTarkovClient(
+      BASE,
+      stubFetch({
+        "/traders": { data: { t1: { name: "t1 Nickname" } }, translations: ["$.data.*.name"] },
+        "/traders_en": { translations: {} },
+      }),
+    );
+    const result = await client.fetchResource<Record<string, { name: string }>>("traders");
+    expect(result.t1!.name).toBe("t1 Nickname");
+  });
+
+  it("reports a translation fetch rejected with a non-Error value", async () => {
+    const odd = vi.fn((input: RequestInfo | URL) => {
+      const url = input instanceof URL ? input.href : typeof input === "string" ? input : input.url;
+      if (url.endsWith("_en")) return Promise.reject("socket hang up"); // eslint-disable-line @typescript-eslint/prefer-promise-reject-errors
+      return Promise.resolve(
+        new Response(JSON.stringify({ data: {}, translations: ["$.x"] }), { status: 200 }),
+      );
+    });
+    const client = createTarkovClient(BASE, odd, undefined, { requireTranslations: true });
+    await expect(client.fetchResource("traders")).rejects.toMatchObject({
+      status: 0,
+      message: expect.stringContaining("socket hang up") as unknown,
+    });
+  });
+
+  it("fails a required translation document that cannot be reached, with status 0", async () => {
+    const offline = vi.fn((input: RequestInfo | URL) => {
+      const url = input instanceof URL ? input.href : typeof input === "string" ? input : input.url;
+      if (url.endsWith("_en")) return Promise.reject(new Error("network down"));
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ data: { t1: { name: "t1 Nickname" } }, translations: ["$.x"] }),
+          { status: 200 },
+        ),
+      );
+    });
+    const client = createTarkovClient(BASE, offline, undefined, { requireTranslations: true });
+    await expect(client.fetchResource("traders")).rejects.toMatchObject({
+      resource: "traders_en",
+      status: 0,
+      message: expect.stringContaining("network down") as unknown,
+    });
+  });
+
+  it("does not require translations for a document that lists none", async () => {
+    const client = createTarkovClient(
+      BASE,
+      stubFetch({ "/barters": { data: [{ id: "b1" }] } }),
+      undefined,
+      { requireTranslations: true },
+    );
+    await expect(client.fetchResource("barters")).resolves.toEqual([{ id: "b1" }]);
+  });
+
   it("throws TarkovApiError carrying the resource and status", async () => {
     const client = createTarkovClient(BASE, stubFetch({}));
     await expect(client.fetchResource("items")).rejects.toMatchObject({
@@ -84,10 +179,8 @@ describe("createTarkovClient", () => {
   });
 
   it("treats a translation fetch that throws (not just a non-ok response) as absent", async () => {
-    // `getJson(..., false).catch(() => undefined)` only has something to catch when the
-    // fetchImpl itself rejects — a 404 response is already handled inside `getJson` via the
-    // `!required` branch and never reaches `.catch`. A network-level failure (DNS, abort,
-    // offline) is the case that actually exercises the `.catch`.
+    // A network-level failure (DNS, abort, offline) rejects the fetch itself rather than
+    // returning a non-ok response; unrequired, it still leaves the keys in place.
     const flakyTranslations = vi.fn((input: RequestInfo | URL) => {
       const url = input instanceof URL ? input.href : typeof input === "string" ? input : input.url;
       if (url.endsWith("_en")) return Promise.reject(new Error("network down"));

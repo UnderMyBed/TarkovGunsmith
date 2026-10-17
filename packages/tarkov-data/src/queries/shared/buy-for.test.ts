@@ -2,16 +2,31 @@ import { describe, expect, it } from "vitest";
 import {
   barterCostRUB,
   buyForEntrySchema,
+  createOfferCollector,
   createOfferResolver,
+  extractPrices,
+  fleaPriceFromTuple,
   fleaPriceRUB,
-  resolveBuyFor,
+  offerPriceIds,
+  priceOffers,
+  traderOfferKey,
   type BarterCostItem,
+  type BuyForTask,
+  type BuyForTrader,
+  type UnpricedOffer,
 } from "./buy-for.js";
-import { fetchOfferResolver } from "../barters.js";
-import { fetchTraders } from "../traders.js";
-import { fetchTasks } from "../tasks.js";
 import type { ItemsDocument } from "../documents.js";
 import { fixtureClient } from "../../__fixtures__/client.js";
+import { fixtureOfferResolver } from "../../__test-utils__/fixture-snapshot.js";
+
+/**
+ * One item's own cash and flea offers, priced from its own fields: the resolver with no
+ * other documents. Items get an id, since an id-less item cannot be priced and has no offers.
+ */
+function resolveOwn(item: unknown, traders: readonly BuyForTrader[], tasks: readonly BuyForTask[]) {
+  const resolve = createOfferResolver({ items: {}, traders, tasks, barters: [] });
+  return resolve(item !== null && typeof item === "object" ? { id: "it", ...item } : item);
+}
 
 describe("buyForEntrySchema", () => {
   it("parses a trader offer", () => {
@@ -50,7 +65,7 @@ describe("resolveBuyFor", () => {
   ];
 
   it("resolves a trader id into the frozen TraderOffer vendor shape", () => {
-    const [entry] = resolveBuyFor(
+    const [entry] = resolveOwn(
       {
         types: ["mods"],
         buyFromTrader: [
@@ -74,7 +89,7 @@ describe("resolveBuyFor", () => {
   });
 
   it("resolves a taskUnlock id into its normalizedName", () => {
-    const [entry] = resolveBuyFor(
+    const [entry] = resolveOwn(
       {
         types: ["mods"],
         buyFromTrader: [
@@ -90,7 +105,7 @@ describe("resolveBuyFor", () => {
   });
 
   it("emits a flea entry for a flea-tradeable item", () => {
-    const entries = resolveBuyFor(
+    const entries = resolveOwn(
       { types: ["mods"], buyFromTrader: [], minLevelForFlea: 15, avg24hPrice: 5000 },
       traders,
       tasks,
@@ -103,7 +118,7 @@ describe("resolveBuyFor", () => {
   });
 
   it("emits no flea entry for a noFlea item", () => {
-    const entries = resolveBuyFor(
+    const entries = resolveOwn(
       { types: ["ammo", "noFlea"], buyFromTrader: [], minLevelForFlea: 0 },
       traders,
       tasks,
@@ -112,7 +127,7 @@ describe("resolveBuyFor", () => {
   });
 
   it("drops an offer whose trader id is unknown rather than emitting a blank vendor", () => {
-    const entries = resolveBuyFor(
+    const entries = resolveOwn(
       {
         types: ["mods"],
         buyFromTrader: [
@@ -126,7 +141,7 @@ describe("resolveBuyFor", () => {
   });
 
   it("keeps an unresolvable taskUnlock as null instead of dropping the offer", () => {
-    const [entry] = resolveBuyFor(
+    const [entry] = resolveOwn(
       {
         types: ["mods"],
         buyFromTrader: [
@@ -147,15 +162,15 @@ describe("resolveBuyFor — defensive edge cases", () => {
   ];
 
   it("returns [] for a null or non-object item instead of throwing", () => {
-    expect(resolveBuyFor(null, traders, tasks)).toEqual([]);
-    expect(resolveBuyFor("not an item", traders, tasks)).toEqual([]);
+    expect(resolveOwn(null, traders, tasks)).toEqual([]);
+    expect(resolveOwn("not an item", traders, tasks)).toEqual([]);
   });
 
   it("ignores a task with a null id when building the taskUnlock lookup", () => {
     // A task with `id: null` must not poison the `Map<string, string>` (it can't be a key
     // anyway) or shadow a real task — `tasks` still resolves `tk1` normally afterward.
     const tasksWithNullId = [{ id: null, normalizedName: "orphan-task" }, ...tasks];
-    const [entry] = resolveBuyFor(
+    const [entry] = resolveOwn(
       {
         types: ["mods"],
         buyFromTrader: [
@@ -171,12 +186,12 @@ describe("resolveBuyFor — defensive edge cases", () => {
   });
 
   it("treats a missing buyFromTrader field as no trader offers", () => {
-    const entries = resolveBuyFor({ types: ["mods"] }, traders, tasks);
+    const entries = resolveOwn({ types: ["mods"] }, traders, tasks);
     expect(entries.filter((e) => e.vendor.__typename === "TraderOffer")).toEqual([]);
   });
 
   it("skips a null or non-object entry inside buyFromTrader", () => {
-    const entries = resolveBuyFor(
+    const entries = resolveOwn(
       { types: ["mods"], buyFromTrader: [null, "not an offer"] },
       traders,
       tasks,
@@ -185,7 +200,7 @@ describe("resolveBuyFor — defensive edge cases", () => {
   });
 
   it("drops a buyFromTrader entry whose trader field isn't a string", () => {
-    const entries = resolveBuyFor(
+    const entries = resolveOwn(
       { types: ["mods"], buyFromTrader: [{ trader: 12345 }] },
       traders,
       tasks,
@@ -194,7 +209,7 @@ describe("resolveBuyFor — defensive edge cases", () => {
   });
 
   it("defaults priceRUB, currency and minTraderLevel to null when absent or mistyped", () => {
-    const [entry] = resolveBuyFor(
+    const [entry] = resolveOwn(
       {
         types: ["mods"],
         buyFromTrader: [{ trader: "tr1", priceRUB: "free", currency: 5, minTraderLevel: "one" }],
@@ -210,12 +225,12 @@ describe("resolveBuyFor — defensive edge cases", () => {
   });
 
   it("treats a missing `types` list as not noFlea, still emitting a flea entry", () => {
-    const entries = resolveBuyFor({ buyFromTrader: [] }, traders, tasks);
+    const entries = resolveOwn({ buyFromTrader: [] }, traders, tasks);
     expect(entries.some((e) => e.vendor.__typename === "FleaMarket")).toBe(true);
   });
 
   it("falls back to lastLowPrice for the flea entry when avg24hPrice is absent", () => {
-    const entries = resolveBuyFor(
+    const entries = resolveOwn(
       { types: ["mods"], buyFromTrader: [], lastLowPrice: 777 },
       traders,
       tasks,
@@ -287,7 +302,7 @@ describe("createOfferResolver (captured documents)", () => {
     const client = fixtureClient();
     const [doc, resolve] = await Promise.all([
       client.fetchResource<ItemsDocument>("items"),
-      fetchOfferResolver(client),
+      fixtureOfferResolver(client),
     ]);
     return { items: doc.items, resolve };
   }
@@ -354,14 +369,6 @@ describe("createOfferResolver (captured documents)", () => {
         },
       },
     ]);
-  });
-
-  it("leaves resolveBuyFor at cash + flea only", async () => {
-    const { items } = await setup();
-    const client = fixtureClient();
-    const [traders, tasks] = await Promise.all([fetchTraders(client), fetchTasks(client)]);
-    const types = resolveBuyFor(items[PM], traders, tasks).map((o) => o.vendor.__typename);
-    expect(types).toEqual(["FleaMarket"]);
   });
 
   it("returns [] for a non-object item", async () => {
@@ -440,17 +447,150 @@ describe("createOfferResolver — malformed records", () => {
     expect(entry?.vendor).toMatchObject({ costUnavailableReason: "bolts has no flea price" });
   });
 
-  it("resolves only an item's own cash and flea offers when it carries no id", () => {
+  it("leaves a barter unpriced when an input is not in the items document", () => {
     const resolve = createOfferResolver({
-      items: {},
+      items: { stock: { id: "stock", types: ["mods", "noFlea"] } },
       traders,
       tasks: [],
-      barters: [],
+      barters: [barter("b3", "stock", "ghost")],
     });
+    const [entry] = resolve({ id: "stock", types: ["mods", "noFlea"] });
+    expect(entry?.vendor).toMatchObject({
+      costUnavailableReason: "required item ghost is not in the items document",
+    });
+  });
+
+  it("gives an item without an id no offers, since nothing could price them", () => {
+    const resolve = createOfferResolver({ items: {}, traders, tasks: [], barters: [] });
     const entries = resolve({
       types: ["mods"],
       buyFromTrader: [{ trader: "tr-mech", priceRUB: 5000, currency: "RUB", minTraderLevel: 1 }],
     });
-    expect(entries.map((e) => e.vendor.__typename)).toEqual(["TraderOffer", "FleaMarket"]);
+    expect(entries).toEqual([]);
+  });
+});
+
+describe("traderOfferKey", () => {
+  it("joins seller, trader, level, quest gate and currency", () => {
+    expect(
+      traderOfferKey("item", {
+        trader: "tr",
+        minTraderLevel: 2,
+        taskUnlock: "task",
+        currency: "USD",
+        priceRUB: 1,
+      }),
+    ).toBe("item|tr|2|task|USD");
+  });
+
+  it("leaves absent or non-scalar fields empty", () => {
+    expect(traderOfferKey("item", { trader: "tr", taskUnlock: null, currency: {} })).toBe(
+      "item|tr|||",
+    );
+    expect(traderOfferKey("item", null)).toBe("item||||");
+  });
+});
+
+describe("extractPrices", () => {
+  const offer = (priceRUB: unknown) => ({
+    trader: "tr",
+    minTraderLevel: 1,
+    taskUnlock: null,
+    currency: "RUB",
+    priceRUB,
+  });
+
+  it("reads flea fields and keyed trader prices for the ids asked for", () => {
+    const items: Record<string, unknown> = {
+      a: { lastLowPrice: 10, avg24hPrice: 12, lastOfferCount: 3, buyFromTrader: [offer(500)] },
+      b: { avg24hPrice: "n/a", buyFromTrader: "none" },
+      unasked: { lastLowPrice: 1 },
+    };
+    const { table, conflicts } = extractPrices((id) => items[id], ["a", "b", "missing"]);
+    expect(table.items).toEqual({ a: [10, 12, 3], b: [null, null, null] });
+    expect(table.trader).toEqual({ "a|tr|1||RUB": 500 });
+    expect(conflicts).toEqual([]);
+  });
+
+  it("shares one price between exact duplicates, and skips malformed offers", () => {
+    const items: Record<string, unknown> = {
+      a: { buyFromTrader: [offer(500), offer(500), null, "x"] },
+    };
+    const { table, conflicts } = extractPrices((id) => items[id], ["a"]);
+    expect(table.trader).toEqual({ "a|tr|1||RUB": 500 });
+    expect(conflicts).toEqual([]);
+  });
+
+  it("prices an ambiguous key null, keeps it null, and reports it", () => {
+    const items: Record<string, unknown> = {
+      a: { buyFromTrader: [offer(500), offer(600), offer(500)] },
+    };
+    const { table, conflicts } = extractPrices((id) => items[id], ["a"]);
+    expect(table.trader["a|tr|1||RUB"]).toBeNull();
+    expect(conflicts).toEqual(["a|tr|1||RUB"]);
+  });
+});
+
+describe("fleaPriceFromTuple", () => {
+  it("prefers avg24hPrice, and is null for an item the table does not hold", () => {
+    expect(fleaPriceFromTuple(undefined)).toBeNull();
+    expect(fleaPriceFromTuple([5, null, 1])).toBe(5);
+    expect(fleaPriceFromTuple([5, 7, 1])).toBe(7);
+  });
+});
+
+describe("offerPriceIds / priceOffers", () => {
+  const cash: UnpricedOffer = {
+    kind: "cash",
+    priceKey: "preset|tr|1||RUB",
+    currency: "RUB",
+    vendor: {
+      __typename: "TraderOffer",
+      normalizedName: "prapor",
+      minTraderLevel: 1,
+      taskUnlock: null,
+      trader: { normalizedName: "prapor" },
+    },
+    preset: { id: "preset", normalizedName: "gun-default" },
+  };
+  const barter: UnpricedOffer = {
+    kind: "barter",
+    vendor: {
+      __typename: "TraderBarter",
+      normalizedName: "prapor",
+      minTraderLevel: 1,
+      taskUnlock: null,
+      trader: { normalizedName: "prapor" },
+      barterId: "b",
+      offeredCount: 2,
+      requiredItems: [{ itemId: "nuts", count: 3, attributes: {} }],
+    },
+  };
+  const flea: UnpricedOffer = {
+    kind: "flea",
+    vendor: { __typename: "FleaMarket", normalizedName: "flea-market", minPlayerLevel: 15 },
+  };
+
+  it("lists the item, its selling presets and its barter inputs", () => {
+    expect(offerPriceIds("gun", [cash, barter, flea]).sort()).toEqual(["gun", "nuts", "preset"]);
+  });
+
+  it("prices each offer from the table, and leaves a missing price null", () => {
+    const priced = priceOffers(
+      "gun",
+      [cash, barter, flea],
+      { items: { gun: [900, null, 4], nuts: [100, null, 9] }, trader: {} },
+      (id) => (id === "nuts" ? "Nuts" : undefined),
+    );
+    expect(priced).toEqual([
+      { priceRUB: null, currency: "RUB", vendor: cash.vendor, preset: cash.preset },
+      { priceRUB: 150, currency: null, vendor: { ...barter.vendor, costUnavailableReason: null } },
+      { priceRUB: 900, currency: "RUB", vendor: flea.vendor },
+    ]);
+  });
+
+  it("collects nothing for a non-object item", () => {
+    const collect = createOfferCollector({ items: {}, traders: [], tasks: [], barters: [] });
+    expect(collect(null)).toEqual([]);
   });
 });

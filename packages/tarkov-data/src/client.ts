@@ -34,12 +34,17 @@ interface CacheEntry {
  *                  `https://json.tarkov.dev/regular/`.
  * @param fetchImpl - Optional fetch implementation (defaults to global fetch).
  * @param ttlMs - Cache lifetime. Upstream regenerates roughly daily.
+ * @param options.requireTranslations - Fail a resource whose `_en` document cannot be fetched,
+ *   instead of leaving every text field as its translation key. The snapshot generator sets
+ *   this: a release built while `items_en` is down would otherwise ship a Builder of keys.
  */
 export function createTarkovClient(
   baseUrl: string,
   fetchImpl?: typeof fetch,
   ttlMs = 3_600_000,
+  options: { readonly requireTranslations?: boolean } = {},
 ): TarkovJsonClient {
+  const requireTranslations = options.requireTranslations ?? false;
   // Resolved per call rather than captured at construction: a module-scope client would
   // otherwise pin whatever `fetch` existed at import time, which breaks test doubles and any
   // runtime that installs its own fetch after module evaluation.
@@ -47,12 +52,11 @@ export function createTarkovClient(
     fetchImpl !== undefined ? fetchImpl(input, init) : fetch(input, init);
   const cache = new Map<string, CacheEntry>();
 
-  async function getJson(resource: string, required: boolean): Promise<unknown> {
+  async function getJson(resource: string): Promise<unknown> {
     const response = await doFetch(`${baseUrl}${resource}`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) {
-      if (!required) return undefined;
       throw new TarkovApiError(
         `Failed to fetch ${resource}: ${response.status} ${response.statusText}`,
         resource,
@@ -62,6 +66,23 @@ export function createTarkovClient(
     return response.json();
   }
 
+  /** The `_en` lookup table, or why there is none. */
+  async function getLang(
+    resource: string,
+  ): Promise<{ data: Record<string, string> } | { error: unknown }> {
+    try {
+      const body = (await getJson(`${resource}_en`)) as { data?: unknown } | null;
+      const data = body?.data;
+      if (data === null || typeof data !== "object" || Array.isArray(data)) {
+        return { error: new Error("its body has no `data` object") };
+      }
+      if (Object.keys(data).length === 0) return { error: new Error("its `data` is empty") };
+      return { data: data as Record<string, string> };
+    } catch (error) {
+      return { error };
+    }
+  }
+
   return {
     fetchResource<T>(resource: string): Promise<T> {
       const now = Date.now();
@@ -69,14 +90,24 @@ export function createTarkovClient(
       if (hit !== undefined && now - hit.at < ttlMs) return hit.promise as Promise<T>;
 
       const promise = (async () => {
-        // The translation document is optional: a missing one leaves keys in place rather
-        // than failing a request that already has perfectly good data.
-        const [raw, lang] = await Promise.all([
-          getJson(resource, true),
-          getJson(`${resource}_en`, false).catch(() => undefined),
-        ]);
+        // The translation document is optional unless required: a missing one leaves keys in
+        // place rather than failing a request that already has perfectly good data.
+        const [raw, lang] = await Promise.all([getJson(resource), getLang(resource)]);
         const doc = raw as TranslatedDocument<T>;
-        const langData = (lang as { data?: Record<string, string> } | undefined)?.data ?? {};
+        // Required only where there is something to translate: upstream serves no `_en` for a
+        // document that lists no translation paths (`barters`).
+        if ("error" in lang && requireTranslations && (doc.translations?.length ?? 0) > 0) {
+          const cause = lang.error;
+          throw new TarkovApiError(
+            `${resource}_en, which ${resource} needs for its text, is unusable: ${
+              cause instanceof Error ? cause.message : String(cause)
+            }`,
+            `${resource}_en`,
+            // The HTTP status when there was one; 0 for a network failure or a malformed body.
+            cause instanceof TarkovApiError ? cause.status : 0,
+          );
+        }
+        const langData = "data" in lang ? lang.data : {};
         return mergeTranslations(doc, langData);
       })();
 

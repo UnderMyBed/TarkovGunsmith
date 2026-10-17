@@ -5,8 +5,7 @@ import { itemAvailability, type ItemAvailability } from "./item-availability.js"
 import type { ItemsDocument } from "./queries/documents.js";
 import { buildSlotGraph } from "./queries/slot-graph.js";
 import { selectWeaponPresets, type WeaponPreset } from "./queries/presets.js";
-import { fetchOfferResolver } from "./queries/barters.js";
-import { fetchWeaponList } from "./queries/weaponList.js";
+import { fixtureOfferResolver, fixtureWeaponList } from "./__test-utils__/fixture-snapshot.js";
 import { presetAvailability, seedPreset } from "./preset-seed.js";
 
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
@@ -27,8 +26,8 @@ async function load() {
   const client = fixtureClient();
   const [doc, resolve, weapons] = await Promise.all([
     client.fetchResource<ItemsDocument>("items"),
-    fetchOfferResolver(client),
-    fetchWeaponList(client),
+    fixtureOfferResolver(client),
+    fixtureWeaponList(client),
   ]);
   const { byWeapon } = selectWeaponPresets(doc, buildSlotGraph(doc));
   const presetsOf = (weaponId: string): readonly WeaponPreset[] => {

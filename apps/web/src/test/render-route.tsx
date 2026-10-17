@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter, createMemoryHistory } from "@tanstack/react-router";
-import type { TarkovJsonClient } from "@tarkov/data";
+import type { BuilderDataSource, TarkovJsonClient } from "@tarkov/data";
 import { TarkovDataProvider } from "@tarkov/data";
 import { render } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
 import { routeTree } from "../route-tree.gen.js";
 import { routerOptions } from "../router-options.js";
 import { createTestClient } from "./test-client.js";
+import { createTestBuilderData } from "./test-builder-data.js";
 
 /** The concrete router type `createRouter({ routeTree, history })` below always produces. */
 type TestRouter = ReturnType<typeof createRouter<typeof routeTree>>;
@@ -27,19 +28,20 @@ type TestRouter = ReturnType<typeof createRouter<typeof routeTree>>;
  */
 export async function renderRoute(
   initialPath: string,
-  options?: { client?: TarkovJsonClient },
+  options?: { client?: TarkovJsonClient; builderData?: BuilderDataSource },
 ): Promise<RenderResult & { router: TestRouter; queryClient: QueryClient }> {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   const client = options?.client ?? createTestClient();
+  const builderData = options?.builderData ?? (await createTestBuilderData(client));
   const history = createMemoryHistory({ initialEntries: [initialPath] });
   const router = createRouter({ routeTree, history, ...routerOptions });
   await router.load();
 
   const utils = render(
     <QueryClientProvider client={queryClient}>
-      <TarkovDataProvider client={client}>
+      <TarkovDataProvider client={client} builderData={builderData}>
         <RouterProvider router={router} />
       </TarkovDataProvider>
     </QueryClientProvider>,

@@ -15,7 +15,16 @@ export interface WeaponPanelProps {
   saveFailed: boolean;
   embedProfileOnSave: boolean;
   onEmbedProfileOnSaveChange: (embed: boolean) => void;
+  /** When the Builder's data was taken from upstream (ISO 8601), once it has loaded. */
+  dataAsOf: string | null;
 }
+
+const DATA_DATE = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
 
 /**
  * The "Weapon" card: picker + profile-filtered availability toggle, plus (once a weapon is
@@ -34,6 +43,7 @@ export function WeaponPanel({
   saveFailed,
   embedProfileOnSave,
   onEmbedProfileOnSaveChange,
+  dataAsOf,
 }: WeaponPanelProps) {
   return (
     <Card>
@@ -44,6 +54,11 @@ export function WeaponPanel({
             ? "Loading…"
             : `${weaponOptions.length} weapons ${showAllWeapons ? "(all)" : "available on your profile"}`}
         </CardDescription>
+        {dataAsOf !== null && (
+          <p className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
+            Data as of <time dateTime={dataAsOf}>{DATA_DATE.format(new Date(dataAsOf))}</time>
+          </p>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <select

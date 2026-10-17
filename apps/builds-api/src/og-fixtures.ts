@@ -1,9 +1,10 @@
 // Every id below is present in `packages/tarkov-data/src/__fixtures__/items-sample.json` and
 // sits in the named slot's own `allowedItems`, so the OG cards these seed render real stats
-// from the captured document rather than from live json.tarkov.dev. The e2e suite serves
-// those captures to the OG Pages Functions (apps/web/e2e/upstream-fixture-server.ts); an id
-// the captures don't carry silently drops out of the card — and a missing WEAPON id throws,
-// which shows up as the fallback PNG rather than as a useful failure.
+// from the captured document rather than from live json.tarkov.dev. The e2e build generates
+// the Builder snapshot the OG Pages Functions read from those captures
+// (apps/web/scripts/builder-snapshot.ts); an id the captures don't carry silently drops out
+// of the card — and a missing WEAPON id throws, which shows up as the fallback PNG rather
+// than as a useful failure.
 import { putPermanent } from "./permanent.js";
 
 const SAMPLE_BUILD = {

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { weaponSpec } from "@tarkov/ballistics";
+import {
+  fixturePartCatalog,
+  fixtureWeaponList,
+  fixtureWeaponTree,
+} from "./__test-utils__/fixture-snapshot.js";
 import { fixtureClient } from "./__fixtures__/client.js";
 import oracle from "./__fixtures__/preset-oracle-sample.json" with { type: "json" };
-import { fetchPartCatalog, partsById } from "./queries/parts.js";
-import { fetchWeaponList } from "./queries/weaponList.js";
-import { fetchWeaponTree } from "./queries/weaponTree.js";
+import { partsById, snapshotPartSchema, type AttachablePart } from "./queries/parts.js";
 import { presetRecordSchema, selectWeaponPreset } from "./queries/presets.js";
 import { attachedParts } from "./attached-parts.js";
 import { adaptMod, adaptWeapon } from "./ballistic-adapters.js";
@@ -32,17 +35,19 @@ const PRESETS = [
 const M700_MRS = "5d38517786f7742a1468cf6a";
 const KEYMOD_RAIL = "5a9d6d00a2750c5c985b5305";
 
-const client = fixtureClient({ items: oracle });
+// No barters: the oracle's items capture holds presets and their parts, not the ingredients the
+// shared barter sample names, and this test reads stats only.
+const client = fixtureClient({ items: oracle, barters: { document: { data: [] }, lang: {} } });
 
 async function statsOf(presetId: string) {
   const [doc, weapons, parts] = await Promise.all([
     client.fetchResource<ItemsDocument>("items"),
-    fetchWeaponList(client),
-    fetchPartCatalog(client),
+    fixtureWeaponList(client),
+    fixturePartCatalog(client),
   ]);
   const record = presetRecordSchema.parse(doc.items[presetId]);
   const weaponId = record.properties.baseItem;
-  const tree = await fetchWeaponTree(client, weaponId);
+  const tree = await fixtureWeaponTree(client, weaponId);
   // One preset at a time: the oracle capture carries the AKS-74UN's Zenit without its default,
   // so `selectWeaponPresets` leaves that weapon out.
   const preset = selectWeaponPreset(doc, tree.graph, presetId);
@@ -104,7 +109,7 @@ describe("cartridge recoil in an upstream preset", () => {
   const CARTRIDGE = "56dfef82d2720bbd668b4567"; // recoilModifier 0.07 upstream
 
   it("is excluded: 67 upstream, which counting the round once would make 74.5", async () => {
-    const { doc, record, entries, perPart, byId, weapon } = await statsOf(AKS74UN_PRESET);
+    const { doc, record, entries, perPart, weapon } = await statsOf(AKS74UN_PRESET);
     // The rounds sit in the magazine, which no slot models; the placer leaves them out.
     expect(entries.map((e) => e.part.id)).not.toContain(CARTRIDGE);
     expect(record.properties.recoilVertical).toBe(67);
@@ -112,12 +117,15 @@ describe("cartridge recoil in an upstream preset", () => {
 
     const raw = doc.items[CARTRIDGE] as { properties: { recoilModifier: number } };
     expect(raw.properties.recoilModifier).toBe(0.07);
+    // A magazine-loaded round is reachable through no slot, so the Builder catalog does not
+    // carry it; parse it through the same part schema to ask adaptMod about it.
+    const round: AttachablePart = { ...snapshotPartSchema.parse(raw), buyFor: [] };
     const withRound = weaponSpec(weapon, [
       ...entries.map((e) => adaptMod(e.part)),
-      { ...adaptMod(byId.get(CARTRIDGE)!), recoilModifier: raw.properties.recoilModifier },
+      { ...adaptMod(round), recoilModifier: raw.properties.recoilModifier },
     ]);
     expect(withRound.verticalRecoil).toBeCloseTo(74.5, 0);
     // adaptMod applies the preset's rule: the round adds weight, not recoil.
-    expect(adaptMod(byId.get(CARTRIDGE)!).recoilModifier).toBe(0);
+    expect(adaptMod(round).recoilModifier).toBe(0);
   });
 });

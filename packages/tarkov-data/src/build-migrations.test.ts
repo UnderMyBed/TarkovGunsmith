@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { fixtureWeaponTree } from "./__test-utils__/fixture-snapshot.js";
 import {
   migrateV1ToV2,
   migrateV2ToV3,
@@ -9,7 +10,6 @@ import {
   legacyV1MigrationSlots,
   type SlotNodeForMigration,
 } from "./build-migrations.js";
-import { fetchWeaponTree } from "./queries/weaponTree.js";
 import { fixtureClient } from "./__fixtures__/client.js";
 import type { ItemsDocument } from "./queries/documents.js";
 import { tinyTree } from "./__test-utils__/tiny-tree.js";
@@ -367,7 +367,7 @@ describe("upgradeLoadedBuild", () => {
 const LEGACY_V1_PLACEMENTS = [
   {
     weaponId: "5447a9cd4bdc2dbd208b4567",
-    orphanedCount: 45,
+    orphanedCount: 46,
     attachments: {
       "mod_reciever/mod_handguard/mod_tactical001": "5a7b483fe899ef0016170d15",
       "mod_reciever/mod_scope": "58d39d3d86f77445bb794ae7",
@@ -409,7 +409,7 @@ describe("legacyV1MigrationSlots", () => {
     async ({ weaponId, attachments, orphanedCount }) => {
       const client = fixtureClient();
       const doc = await client.fetchResource<ItemsDocument>("items");
-      const tree = await fetchWeaponTree(client, weaponId);
+      const tree = await fixtureWeaponTree(client, weaponId);
       const v2 = migrateV1ToV2(
         {
           version: 1,

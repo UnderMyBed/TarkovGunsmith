@@ -34,6 +34,6 @@ export interface TasksDocument {
 
 /**
  * The upstream barters document. Unlike items/tasks, `data` is an array, not an id-keyed map.
- * Records are validated by `parseBarters` in `barters.ts`.
+ * Records are validated against `barterSchema` by the snapshot generator.
  */
 export type BartersDocument = unknown[];

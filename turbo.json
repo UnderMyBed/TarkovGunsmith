@@ -12,7 +12,14 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "build/**", ".wrangler/**"]
     },
+    "@tarkov/web#build": {
+      "dependsOn": ["^build"],
+      "env": ["TARKOV_SNAPSHOT_SOURCE"],
+      "inputs": ["$TURBO_DEFAULT$", "../../packages/tarkov-data/src/__fixtures__/*-sample.json"],
+      "outputs": ["dist/**", "public/data/**"]
+    },
     "dev": {
+      "env": ["TARKOV_SNAPSHOT_SOURCE"],
       "cache": false,
       "persistent": true
     },

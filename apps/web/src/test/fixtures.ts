@@ -36,13 +36,12 @@ export const TRADERS_DOCUMENT: Record<string, unknown> = {
 
 // ---------- Tasks ----------
 // Empty: none of the fixture offers below carry a `taskUnlock`, so no task needs resolving.
-// `fetchTasks` still round-trips this resource on every render that calls `useTasks`.
+// The snapshot generator still reads this resource (`createTestBuilderData`).
 export const TASKS_DOCUMENT: { tasks: Record<string, unknown> } = { tasks: {} };
 
 // ---------- Barters ----------
-// Empty: the route scenarios gate on cash and flea offers only. `fetchWeaponList` and
-// `fetchPartCatalog` still round-trip this resource (upstream's `data` is an array) on every
-// render that resolves offers.
+// Empty: the route scenarios gate on cash and flea offers only. The snapshot generator still
+// reads this resource (upstream's `data` is an array) to collect offers.
 export const BARTERS_DOCUMENT: unknown[] = [];
 
 // ---------- Armor materials ----------
@@ -75,6 +74,8 @@ export const ITEMS_DOCUMENT: {
       name: "Colt M4A1 5.56x45 assault rifle",
       shortName: "M4A1",
       iconLink: ICON,
+      // The Builder snapshot's `dataAsOf` is the newest `updated` in the document.
+      updated: "2026-10-16T12:00:00.000Z",
       weight: 3.4,
       types: ["gun"],
       minLevelForFlea: 0,
@@ -88,12 +89,14 @@ export const ITEMS_DOCUMENT: {
         fireRate: 800,
         slots: [
           {
+            id: "slot-w-m4a1-muzzle",
             nameId: "mod_muzzle",
             name: "Muzzle",
             required: false,
             filters: { allowedItems: ["mod-muzzle"], allowedCategories: [] },
           },
           {
+            id: "slot-w-m4a1-stock",
             nameId: "mod_stock",
             name: "Stock",
             required: false,
@@ -116,6 +119,7 @@ export const ITEMS_DOCUMENT: {
     },
     "mod-muzzle": {
       id: "mod-muzzle",
+      updated: "2026-10-16T12:00:00.000Z",
       name: "Zenit DTK-1 muzzle brake",
       shortName: "DTK-1",
       iconLink: ICON,
@@ -146,6 +150,7 @@ export const ITEMS_DOCUMENT: {
     },
     "mod-stock": {
       id: "mod-stock",
+      updated: "2026-10-16T12:00:00.000Z",
       name: "Magpul CTR carbine stock",
       shortName: "CTR",
       iconLink: ICON,
@@ -182,6 +187,11 @@ export const ITEMS_DOCUMENT: {
       name: "5.56x45mm M855",
       shortName: "M855",
       iconLink: ICON,
+      weight: 0.012,
+      types: ["ammo"],
+      minLevelForFlea: 0,
+      conflictingItems: [],
+      conflictingSlotIds: [],
       properties: {
         propertiesType: "ItemPropertiesAmmo",
         caliber: "Caliber556x45NATO",
@@ -196,6 +206,11 @@ export const ITEMS_DOCUMENT: {
       name: "5.56x45mm M995",
       shortName: "M995",
       iconLink: ICON,
+      weight: 0.012,
+      types: ["ammo"],
+      minLevelForFlea: 0,
+      conflictingItems: [],
+      conflictingSlotIds: [],
       properties: {
         propertiesType: "ItemPropertiesAmmo",
         caliber: "Caliber556x45NATO",

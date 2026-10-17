@@ -89,7 +89,10 @@ jobs:
 
   builds-api:
     name: Deploy builds-api Worker
-    needs: preflight
+    # After pages: its build generates the Builder snapshot from live upstream and fails on
+    # drift. A release that cannot build the SPA must not ship the Worker either, or the two
+    # would run different releases.
+    needs: [preflight, pages]
     if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     concurrency:
@@ -133,6 +136,7 @@ jobs:
     needs: preflight
     if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     concurrency:
       group: deploy-pages
       cancel-in-progress: false
@@ -157,7 +161,22 @@ jobs:
         # (@tarkov/ballistics, @tarkov/data, @tarkov/og, @tarkov/optimizer,
         # @tarkov/ui). Without this, vite/tsc can't resolve the workspace
         # imports because their dist/ is missing.
+        #
+        # `upstream` makes the build generate the Builder snapshot from live
+        # json.tarkov.dev rather than the committed captures every other build uses.
+        # Generation is strict, holds the snapshot to its row floors, and fails a snapshot
+        # over its raw or brotli size budget (SNAPSHOT_BUDGET in
+        # packages/tarkov-data/src/snapshot/limits.ts), so any of those fails this step,
+        # before anything deploys.
+        env:
+          TARKOV_SNAPSHOT_SOURCE: upstream
         run: pnpm --filter "@tarkov/web..." build
+
+      - name: Assert the snapshot is live data
+        # A fixture snapshot would deploy a Builder with three weapons in it.
+        run: |
+          jq -e '.source == "upstream"' apps/web/dist/data/builder-snapshot.json
+          jq -e '.source == "upstream"' apps/web/dist/data/builder-prices.json
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v4
@@ -298,6 +317,10 @@ jobs:
           echo "site:"
           probe "GET /"            200 "$SITE/"
           probe "GET /builder"     200 "$SITE/builder"
+          probe "GET /data/builder-snapshot.json" 200 "$SITE/data/builder-snapshot.json"
+          if ! jq -e '.source == "upstream"' /tmp/body >/dev/null 2>&1; then
+            echo "  FAIL /data/builder-snapshot.json is not live data (source != upstream)"; fail=1
+          fi
 
           echo "worker reachable on its own hostname:"
           probe "GET api /healthz" 200 "$API/healthz"

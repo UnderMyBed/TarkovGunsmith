@@ -13,13 +13,19 @@ pnpm install
 cp apps/builds-api/.dev.vars.example apps/builds-api/.dev.vars
 cp apps/web/.dev.vars.example apps/web/.dev.vars
 
-pnpm dev        # starts web + both workers in one terminal
+pnpm dev        # starts web + both workers in one terminal; the Builder reads live data
+TARKOV_SNAPSHOT_SOURCE=fixtures pnpm dev   # the same, offline, on the committed captures
 
 # In a second terminal:
 pnpm seed:build # POSTs a fixture build to local builds-api; prints the share URL
 ```
 
 Open the printed share URL (`http://localhost:5173/builder/<id>`) to confirm the full save/load round-trip works.
+
+`pnpm dev` first generates the Builder snapshot from live `json.tarkov.dev` (about 160 weapons).
+With upstream unreachable that step fails and says so; there is no automatic fallback. Set
+`TARKOV_SNAPSHOT_SOURCE=fixtures` to run on the committed captures instead, which hold two
+weapons. See [`builder-snapshot.md`](./builder-snapshot.md).
 
 ## What runs where
 
@@ -121,24 +127,23 @@ The build is not optional: Playwright serves `dist/` through `wrangler pages dev
 unbuilt tree has nothing to serve. The config checks for `apps/web/dist/index.html` before
 starting anything and stops with that command if it's missing.
 
-Playwright starts three servers of its own, on ports separate from `pnpm dev`:
+Playwright starts two servers of its own, on ports separate from `pnpm dev`:
 
-| Port   | Process                          | Serves                                                                |
-| ------ | -------------------------------- | --------------------------------------------------------------------- |
-| `4173` | `wrangler pages dev dist`        | The built SPA + Pages Functions.                                      |
-| `8787` | `wrangler dev` (builds-api)      | Save/load + the seeded OG fixture build and pair.                     |
-| `8790` | `e2e/upstream-fixture-server.ts` | The captured `json.tarkov.dev` documents, for the OG Pages Functions. |
+| Port   | Process                     | Serves                                            |
+| ------ | --------------------------- | ------------------------------------------------- |
+| `4173` | `wrangler pages dev dist`   | The built SPA + Pages Functions.                  |
+| `8787` | `wrangler dev` (builds-api) | Save/load + the seeded OG fixture build and pair. |
 
 **The suite does not call live `json.tarkov.dev`.** Game data comes from the captures in
-`packages/tarkov-data/src/__fixtures__/`: the browser's own requests are intercepted in
-`apps/web/e2e/upstream.ts`, and the OG Pages Functions — which fetch server-side, out of that
-interception's reach — are pointed at the fixture server above via the `TARKOV_JSON_API_BASE`
-binding. Any other live host the page reaches is blocked and fails the test by name. Google
-Fonts is the one deliberate exception, because three smoke tests assert that the real font
-`<link>` resolves.
+`packages/tarkov-data/src/__fixtures__/`: the build generates the Builder snapshot from them
+(see [`builder-snapshot.md`](./builder-snapshot.md)), which the SPA and the OG Pages Functions
+both read, and the browser's remaining requests are intercepted in `apps/web/e2e/upstream.ts`.
+Any other live host the page reaches is blocked and fails the test by name. Google Fonts is
+the one deliberate exception, because three smoke tests assert that the real font `<link>`
+resolves.
 
 Before the first spec runs, a preflight launches Chromium once so a browser that cannot start
-reports itself in one message instead of once per test. It runs after the three servers boot,
+reports itself in one message instead of once per test. It runs after the two servers boot,
 so give it a few seconds.
 
 ## Troubleshooting

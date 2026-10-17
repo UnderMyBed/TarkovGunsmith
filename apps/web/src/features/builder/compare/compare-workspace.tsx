@@ -9,6 +9,7 @@ import {
   useForkPair,
   slotDiff,
   loadBuild,
+  useBuilderData,
   CURRENT_PAIR_VERSION,
   type BuildV6,
   type BuildPair,
@@ -18,6 +19,7 @@ import { CompareStatDelta } from "./compare-stat-delta.js";
 import { CompareProgressionRow } from "./compare-progression-row.js";
 import { CompareSide, computeSideSpec } from "./compare-side.js";
 import { useCompareDraft } from "./useCompareDraft.js";
+import { withKnownSide } from "./known-parts.js";
 
 export interface CompareWorkspaceProps {
   initialPair?: BuildPair;
@@ -85,9 +87,13 @@ export function CompareWorkspace({
   // deps array a reader has to trust is intentional — exhaustive-deps can't tell "closes
   // over stale values on purpose" from "forgot to list a dependency" and is right to flag
   // the latter shape either way.
-  const mountSnapshot = useRef({ initialPair, draft });
+  const builderData = useBuilderData();
+  // Set when the game data a pasted build is read against fails to load. Without it the
+  // right side cannot be shown at all, and pasting again would fail the same way.
+  const [gameDataError, setGameDataError] = useState<string | null>(null);
+  const mountSnapshot = useRef({ initialPair, draft, builderData });
   useEffect(() => {
-    const { initialPair, draft } = mountSnapshot.current;
+    const { initialPair, draft, builderData } = mountSnapshot.current;
     if (initialPair) return;
     const raw = sessionStorage.getItem("compare:leftPrefill");
     const mode = sessionStorage.getItem("compare:mode");
@@ -113,11 +119,23 @@ export function CompareWorkspace({
         // routes (vite.config.ts's `autoCodeSplitting`), not from splitting a shared
         // package that's already resident.
         void (async () => {
+          const snapshotLoad = builderData.snapshot();
           try {
-            const right = await loadBuild(fetch, rightId);
-            if (right.version === 6) draft.setSide("right", right);
+            const [right, snapshot] = await Promise.all([loadBuild(fetch, rightId), snapshotLoad]);
+            // Resolved against the game data like every other way a build is loaded.
+            if (right.version === 6) draft.setSide("right", withKnownSide(right, snapshot));
           } catch {
-            // Swallow — user sees empty right side; can paste again.
+            // A game-data failure is shown: it needs a reload, not another paste. A build
+            // that failed to load leaves the right side empty, and can be pasted again.
+            const failure = await snapshotLoad.then(
+              () => null,
+              (error: unknown) => error,
+            );
+            if (failure !== null) {
+              setGameDataError(
+                failure instanceof Error ? failure.message : "the game data could not be read",
+              );
+            }
           }
         })();
       }
@@ -220,6 +238,12 @@ export function CompareWorkspace({
         onCloneLeftToRight={draft.cloneLeftToRight}
         onCloneRightToLeft={draft.cloneRightToLeft}
       />
+
+      {gameDataError !== null && (
+        <p role="alert" className="text-sm text-[var(--color-destructive)]">
+          Failed to load data: {gameDataError}
+        </p>
+      )}
 
       <CompareStatDelta left={leftSpec} right={rightSpec} />
 
