@@ -58,7 +58,7 @@ test.describe("Builder prices", () => {
 
     release();
     await expect(budget).toBeEnabled({ timeout: 15_000 });
-    await expect(budget).toHaveAttribute("placeholder", "No cap");
+    await expect(budget).toHaveAttribute("placeholder", "No limit");
   });
 
   test("price the whole build, weapon included, and say how old they are", async ({ page }) => {

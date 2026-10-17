@@ -45,6 +45,8 @@
   /* The bar / strip tier: header bar, stat strip, track behind a bar fill. */
   --color-muted: #1f2226;
   --color-selected: #2b3a3a;
+  /* A row the optimizer proposes to change. Foreground on it is 11.0:1; dim text 5.5:1. */
+  --color-proposed: #263040;
 
   /* Strokes + inputs */
   --color-border: #34383f;

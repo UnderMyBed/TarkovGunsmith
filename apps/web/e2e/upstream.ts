@@ -98,10 +98,11 @@ export const OPTIMIZER_CHANGED_SLOTS = 12;
 export const OPTIMIZER_ACCURACY_CHANGED_SLOTS = 9;
 
 /**
- * The RCL % cell for the strongest mod that run proposes — a -0.24 `recoilModifier` rendered
- * as a percent by `mod-changes-table.tsx`. Uses U+2212, as that formatter does.
+ * The recoil effect on the slot-tree row of the strongest mod that run proposes — a -0.24
+ * `recoilModifier` rendered as a percent by `proposal-tree.tsx`. Uses U+2212, as that
+ * formatter does.
  */
-export const STRONGEST_OPTIMIZED_RECOIL_CELL = "−24.0";
+export const STRONGEST_OPTIMIZED_RECOIL_CELL = "−24.0%";
 
 export type PlayerProfileSeed = "progressed" | "fresh";
 

@@ -55,6 +55,52 @@ export function flattenVisibleSlots(
 }
 
 /**
+ * The rows of a proposal: every slot either build reaches, depth first, in the order the tree
+ * shows them. Under a slot the two builds fill differently, the slots of both parts appear, the
+ * current part's first, each path once — so a slot the proposal adds under its new part and one
+ * the current part takes away with it both have a row. With `proposed` equal to `current` these
+ * are {@link flattenVisibleSlots}' rows.
+ */
+export function flattenProposalSlots(
+  tree: WeaponTree,
+  current: Readonly<Record<string, string>>,
+  proposed: Readonly<Record<string, string>>,
+): VisibleSlot[] {
+  const rows: VisibleSlot[] = [];
+  const walk = (
+    slots: readonly SlotNode[],
+    level: number,
+    parentPath: string | null,
+    ancestors: ReadonlySet<string>,
+  ) => {
+    slots.forEach((slot, i) => {
+      const fitted = [current[slot.path], proposed[slot.path]]
+        .map((id) => (id ? slot.allowedItems.find((item) => item.id === id) : undefined))
+        .filter((item): item is NonNullable<typeof item> => item !== undefined)
+        .filter((item, j, all) => all.findIndex((other) => other.id === item.id) === j)
+        .filter((item) => !ancestors.has(item.id));
+      const seen = new Set<string>();
+      const children = fitted
+        .flatMap((item) => expandSlots(tree.graph, item.id, slot.path))
+        .filter((child) => !seen.has(child.path) && seen.add(child.path));
+      rows.push({
+        slot,
+        level,
+        parentPath,
+        hasChildren: children.length > 0,
+        posInSet: i + 1,
+        setSize: slots.length,
+      });
+      if (children.length > 0) {
+        walk(children, level + 1, slot.path, new Set([...ancestors, ...fitted.map((f) => f.id)]));
+      }
+    });
+  };
+  walk(tree.slots, 1, null, new Set());
+  return rows;
+}
+
+/**
  * The row to show selected: the one asked for while it is still on the tree; otherwise its
  * nearest ancestor still there (its parent was emptied or swapped); otherwise the first slot.
  */

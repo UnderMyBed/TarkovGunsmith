@@ -47,24 +47,24 @@ test.describe("recoil is expressed as a percentage", () => {
     // default objective, so whatever it accepts is a genuine reduction.
     await page.getByRole("button", { name: "Optimize", exact: true }).click();
     await expect(page).toHaveURL(/\?view=optimize/);
-    await page.getByRole("button", { name: /Re-run optimization/i }).click();
+    await page.getByRole("button", { name: "Run", exact: true }).click();
 
-    const changedRows = page.locator('[aria-label^="Accept "]');
+    const changedRows = page.locator('[role="treeitem"][aria-checked]');
     await expect
       .poll(async () => await changedRows.count(), { timeout: 20_000 })
       .toBe(OPTIMIZER_CHANGED_SLOTS);
 
-    // The RCL % column must show a real percentage. Pre-fix it rendered "−0" on every row,
-    // because a fraction hit a zero-decimal formatter. The strongest proposed mod is a
-    // -0.24 fraction, so the cell has to read exactly -24.0 percent — one assertion covering
-    // both the unit and the scale. Less recoil is an improvement, so the cell also carries
-    // the screen-reader "better" that keeps the direction from resting on colour alone.
-    const deltaCells = page.locator("span.text-right.font-mono.text-xs");
+    // Each changed row's recoil effect must be a real percentage. A fraction once hit a
+    // zero-decimal formatter and every row read "−0". The strongest proposed mod is a -0.24
+    // fraction, so its row has to read exactly -24.0 percent — one assertion covering both the
+    // unit and the scale. Less recoil is an improvement, so the effect also carries the
+    // screen-reader "better" that keeps the direction from resting on colour alone.
+    const effects = page.locator("[data-effect]");
     await expect
-      .poll(async () => await deltaCells.allTextContents(), { timeout: 10_000 })
+      .poll(async () => await effects.allTextContents(), { timeout: 10_000 })
       .toContain(`${STRONGEST_OPTIMIZED_RECOIL_CELL} better`);
 
-    await page.getByRole("button", { name: /Accept all/ }).click();
+    await page.getByRole("button", { name: "Apply ticked changes" }).click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
 
     // The stat strip's vertical and horizontal recoil deltas. `formatPercent` blanks

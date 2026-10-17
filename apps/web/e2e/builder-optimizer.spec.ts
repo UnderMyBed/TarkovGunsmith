@@ -10,16 +10,17 @@ import {
   expectPreset,
   pickFirstWeapon as pickFirst,
   pickWeapon,
+  slotRow,
 } from "./builder-helpers.js";
 
 /**
- * End-to-end coverage for the optimizer-first view.
+ * End-to-end coverage for the workbench's optimize mode: the proposal shown as a diff in the
+ * slot tree, ticked per row, applied or discarded from the Proposal card.
  *
  * Runs against the captured upstream document (see `upstream.ts`), so the solver's output is
- * fixed rather than whatever upstream shipped that morning. The `test.skip("no improvements
- * in this solver run")` escape hatch these tests used to carry is gone with it: on this data
- * the solver always changes {@link OPTIMIZER_CHANGED_SLOTS} slots, and a run that changes
- * nothing is now a failure rather than a silent pass.
+ * fixed rather than whatever upstream shipped that morning: on this data the solver always
+ * changes {@link OPTIMIZER_CHANGED_SLOTS} slots, and a run that changes nothing is a failure
+ * rather than a silent pass.
  */
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -33,47 +34,94 @@ async function pickFirstWeapon(page: Page): Promise<string | null> {
 /** New builds start from the weapon's default preset; these tests build from an empty weapon. */
 async function startEmpty(page: Page): Promise<void> {
   await choosePreset(page, /^Empty/);
-  await expect(page.getByText("0 attached", { exact: true })).toBeVisible();
+  await expect(attached(page, 0)).toBeVisible();
 }
 
-test.describe("builder optimizer diff view", () => {
-  test("enter view, run, toggle a row, accept-selected merges correctly", async ({ page }) => {
+function attached(page: Page, count: number) {
+  return page.getByText(`${count} attached`, { exact: true });
+}
+
+/** The tree's rows the proposal changes: the checkable ones. */
+function changedRows(page: Page) {
+  return page.getByRole("tree", { name: "Slots" }).locator('[role="treeitem"][aria-checked]');
+}
+
+async function openOptimizer(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Optimize", exact: true }).click();
+  await expect(page).toHaveURL(/\?view=optimize/);
+  await expect(page.getByRole("complementary", { name: "Optimizer" })).toBeVisible();
+}
+
+async function runAndWait(page: Page, changed: number): Promise<void> {
+  await page.getByRole("button", { name: /^Run( again)?$/ }).click();
+  await expect.poll(async () => await changedRows(page).count(), { timeout: 15_000 }).toBe(changed);
+}
+
+const proposal = (page: Page) => page.getByRole("region", { name: "Proposal" });
+
+test.describe("builder optimize mode", () => {
+  test("run, untick a change by keyboard, apply the rest; the build shares and survives a reload", async ({
+    page,
+  }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: "Optimize", exact: true }).click();
-    await expect(page).toHaveURL(/\?view=optimize/);
-    await expect(page.getByRole("heading", { name: /Optimizer/i })).toBeVisible();
-    await expect(page.getByText(/Run the solver/i)).toBeVisible();
+    await openOptimizer(page);
+    await expect(page.getByText("Ready to run")).toBeVisible();
+    await runAndWait(page, OPTIMIZER_CHANGED_SLOTS);
 
-    await page.getByRole("button", { name: /Re-run optimization/i }).click();
+    // Every change starts ticked, and the strip shows the proposal against the current build.
+    await expect(proposal(page)).toContainText(
+      `${OPTIMIZER_CHANGED_SLOTS} of ${OPTIMIZER_CHANGED_SLOTS} ticked`,
+    );
+    await expect(proposal(page)).toContainText(/Vertical recoil [\d.]+ → [\d.]+/);
+    await expect(page.getByRole("region", { name: "Build stats, proposed" })).toBeVisible();
+    await expect(page.getByText("Showing the proposal")).toBeVisible();
+    await expect(page.getByText("Exact", { exact: true })).toBeVisible();
 
-    const changedRows = page.locator('[aria-label^="Accept "]');
-    await expect
-      .poll(async () => await changedRows.count(), { timeout: 15_000 })
-      .toBe(OPTIMIZER_CHANGED_SLOTS);
+    // A change at the top level with nothing under it: unticking it takes no other part along.
+    const row = changedRows(page)
+      .and(page.locator('[aria-level="1"]:not([aria-expanded])'))
+      .first();
+    await row.focus();
+    await page.keyboard.press("Space");
+    await expect(row).toHaveAttribute("aria-checked", "false");
+    const kept = OPTIMIZER_CHANGED_SLOTS - 1;
+    await expect(proposal(page)).toContainText(`${kept} of ${OPTIMIZER_CHANGED_SLOTS} ticked`);
+    await expect(
+      page.getByText(`Partial: ${kept} of ${OPTIMIZER_CHANGED_SLOTS} changes`),
+    ).toBeVisible();
 
-    const acceptSelected = page.getByRole("button", { name: /Accept selected/ });
-    const beforeLabel = await acceptSelected.textContent();
-    const beforeN = parseInt((beforeLabel ?? "").match(/\((\d+)\)/)?.[1] ?? "0", 10);
-    // Every changed row starts selected, so the counter is the row count until one is toggled.
-    expect(beforeN).toBe(OPTIMIZER_CHANGED_SLOTS);
-
-    await changedRows.first().click();
-    const afterLabel = await acceptSelected.textContent();
-    const afterN = parseInt((afterLabel ?? "").match(/\((\d+)\)/)?.[1] ?? "0", 10);
-    expect(afterN).toBe(beforeN - 1);
-
-    await acceptSelected.click();
+    await proposal(page).getByRole("button", { name: "Apply ticked changes" }).click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
+    await expect(attached(page, kept)).toBeVisible();
+
+    // The applied build is the build: Share sends it, and a reload restores it from the draft.
+    let shared: { attachments: Record<string, string> } | null = null;
+    await page.route("**/api/builds", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      shared = route.request().postDataJSON() as typeof shared;
+      return route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "abcd2400", url: "/api/builds/abcd2400" }),
+      });
+    });
+    await page.getByRole("button", { name: "Share build" }).click();
+    await expect(page.getByText("Build URL copied")).toBeVisible();
+    await expect(page.getByText(/\/builder\/abcd2400$/)).toBeVisible();
+    expect(Object.keys(shared!.attachments)).toHaveLength(kept);
+
+    await page.reload({ waitUntil: "networkidle" });
+    await expect(attached(page, kept)).toBeVisible({ timeout: 15_000 });
   });
 
   for (const [objective, label, changed] of [
     ["min-recoil", "Min recoil", OPTIMIZER_CHANGED_SLOTS],
     ["max-accuracy", "Max accuracy", OPTIMIZER_ACCURACY_CHANGED_SLOTS],
   ] as const) {
-    test(`${objective}: accepting every change gives a complete build with no conflict`, async ({
+    test(`${objective}: applying every change gives a complete build with no conflict`, async ({
       page,
     }) => {
       await page.goto("/builder", { waitUntil: "networkidle" });
@@ -83,18 +131,13 @@ test.describe("builder optimizer diff view", () => {
         "the captured document must offer a weapon on the seeded profile",
       ).toBeTruthy();
 
-      await page.getByRole("button", { name: "Optimize", exact: true }).click();
+      await openOptimizer(page);
       await page.getByRole("radio", { name: label }).check();
-      await page.getByRole("button", { name: /Re-run optimization/i }).click();
-      await expect
-        .poll(async () => await page.locator('[aria-label^="Accept "]').count(), {
-          timeout: 15_000,
-        })
-        .toBe(changed);
+      await runAndWait(page, changed);
 
-      await page.getByRole("button", { name: /Accept all/ }).click();
+      await proposal(page).getByRole("button", { name: "Apply ticked changes" }).click();
       await expect(page).not.toHaveURL(/\?view=optimize/);
-      await expect(page.getByText(`${changed} attached`, { exact: true })).toBeVisible();
+      await expect(attached(page, changed)).toBeVisible();
       // The Builder flags a build with an empty required slot or two parts that clash.
       await expect(page.getByText(/^Incomplete · /)).toHaveCount(0);
       await expect(page.getByText(/^Conflict · /)).toHaveCount(0);
@@ -118,14 +161,14 @@ test.describe("builder optimizer diff view", () => {
       return served;
     });
 
-    await page.getByRole("button", { name: "Optimize", exact: true }).click();
-    await page.getByRole("button", { name: /Re-run optimization/i }).click();
+    await openOptimizer(page);
+    await page.getByRole("button", { name: "Run", exact: true }).click();
     const running = page.getByRole("status", { name: "Optimizer running" });
     await expect(running).toBeVisible();
     // The worker's script is held, so the solver has not started: no clock yet.
     await expect(running).toContainText("Starting the solver · 0 candidate builds checked");
     await expect.poll(() => requested, { message: "the run starts a worker" }).toBe(1);
-    await expect(page.getByText("Running", { exact: true })).toBeVisible();
+    await expect(page.getByText("Solving…", { exact: true })).toBeVisible();
 
     // The main thread is free: a click during the run is handled.
     const ergonomics = page.getByRole("radio", { name: "Max ergonomics" });
@@ -135,24 +178,23 @@ test.describe("builder optimizer diff view", () => {
 
     await running.getByRole("button", { name: "Cancel" }).click();
     await expect(running).toBeHidden();
-    await expect(page.getByText("Idle", { exact: true })).toBeVisible();
-    await expect(page.getByText(/Run the solver/i)).toBeVisible();
+    await expect(page.getByText("Ready to run", { exact: true })).toBeVisible();
 
-    // Serving the held script must not revive the cancelled run's view. This does not prove
-    // a late reply is dropped (a reply would need longer than these checks wait); that
-    // guarantee is covered in useOptimizer.test.ts.
+    // Serving the held script must not revive the cancelled run. This does not prove a late
+    // reply is dropped (a reply would need longer than these checks wait); that guarantee is
+    // covered in useOptimizer.test.ts.
     release();
     await served;
-    await expect(page.getByText("Idle", { exact: true })).toBeVisible();
-    await expect(page.locator('[aria-label^="Accept "]')).toHaveCount(0);
+    await expect(page.getByText("Ready to run", { exact: true })).toBeVisible();
+    await expect(changedRows(page)).toHaveCount(0);
     await expect(page.getByRole("alert")).toHaveCount(0);
 
     // A new run, on the changed objective, does report.
-    await page.getByRole("button", { name: /Re-run optimization/i }).click();
+    await page.getByRole("button", { name: "Run", exact: true }).click();
     await expect
-      .poll(async () => await page.locator('[aria-label^="Accept "]').count(), { timeout: 15_000 })
+      .poll(async () => await changedRows(page).count(), { timeout: 15_000 })
       .toBeGreaterThan(0);
-    await expect(page.getByText(/^Ergo Δ · /)).toBeVisible();
+    await expect(proposal(page)).toContainText(/Ergonomics [\d.]+ → [\d.]+/);
   });
 
   test("a budget no build fits says so, and runs again without it", async ({ page }) => {
@@ -160,26 +202,26 @@ test.describe("builder optimizer diff view", () => {
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: "Optimize", exact: true }).click();
+    await openOptimizer(page);
     const budget = page.getByLabel("Budget");
     await expect(budget).toBeEnabled({ timeout: 15_000 });
     await budget.fill("1");
-    await page.getByRole("button", { name: /Re-run optimization/i }).click();
+    await page.getByRole("button", { name: "Run", exact: true }).click();
 
     const outcome = page.getByRole("alert");
     await expect(outcome).toContainText("Over budget", { timeout: 15_000 });
     await expect(outcome).toContainText(/costs ₽[\d,]+, over the ₽1 budget\./);
-    await expect(page.locator('[aria-label^="Accept "]')).toHaveCount(0);
+    await expect(changedRows(page)).toHaveCount(0);
 
     await outcome.getByRole("button", { name: "Run without a budget" }).click();
     await expect(budget).toHaveValue("");
     await expect
-      .poll(async () => await page.locator('[aria-label^="Accept "]').count(), { timeout: 15_000 })
+      .poll(async () => await changedRows(page).count(), { timeout: 15_000 })
       .toBe(OPTIMIZER_CHANGED_SLOTS);
-    await expect(page.getByText(/^Recoil V\+H Δ · −/)).toBeVisible();
+    await expect(proposal(page)).toContainText(/Vertical recoil [\d.]+ → [\d.]+/);
   });
 
-  test("a nested slot can be pinned, emptied with its parent, and is kept by the result", async ({
+  test("a nested slot can be pinned by key or click, emptied with its parent, and is kept by the result", async ({
     page,
   }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
@@ -189,18 +231,20 @@ test.describe("builder optimizer diff view", () => {
     await choosePreset(page, /^M4A1 SOPMOD II/);
     await expectPreset(page, /^M4A1 SOPMOD II/);
 
-    await page.getByRole("button", { name: "Optimize", exact: true }).click();
-    const tree = page.getByRole("list", { name: "Pinned slots" });
-    await expect(page.getByText("Nothing pinned")).toBeVisible();
+    await openOptimizer(page);
+    const panel = page.getByRole("region", { name: "Build with proposed changes" });
+    await expect(panel.getByText("Nothing pinned")).toBeVisible();
 
     // A nested slot that holds a part, under a slot that may be left empty: the pair the
     // emptying has to be shown on. The captured build must have one.
-    const row = (path: string) => tree.locator(`li[data-slot-path="${path}"]`);
-    const enabled = async (path: string, choice: string) =>
-      await row(path).getByRole("radio", { name: choice }).isEnabled();
-    const paths = await tree
-      .locator("li[data-slot-path]")
-      .evaluateAll((lis) => lis.map((li) => li.getAttribute("data-slot-path")!));
+    const pinButton = (path: string, name: string) =>
+      slotRow(page, path).getByRole("button", { name, exact: true });
+    const enabled = async (path: string, name: string) =>
+      (await pinButton(path, name).count()) > 0 && (await pinButton(path, name).isEnabled());
+    const paths = await page
+      .getByRole("tree", { name: "Slots" })
+      .locator("[role=treeitem][data-slot-path]")
+      .evaluateAll((rows) => rows.map((r) => r.getAttribute("data-slot-path")!));
     let childPath: string | undefined;
     let parentPath: string | undefined;
     for (const path of paths.filter((p) => p.includes("/"))) {
@@ -208,7 +252,7 @@ test.describe("builder optimizer diff view", () => {
       const segments = path.split("/");
       for (let i = segments.length - 1; i >= 1 && parentPath === undefined; i--) {
         const above = segments.slice(0, i).join("/");
-        if (await enabled(above, "Empty")) parentPath = above;
+        if (await enabled(above, "Keep empty")) parentPath = above;
       }
       if (parentPath !== undefined) {
         childPath = path;
@@ -219,38 +263,44 @@ test.describe("builder optimizer diff view", () => {
       childPath,
       "the SOPMOD II preset needs a filled slot below an optional one",
     ).toBeTruthy();
-    const child = row(childPath!);
-    const parent = row(parentPath!);
+    const child = slotRow(page, childPath!);
+    const parent = slotRow(page, parentPath!);
     const labelOf = async (path: string) =>
-      ((await row(path).getByRole("radiogroup").getAttribute("aria-label")) ?? "").replace(
-        / pin$/,
+      ((await slotRow(page, path).getByRole("group").getAttribute("aria-label")) ?? "").replace(
+        /^Pin /,
         "",
       );
 
-    await child.getByRole("radio", { name: "Lock" }).check({ force: true });
-    await expect(page.getByText("1 slot pinned")).toBeVisible();
+    // L on the focused row locks it; a key with Ctrl held is left to the browser.
+    await child.focus();
+    await page.keyboard.press("Control+l");
+    await expect(pinButton(childPath!, "Lock")).toHaveAttribute("aria-pressed", "false");
+    await page.keyboard.press("l");
+    await expect(pinButton(childPath!, "Lock")).toHaveAttribute("aria-pressed", "true");
+    await expect(panel.getByText("1 locked")).toBeVisible();
 
-    // EMPTY asks first, then takes the nested lock with it, in view.
-    await parent.getByRole("radio", { name: "Empty" }).click({ force: true });
-    await expect(parent.getByRole("radio", { name: "Empty" })).not.toBeChecked();
-    const ask = parent.getByRole("group", { name: `Empty ${await labelOf(parentPath!)}` });
+    // Keep empty asks first, then takes the nested lock with it, in view.
+    await pinButton(parentPath!, "Keep empty").click();
+    await expect(pinButton(parentPath!, "Keep empty")).toHaveAttribute("aria-pressed", "false");
+    const ask = page.getByRole("group", { name: `Empty ${await labelOf(parentPath!)}` });
     await expect(ask).toContainText("clears 1 pin below it.");
+    await expect(ask.getByRole("button", { name: "Empty it" })).toBeFocused();
     await expect(child).toHaveCount(1);
     await ask.getByRole("button", { name: "Empty it" }).click();
     await expect(child).toHaveCount(0);
-    await expect(page.getByText("1 slot pinned")).toBeVisible();
-    await parent.getByRole("radio", { name: "Free" }).check({ force: true });
-    await expect(child.getByRole("radio", { name: "Free" })).toBeChecked();
-    await expect(page.getByText("Nothing pinned")).toBeVisible();
+    await expect(parent).toBeFocused();
+    await expect(panel.getByText("1 kept empty")).toBeVisible();
+    await page.keyboard.press("f");
+    await expect(pinButton(childPath!, "Free")).toHaveAttribute("aria-pressed", "true");
+    await expect(panel.getByText("Nothing pinned")).toBeVisible();
 
     // Lock the child and every slot above it, so its path exists in every build the solver
     // may return.
     const segments = childPath!.split("/");
     const chain = segments.map((_, i) => segments.slice(0, i + 1).join("/"));
-    for (const path of chain)
-      await row(path).getByRole("radio", { name: "Lock" }).check({ force: true });
-    await expect(page.getByText(`${chain.length} slots pinned`)).toBeVisible();
-    await page.getByRole("button", { name: /Re-run optimization/i }).click();
+    for (const path of chain) await pinButton(path, "Lock").click();
+    await expect(panel.getByText(`${chain.length} locked`)).toBeVisible();
+    await page.getByRole("button", { name: "Run", exact: true }).click();
 
     const report = page.getByRole("region", { name: "Pins" });
     await expect(report).toContainText(`${chain.length} kept`, { timeout: 15_000 });
@@ -260,16 +310,29 @@ test.describe("builder optimizer diff view", () => {
     );
   });
 
-  test("← Editor discards and returns to editor without merging", async ({ page }) => {
+  test("Discard drops the proposal and returns to the editor without changing the build", async ({
+    page,
+  }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });
     const picked = await pickFirstWeapon(page);
     expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
 
-    await page.getByRole("button", { name: "Optimize", exact: true }).click();
-    await expect(page).toHaveURL(/\?view=optimize/);
-
-    await page.getByRole("button", { name: /Back to builder editor/ }).click();
+    await openOptimizer(page);
+    await runAndWait(page, OPTIMIZER_CHANGED_SLOTS);
+    await proposal(page).getByRole("button", { name: "Discard" }).click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
-    await expect(page.getByRole("heading", { name: /Optimizer/i })).not.toBeVisible();
+    await expect(attached(page, 0)).toBeVisible();
+  });
+
+  test("Close leaves optimize mode without a run", async ({ page }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    const picked = await pickFirstWeapon(page);
+    expect(picked, "the captured document must offer a weapon on the seeded profile").toBeTruthy();
+
+    await openOptimizer(page);
+    await page.getByRole("button", { name: "Close the optimizer" }).click();
+    await expect(page).not.toHaveURL(/\?view=optimize/);
+    await expect(page.getByRole("complementary", { name: "Optimizer" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Optimize", exact: true })).toBeVisible();
   });
 });

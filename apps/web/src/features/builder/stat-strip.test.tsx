@@ -7,7 +7,15 @@ import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import type { BuildPrice } from "@tarkov/data";
 import { BARREL_10_3, M4A1, RECOIL_MODS, VP09 } from "../../test/weapon-fixtures.js";
 import type { PricesStatus } from "./build-price.js";
-import { StatStrip, direction, formatDelta, formatPercent, oneDecimal } from "./stat-strip.js";
+import {
+  StatStrip,
+  direction,
+  formatDelta,
+  formatPercent,
+  formatRubDelta,
+  oneDecimal,
+  type StripProposal,
+} from "./stat-strip.js";
 
 afterEach(() => cleanup());
 
@@ -23,6 +31,8 @@ function renderStrip(
     buildPrice?: BuildPrice | null;
     boughtAs?: string | null;
     onOptimize?: () => void;
+    proposal?: StripProposal;
+    status?: string;
   } = {},
 ) {
   render(
@@ -34,6 +44,8 @@ function renderStrip(
       boughtAs={opts.boughtAs ?? null}
       nameOf={nameOf}
       onOptimize={opts.onOptimize}
+      proposal={opts.proposal}
+      status={opts.status}
     />,
   );
 }
@@ -138,6 +150,55 @@ describe("StatStrip", () => {
     cleanup();
     renderStrip(STOCK);
     expect(screen.queryByRole("button", { name: "Optimize" })).not.toBeInTheDocument();
+  });
+});
+
+describe("StatStrip with a proposal", () => {
+  const current = weaponSpec(M4A1, [VP09]);
+
+  it("shows the proposal's figures against the current build's, named better or worse", () => {
+    renderStrip(current, {
+      buildPrice: { status: "priced", totalRUB: 30_000, presetId: null },
+      proposal: {
+        spec: weaponSpec(M4A1, [VP09, ...RECOIL_MODS]),
+        buildPrice: { status: "priced", totalRUB: 817_000, presetId: null },
+        boughtAs: null,
+      },
+      status: "Showing the proposal",
+    });
+    expect(screen.getByRole("region", { name: "Build stats, proposed" })).toBeInTheDocument();
+    const next = weaponSpec(M4A1, [VP09, ...RECOIL_MODS]);
+    expect(value("Vertical recoil")).toHaveTextContent(oneDecimal(next.verticalRecoil));
+    expect(sub("Vertical recoil")).toHaveTextContent(
+      `was ${oneDecimal(current.verticalRecoil)} ${formatDelta(next.verticalRecoil - current.verticalRecoil, 1, true)} better`,
+    );
+    expect(sub("Ergonomics")).toHaveTextContent("was 46 +30 better");
+    expect(sub("Accuracy")).toHaveTextContent(/^was \d\.\d\d/);
+    expect(screen.getByTestId("build-cost")).toHaveTextContent(
+      "Cost₽817,000was ₽30,000 +787.0k worse",
+    );
+    expect(screen.getByText("Showing the proposal")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Optimize" })).not.toBeInTheDocument();
+  });
+
+  it("floors proposed ergonomics as the game does, with the raw sum in a title", () => {
+    const sinks = [
+      { ...BARREL_10_3, ergonomicsDelta: -32 },
+      { ...VP09, ergonomicsDelta: -39 },
+    ];
+    renderStrip(current, {
+      proposal: { spec: weaponSpec(M4A1, sinks), buildPrice: null, boughtAs: null },
+    });
+    expect(value("Ergonomics")).toHaveTextContent(/^0$/);
+    expect(value("Ergonomics")).toHaveAttribute("title", "−23 before the game's floor at 0");
+    // The delta compares the floored values: 46 → 0, not 46 → −23.
+    expect(sub("Ergonomics")).toHaveTextContent("was 46 −46 worse");
+  });
+
+  it("formats a rouble difference in thousands, blank under fifty", () => {
+    expect(formatRubDelta(787_000)).toBe("+787.0k");
+    expect(formatRubDelta(-1_250)).toBe("−1.3k");
+    expect(formatRubDelta(20)).toBe("");
   });
 });
 

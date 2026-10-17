@@ -104,7 +104,7 @@ function describe({
 }: OutcomeProps): Shown {
   const editProfile = theorycraft ? null : (
     <Button variant="secondary" onClick={onEditProfile}>
-      Edit profile
+      Edit progression
     </Button>
   );
   const withoutBudget = (
@@ -139,7 +139,7 @@ function describe({
         hint: "Pin more slots or set a budget to narrow the search, then run it again.",
         actions: (
           <Button variant="secondary" onClick={onBack}>
-            Back to constraints
+            Dismiss
           </Button>
         ),
       };

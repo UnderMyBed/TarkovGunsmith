@@ -23,7 +23,7 @@ const LL4: PlayerProfile = {
 };
 
 describe("the changes table's prices against the build's cost", () => {
-  it("sum to the change the triptych shows when the preset stays", async () => {
+  it("sum to the change in the build's cost when the preset stays", async () => {
     const { snapshot, prices } = await capturedBuilderData();
     const table = prices.prices;
     const parts = snapshotPartCatalog(snapshot, table);

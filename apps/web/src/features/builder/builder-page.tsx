@@ -2,7 +2,13 @@
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
 import { useEffect, useId, useRef, useState } from "react";
-import { presetAvailability, useProgression, useTasks, type BuildV6 } from "@tarkov/data";
+import {
+  presetAvailability,
+  useProgression,
+  useTasks,
+  type BuildPrice,
+  type BuildV6,
+} from "@tarkov/data";
 import { Button } from "@tarkov/ui";
 import { useWorkbenchChrome } from "../../site-chrome.js";
 import { withModeTracking } from "../../observability/track-hooks.js";
@@ -12,7 +18,7 @@ import { writeDraft, type DraftBuild } from "./build-draft.js";
 import { CompareFromBuildDialog } from "./compare/compare-from-build-dialog.js";
 import { DetailsPanel } from "./details-panel.js";
 import { ModeSwitch } from "./mode-switch.js";
-import { OptimizeView } from "./optimize/optimize-view.js";
+import { OptimizeWorkbench } from "./optimize/optimize-workbench.js";
 import { PresetSelect } from "./preset-select.js";
 import { ProgressionPanel, ProgressionStatus } from "./progression-panel.js";
 import { QuestNameProvider } from "./quest-names.js";
@@ -120,8 +126,7 @@ export function BuilderPage({
     id === builder.selectedWeapon?.id
       ? builder.selectedWeapon.name
       : (builder.modNamesById[id] ?? id);
-  const price = builder.buildPrice;
-  const boughtAs =
+  const boughtAsOf = (price: BuildPrice | null) =>
     price !== null && price.status !== "unobtainable" && price.presetId !== null
       ? (weaponPresets.find((p) => p.id === price.presetId)?.shortName ?? price.presetId)
       : null;
@@ -149,6 +154,19 @@ export function BuilderPage({
   const weapon = builder.selectedWeapon;
   const selection = useSlotSelection(builder.tree.data, builder.attachments);
   const selectedSlot = selection.selected?.slot ?? null;
+
+  const optimizing =
+    view === "optimize" && weapon && builder.tree.data && builder.spec
+      ? { weapon, tree: builder.tree.data, spec: builder.spec }
+      : null;
+  const progressionStatus = (
+    <ProgressionStatus
+      progression={progression}
+      sync={sync}
+      onOpenPanel={openProgression}
+      busyId={busyId}
+    />
+  );
 
   return (
     <QuestNameProvider>
@@ -181,17 +199,6 @@ export function BuilderPage({
             : undefined
         }
       />
-      {weapon && builder.spec && (
-        <StatStrip
-          spec={builder.spec}
-          stockSpec={builder.stockSpec}
-          prices={builder.prices}
-          buildPrice={builder.buildPrice}
-          boughtAs={boughtAs}
-          nameOf={nameOf}
-          onOptimize={view === "editor" ? handleOpenOptimizer : undefined}
-        />
-      )}
       <ProgressionPanel
         open={progressionOpen}
         onClose={() => setProgressionOpen(false)}
@@ -208,168 +215,189 @@ export function BuilderPage({
         }}
       />
 
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 pb-8 pt-4 sm:px-6">
-        <ProgressionStatus
-          progression={progression}
+      {optimizing ? (
+        <OptimizeWorkbench
+          // A new weapon starts a new session: no pin outlives the slots it names.
+          key={builder.weaponId}
+          weapon={adaptWeapon(optimizing.weapon)}
+          weaponItem={optimizing.weapon}
+          slotTree={optimizing.tree}
+          parts={builder.parts}
+          gate={builder.gate}
+          presets={weaponPresets}
+          prices={builder.prices}
           sync={sync}
-          onOpenPanel={openProgression}
-          busyId={busyId}
+          currentBuild={builder.currentBuild}
+          currentSpec={optimizing.spec}
+          stockSpec={builder.stockSpec}
+          currentPrice={builder.buildPrice}
+          boughtAsOf={boughtAsOf}
+          nameOf={nameOf}
+          status={progressionStatus}
+          onEditProfile={openProgression}
+          // As the mode switch's "My progression…": straight back to a stored profile, the
+          // panel only when there is none to switch to.
+          onUseProgression={() =>
+            progression.hasProfile ? progression.setMode("progression") : openProgression()
+          }
+          onApply={(build) => {
+            builder.acceptOptimized(build.attachments);
+            handleExitOptimizer();
+          }}
+          onClose={handleExitOptimizer}
         />
-        {view === "editor" ? (
-          <>
-            {notice}
-            {builder.upstreamDriftInfo && <UpstreamDriftBanner {...builder.upstreamDriftInfo} />}
-            <SnapshotBanner
-              snapshot={initialBuild?.profileSnapshot}
-              onUseSnapshot={setProfile}
-              mode={mode}
+      ) : (
+        <>
+          {weapon && builder.spec && (
+            <StatStrip
+              spec={builder.spec}
+              stockSpec={builder.stockSpec}
+              prices={builder.prices}
+              buildPrice={builder.buildPrice}
+              boughtAs={boughtAsOf(builder.buildPrice)}
+              nameOf={nameOf}
+              onOptimize={handleOpenOptimizer}
             />
-
-            {builder.error && (
-              <p
-                role="alert"
-                className="rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-destructive)]"
-              >
-                Failed to load data: {builder.error.message}
-              </p>
-            )}
-
-            <div className="flex flex-wrap items-start gap-4">
-              <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-4 lg:max-w-[460px]">
-                {weapon ? (
-                  <BuildPanel
-                    tree={builder.tree}
-                    attachments={builder.attachments}
-                    attachedCount={builder.attachedCount}
-                    selection={selection}
-                    getAvailability={(id) => builder.availabilityById.get(id) ?? null}
-                    mode={mode}
-                    getFittedConflict={builder.getFittedConflict}
-                    orphaned={builder.orphaned}
-                    modNames={builder.modNamesById}
-                    onDismissOrphaned={builder.clearOrphaned}
-                    missingRequired={builder.missingRequired}
-                    conflicts={builder.conflicts}
-                    presets={
-                      builder.tree.data && (
-                        // Keyed by weapon so a pending "Replace" prompt never outlives its weapon.
-                        <PresetSelect
-                          key={builder.weaponId}
-                          presets={weaponPresets}
-                          tree={builder.tree.data}
-                          known={builder.partsById}
-                          attachments={builder.attachments}
-                          getAvailability={(id) => {
-                            const preset = weaponPresets.find((p) => p.id === id);
-                            return preset ? presetAvailability(preset, builder.gate) : null;
-                          }}
-                          mode={mode}
-                          onApply={builder.applyPreset}
-                        />
-                      )
-                    }
-                  />
-                ) : (
-                  <section
-                    aria-label="Build"
-                    className="rounded-[var(--radius-panel)] border border-dashed border-[var(--color-border-strong)] px-4 py-10 text-center"
-                  >
-                    <h2 className="text-base font-bold">No weapon selected</h2>
-                    <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-                      Pick one in the weapon search above, or press{" "}
-                      <kbd className="rounded-[var(--radius)] border border-[var(--color-border-strong)] px-1.5 font-mono text-12">
-                        /
-                      </kbd>{" "}
-                      to jump to it.
-                    </p>
-                  </section>
+          )}
+          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 pb-8 pt-4 sm:px-6">
+            {progressionStatus}
+            {view === "editor" ? (
+              <>
+                {notice}
+                {builder.upstreamDriftInfo && (
+                  <UpstreamDriftBanner {...builder.upstreamDriftInfo} />
                 )}
-              </div>
-              <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
-                {weapon && selectedSlot && (
-                  <SlotInspector
-                    weaponId={builder.weaponId}
-                    id={selection.inspectorId}
-                    slot={selectedSlot}
-                    fittedId={builder.attachments[selectedSlot.path] ?? null}
-                    parts={builder.partsById}
-                    onAttach={builder.handleAttach}
-                    getAvailability={(id) => builder.availabilityById.get(id) ?? null}
-                    getConflict={builder.getConflict}
-                    mode={mode}
-                    pricesReady={builder.prices.state === "ready"}
-                    onEscape={selection.focusTreeRow}
-                  />
-                )}
-                <DetailsPanel
-                  name={saveMeta.buildName}
-                  description={saveMeta.buildDescription}
-                  onNameChange={saveMeta.setBuildName}
-                  onDescriptionChange={saveMeta.setBuildDescription}
-                  spec={weapon ? builder.spec : null}
-                  magazine={builder.magazine}
-                  embedProfile={
-                    weapon && mode === "progression"
-                      ? {
-                          checked: saveMeta.embedProfileOnSave,
-                          onChange: saveMeta.setEmbedProfileOnSave,
-                        }
-                      : undefined
-                  }
-                  onNewBuild={
-                    onNewBuild &&
-                    (builder.weaponId !== "" || saveMeta.buildName || saveMeta.buildDescription)
-                      ? onNewBuild
-                      : undefined
-                  }
-                  dataAsOf={builder.dataAsOf}
-                  prices={builder.prices}
+                <SnapshotBanner
+                  snapshot={initialBuild?.profileSnapshot}
+                  onUseSnapshot={setProfile}
+                  mode={mode}
                 />
-              </div>
-            </div>
-          </>
-        ) : weapon && builder.tree.data && builder.spec ? (
-          <OptimizeView
-            weapon={adaptWeapon(weapon)}
-            weaponItem={weapon}
-            slotTree={builder.tree.data}
-            parts={builder.parts}
-            gate={builder.gate}
-            presets={weaponPresets}
-            pricesReady={builder.prices.state === "ready"}
-            sync={sync}
-            currentAttachments={builder.attachments}
-            currentBuild={builder.currentBuild}
-            currentStats={builder.spec}
-            currentPrice={builder.buildPrice}
-            onAccept={(build) => {
-              builder.acceptOptimized(build.attachments);
-              handleExitOptimizer();
-            }}
-            onExit={handleExitOptimizer}
-            onEditProfile={openProgression}
-          />
-        ) : (
-          <div className="rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
-            <p className="text-sm">Pick a weapon above to optimize.</p>
-            <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
-              ← Back to editor
-            </Button>
-          </div>
-        )}
 
-        {shareBuild.shareUrl && (
-          <div
-            role="status"
-            className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg"
-          >
-            <div className="text-sm font-medium">Build URL copied</div>
-            <code className="mt-1 block max-w-xs truncate text-xs text-[var(--color-muted-foreground)]">
-              {shareBuild.shareUrl}
-            </code>
+                {builder.error && (
+                  <p
+                    role="alert"
+                    className="rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-destructive)]"
+                  >
+                    Failed to load data: {builder.error.message}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap items-start gap-4">
+                  <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-4 lg:max-w-[460px]">
+                    {weapon ? (
+                      <BuildPanel
+                        tree={builder.tree}
+                        attachments={builder.attachments}
+                        attachedCount={builder.attachedCount}
+                        selection={selection}
+                        getAvailability={(id) => builder.availabilityById.get(id) ?? null}
+                        mode={mode}
+                        getFittedConflict={builder.getFittedConflict}
+                        orphaned={builder.orphaned}
+                        modNames={builder.modNamesById}
+                        onDismissOrphaned={builder.clearOrphaned}
+                        missingRequired={builder.missingRequired}
+                        conflicts={builder.conflicts}
+                        presets={
+                          builder.tree.data && (
+                            // Keyed by weapon so a pending "Replace" prompt never outlives its weapon.
+                            <PresetSelect
+                              key={builder.weaponId}
+                              presets={weaponPresets}
+                              tree={builder.tree.data}
+                              known={builder.partsById}
+                              attachments={builder.attachments}
+                              getAvailability={(id) => {
+                                const preset = weaponPresets.find((p) => p.id === id);
+                                return preset ? presetAvailability(preset, builder.gate) : null;
+                              }}
+                              mode={mode}
+                              onApply={builder.applyPreset}
+                            />
+                          )
+                        }
+                      />
+                    ) : (
+                      <section
+                        aria-label="Build"
+                        className="rounded-[var(--radius-panel)] border border-dashed border-[var(--color-border-strong)] px-4 py-10 text-center"
+                      >
+                        <h2 className="text-base font-bold">No weapon selected</h2>
+                        <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+                          Pick one in the weapon search above, or press{" "}
+                          <kbd className="rounded-[var(--radius)] border border-[var(--color-border-strong)] px-1.5 font-mono text-12">
+                            /
+                          </kbd>{" "}
+                          to jump to it.
+                        </p>
+                      </section>
+                    )}
+                  </div>
+                  <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
+                    {weapon && selectedSlot && (
+                      <SlotInspector
+                        weaponId={builder.weaponId}
+                        id={selection.inspectorId}
+                        slot={selectedSlot}
+                        fittedId={builder.attachments[selectedSlot.path] ?? null}
+                        parts={builder.partsById}
+                        onAttach={builder.handleAttach}
+                        getAvailability={(id) => builder.availabilityById.get(id) ?? null}
+                        getConflict={builder.getConflict}
+                        mode={mode}
+                        pricesReady={builder.prices.state === "ready"}
+                        onEscape={selection.focusTreeRow}
+                      />
+                    )}
+                    <DetailsPanel
+                      name={saveMeta.buildName}
+                      description={saveMeta.buildDescription}
+                      onNameChange={saveMeta.setBuildName}
+                      onDescriptionChange={saveMeta.setBuildDescription}
+                      spec={weapon ? builder.spec : null}
+                      magazine={builder.magazine}
+                      embedProfile={
+                        weapon && mode === "progression"
+                          ? {
+                              checked: saveMeta.embedProfileOnSave,
+                              onChange: saveMeta.setEmbedProfileOnSave,
+                            }
+                          : undefined
+                      }
+                      onNewBuild={
+                        onNewBuild &&
+                        (builder.weaponId !== "" || saveMeta.buildName || saveMeta.buildDescription)
+                          ? onNewBuild
+                          : undefined
+                      }
+                      dataAsOf={builder.dataAsOf}
+                      prices={builder.prices}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+                <p className="text-sm">Pick a weapon above to optimize.</p>
+                <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
+                  ← Back to editor
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
+      {shareBuild.shareUrl && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 rounded-[var(--radius)] border bg-[var(--color-card)] p-4 shadow-lg"
+        >
+          <div className="text-sm font-medium">Build URL copied</div>
+          <code className="mt-1 block max-w-xs truncate text-xs text-[var(--color-muted-foreground)]">
+            {shareBuild.shareUrl}
+          </code>
+        </div>
+      )}
     </QuestNameProvider>
   );
 }
