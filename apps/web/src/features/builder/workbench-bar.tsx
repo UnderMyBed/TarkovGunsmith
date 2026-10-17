@@ -12,6 +12,11 @@ export interface WorkbenchBarProps {
    * is a plain link to the Compare page.
    */
   onCompare?: (() => void) | undefined;
+  /**
+   * Phone width: Compare is left to the bottom bar (`phone-action-bar.tsx`), and the bar keeps
+   * the wordmark and Share on its first row.
+   */
+  compact?: boolean;
   /** The share action; omitted while there is no weapon to share. */
   share?:
     | {
@@ -31,9 +36,16 @@ const BAR_BUTTON = "h-11 px-4";
 /**
  * The workbench's top bar: the wordmark, the weapon picker, the mode switch, Compare and Share.
  * It stands in for the site masthead on the Builder (`site-chrome.tsx`). It wraps rather than
- * scrolls: at phone width the picker takes a row of its own.
+ * scrolls. At phone width the wordmark and Share share the first row, the picker spans the next,
+ * and the mode switch sits under it.
  */
-export function WorkbenchBar({ picker, modeSwitch, onCompare, share }: WorkbenchBarProps) {
+export function WorkbenchBar({
+  picker,
+  modeSwitch,
+  onCompare,
+  compact = false,
+  share,
+}: WorkbenchBarProps) {
   return (
     <section
       aria-label="Workbench"
@@ -49,11 +61,13 @@ export function WorkbenchBar({ picker, modeSwitch, onCompare, share }: Workbench
           </svg>
           TarkovGunsmith
         </Link>
-        <div className="w-full sm:w-auto sm:min-w-64 sm:flex-[0_1_420px]">{picker}</div>
-        {modeSwitch}
-        <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+        <div className="w-full max-sm:order-3 sm:w-auto sm:min-w-64 sm:flex-[0_1_420px]">
+          {picker}
+        </div>
+        {modeSwitch && <div className="max-sm:order-4 max-sm:w-full">{modeSwitch}</div>}
+        <div className="flex flex-1 flex-wrap items-center justify-end gap-2 max-sm:order-2">
           {share?.sharedId && <Stamp tone="accent">Shared</Stamp>}
-          {onCompare ? (
+          {compact ? null : onCompare ? (
             <Button variant="secondary" className={BAR_BUTTON} onClick={onCompare}>
               Compare
             </Button>

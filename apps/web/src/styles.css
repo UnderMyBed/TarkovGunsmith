@@ -20,3 +20,11 @@ body,
   margin: 0;
   padding: 0;
 }
+
+/* The Builder's bottom bar on a phone (`phone-action-bar.tsx`): its height, which the page ends
+ * with room for (`__root.tsx`) and the share toast sits above. `env(safe-area-inset-bottom)` is
+ * 0 while index.html's viewport has no `viewport-fit=cover`; it is in the sum so the bar, the
+ * room and the toast stay in step if that ever changes. */
+:root {
+  --phone-bar-height: calc(4.75rem + env(safe-area-inset-bottom));
+}

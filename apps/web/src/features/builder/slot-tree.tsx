@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import type { ItemAvailability, SlotDiffMap, SlotDiffStatus } from "@tarkov/data";
 import { Pill, cn, focusRing } from "@tarkov/ui";
 import { useQuestName, type QuestName } from "./quest-names.js";
@@ -20,6 +20,12 @@ interface SlotTreeBaseProps {
   getFittedConflict?: (path: string) => string | null;
   /** The tree's accessible name. */
   label?: string;
+  /**
+   * A row opens the phone's slot sheet rather than an inspector beside the tree: each row ends
+   * in a chevron, and Space opens it on release, so the release cannot land on the sheet's
+   * first button and close it again.
+   */
+  opensSheet?: boolean;
 }
 
 /** Which Compare side a tree shows: `slotDiff`'s left is build A, its right build B. */
@@ -59,7 +65,8 @@ function diffNote(status: SlotDiffStatus | undefined, side: SlotDiffSide): strin
  * one. One row is in the tab order at a time (roving tabindex):
  * - Up / Down / Home / End move between rows;
  * - Right moves to a row's first child, Left to its parent;
- * - Enter or Space selects the row and moves focus into the inspector.
+ * - Enter or Space selects the row and moves focus into the inspector (with `opensSheet`, opens
+ *   the phone's slot sheet; Space on its release).
  */
 export function SlotTree({
   selection,
@@ -69,9 +76,12 @@ export function SlotTree({
   side,
   getFittedConflict,
   label = "Slots",
+  opensSheet = false,
 }: SlotTreeProps) {
   const { rows, selected } = selection;
   const keys = useTreeKeys(rows, selection.treeId, selected?.slot.path ?? null);
+  // The row a Space press began on: only its own release opens the sheet.
+  const spaceDownOn = useRef<string | null>(null);
   if (rows.length === 0) {
     return (
       <p className="text-xs text-[var(--color-muted-foreground)]">This weapon has no mod slots.</p>
@@ -81,8 +91,25 @@ export function SlotTree({
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>, index: number) => {
     if (keys.navigate(e, index)) return;
     if (e.key !== "Enter" && e.key !== " ") return;
-    selection.activate(rows[index]!.slot.path);
     e.preventDefault();
+    // A held key opening a sheet would repeat into the sheet's Close button and back.
+    if (opensSheet && e.repeat) return;
+    // Space opening a sheet waits for its release (onKeyUp): opened on the press, the sheet
+    // takes the focus, and the release then clicks its Close button in browsers that activate
+    // a button on keyup alone.
+    if (opensSheet && e.key === " ") {
+      spaceDownOn.current = rows[index]!.slot.path;
+      return;
+    }
+    selection.activate(rows[index]!.slot.path);
+  };
+  const onKeyUp = (e: KeyboardEvent<HTMLDivElement>, index: number) => {
+    if (!opensSheet || e.key !== " ") return;
+    e.preventDefault();
+    const path = rows[index]!.slot.path;
+    const pressedHere = spaceDownOn.current === path;
+    spaceDownOn.current = null;
+    if (pressedHere) selection.activate(path);
   };
 
   return (
@@ -101,6 +128,8 @@ export function SlotTree({
           onSelect={() => selection.select(row.slot.path)}
           onFocus={() => keys.setFocusedPath(row.slot.path)}
           onKeyDown={(e) => onKeyDown(e, index)}
+          onKeyUp={(e) => onKeyUp(e, index)}
+          chevron={opensSheet}
         />
       ))}
     </div>
@@ -202,6 +231,8 @@ function SlotRow({
   onSelect,
   onFocus,
   onKeyDown,
+  onKeyUp,
+  chevron,
 }: {
   row: VisibleSlot;
   selected: boolean;
@@ -214,6 +245,9 @@ function SlotRow({
   onSelect: () => void;
   onFocus: () => void;
   onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => void;
+  onKeyUp: (e: KeyboardEvent<HTMLDivElement>) => void;
+  /** End the row with a chevron: it opens the phone's slot sheet. */
+  chevron: boolean;
 }) {
   const { slot } = row;
   const fittedId = attachments[slot.path] ?? null;
@@ -245,8 +279,12 @@ function SlotRow({
       onClick={onSelect}
       onFocus={onFocus}
       onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
       className={cn(
-        "grid min-h-11 cursor-pointer grid-cols-[minmax(84px,112px)_minmax(0,1fr)_auto] items-center gap-x-2.5 border-l-2 border-transparent py-1.5 pr-4 transition-colors sm:gap-x-3",
+        "grid cursor-pointer items-center border-l-2 border-transparent py-1.5 pr-4 transition-colors",
+        // Phone: a 52 px row, the slot over its part, then the pill and a chevron to the sheet.
+        "max-sm:min-h-[52px] max-sm:grid-cols-[minmax(0,1fr)_auto_auto] max-sm:gap-x-2.5 max-sm:gap-y-0.5 max-sm:[grid-template-areas:'label_pill_chevron''part_pill_chevron']",
+        "sm:min-h-11 sm:grid-cols-[minmax(84px,112px)_minmax(0,1fr)_auto] sm:gap-x-3 sm:[grid-template-areas:'label_part_pill']",
         "data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-[var(--color-primary)]",
         selected ? "bg-[var(--color-selected)]" : "hover:bg-[var(--color-muted)]",
         focusRing,
@@ -257,7 +295,7 @@ function SlotRow({
       <span
         title={slot.label}
         className={cn(
-          "truncate text-12",
+          "truncate text-12 [grid-area:label]",
           selected
             ? "font-bold text-[var(--color-primary-text)]"
             : "font-medium text-[var(--color-muted-foreground)]",
@@ -266,20 +304,23 @@ function SlotRow({
         <span data-slot-label>{slot.label}</span>
         {slot.required && <span aria-hidden> *</span>}
       </span>
-      <span className="min-w-0 text-13 leading-snug">
+      <span className="min-w-0 text-13 leading-snug [grid-area:part] max-sm:text-sm">
         {fitted ? (
           <>
-            <span data-fitted-part className="text-[var(--color-foreground)]">
+            <span
+              data-fitted-part
+              className="text-[var(--color-foreground)] max-sm:block max-sm:truncate"
+            >
               {fitted.name}
             </span>
             {fittedConflict !== null && (
-              <span className="block text-11 text-[var(--color-destructive)]">
+              <span className="block text-11 text-[var(--color-destructive)] max-sm:truncate">
                 {fittedConflict}
               </span>
             )}
           </>
         ) : (
-          <span className="text-[var(--color-faint)]">
+          <span className="text-[var(--color-faint)] max-sm:block max-sm:truncate">
             empty
             {slot.required && (
               <span className="ml-2 text-11 text-[var(--color-destructive)]">Required</span>
@@ -287,9 +328,21 @@ function SlotRow({
           </span>
         )}
       </span>
-      <span className="justify-self-end">
+      <span className="justify-self-end [grid-area:pill]">
         {fitted && <AvailabilityPill availability={availability} />}
       </span>
+      {chevron && (
+        <svg
+          aria-hidden
+          width="8"
+          height="12"
+          viewBox="0 0 8 12"
+          fill="none"
+          className="text-[var(--color-faint)] [grid-area:chevron] sm:hidden"
+        >
+          <path d="M2 2l4 4-4 4" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      )}
     </div>
   );
 }

@@ -14,6 +14,8 @@ export interface BuildPanelProps {
   attachedCount: number;
   /** Which slot the tree has selected: `useSlotSelection`, shared with the inspector. */
   selection: SlotSelection;
+  /** A row opens the phone's slot sheet: see `SlotTree`'s `opensSheet`. */
+  opensSheet?: boolean;
   /** Each part's availability under the Builder's gate (`useBuilderState`'s `gate`). */
   getAvailability: (itemId: string) => ItemAvailability | null;
   /**
@@ -45,6 +47,7 @@ export function BuildPanel({
   attachments,
   attachedCount,
   selection,
+  opensSheet = false,
   getAvailability,
   mode,
   getFittedConflict,
@@ -93,6 +96,7 @@ export function BuildPanel({
         {tree.data && (
           <SlotTree
             selection={selection}
+            opensSheet={opensSheet}
             attachments={attachments}
             getAvailability={availabilityOf}
             getFittedConflict={getFittedConflict}

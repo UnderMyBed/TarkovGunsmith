@@ -11,6 +11,8 @@ export interface ModeSwitchProps {
    * `undefined`. Both halves are disabled meanwhile and point at the note.
    */
   busyId: string | undefined;
+  /** Merged over the group's own classes. */
+  className?: string | undefined;
 }
 
 /**
@@ -24,7 +26,12 @@ export interface ModeSwitchProps {
  * first import, and so which mode it leaves, is decided when it lands, and a switch made in
  * between would be overwritten by it.
  */
-export function ModeSwitch({ progression, onOpenPanel, busyId }: ModeSwitchProps): ReactElement {
+export function ModeSwitch({
+  progression,
+  onOpenPanel,
+  busyId,
+  className,
+}: ModeSwitchProps): ReactElement {
   const { mode, hasProfile, setMode } = progression;
   const busy = busyId !== undefined;
   // "My progression…" switches straight back to a profile set aside; otherwise it opens the panel.
@@ -41,7 +48,10 @@ export function ModeSwitch({ progression, onOpenPanel, busyId }: ModeSwitchProps
     <div
       role="group"
       aria-label="Builder mode"
-      className="flex overflow-hidden rounded-[var(--radius)] border border-[var(--color-border-strong)]"
+      className={cn(
+        "flex overflow-hidden rounded-[var(--radius)] border border-[var(--color-border-strong)]",
+        className,
+      )}
     >
       <button
         type="button"
