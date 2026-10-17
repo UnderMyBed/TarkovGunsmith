@@ -406,11 +406,11 @@ describe("OptimizeWorkbench", () => {
       fireEvent.keyDown(row("Rail"), { key: " " });
       expect(row("Handguard")).toHaveAttribute("aria-checked", "true");
       expect(row("Rail")).toHaveAttribute("aria-checked", "true");
-      // The foregrip goes with the new handguard, which has no slot for it.
+      // The foregrip comes off with the old handguard: the new one has no slot for it.
       expect(row("Foregrip")).toHaveAttribute("aria-checked", "true");
       expect(row("Foregrip")).toHaveAttribute(
         "aria-label",
-        expect.stringContaining("goes with the new Handguard"),
+        expect.stringContaining("comes off with the old Handguard"),
       );
       expect(within(proposalCard()).getByText("3 of 3 ticked")).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Apply ticked changes" }));

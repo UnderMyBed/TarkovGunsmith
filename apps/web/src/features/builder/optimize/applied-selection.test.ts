@@ -217,3 +217,23 @@ describe("required, read from the part that is on the build", () => {
     expect(v.rows.get("rail/mnt")?.note).toBe("left empty: x1 doesn't fit the new Rail");
   });
 });
+
+describe("a part the proposal takes off under a new parent part", () => {
+  // The new barrel comes without the old barrel's muzzle: Apply drops the muzzle with the old
+  // barrel whatever the muzzle row's tick, so the row is locked rather than a dead click.
+  const bare = build({ barrel: "b-new", "barrel/gas": "g-1" });
+  const all = new Set(["barrel", "barrel/gas", "barrel/muzzle"]);
+  const v3 = (t: ReadonlySet<string>) => appliedSelection(current, bare, t, tree, PARTS);
+
+  it("locks the removal with the parent part it comes off with", () => {
+    expect(v3(all).rows.get("barrel/muzzle")).toEqual({
+      landed: true,
+      disabled: true,
+      note: "comes off with the old Barrel",
+    });
+    expect(toggleChange("barrel/muzzle", current, bare, all, tree, PARTS)).toBe(all);
+    const without = new Set(["barrel", "barrel/gas"]);
+    expect(v3(without).build.attachments["barrel/muzzle"]).toBeUndefined();
+    expect(v3(without).rows.get("barrel/muzzle")?.landed).toBe(true);
+  });
+});

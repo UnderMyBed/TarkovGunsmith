@@ -93,8 +93,8 @@ const labelOf = (slot: SlotNode | undefined, path: string) => slot?.label || slo
  *   part's slot's, not the old part's at the same path;
  * - a change unticked under a new parent part that does not take the old part leaves the slot
  *   empty, and says so;
- * - a change that lands whatever its own tick (a part the new parent part has no slot for is
- *   gone with it) cannot be unticked either.
+ * - a removal under a landed new parent part lands whatever its own tick (the old part comes
+ *   off with the old parent part), so it cannot be unticked either.
  */
 export function appliedSelection(
   current: BuildV6,
@@ -138,9 +138,10 @@ export function appliedSelection(
             : `left empty: ${oldName} doesn't fit the new ${label(parent)}`,
         };
       }
-    } else if (parentLanded && !proposedSlots.has(path)) {
-      // The new part has no such slot: the old part goes with it, ticked or not.
-      state = { landed, disabled: true, note: `goes with the new ${label(parent)}` };
+    } else if (parentLanded && proposedOn[path] === undefined) {
+      // A removal under the new part: the old part belonged to the old one, so it comes off
+      // with it whatever this row's tick (`buildFromSelection`).
+      state = { landed, disabled: true, note: `comes off with the old ${label(parent)}` };
     } else if (parentLanded && proposedSlots.get(path)?.required === true) {
       // Required under the new part, which is the one on the build.
       state = { landed, disabled: true, note: `required by the new ${label(parent)}` };
