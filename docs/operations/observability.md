@@ -145,8 +145,7 @@ Done once by the maintainer. Everything after this is applied by CI.
    finish its setup until the Checks page loads without a setup prompt.
 2. **Create the service account.** Administration → Users and access → Service accounts → Add:
    name `tarkovgunsmith-ci`, role **Editor**. Add a token, without expiry or with a calendar
-   reminder. If the apply's Faro step returns 403, raise the role to **Admin**: the Faro API is
-   proxied through a plugin that may require it.
+   reminder.
 3. **Create the SM access token.** Synthetics → Config → Access tokens → Generate.
 4. **Store the repo secrets** at `https://github.com/UnderMyBed/TarkovGunsmith/settings/secrets/actions`:
 
@@ -157,8 +156,13 @@ Done once by the maintainer. Everything after this is applied by CI.
 | `GRAFANA_SM_TOKEN`    | The SM access token                           |
 | `GRAFANA_ALERT_EMAIL` | The address alerts go to                      |
 
-5. **Apply.** `gh workflow run grafana.yml --ref main`, then run it a second time: the second run
-   must report only `update` lines.
+5. **Apply.** `gh workflow run grafana.yml --ref main`. This run creates the `TarkovGunsmith`
+   folder.
+6. **Grant the service account the folder.** Dashboards → TarkovGunsmith → Folder actions →
+   Manage permissions → add service account `tarkovgunsmith-ci` with **Admin**. A folder created
+   through the API has no permission entries, and an Editor cannot update it, so every later
+   apply stops on the folder push with `code 403`.
+7. **Apply again**, twice. Both runs must report only `update` lines.
 
 The stack id (`1520134`) and SM API host are not secret and live in `grafana.yml`.
 
