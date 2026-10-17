@@ -338,7 +338,7 @@ export function AvailabilityPill({ availability }: { availability: ItemAvailabil
         ? null
         : (questName(availability.assumedQuest) ?? "a quest");
     return (
-      <Pill tone="reliable" title={assumed === null ? undefined : `Assumes ${assumed} is complete`}>
+      <Pill tone="default" title={assumed === null ? undefined : `Assumes ${assumed} is complete`}>
         {availabilityLabel(availability)}
       </Pill>
     );

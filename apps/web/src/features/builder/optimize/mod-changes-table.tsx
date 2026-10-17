@@ -116,7 +116,7 @@ export function ModChangesTable({
               <span className="text-13 text-[var(--color-faint)] line-through decoration-[var(--color-border)]">
                 {row.currentName ?? "—"}
               </span>
-              <span className="text-13 text-[var(--color-better)]">
+              <span className="text-13 text-[var(--color-primary-text)]">
                 → {row.proposedName ?? "— (removed)"}
               </span>
               <span className={`text-right font-mono text-xs ${deltaClass(row.ergoDelta, false)}`}>
@@ -145,7 +145,7 @@ export function ModChangesTable({
             <span />
             <span className="text-11 text-[var(--color-primary-text)]">Weapon</span>
             <span className="text-13 text-[var(--color-faint)]">bought as {weaponChange.from}</span>
-            <span className="text-13 text-[var(--color-better)]">
+            <span className="text-13 text-[var(--color-primary-text)]">
               → bought as {weaponChange.to}
             </span>
             <span />

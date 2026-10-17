@@ -7,7 +7,7 @@ import {
   type WeaponPreset,
   type WeaponTree,
 } from "@tarkov/data";
-import { Button, Card, CardContent, Pill } from "@tarkov/ui";
+import { Button, Card, CardContent, cn, Pill } from "@tarkov/ui";
 import { AvailabilityPill, formatRequirement } from "./slot-tree.js";
 import { useQuestName } from "./quest-names.js";
 import { shownAvailability } from "./shown-availability.js";
@@ -114,9 +114,15 @@ export function PresetPicker({
               <Button
                 key={option.id || "empty"}
                 size="sm"
-                variant={isCurrent ? "default" : "secondary"}
+                variant="secondary"
                 aria-pressed={isCurrent}
-                className={availability?.available === false ? "opacity-60" : undefined}
+                className={cn(
+                  // The chosen preset reads as a selected row, not a filled button, so the
+                  // pills inside it keep their own colours.
+                  isCurrent &&
+                    "border-[var(--color-primary)] bg-[var(--color-selected)] text-[var(--color-primary-text)]",
+                  availability?.available === false && "opacity-60",
+                )}
                 onClick={() => choose(option)}
               >
                 {option.label}
