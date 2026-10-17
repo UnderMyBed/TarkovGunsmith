@@ -448,8 +448,8 @@ describe("buildBuilderSnapshot on drift", () => {
   });
 
   it("fails on the untranslated capture", async () => {
-    const raw = structuredClone(itemsCapture.document) as unknown as ItemsDocument;
-    const input = { ...(await docs()), items: raw.data as unknown as ItemsDocument };
+    const raw = structuredClone(itemsCapture.document) as { data: unknown };
+    const input = { ...(await docs()), items: raw.data as ItemsDocument };
     const problems = driftOf(() => buildBuilderSnapshot(input, "fixtures"));
     expect(problems.length).toBeGreaterThan(0);
     for (const p of problems) expect(p).toMatch(/is still its translation key/);

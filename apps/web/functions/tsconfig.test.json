@@ -1,0 +1,17 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "..",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // `@cloudflare/workers-types` so the Pages Function tests can see `PagesFunction`.
+    // Without it the handlers' exported type is an error type, and type-aware lint rules
+    // flag every call into them. Kept out of ../tsconfig.test.json, where its global
+    // `Element` would break the DOM types the component tests rely on.
+    "types": ["node", "react", "vite/client", "@cloudflare/workers-types"],
+    "moduleResolution": "Bundler"
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}

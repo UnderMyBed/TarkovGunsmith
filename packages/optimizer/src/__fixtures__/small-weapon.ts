@@ -6,6 +6,12 @@ import { tinyTree } from "./tree.js";
  * Toy 3-slot weapon used by unit tests. The numbers are chosen so
  * the optimal min-recoil build is hand-computable.
  *
+ * Synthetic on purpose. These tests pin the solver's own rules: tie-breaks, budgets,
+ * refusals, the reasons it gives when no build exists, and pins. Each needs a search
+ * small enough that its expected answer can be worked out by hand, which no real weapon
+ * gives. Behaviour on real records is the job of `goldens.test.ts`, which runs the
+ * captured M4A1, AKM and RSASS against an independently solved optimum.
+ *
  * Slots:
  *   - muzzle (2 options: brake, silencer)
  *   - grip   (1 option:  vertical)

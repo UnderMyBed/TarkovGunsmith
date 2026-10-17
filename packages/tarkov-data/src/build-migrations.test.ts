@@ -149,7 +149,7 @@ describe("migrateV4ToV5", () => {
   const baseV4 = {
     version: 4 as const,
     weaponId: "w1",
-    attachments: [],
+    attachments: {},
     orphaned: [],
     createdAt: new Date(0).toISOString(),
   };
@@ -168,6 +168,7 @@ describe("migrateV4ToV5", () => {
         jaeger: 1,
       },
       flea: false,
+      level: 1,
       completedQuests,
     },
   });
@@ -216,6 +217,7 @@ describe("migrateV4ToV5", () => {
           jaeger: 1,
         },
         flea: false,
+        level: 1,
       },
     });
     expect(v5.profileSnapshot?.completedQuests).toBeUndefined();

@@ -92,6 +92,19 @@ function capturedItems(): CapturedItem[] {
 }
 
 /**
+ * A captured item's English name, as the Builder shows it: the `_en` text for the item's
+ * translation key. Throws for an id the capture does not carry, so a spec cannot quietly
+ * compare against `undefined`.
+ */
+export function capturedItemName(id: string): string {
+  const data = capture("items").document.data as { items: Record<string, { name?: string }> };
+  const key = data.items[id]?.name;
+  const name = key === undefined ? undefined : capture("items").lang[key];
+  if (name === undefined) throw new Error(`items-sample.json has no named item ${id}`);
+  return name;
+}
+
+/**
  * How many captured weapons the Builder's picker can offer: `ItemPropertiesWeapon` items
  * minus the special-slot ones (the SP-81 signal pistol and RSP-30 cartridges), which
  * `isBuildableWeapon` (`packages/tarkov-data/src/queries/weaponList.ts`) drops.

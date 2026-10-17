@@ -1,11 +1,12 @@
+import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 import { renderPng } from "./render.js";
 import { loadFonts } from "./fonts.js";
 
 function trivialJsx(children: string) {
-  return {
-    type: "div",
-    props: {
+  return createElement(
+    "div",
+    {
       style: {
         width: 100,
         height: 50,
@@ -17,9 +18,9 @@ function trivialJsx(children: string) {
         fontFamily: "Chivo",
         fontSize: 16,
       },
-      children,
     },
-  };
+    children,
+  );
 }
 
 describe("renderPng", () => {

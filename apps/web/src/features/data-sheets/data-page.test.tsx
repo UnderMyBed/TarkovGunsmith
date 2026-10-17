@@ -9,7 +9,7 @@ import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
-function rowsOf(table: HTMLTableElement) {
+function rowsOf(table: HTMLElement) {
   return within(table).getAllByRole("row").slice(1); // drop the header row
 }
 
@@ -41,7 +41,7 @@ describe("data page (parked, no route)", () => {
     expect(within(table).getByText("Altyn helmet")).toBeInTheDocument();
   });
 
-  it("switches to the Weapons tab (1 row) and the Modules tab (2 rows)", async () => {
+  it("switches to the Weapons tab (1 row) and the Modules tab (6 rows)", async () => {
     const user = userEvent.setup();
     await renderPage(<DataPage />);
     await screen.findByRole("table");
@@ -53,9 +53,16 @@ describe("data page (parked, no route)", () => {
 
     await user.click(screen.getByRole("button", { name: "MODULES" }));
     table = await screen.findByRole("table");
-    expect(screen.getByText("2 rows")).toBeInTheDocument();
-    expect(within(table).getByText("Zenit DTK-1 muzzle brake")).toBeInTheDocument();
-    expect(within(table).getByText("Magpul CTR carbine stock")).toBeInTheDocument();
+    // Every slot-attachable part type: mods, a barrel, a scope and a magazine.
+    expect(screen.getByText("6 rows")).toBeInTheDocument();
+    expect(within(table).getByText("AR-15 Colt USGI A2 5.56x45 flash hider")).toBeInTheDocument();
+    expect(within(table).getByText("AR-15 5.56x45 10.3 inch barrel")).toBeInTheDocument();
+    expect(
+      within(table).getByText("Leupold Mark 4 HAMR 4x24 DeltaPoint hybrid assault scope"),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByText("AR-15 5.56x45 Colt STANAG 30-round magazine"),
+    ).toBeInTheDocument();
   });
 
   it("filters the active tab's rows by name", async () => {

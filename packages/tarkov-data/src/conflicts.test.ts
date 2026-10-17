@@ -98,6 +98,7 @@ describe("conflictsWith — what counts as the rest of the build", () => {
         ergonomics: 0,
         recoilModifier: 0,
         accuracyModifier: 0,
+        velocity: 0,
       },
       buyFor: [],
       conflictingItems,
