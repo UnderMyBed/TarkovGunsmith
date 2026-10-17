@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { visibleSlots, type SlotNode, type WeaponTree } from "@tarkov/data";
 import { Button } from "@tarkov/ui";
 import { isBelow, type ConstraintsAction, type PinChoice } from "./optimize-constraints-reducer.js";
@@ -29,7 +29,8 @@ function stateOf(pin: string | null | undefined): RowState {
  * The pin editor: every slot the current build shows, nested under the part that owns it. Each
  * slot is FREE (the solver's to choose), LOCK (keep the part the build has there) or EMPTY
  * (leave it bare). Pinning a slot EMPTY clears the pins below it, and its nested slots leave the
- * list with them, so no lock goes away out of sight.
+ * list with them, so no lock goes away out of sight. When there are pins below, EMPTY asks
+ * first: an arrow key passing over it must not wipe them.
  */
 export function OptimizePinTree({
   slotTree,
@@ -55,7 +56,12 @@ export function OptimizePinTree({
       })
       .join(" › ");
 
-  const set = (slotPath: string, pin: PinChoice) => dispatch({ type: "SET_PIN", slotPath, pin });
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const set = (slotPath: string, pin: PinChoice) => {
+    setConfirming(null);
+    dispatch({ type: "SET_PIN", slotPath, pin });
+  };
+  const pinsBelow = (path: string) => [...pinnedSlots.keys()].filter((p) => isBelow(p, path));
 
   return (
     <div className="flex flex-col gap-2">
@@ -82,9 +88,13 @@ export function OptimizePinTree({
             current={attachments[slot.path]}
             pin={pinnedSlots.get(slot.path)}
             nameOf={nameOf}
-            onChange={(next) =>
-              set(slot.path, next === "lock" ? { itemId: attachments[slot.path]! } : next)
-            }
+            below={confirming === slot.path ? pinsBelow(slot.path).length : 0}
+            onChange={(next) => {
+              if (next === "empty" && pinsBelow(slot.path).length > 0) setConfirming(slot.path);
+              else set(slot.path, next === "lock" ? { itemId: attachments[slot.path]! } : next);
+            }}
+            onConfirm={() => set(slot.path, "empty")}
+            onCancel={() => setConfirming(null)}
           />
         ))}
         {elsewhere.map(([path, id]) => (
@@ -118,10 +128,23 @@ interface RowProps {
   current: string | undefined;
   pin: string | null | undefined;
   nameOf: (id: string) => string;
+  /** Pins below this slot that EMPTY, once confirmed, clears; 0 when nothing is being asked. */
+  below: number;
   onChange: (state: RowState) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
-function PinRow({ slot, current, pin, nameOf, onChange }: RowProps): ReactElement {
+function PinRow({
+  slot,
+  current,
+  pin,
+  nameOf,
+  below,
+  onChange,
+  onConfirm,
+  onCancel,
+}: RowProps): ReactElement {
   const depth = slot.path.split("/").length - 1;
   const state = stateOf(pin);
   const label = slot.label || slot.nameId;
@@ -171,6 +194,23 @@ function PinRow({ slot, current, pin, nameOf, onChange }: RowProps): ReactElemen
           </label>
         ))}
       </span>
+      {below > 0 && (
+        <span
+          role="group"
+          aria-label={`Empty ${label}`}
+          className="flex basis-full flex-wrap items-center justify-end gap-2 font-mono text-xs"
+        >
+          <span className="text-[var(--color-muted-foreground)]">
+            Emptying {label} clears {below} {below === 1 ? "pin" : "pins"} below it.
+          </span>
+          <Button variant="destructive" size="sm" onClick={onConfirm}>
+            EMPTY IT
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            KEEP PINS
+          </Button>
+        </span>
+      )}
     </li>
   );
 }

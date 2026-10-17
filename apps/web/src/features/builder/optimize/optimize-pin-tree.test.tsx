@@ -110,6 +110,7 @@ describe("OptimizePinTree", () => {
     fireEvent.click(radio("Stock", "LOCK"));
     expect(pins()).toHaveLength(3);
     fireEvent.click(radio("Receiver", "EMPTY"));
+    fireEvent.click(screen.getByRole("button", { name: "EMPTY IT" }));
     expect(pins()).toEqual([
       ["stock", "s1"],
       ["receiver", null],
@@ -121,6 +122,46 @@ describe("OptimizePinTree", () => {
     fireEvent.click(radio("Receiver", "FREE"));
     expect(radio("Barrel", "FREE")).toBeChecked();
     expect(radio("Mount", "FREE")).toBeChecked();
+  });
+
+  it("asks before EMPTY clears pins below, so an arrow key passing over it wipes nothing", () => {
+    render(<Harness />);
+    fireEvent.click(radio("Barrel", "LOCK"));
+    fireEvent.click(radio("Mount", "LOCK"));
+    // Arrowing through the radios checks each in turn: landing on EMPTY only asks.
+    fireEvent.click(radio("Receiver", "EMPTY"));
+    const ask = screen.getByRole("group", { name: "Empty Receiver" });
+    expect(ask).toHaveTextContent("Emptying Receiver clears 2 pins below it.");
+    expect(pins()).toEqual([
+      ["receiver/barrel", "b1"],
+      ["receiver/mount", "m1"],
+    ]);
+    expect(radio("Receiver", "FREE")).toBeChecked();
+    expect(radio("Receiver", "EMPTY")).not.toBeChecked();
+    // Moving on to another choice drops the question and keeps the pins below.
+    fireEvent.click(radio("Receiver", "LOCK"));
+    expect(screen.queryByRole("group", { name: "Empty Receiver" })).toBeNull();
+    expect(pins()).toEqual([
+      ["receiver/barrel", "b1"],
+      ["receiver/mount", "m1"],
+      ["receiver", "upper"],
+    ]);
+    fireEvent.click(radio("Receiver", "EMPTY"));
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Empty Receiver" })).getByRole("button", {
+        name: "KEEP PINS",
+      }),
+    );
+    expect(screen.queryByRole("group", { name: "Empty Receiver" })).toBeNull();
+    expect(pins()).toHaveLength(3);
+    expect(radio("Receiver", "LOCK")).toBeChecked();
+  });
+
+  it("empties a slot with no pins below it at once", () => {
+    render(<Harness />);
+    fireEvent.click(radio("Receiver", "EMPTY"));
+    expect(screen.queryByRole("group", { name: "Empty Receiver" })).toBeNull();
+    expect(pins()).toEqual([["receiver", null]]);
   });
 
   it("lists a pin the current build doesn't show, by name, so it can be freed", () => {
