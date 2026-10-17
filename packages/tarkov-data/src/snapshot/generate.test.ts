@@ -434,6 +434,17 @@ describe("buildBuilderSnapshot on drift", () => {
     ]);
   });
 
+  it("fails on a weapon preset whose names are still translation keys", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    items[PM_DEFAULT]!.name = `${PM_DEFAULT} Name`;
+    items[M4A1_SOPMOD]!.shortName = `${M4A1_SOPMOD} ShortName`;
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
+      `items/${PM_DEFAULT}: name is still its translation key; the _en document did not apply`,
+      `items/${M4A1_SOPMOD}: shortName is still its translation key; the _en document did not apply`,
+    ]);
+  });
+
   it("fails on task and trader names that are still translation keys", async () => {
     const input = await docs();
     const tasks = input.tasks.tasks as Mutable;

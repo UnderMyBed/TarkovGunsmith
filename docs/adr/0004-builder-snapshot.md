@@ -66,7 +66,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
 - The Builder's upstream request on a visit is the raw `items` document for prices; traders,
   tasks, barters and every translation document are gone from its critical path.
 - On the 2026-10-17 live data the snapshot, weapon presets included, is 3.9 MB raw and 263 KB
-  brotli at quality 4, and parses in under 10 ms; parsing the raw items document took 36 ms.
+  brotli at quality 4, and parses in about 10 ms; parsing the raw items document took 36 ms.
 - Upstream drift fails a release build, listing every problem, rather than silently emptying a
   picker in production.
 - The OG cards read the deploy's own static assets and make no upstream request.

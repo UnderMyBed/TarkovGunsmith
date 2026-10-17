@@ -240,9 +240,9 @@ export function useBuilderState({
     setAttachments((prev) => withAttachment(prev, path, itemId));
   }
 
+  // Orphans are the saved build's own data: only dismissing them clears the list.
   function applyPreset(next: Readonly<Record<string, string>>) {
     setAttachments({ ...next });
-    setOrphaned([]);
   }
 
   function clearOrphaned() {

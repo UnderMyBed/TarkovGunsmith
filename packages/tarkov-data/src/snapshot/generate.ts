@@ -349,6 +349,11 @@ export function buildBuilderSnapshot(
       .map(([weaponId, list]) => [
         weaponId,
         list.map((preset): SnapshotPreset => {
+          // The picker shows these names, so an untranslated one is drift like any other.
+          if (preset.name === translationKey(preset.id, "Name"))
+            fail(untranslated(`items/${preset.id}`, "name"));
+          if (preset.shortName === translationKey(preset.id, "ShortName"))
+            fail(untranslated(`items/${preset.id}`, "shortName"));
           // The preset's own flea listing; its trader offers are already the weapon's.
           const flea = collect(items[preset.id]).find((offer) => offer.kind === "flea");
           return {

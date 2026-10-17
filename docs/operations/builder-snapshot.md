@@ -112,7 +112,7 @@ Every Builder visit downloads the snapshot. `SNAPSHOT_BUDGET` in
 | Measure                                   | Budget | Live, 2026-10-17 | Headroom | Why this number                                            |
 | ----------------------------------------- | ------ | ---------------- | -------- | ---------------------------------------------------------- |
 | Brotli at quality 4 (close to the edge's) | 300 KB | 263 KB           | 37 KB    | Room for upstream growth                                   |
-| Raw                                       | 6 MB   | 3974 KB          | 2170 KB  | Bounds the main-thread parse (under 10 ms at today's size) |
+| Raw                                       | 6 MB   | 3974 KB          | 2170 KB  | Bounds the main-thread parse (about 10 ms at today's size) |
 
 The snapshot script fails the build when either is exceeded, so the release deploy's build step
 is the hard gate. `pnpm verify:upstream` checks the same budget against live data on a schedule
@@ -133,10 +133,16 @@ already among its weapon's offers, tagged with the preset; its own flea listing 
 preset as the listing's player-level gate (`flea`), or `null` when upstream flags the preset
 `noFlea`, and priced from the preset's id.
 
-Choosing a weapon starts a new build from one of them: the default when "Show all weapons" is
-on, and otherwise the default if the profile can buy it, else the cheapest preset it can. A
-Compare side always starts from the default. Loading a saved build, a v1 link or a comparison
-never applies a preset.
+Choosing a weapon starts a new build from one of them:
+
+- With "Show all weapons" on, the default.
+- Otherwise, the default if the profile can buy it; else the cheapest preset the profile can
+  buy (known price first, then short name, then id); else, when it can buy none, the default,
+  which the preset picker shows locked with what it needs.
+
+A Compare side always starts from the default. A weapon without presets starts empty. Loading
+a saved build, a v1 link or a comparison never applies a preset, and applying a preset from the
+picker leaves a loaded build's orphaned parts listed until they are dismissed.
 
 ## Saved builds
 

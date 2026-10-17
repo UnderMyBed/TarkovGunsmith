@@ -36,7 +36,7 @@ async function startEmpty(page: Page): Promise<void> {
     .getByRole("group", { name: "Presets" })
     .getByRole("button", { name: /^Empty/ })
     .click();
-  await expect(page.getByText("0 attached")).toBeVisible();
+  await expect(page.getByText("0 attached", { exact: true })).toBeVisible();
 }
 
 test.describe("builder optimizer diff view", () => {
