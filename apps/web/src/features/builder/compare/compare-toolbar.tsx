@@ -13,6 +13,12 @@ interface CompareToolbarProps {
   saveError: Error | null;
   /** Why the comparison cannot be saved as it stands, or `null`. */
   saveBlocked?: string | null;
+  /**
+   * Whether a save publishes the sides' profiles; `undefined` hides the choice, as when
+   * neither side has a profile to publish.
+   */
+  embedProfiles?: boolean;
+  onEmbedProfilesChange: (embed: boolean) => void;
   onSave: () => void;
   onSaveAsNew: () => void;
   onSwap: () => void;
@@ -52,6 +58,8 @@ export function CompareToolbar({
   isSaving,
   saveError,
   saveBlocked = null,
+  embedProfiles,
+  onEmbedProfilesChange,
   onSave,
   onSaveAsNew,
   onSwap,
@@ -79,6 +87,16 @@ export function CompareToolbar({
         <span role="alert" className="text-sm text-[var(--color-destructive)]">
           {saveFailureCopy(saveError)}
         </span>
+      )}
+      {embedProfiles !== undefined && (
+        <label className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
+          <input
+            type="checkbox"
+            checked={embedProfiles}
+            onChange={(e) => onEmbedProfilesChange(e.target.checked)}
+          />
+          <span>Embed the progression snapshots in the shared URL</span>
+        </label>
       )}
       <span className="flex-1" />
       <Button variant="ghost" onClick={onSwap} disabled={!canSwap}>

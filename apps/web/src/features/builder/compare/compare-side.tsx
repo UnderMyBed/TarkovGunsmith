@@ -44,6 +44,11 @@ export interface CompareSideProps {
   diff: SlotDiffMap | null;
   /** Fires when the user edits weapon, attachments, or dismisses orphans. */
   onBuildChange: (build: BuildV6 | null) => void;
+  /**
+   * Fires after the {@link onBuildChange} for a newly picked weapon, which starts from a
+   * seed: the owner of the side's state redoes a seed made before live prices arrived.
+   */
+  onWeaponSeeded: (weaponId: string) => void;
 }
 
 /**
@@ -62,6 +67,7 @@ export function CompareSide({
   profile,
   diff,
   onBuildChange,
+  onWeaponSeeded,
 }: CompareSideProps): ReactElement {
   const weapons = useWeaponList();
   const mods = usePartCatalog();
@@ -137,6 +143,7 @@ export function CompareSide({
             applyBuildAction({ weaponId: "", attachments: {}, orphaned: [] }, action, null),
           ),
     );
+    onWeaponSeeded(newWeaponId);
   }
 
   // Replacing a part carries over what still fits on the new one; emptying drops its subtree.
@@ -294,6 +301,26 @@ export function computeSideSpec(
     adaptWeapon(weapon),
     placed.map((e) => adaptMod(e.part)),
   );
+}
+
+/**
+ * `build` with `weaponId` seeded again under the side's profile, through the same reducer as a
+ * weapon pick; the side's metadata is kept. Redoes a seed once live prices arrive.
+ */
+export function reseedSide(
+  build: BuildV6,
+  weaponId: string,
+  presets: Parameters<typeof seedAttachments>[0],
+  profile: PlayerProfile | undefined,
+): BuildV6 {
+  const seed = sideSeed(presets, profile);
+  const next = applyBuildAction(build, { type: "changeWeapon", weaponId, seed }, null);
+  return {
+    ...build,
+    weaponId: next.weaponId,
+    attachments: next.attachments,
+    orphaned: next.orphaned,
+  };
 }
 
 /**
