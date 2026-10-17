@@ -8,8 +8,9 @@ spec:
   title: TarkovGunsmith site or API down
   trigger:
     interval: 1m
-  # A is the best result each check had in the last 10 minutes: two runs at a 5-minute
-  # frequency. It is below 1 only when every one of those runs failed.
+  # A has one series per check, labelled with its job: the best result of its runs in the last
+  # 10 minutes (two runs at a 5-minute frequency), or 0 when the check reported nothing in that
+  # window. It is below 1 when every run failed, or when the check has vanished.
   expressions:
     A:
       datasourceUID: grafanacloud-prom
@@ -20,7 +21,10 @@ spec:
         refId: A
         instant: true
         range: false
-        expr: max by (job) (max_over_time(probe_success{job=~"tarkovgunsmith-site|tarkovgunsmith-api"}[10m]))
+        expr: >-
+          max by (job) (max_over_time(probe_success{job=~"tarkovgunsmith-site|tarkovgunsmith-api"}[10m]))
+          or (absent_over_time(probe_success{job="tarkovgunsmith-site"}[10m]) * 0)
+          or (absent_over_time(probe_success{job="tarkovgunsmith-api"}[10m]) * 0)
     B:
       datasourceUID: __expr__
       source: true
@@ -33,11 +37,14 @@ spec:
               type: lt
               params: [1]
   for: 5m
-  # A check that stops reporting pages too: no data means nothing is watching the site.
+  # A has no series at all only when the query itself returns nothing; that pages too, with
+  # no job label.
   noDataState: Alerting
   execErrState: Error
   annotations:
-    summary: "{{ $labels.job }} has failed every Synthetic Monitoring run for 10 minutes"
+    summary: >-
+      {{ with $labels.job }}{{ . }}{{ else }}A TarkovGunsmith uptime check{{ end }} has failed or
+      not reported for 10 minutes
   # Straight to the contact point. The stack-wide notification policy is shared with another
   # project and is never touched.
   notificationSettings:

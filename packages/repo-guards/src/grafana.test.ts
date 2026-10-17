@@ -55,12 +55,23 @@ describe("infra/grafana manifests agree with each other", () => {
     });
   });
 
-  it("alerts on every check, by job", () => {
+  it("alerts on exactly the checks there are, failing or vanished, by job", () => {
     const expressions = rule().spec["expressions"] as Record<string, { model: { expr?: string } }>;
     const expr = Object.values(expressions)
       .map((e) => e.model.expr ?? "")
       .join("\n");
-    for (const check of checks()) expect(expr).toContain(check.spec["job"] as string);
+    const jobs = checks()
+      .map((check) => check.spec["job"] as string)
+      .sort();
+    // The failing-runs selector names every job, and nothing else.
+    const selectors = [...expr.matchAll(/job=~"([^"]+)"/g)].map((m) => m[1]!);
+    expect(selectors).toHaveLength(1);
+    expect(selectors[0]!.split("|").sort()).toEqual(jobs);
+    // One absent_over_time per job, so a single check that stops reporting pages too.
+    const absent = [...expr.matchAll(/absent_over_time\(probe_success\{job="([^"]+)"\}/g)]
+      .map((m) => m[1]!)
+      .sort();
+    expect(absent).toEqual(jobs);
   });
 
   it("keeps the alert email address out of the repo", () => {
@@ -93,6 +104,7 @@ describe("infra/grafana agrees with the site", () => {
 
 describe("the Grafana apply is wired into the release", () => {
   type Job = {
+    if?: string;
     needs?: string | string[];
     uses?: string;
     steps?: { env?: Record<string, string> }[];
@@ -111,5 +123,11 @@ describe("the Grafana apply is wired into the release", () => {
     const doc = parseWorkflow("grafana.yml") as Record<string, unknown>;
     const triggers = Object.keys((doc["on"] ?? doc["true"]) as Record<string, unknown>).sort();
     expect(triggers).toEqual(["workflow_call", "workflow_dispatch"]);
+  });
+
+  it("applies Grafana on exactly the runs that deploy the site", () => {
+    const jobs = deployJobs();
+    expect(jobs["grafana"]?.if).toBeDefined();
+    expect(jobs["grafana"]?.if).toBe(jobs["pages"]?.if);
   });
 });
