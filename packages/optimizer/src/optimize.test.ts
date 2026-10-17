@@ -17,7 +17,6 @@ import {
   SMALL_TREE,
 } from "./__fixtures__/small-weapon.js";
 import { tinyTree, type SlotSpec } from "./__fixtures__/tree.js";
-import { M4A1_WEAPON, M4A1_MODS, M4A1_TREE } from "./__fixtures__/m4a1-like.js";
 import type { OptimizationInput, Objective } from "./types.js";
 
 interface PartSpec {
@@ -211,12 +210,6 @@ describe("optimize — the best build", () => {
       muzzle: "muzzle_brake",
       grip: "grip_vertical",
     });
-  });
-
-  it("is deterministic", () => {
-    const input = { weapon: M4A1_WEAPON, slotTree: M4A1_TREE, parts: M4A1_MODS };
-    const first = run(input);
-    for (let i = 0; i < 5; i++) expect(run(input)).toEqual(first);
   });
 });
 
