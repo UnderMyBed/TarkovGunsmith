@@ -330,7 +330,7 @@ export function BuilderPage({
           />
         ) : (
           <div className="rounded-[var(--radius-panel)] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
-            <p className="text-sm">Pick a weapon in the editor before running the optimizer.</p>
+            <p className="text-sm">Pick a weapon above to optimize.</p>
             <Button className="mt-3" size="sm" onClick={handleExitOptimizer}>
               ← Back to editor
             </Button>

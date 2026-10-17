@@ -1,7 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 import { test, expect } from "./upstream.js";
 import { upstreamFixtureBody } from "./upstream-fixtures.js";
-import { pickWeapon, weaponPicker } from "./builder-helpers.js";
+import { pickWeapon, stat, weaponPicker } from "./builder-helpers.js";
 
 /**
  * Live prices (#212): a Web Worker fetches upstream's `items` document and posts back only the
@@ -50,6 +50,7 @@ test.describe("Builder prices", () => {
     // Until prices arrive the build has no cost, and a budget cannot be checked.
     await expect(page.getByText("Prices loading…", { exact: true })).toBeVisible();
     await expect(page.getByTestId("build-cost")).toHaveCount(0);
+    await expect(stat(page, "Cost")).toHaveText("Cost—Waiting for prices");
     await page.getByRole("button", { name: "Optimize", exact: true }).click();
     const budget = page.getByLabel("Budget");
     await expect(budget).toBeDisabled();
@@ -86,6 +87,7 @@ test.describe("Builder prices", () => {
       }),
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("build-cost")).toHaveCount(0);
+    await expect(stat(page, "Cost")).toHaveText("Cost—No prices");
     // Asked once and retried once, each a `no-cache` request and a fallback to the HTTP cache,
     // which holds no copy and so asks upstream too; the components mounted since do not ask.
     expect(asked).toBe(4);

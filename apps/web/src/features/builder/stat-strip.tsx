@@ -30,11 +30,15 @@ export function oneDecimal(value: number): string {
   return String(Number(value.toFixed(1)));
 }
 
-/** A signed difference with a real minus sign: "+7", "−48", "+2.10"; blank under 0.005. */
-export function formatDelta(delta: number, decimals: number): string {
-  if (Math.abs(delta) < 0.005) return "";
-  const magnitude =
-    decimals === 0 ? String(Math.round(Math.abs(delta))) : Math.abs(delta).toFixed(decimals);
+/**
+ * A signed difference with a real minus sign, to `decimals` places: "+2.10", "−48". `trim` drops
+ * trailing zeros, for figures shown that way ("+7", "+0.5"). Blank under half the last place, so
+ * a rounded "+0" never shows.
+ */
+export function formatDelta(delta: number, decimals: number, trim = false): string {
+  if (Math.abs(delta) < 0.5 * 10 ** -decimals) return "";
+  const fixed = Math.abs(delta).toFixed(decimals);
+  const magnitude = trim ? String(Number(fixed)) : fixed;
   return `${delta > 0 ? "+" : "−"}${magnitude}`;
 }
 
@@ -155,7 +159,7 @@ export function StatStrip({
           sub={vs(stockErgo, (s) => (
             <AgainstStock
               stock={oneDecimal(s)}
-              delta={formatDelta(ergo - s, 0)}
+              delta={formatDelta(ergo - s, 1, true)}
               dir={direction(ergo - s, false)}
             />
           ))}
@@ -231,7 +235,13 @@ function CostCell({
       <Cell
         label="Cost"
         value="—"
-        sub={prices.state === "error" ? "No prices" : "Waiting for prices"}
+        sub={
+          prices.state === "error"
+            ? "No prices"
+            : prices.state === "loading"
+              ? "Waiting for prices"
+              : "Pricing…"
+        }
       />
     );
   }

@@ -140,7 +140,12 @@ describe("/builder", () => {
 
     await user.click(screen.getByRole("button", { name: "Share build" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Build URL copied");
+    // The toast is a status; so is the weapon picker's (silent) result count.
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("Build URL copied")),
+      ).toBe(true),
+    );
     expect(screen.getByText(/\/builder\/abcdefgh/)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/builds",
@@ -168,13 +173,24 @@ describe("/builder", () => {
     expect(screen.queryByRole("button", { name: "Optimize" })).not.toBeInTheDocument();
   });
 
+  it("opens the progression panel from the optimizer's profile, and stays in the optimizer", async () => {
+    const user = userEvent.setup();
+    await renderRoute("/builder");
+    await selectFixtureWeapon(user);
+    await user.click(screen.getByRole("button", { name: "Optimize" }));
+
+    await user.click(await screen.findByRole("button", { name: /Edit profile/ }));
+    const panel = screen.getByRole("dialog", { name: "Your progression" });
+    await user.click(within(panel).getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText(/Optimizer/)).toBeInTheDocument();
+  });
+
   it("falls back to a prompt when the optimizer is opened with no weapon selected, and returns to the editor", async () => {
     const user = userEvent.setup();
     await renderRoute("/builder?view=optimize");
 
-    expect(
-      await screen.findByText("Pick a weapon in the editor before running the optimizer."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Pick a weapon above to optimize.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Back to editor/ }));
 

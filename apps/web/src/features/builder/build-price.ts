@@ -80,7 +80,8 @@ export function buildPriceParts(
       };
     case "unknown":
       return {
-        figure: formatRub(price.knownRUB),
+        // "+": the known prices only, so the figure must not read as the total.
+        figure: `${formatRub(price.knownRUB)}+`,
         note: `Known so far; no price for ${price.unpriced.map(nameOf).join(", ")}`,
       };
     case "unobtainable":

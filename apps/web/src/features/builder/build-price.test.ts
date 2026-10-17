@@ -69,7 +69,7 @@ describe("buildPriceParts", () => {
         { status: "unknown", knownRUB: 29_985, unpriced: ["grip", "stock"], presetId: null },
         nameOf,
       ),
-    ).toEqual({ figure: "₽29,985", note: "Known so far; no price for Grip, Stock" });
+    ).toEqual({ figure: "₽29,985+", note: "Known so far; no price for Grip, Stock" });
     expect(buildPriceParts({ status: "unobtainable", missing: ["gun"] }, nameOf)).toEqual({
       figure: null,
       note: "Can't be bought: M4A1",

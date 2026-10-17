@@ -104,7 +104,7 @@ describe("StatStrip", () => {
     renderStrip(STOCK, {
       buildPrice: { status: "unknown", knownRUB: 12_000, unpriced: ["mod-x"], presetId: null },
     });
-    expect(value("Cost")).toHaveTextContent("₽12,000");
+    expect(value("Cost")).toHaveTextContent(/^₽12,000\+$/);
     expect(sub("Cost")).toHaveTextContent("Known so far; no price for Mystery stock");
   });
 
@@ -117,13 +117,17 @@ describe("StatStrip", () => {
     expect(sub("Cost")).toHaveTextContent(/^Can't be bought: Mystery stock$/);
   });
 
-  it("waits for prices, and says when there are none", () => {
+  it("waits for prices, says when there are none, and while it prices the build", () => {
     renderStrip(STOCK, { prices: { state: "loading" } });
     expect(sub("Cost")).toHaveTextContent("Waiting for prices");
     expect(screen.queryByTestId("build-cost")).not.toBeInTheDocument();
     cleanup();
     renderStrip(STOCK, { prices: { state: "error", message: "down" } });
     expect(sub("Cost")).toHaveTextContent("No prices");
+    cleanup();
+    // Prices are in, the build's price is still being worked out.
+    renderStrip(STOCK, { buildPrice: null });
+    expect(sub("Cost")).toHaveTextContent(/^Pricing…$/);
   });
 
   it("offers Optimize at its end only when given the action", async () => {
@@ -149,6 +153,15 @@ describe("stat formatting", () => {
     expect(formatDelta(-48, 0)).toBe("−48");
     expect(formatDelta(1.3555, 2)).toBe("+1.36");
     expect(formatDelta(0.001, 2)).toBe("");
+    expect(formatDelta(0.5, 2)).toBe("+0.50");
+  });
+
+  it("formats an ergonomics delta as the values are, so a rounded +0 never shows", () => {
+    expect(formatDelta(7, 1, true)).toBe("+7");
+    expect(formatDelta(-0.5, 1, true)).toBe("−0.5");
+    expect(formatDelta(0.3999, 1, true)).toBe("+0.4");
+    expect(formatDelta(0.049, 1, true)).toBe("");
+    expect(formatDelta(-0.04, 1, true)).toBe("");
   });
 
   it("gives a whole percent change, blank for no stock or under half a percent", () => {
