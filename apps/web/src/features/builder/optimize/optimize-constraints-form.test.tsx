@@ -11,7 +11,7 @@ afterEach(() => cleanup());
 const TREE = { weaponId: "w1", weaponName: "W", slots: [] } as unknown as WeaponTree;
 
 describe("OptimizeConstraintsForm", () => {
-  it("offers min recoil, max ergonomics and min weight, and not max accuracy", () => {
+  it("offers all four objectives", () => {
     render(
       <OptimizeConstraintsForm
         state={initialConstraintsState}
@@ -20,7 +20,7 @@ describe("OptimizeConstraintsForm", () => {
       />,
     );
     const offered = screen.getAllByRole("radio").map((r) => (r as HTMLInputElement).value);
-    expect(offered).toEqual(["min-recoil", "max-ergonomics", "min-weight"]);
-    expect(screen.queryByText("Max accuracy")).not.toBeInTheDocument();
+    expect(offered).toEqual(["min-recoil", "max-ergonomics", "min-weight", "max-accuracy"]);
+    expect(screen.getByText("Max accuracy")).toBeInTheDocument();
   });
 });

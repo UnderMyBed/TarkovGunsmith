@@ -54,16 +54,18 @@ describe("the changes table's prices against the build's cost", () => {
       byId,
       presets,
     );
-    expect(proposedPrice).toEqual({ status: "priced", totalRUB: 59_149, presetId: M4A1_CARBINE });
+    expect(proposedPrice).toEqual({ status: "priced", totalRUB: 57_749, presetId: M4A1_CARBINE });
 
     const rows = slotDiff(current, result.build.attachments, tree, byId, LL4, {
       current: coversOf(currentPrice, presets),
       proposed: coversOf(proposedPrice, presets),
     });
-    // The parts swapped out came with the Carbine: nothing is refunded for them.
-    expect(rows.filter((r) => r.currentName !== null && r.currentPrice === 0)).toHaveLength(2);
+    // Every part swapped out came with the Carbine: nothing is refunded for them.
+    const swapped = rows.filter((r) => r.currentName !== null);
+    expect(swapped.length).toBeGreaterThan(0);
+    expect(swapped.map((r) => r.currentPrice)).toEqual(swapped.map(() => 0));
     const rowsSum = rows.reduce((t, r) => t + r.priceDelta!, 0);
-    expect(rowsSum).toBe(59_149 - 26_666);
+    expect(rowsSum).toBe(57_749 - 26_666);
     // Both buy the weapon as the Carbine, so there is no weapon line.
     expect(weaponChangeOf(currentPrice, proposedPrice, rows, String)).toBeNull();
   });

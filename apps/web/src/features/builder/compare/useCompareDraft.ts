@@ -10,12 +10,18 @@ export interface CompareDraft {
   rightProfile?: PlayerProfile;
   name?: string;
   description?: string;
+  /**
+   * Whether a save publishes the sides' profiles in the shared pair. Off unless the user opts
+   * in, as the Builder's share is; on for a loaded pair that already carries one.
+   */
+  embedProfiles: boolean;
   dirty: boolean;
 }
 
 export const initialDraft: CompareDraft = {
   left: null,
   right: null,
+  embedProfiles: false,
   dirty: false,
 };
 
@@ -26,6 +32,7 @@ export type CompareDraftAction =
   | { type: "CLONE"; from: CompareSide }
   | { type: "SET_NAME"; name: string | undefined }
   | { type: "SET_DESCRIPTION"; description: string | undefined }
+  | { type: "SET_EMBED_PROFILES"; embed: boolean }
   | { type: "RESET" }
   | { type: "MARK_CLEAN" };
 
@@ -49,11 +56,22 @@ export function compareDraftReducer(state: CompareDraft, action: CompareDraftAct
         dirty: true,
       };
     case "CLONE": {
+      // The profile goes with the build: a twin priced under another profile is no twin.
       if (action.from === "left" && state.left) {
-        return { ...state, right: structuredClone(state.left), dirty: true };
+        return {
+          ...state,
+          right: structuredClone(state.left),
+          rightProfile: state.leftProfile,
+          dirty: true,
+        };
       }
       if (action.from === "right" && state.right) {
-        return { ...state, left: structuredClone(state.right), dirty: true };
+        return {
+          ...state,
+          left: structuredClone(state.right),
+          leftProfile: state.rightProfile,
+          dirty: true,
+        };
       }
       return state;
     }
@@ -61,6 +79,8 @@ export function compareDraftReducer(state: CompareDraft, action: CompareDraftAct
       return { ...state, name: action.name, dirty: true };
     case "SET_DESCRIPTION":
       return { ...state, description: action.description, dirty: true };
+    case "SET_EMBED_PROFILES":
+      return { ...state, embedProfiles: action.embed, dirty: true };
     case "RESET":
       return initialDraft;
     case "MARK_CLEAN":
@@ -82,6 +102,7 @@ export function useCompareDraft(initial: CompareDraft = initialDraft) {
     setName: (name: string | undefined) => dispatch({ type: "SET_NAME", name }),
     setDescription: (description: string | undefined) =>
       dispatch({ type: "SET_DESCRIPTION", description }),
+    setEmbedProfiles: (embed: boolean) => dispatch({ type: "SET_EMBED_PROFILES", embed }),
     reset: () => dispatch({ type: "RESET" }),
     markClean: () => dispatch({ type: "MARK_CLEAN" }),
   };

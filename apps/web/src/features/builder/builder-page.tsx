@@ -122,7 +122,10 @@ export function BuilderPage({
     build: builder.selectedWeapon ? builder.currentBuild : null,
   });
 
-  const compareHandoff = useCompareHandoff({ build: builder.currentBuild });
+  const compareHandoff = useCompareHandoff({
+    build: builder.currentBuild,
+    gate: builder.gate,
+  });
 
   const handleOpenOptimizer = () =>
     void navigate({ to: ".", search: (s) => ({ ...s, view: "optimize" as const }) });

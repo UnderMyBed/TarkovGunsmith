@@ -36,6 +36,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The recoil-floor check runs the optimizer, which loads the built @tarkov/data and
+      # @tarkov/ballistics.
+      - run: pnpm turbo run build --filter "@tarkov/optimizer..."
+
       # Failure here is a real signal, so it must not be swallowed. Alerting is handled by
       # the "Scheduled failure alert" watcher, which packages/repo-guards forces to list this
       # workflow by name.

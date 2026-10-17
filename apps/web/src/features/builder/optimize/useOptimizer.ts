@@ -14,7 +14,8 @@ export interface UseOptimizerReturn {
 /**
  * Thin wrapper around `optimize()`. The solver is synchronous; the
  * `"running"` state exists only to render a brief spinner around the
- * call. In practice most weapons solve in <50 ms.
+ * call. On the live data most runs take under 10 ms and the slowest
+ * weapon and objective about 0.3 s.
  */
 export function useOptimizer(): UseOptimizerReturn {
   const [state, setState] = useState<OptimizerState>("idle");

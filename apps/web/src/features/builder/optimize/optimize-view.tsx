@@ -9,7 +9,7 @@ import {
   type WeaponListItem,
   type WeaponTree,
 } from "@tarkov/data";
-import type { OptimizationResult } from "@tarkov/optimizer";
+import type { Objective, OptimizationResult } from "@tarkov/optimizer";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { Button, Card, Pill, focusRing } from "@tarkov/ui";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
@@ -49,20 +49,18 @@ export interface OptimizeViewProps {
   onEditProfile: () => void;
 }
 
-/** What to tell the user when the solver returns no build. */
+/** What to tell the user when the solver returns no build. Every reason but a timeout says why. */
 function failureMessage(result: Extract<OptimizationResult, { ok: false }>): string {
-  switch (result.reason) {
-    case "infeasible-budget":
-    case "pinned-unpriced":
-      return result.message;
-    case "timeout":
-      return "The solver ran out of time before finding a build. Pin more slots and run it again.";
-    case "no-valid-combinations":
-      return "No valid build under these constraints.";
-  }
+  return result.reason === "timeout"
+    ? "The solver ran out of time before finding a build. Pin more slots and run it again."
+    : result.message;
 }
 
-function computeScoreDelta(objective: string, current: WeaponSpec, proposed: WeaponSpec): number {
+function computeScoreDelta(
+  objective: Objective,
+  current: WeaponSpec,
+  proposed: WeaponSpec,
+): number {
   switch (objective) {
     case "min-recoil":
       return proposed.verticalRecoil - current.verticalRecoil;
@@ -72,8 +70,6 @@ function computeScoreDelta(objective: string, current: WeaponSpec, proposed: Wea
       return proposed.weight - current.weight;
     case "max-accuracy":
       return proposed.accuracy - current.accuracy;
-    default:
-      return 0;
   }
 }
 
@@ -96,6 +92,8 @@ export function OptimizeView({
 }: OptimizeViewProps): ReactElement {
   const [state, dispatch] = useReducer(constraintsReducer, initialConstraintsState);
   const optimizer = useOptimizer();
+  // The objective the shown result was run with: the form may have moved on since.
+  const [ranWith, setRanWith] = useState<Objective>(initialConstraintsState.objective);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
   // Pre-fill constraints pins from the user's current build. This used to be a mount-only
@@ -168,10 +166,11 @@ export function OptimizeView({
 
   const scoreDelta =
     proposed && currentStats && proposed.stats
-      ? computeScoreDelta(state.objective, currentStats, proposed.stats)
+      ? computeScoreDelta(ranWith, currentStats, proposed.stats)
       : null;
 
   function handleRun(): void {
+    setRanWith(state.objective);
     optimizer.run(
       toOptimizerInput(state, { weapon, weaponItem, slotTree, parts, gate, presets, pricesReady }),
     );
@@ -242,7 +241,7 @@ export function OptimizeView({
         <Card variant="bracket" className="flex flex-col gap-5 p-5">
           <div className="flex items-center justify-between">
             <span className="font-display text-base tracking-wide">SOLVER</span>
-            <Pill tone="reliable">BRANCH-AND-BOUND</Pill>
+            <Pill tone="reliable">EXACT</Pill>
           </div>
           <OptimizeConstraintsForm
             state={state}

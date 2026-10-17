@@ -77,9 +77,11 @@ export const PROGRESSED_PROFILE: PlayerProfile = {
 
 /**
  * How many slots `min-recoil` changes on a bare M4A1, over the captured document, on
- * {@link PROGRESSED_PROFILE}: pistol grip, magazine, charging handle, bolt release, stock and
- * its nested stock slot, receiver, and under the receiver its handguard, scope, rear sight and
- * barrel — and under the barrel its gas block, muzzle device, and that device's own muzzle slot.
+ * {@link PROGRESSED_PROFILE}: pistol grip, charging handle, stock and its nested stock slot,
+ * receiver, and under the receiver its barrel and handguard — under the barrel its gas block,
+ * muzzle device and that device's own muzzle slot; under the handguard its nested handguard and
+ * that one's foregrip. Nothing that does not lower recoil is added: a tie goes to the cheaper
+ * build, and then to the one with fewer parts.
  *
  * Deterministic, because all three inputs are — which is the point. The specs used to
  * `test.skip` when the solver found nothing, and against live data that skip could fire on
@@ -87,7 +89,13 @@ export const PROGRESSED_PROFILE: PlayerProfile = {
  *
  * If this number moves, the captures or the solver moved. Read the diff before retuning it.
  */
-export const OPTIMIZER_CHANGED_SLOTS = 14;
+export const OPTIMIZER_CHANGED_SLOTS = 12;
+
+/**
+ * The same for `max-accuracy`: pistol grip, charging handle, stock and its nested stock slot,
+ * receiver, and under it the barrel with its gas block and muzzle device, and the handguard.
+ */
+export const OPTIMIZER_ACCURACY_CHANGED_SLOTS = 9;
 
 /**
  * The RCL % cell for the strongest mod that run proposes — a -0.24 `recoilModifier` rendered
