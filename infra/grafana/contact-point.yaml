@@ -1,0 +1,8 @@
+# ${GRAFANA_ALERT_EMAIL} is filled in by apply.sh from the repo secret of that name.
+# The address never appears in the repo.
+uid: tarkovgunsmith-email
+name: TarkovGunsmith email
+type: email
+settings:
+  addresses: ${GRAFANA_ALERT_EMAIL}
+  singleEmail: true

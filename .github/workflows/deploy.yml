@@ -131,9 +131,24 @@ jobs:
           workingDirectory: apps/builds-api
           command: deploy
 
+  # Applies infra/grafana/ and hands the Faro collector URL to the site build. `pages` needs
+  # it, so a failed apply holds the release: the site never ships pointing at a Faro app that
+  # code did not create. To recover, dispatch grafana.yml on its own
+  # (docs/operations/observability.md).
+  grafana:
+    name: Apply Grafana objects
+    needs: preflight
+    if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
+    uses: ./.github/workflows/grafana.yml
+    secrets:
+      GRAFANA_SERVER: ${{ secrets.GRAFANA_SERVER }}
+      GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
+      GRAFANA_SM_TOKEN: ${{ secrets.GRAFANA_SM_TOKEN }}
+      GRAFANA_ALERT_EMAIL: ${{ secrets.GRAFANA_ALERT_EMAIL }}
+
   pages:
     name: Deploy web (Cloudflare Pages)
-    needs: preflight
+    needs: [preflight, grafana]
     if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -168,9 +183,19 @@ jobs:
         # over its raw or brotli size budget (SNAPSHOT_BUDGET in
         # packages/tarkov-data/src/snapshot/limits.ts), so any of those fails this step,
         # before anything deploys.
+        #
+        # VITE_FARO_URL is the collector of the Faro app the grafana job just applied. Vite
+        # inlines it; the SPA starts Faro only on the production origins and only when it is
+        # set (apps/web/src/observability/faro-guard.ts).
         env:
           TARKOV_SNAPSHOT_SOURCE: upstream
-        run: pnpm --filter "@tarkov/web..." build
+          VITE_FARO_URL: ${{ needs.grafana.outputs.faro_url }}
+        run: |
+          if [ -z "$VITE_FARO_URL" ]; then
+            echo "::error::the grafana job produced no Faro URL; the site would ship without telemetry"
+            exit 1
+          fi
+          pnpm --filter "@tarkov/web..." build
 
       - name: Assert the snapshot is live data
         # A fixture snapshot would deploy a Builder with three weapons in it.

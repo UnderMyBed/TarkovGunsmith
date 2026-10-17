@@ -17,3 +17,9 @@ pnpm = "10.34.5"
 # actionlint shells out to shellcheck for every `run:` block, so both must be pinned.
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
+
+# Grafana as code: infra/grafana/apply.sh runs gcx and reads its manifests with yq. CI
+# (.github/workflows/grafana.yml) installs exactly these two pins through jdx/mise-action.
+# See docs/operations/observability.md.
+"github:grafana/gcx" = "1.6.0"
+yq = "4.54.1"

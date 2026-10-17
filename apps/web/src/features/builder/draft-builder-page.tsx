@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTrackOnce } from "../../observability/track-hooks.js";
 import { loadSavedBuild, useBuilderSnapshot, type BuilderSnapshot } from "@tarkov/data";
 import { Skeleton } from "@tarkov/ui";
 import { BuilderPage } from "./builder-page.js";
@@ -58,6 +59,7 @@ function DraftEditor({
     const draft = readDraft(DRAFT_KEY);
     return draft && snapshot ? loadSavedBuild(draft, snapshot) : undefined;
   });
+  useTrackOnce(initialBuild !== undefined, "build_loaded", { source: "draft" });
   return (
     <BuilderPage
       initialBuild={initialBuild}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Objective, OptimizationResult } from "@tarkov/optimizer";
 import type { OptimizeReply, OptimizeRequest } from "./optimize-protocol.js";
 import { startOptimizerWorker, type OptimizerWorker } from "./optimizer-worker.js";
+import { optimizerRunAttrs, track, type OptimizerRunEnding } from "../../../observability/track.js";
 
 export type OptimizerState = "idle" | "running" | "done" | "error";
 
@@ -57,19 +58,41 @@ export function useOptimizer(
 ): UseOptimizerReturn {
   const [snapshot, setSnapshot] = useState<Snapshot>(IDLE);
   const current = useRef<OptimizerWorker | null>(null);
+  /** The run going, for `optimizer_run`: its objective and when it started. */
+  const running = useRef<{ objective: Objective; at: number } | null>(null);
+
+  /**
+   * Reports how the run going ended, once. A run superseded by a new one is not reported.
+   * Telemetry only: it changes no state.
+   */
+  const finish = useCallback((ending: OptimizationResult | OptimizerRunEnding) => {
+    const ran = running.current;
+    running.current = null;
+    if (ran)
+      track("optimizer_run", optimizerRunAttrs(ran.objective, ending, performance.now() - ran.at));
+  }, []);
 
   const stop = useCallback(() => {
     current.current?.terminate();
     current.current = null;
   }, []);
 
-  useEffect(() => stop, [stop]);
+  // Leaving the optimizer mid-run abandons the run.
+  useEffect(
+    () => () => {
+      finish("abandoned");
+      stop();
+    },
+    [stop, finish],
+  );
 
   const run = useCallback(
     (input: OptimizeRequest) => {
       stop();
       const ran = { objective: input.objective, pins: input.constraints.pinnedSlots };
+      running.current = { objective: input.objective, at: performance.now() };
       const fail = (error: Error) => {
+        finish("error");
         stop();
         setSnapshot({ state: "error", ...ran, error });
       };
@@ -95,6 +118,7 @@ export function useOptimizer(
           return;
         }
         stop();
+        finish(reply.type === "result" ? reply.result : "error");
         setSnapshot(
           reply.type === "result"
             ? { state: "done", ...ran, result: reply.result }
@@ -114,18 +138,20 @@ export function useOptimizer(
         fail(new Error(`The optimizer could not be sent this build: ${messageOf(e)}`));
       }
     },
-    [start, stop],
+    [start, stop, finish],
   );
 
   const cancel = useCallback(() => {
+    finish("cancelled");
     stop();
     setSnapshot((s) => (s.state === "running" ? IDLE : s));
-  }, [stop]);
+  }, [stop, finish]);
 
   const reset = useCallback(() => {
+    finish("cancelled");
     stop();
     setSnapshot(IDLE);
-  }, [stop]);
+  }, [stop, finish]);
 
   return {
     state: snapshot.state,

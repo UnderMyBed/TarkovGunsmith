@@ -1,0 +1,66 @@
+name: Grafana
+
+# Applies infra/grafana/ to the shared `shipman` Grafana Cloud stack: the TarkovGunsmith folder,
+# the uptime alert rule and its contact point, two Synthetic Monitoring checks and the Faro app.
+# deploy.yml calls this before `pages`, which builds the site with the Faro URL it outputs.
+# Dispatch it on its own to apply a manifest change without a release, or to recover a release
+# blocked on it — docs/operations/observability.md.
+#
+# Never runs on pull_request: Grafana credentials stay out of PR workflows.
+on:
+  workflow_call:
+    outputs:
+      faro_url:
+        description: The Faro collector URL of the tarkovgunsmith-web app, key included
+        value: ${{ jobs.apply.outputs.faro_url }}
+    secrets:
+      GRAFANA_SERVER:
+        required: true
+      GRAFANA_TOKEN:
+        required: true
+      GRAFANA_SM_TOKEN:
+        required: true
+      GRAFANA_ALERT_EMAIL:
+        required: true
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: Apply Grafana objects
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: deploy-grafana
+      cancel-in-progress: false
+    environment:
+      name: production-grafana
+      url: https://shipman.grafana.net/dashboards/f/tarkovgunsmith
+    outputs:
+      faro_url: ${{ steps.apply.outputs.faro_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs only gcx and yq, at the versions mise.toml pins, so CI and a local
+      # `mise install` run the same binaries. Pinned by commit, not tag: this job holds
+      # Grafana credentials. Dependabot's github-actions entry bumps the SHA and the comment.
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install_args: github:grafana/gcx yq
+
+      - name: Apply infra/grafana
+        id: apply
+        env:
+          GRAFANA_SERVER: ${{ secrets.GRAFANA_SERVER }}
+          GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
+          GRAFANA_STACK_ID: "1520134"
+          # The stack's SM API host (prod-us-west-0). Set rather than discovered, so gcx never
+          # falls back to registering a new SM install.
+          GRAFANA_PROVIDER_SYNTH_SM_URL: https://synthetic-monitoring-api-us-west-0.grafana.net
+          GRAFANA_PROVIDER_SYNTH_SM_TOKEN: ${{ secrets.GRAFANA_SM_TOKEN }}
+          GRAFANA_ALERT_EMAIL: ${{ secrets.GRAFANA_ALERT_EMAIL }}
+        run: |
+          gcx --version
+          infra/grafana/apply.sh
