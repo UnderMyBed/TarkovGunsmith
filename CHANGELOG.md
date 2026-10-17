@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.23.0...v1.24.0) (2026-10-17)
+
+
+### Features
+
+* **builder:** workbench shell, top bar and stat strip (redesign 2/5) ([#285](https://github.com/UnderMyBed/TarkovGunsmith/issues/285)) ([8380497](https://github.com/UnderMyBed/TarkovGunsmith/commit/8380497aac7b61a1a3fc1a518a9f5dbc5a2e12ce))
+
 ## [1.23.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.22.2...v1.23.0) (2026-10-17)
 
 
