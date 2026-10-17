@@ -32,41 +32,63 @@ const SAMPLE_PAIR_RIGHT = {
   description: "",
 };
 
+/**
+ * A version-1 build as the first share URLs stored it: bare mod ids, no slot paths. The OG
+ * card upgrades it as the Builder does, placing each id on the M4A1 (receiver, then the
+ * handguard and grip the legacy tree finds for it). Same captured ids as
+ * `apps/web/e2e/builder-integrity.spec.ts`.
+ */
+const SAMPLE_V1_BUILD = {
+  version: 1 as const,
+  weaponId: "5447a9cd4bdc2dbd208b4567", // Colt M4A1
+  modIds: [
+    "55d355e64bdc2d962f8b4569", // M4A1 5.56x45 upper receiver
+    "5ae30db85acfc408fb139a05", // M4 carbine length handguard
+    "55d4b9964bdc2d1d4e8b456e", // AR-15 Colt A2 pistol grip
+  ],
+  createdAt: "2026-04-21T00:00:00.000Z",
+};
+
+const SAMPLE_PAIR = {
+  v: 1,
+  createdAt: "2026-04-21T00:00:00.000Z",
+  left: SAMPLE_BUILD,
+  right: SAMPLE_PAIR_RIGHT,
+};
+
+/** A comparison whose left side is a version-1 build and whose right side is empty. */
+const SAMPLE_V1_PAIR = {
+  v: 1,
+  createdAt: "2026-04-21T00:00:00.000Z",
+  left: SAMPLE_V1_BUILD,
+  right: null,
+};
+
 interface SeedEnv {
   BUILDS: KVNamespace;
   OG_FIXTURE_BUILD_ID?: string;
   OG_FIXTURE_PAIR_ID?: string;
+  OG_FIXTURE_V1_BUILD_ID?: string;
+  OG_FIXTURE_V1_PAIR_ID?: string;
 }
 
 /**
- * If `OG_FIXTURE_BUILD_ID` / `OG_FIXTURE_PAIR_ID` env vars are set, seed a
- * known BuildV6 + pair under those KV keys. Idempotent — never overwrites.
+ * For each `OG_FIXTURE_*` env var that is set, seed its record under that id: a BuildV6, a
+ * pair of two, a v1 build, and a pair with a v1 side. Idempotent — never overwrites.
  *
  * Called on first request in dev/test; a no-op in prod where the vars are
  * empty strings.
  */
 export async function maybeSeedOgFixtures(env: SeedEnv): Promise<void> {
-  if (env.OG_FIXTURE_BUILD_ID) {
-    const key = `b:${env.OG_FIXTURE_BUILD_ID}`;
-    const existing = await env.BUILDS.get(key);
-    if (!existing) {
-      await putPermanent(env.BUILDS, key, JSON.stringify(SAMPLE_BUILD));
-    }
-  }
-  if (env.OG_FIXTURE_PAIR_ID) {
-    const key = `p:${env.OG_FIXTURE_PAIR_ID}`;
-    const existing = await env.BUILDS.get(key);
-    if (!existing) {
-      await putPermanent(
-        env.BUILDS,
-        key,
-        JSON.stringify({
-          v: 1,
-          createdAt: "2026-04-21T00:00:00.000Z",
-          left: SAMPLE_BUILD,
-          right: SAMPLE_PAIR_RIGHT,
-        }),
-      );
-    }
+  const seeds: [string | undefined, "b" | "p", unknown][] = [
+    [env.OG_FIXTURE_BUILD_ID, "b", SAMPLE_BUILD],
+    [env.OG_FIXTURE_PAIR_ID, "p", SAMPLE_PAIR],
+    [env.OG_FIXTURE_V1_BUILD_ID, "b", SAMPLE_V1_BUILD],
+    [env.OG_FIXTURE_V1_PAIR_ID, "p", SAMPLE_V1_PAIR],
+  ];
+  for (const [id, prefix, record] of seeds) {
+    if (!id) continue;
+    const key = `${prefix}:${id}`;
+    if (!(await env.BUILDS.get(key))) await putPermanent(env.BUILDS, key, JSON.stringify(record));
   }
 }

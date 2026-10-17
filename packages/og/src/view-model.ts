@@ -4,23 +4,24 @@
  * imports inside the JSX files.
  */
 export interface BuildCardViewModel {
-  /** Headline text. `BuildV6.name` if set, else weapon short-name. */
+  /** Headline text. The build's name if set, else weapon short-name. */
   title: string;
-  /** Weapon short-name. Shown under `title` if `BuildV6.name` was used there. */
+  /** Weapon short-name. Shown under `title` if the build's name was used there. */
   subtitle: string | null;
-  /** Number of attached mods (sum of `attachments` values). */
+  /** Number of parts on the weapon, one per filled slot. */
   modCount: number;
   /** `FLEA` | `LL2` | `LL3` | `LL4` — lowest trader level that covers every mod. */
   availability: "FLEA" | "LL2" | "LL3" | "LL4";
-  /** Total price in RUB. `null` if any mod is missing price data. */
+  /** Total price in RUB. `null` if any part is missing price data: the pill is left off. */
   priceRub: number | null;
   stats: {
-    ergo: number | null;
-    recoilV: number | null;
-    recoilH: number | null;
-    weight: number | null;
+    ergo: number;
+    recoilV: number;
+    recoilH: number;
+    /** Kilograms: the weapon's own weight plus every part's. */
+    weight: number;
     /** Accuracy in MOA, lower is better. */
-    accuracy: number | null;
+    accuracy: number;
   };
 }
 
@@ -30,10 +31,11 @@ export interface SideViewModel {
   modCount: number;
   availability: "FLEA" | "LL2" | "LL3" | "LL4";
   stats: {
-    ergo: number | null;
-    recoilV: number | null;
-    recoilH: number | null;
-    weight: number | null;
+    ergo: number;
+    recoilV: number;
+    recoilH: number;
+    /** Kilograms: the weapon's own weight plus every part's. */
+    weight: number;
   };
 }
 

@@ -3,11 +3,13 @@
  * saved build at `/og/build/:id`.
  *
  * Flow:
- *   1. Check CF edge cache — return the cached PNG immediately on hit.
+ *   1. Check CF edge cache (keyed on the path, not the query string) — return the cached PNG
+ *      immediately on hit.
  *   2. `initResvg(wasmModule)` (idempotent across isolate).
  *   3. GET the build from the builds-api Worker; 404 → fallback PNG.
  *   4. Load the build-time snapshot and prices from the deploy's own assets (once per
- *      isolate) and draw the weapon + mounted mods from them.
+ *      isolate), bring the stored build of any version to the current one as the Builder
+ *      does (`loadStoredBuild`), and draw the weapon + mounted parts from them.
  *   5. Hydrate the view model, overwrite `availability` with the
  *      trader-level summary computed from the actual `buyFor` offers.
  *   6. Render JSX → SVG → PNG at 1200×630.
@@ -31,8 +33,9 @@ import {
   renderPng,
 } from "@tarkov/og";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
-import { type BuildV6, DEFAULT_PROFILE } from "@tarkov/data";
-import { fetchOgRowsForBuild, loadOgData } from "../../lib/og-graphql.js";
+import { DEFAULT_PROFILE } from "@tarkov/data";
+import { fetchOgRowsForBuild, loadOgData, loadStoredBuild } from "../../lib/og-graphql.js";
+import { ogCacheKey } from "../../lib/og-cache.js";
 import { availabilityPillText } from "../../lib/og-availability.js";
 import { isValidBuildId } from "../../lib/build-id.js";
 import { buildsApiBase } from "../../lib/builds-api.js";
@@ -65,7 +68,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
   if (!isValidBuildId(id)) return invalidId(id);
 
   const cache = caches.default;
-  const cacheKey = new Request(request.url, { method: "GET" });
+  const cacheKey = ogCacheKey(request.url);
   const cached = await cache.match(cacheKey);
   if (cached) return cached;
 
@@ -81,10 +84,13 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
       return fallback("upstream", id, startedAt, { "cache-control": "no-store" });
     }
 
-    const build = (await upstream.json()) as BuildV6;
+    const raw: unknown = await upstream.json();
     const dataStartedAt = Date.now();
     const data = await loadOgData(env.ASSETS, request.url);
     const dataMs = Date.now() - dataStartedAt;
+    // Any stored version, upgraded and checked as the Builder opens it; a record the Builder
+    // would refuse throws into the fallback below, logged with its id.
+    const build = loadStoredBuild(raw, data.snapshot);
     const rows = fetchOgRowsForBuild(
       {
         weaponId: build.weaponId,
@@ -95,12 +101,15 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
       data,
     );
     const vm = hydrateBuildCard({
-      build: { ...build, attachments: rows.attachments },
+      name: build.name,
       weapon: rows.weapon,
       priceRub: rows.priceRub,
       mods: rows.mods,
     });
-    vm.availability = availabilityPillText(rows.mods, build.profileSnapshot ?? DEFAULT_PROFILE);
+    vm.availability = availabilityPillText(
+      rows.availability,
+      build.profileSnapshot ?? DEFAULT_PROFILE,
+    );
 
     const png = await renderPng(buildCard(vm), embeddedFonts(), { width: 1200, height: 630 });
     const body = new Uint8Array(png);

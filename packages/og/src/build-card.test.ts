@@ -49,11 +49,12 @@ describe("buildCard", () => {
     expect(occurrences).toBe(1);
   });
 
-  it("renders — for missing stats", async () => {
+  it('renders "—" instead of "NaN" for a NaN stat', async () => {
     const svg = await render({
       ...vm,
-      stats: { ergo: null, recoilV: null, recoilH: null, weight: null, accuracy: null },
+      stats: { ergo: NaN, recoilV: NaN, recoilH: NaN, weight: NaN, accuracy: NaN },
     });
     expect(svg).toMatch(/—/);
+    expect(svg).not.toMatch(/NaN/);
   });
 });
