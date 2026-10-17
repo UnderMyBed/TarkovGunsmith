@@ -89,9 +89,18 @@ describe("BuildHeader recoil delta", () => {
 
   it("renders the stock and current recoil values either side of that delta", () => {
     renderHeader(realMods);
-    // Stock 119 struck through, current 119 * 0.505 = 60.095.
+    // Stock 119 struck through, current 119 * 0.505 = 60.095, to one decimal as the Spec panel shows it.
     expect(screen.getByText("119")).toBeInTheDocument();
-    expect(screen.getByText("60.095")).toBeInTheDocument();
+    expect(screen.getByText("60.1")).toBeInTheDocument();
+  });
+
+  it("rounds away floating-point noise in the current values", () => {
+    // A -34.4% build: 119 × 0.656 is 78.06400000000001 in floating point, which production
+    // printed whole.
+    renderHeader([{ ...realMods[0]!, ergonomicsDelta: 7, recoilModifier: -0.344 }]);
+    expect(screen.getByText("78.1")).toBeInTheDocument();
+    expect(screen.getByText("224.4")).toBeInTheDocument();
+    expect(screen.queryByText(/\d\.\d{3,}/)).not.toBeInTheDocument();
   });
 
   it("leaves the delta blank when no mods are attached", () => {
