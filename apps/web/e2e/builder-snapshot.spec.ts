@@ -76,7 +76,7 @@ test.describe("Builder snapshot", () => {
     await expect(
       page.getByText("1 mod from the saved build couldn't be placed on this weapon."),
     ).toBeVisible();
-    await expect(page.getByText(`${BOGUS_PART} — no longer in the game data`)).toBeVisible();
+    await expect(page.getByText(`${BOGUS_PART} — not a part the Builder knows`)).toBeVisible();
   });
 
   test("a tab opened before a deploy is told to reload", async ({ page }) => {

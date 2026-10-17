@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { OptimizeView } from "./optimize-view.js";
 import type { PlayerProfile, WeaponTree, BuildV6 } from "@tarkov/data";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
@@ -114,9 +114,11 @@ describe("OptimizeView", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }));
-    // The result state is set on the next microtask; wait one tick.
-    await new Promise((r) => queueMicrotask(() => r(undefined)));
-    expect(await screen.findByTestId("triptych-optimized-ergo")).toHaveTextContent("58");
+    // The triptych cell renders empty before the result lands, and when the result lands
+    // depends on `useOptimizer`'s scheduling, so poll the text rather than one tick.
+    await waitFor(() =>
+      expect(screen.getByTestId("triptych-optimized-ergo")).toHaveTextContent("58"),
+    );
   });
 
   it("calls onAccept with merged build when ACCEPT SELECTED fires with 1 row unchecked", async () => {

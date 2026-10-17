@@ -137,7 +137,7 @@ export function CompareSide({
           <SectionTitle
             index={sectionIndex}
             title={`Build ${label}`}
-            meta={attachedMeta(build, tree.data, tree.error)}
+            meta={attachedMeta(build, tree.data, tree.error, byId)}
           />
 
           <div className="flex flex-col gap-2">
@@ -218,10 +218,12 @@ function attachedMeta(
   build: BuildV6 | null,
   tree: WeaponTree | undefined,
   treeError: Error | null,
+  parts: ReadonlyMap<string, AttachablePart>,
 ): string {
   if (!build) return "empty";
   if (Object.keys(build.attachments).length === 0) return "0 attached";
-  if (tree) return `${Object.keys(mountedAttachments(tree, build.attachments)).length} attached`;
+  if (tree)
+    return `${Object.keys(mountedAttachments(tree, build.attachments, parts)).length} attached`;
   return treeError ? "slot tree unavailable" : "loading";
 }
 

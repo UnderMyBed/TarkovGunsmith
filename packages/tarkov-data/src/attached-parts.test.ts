@@ -19,6 +19,7 @@ const A2_20 = "68a63ac58e1fe612970728f2";
 const M4A1_FRONT_SIGHT_GAS_BLOCK = "5ae30e795acfc408fb139a0b";
 const COLT_A2_FLASH_HIDER = "544a38634bdc2d58388b4568";
 const AX15_4 = "63f4ba71f31d4a33b87bd046";
+const M855A1 = "54527ac44bdc2d36668b4567";
 /** The A2 20" barrel's gas-block slot, which the AX-15 4" handguard lists as conflicting. */
 const A2_GAS_BLOCK_SLOT = "68a63ac58e1fe612970728f5";
 
@@ -62,22 +63,54 @@ describe("mountedAttachments", () => {
     { nameId: "other", items: ["c"] },
   ]);
 
+  const known = new Set(["p", "q", "c", "cartridge"]);
+
   it("keeps only keys whose slot is shown and accepts the item", () => {
     expect(
-      mountedAttachments(tree, {
-        top: "q",
-        "top/child": "c", // orphan: q has no child slot
-        other: "p", // known part, not allowed in this slot
-        "nowhere/deep": "c",
-      }),
+      mountedAttachments(
+        tree,
+        {
+          top: "q",
+          "top/child": "c", // orphan: q has no child slot
+          other: "p", // known part, not allowed in this slot
+          "nowhere/deep": "c",
+        },
+        known,
+      ),
     ).toEqual({ top: "q" });
   });
 
-  it("keeps an id no slot in the document allows, so drift can report it", () => {
-    expect(mountedAttachments(tree, { top: "p", "top/child": "gone" })).toEqual({
+  it("keeps an id that does not exist upstream at all, so drift can report it", () => {
+    expect(mountedAttachments(tree, { top: "p", "top/child": "gone" }, known)).toEqual({
       top: "p",
       "top/child": "gone",
     });
+  });
+
+  it("drops an existing part that no slot allows, rather than treating it as gone", () => {
+    expect(mountedAttachments(tree, { top: "p", "top/child": "cartridge" }, known)).toEqual({
+      top: "p",
+    });
+  });
+
+  it("does not count a real cartridge saved into the M4A1's magazine slot", async () => {
+    const { tree: m4, parts } = await m4a1();
+    // M855A1 is a real item that no weapon slot in the fixture lists.
+    expect(m4.graph.itemNames[M855A1]).toBeUndefined();
+    const saved = { mod_magazine: M855A1, mod_reciever: M4A1_UPPER };
+    const known = new Set([...parts.keys(), M855A1]);
+    expect(mountedAttachments(m4, saved, known)).toEqual({ mod_reciever: M4A1_UPPER });
+  });
+
+  it("reports a cartridge the snapshot does not carry as missing, for the Builder to orphan", async () => {
+    // The snapshot holds only parts a weapon slot reaches, so to it an unplaceable cartridge
+    // is as unknown as a part gone upstream; the Builder moves both off the weapon on load.
+    const { tree: m4, parts } = await m4a1();
+    expect(parts.has(M855A1)).toBe(false);
+    const saved = { mod_magazine: M855A1, mod_reciever: M4A1_UPPER };
+    const { entries, missing } = attachedParts(m4, saved, parts);
+    expect(entries.map((e) => e.part.id)).toEqual([M4A1_UPPER]);
+    expect(missing).toEqual([{ path: "mod_magazine", itemId: M855A1 }]);
   });
 });
 

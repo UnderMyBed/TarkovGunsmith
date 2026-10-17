@@ -107,8 +107,9 @@ export function snapshotPriceIds(snapshot: BuilderSnapshot): string[] {
 }
 
 /**
- * Move a shared build's attachments whose item the game data no longer holds into its
- * `orphaned` list.
+ * Move a shared build's attachments whose item the snapshot does not hold into its `orphaned`
+ * list: a part gone upstream since the build was shared, or a real item no weapon slot takes
+ * (the snapshot carries only slot-reachable parts).
  *
  * Such an id cannot be shown, priced or counted, and silently dropping it would lose the
  * author's choice without a word. `orphaned` is where the Builder already lists what it could

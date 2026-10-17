@@ -1,121 +1,149 @@
 import { describe, it, expect } from "vitest";
-import type { BuildV6 } from "@tarkov/data";
+import { mountedAttachments, partsById, type BuildV6, type KnownItems } from "@tarkov/data";
 import { buildFromSelection } from "./build-from-selection.js";
+import { slotDiff } from "./slot-diff.js";
 import { tinyTree } from "../../../test/tiny-tree.js";
 
-const tree = tinyTree("w1", [
-  { nameId: "muzzle", items: ["m-old", "m-new"] },
+// Two uppers with the same slot names; two barrels whose gas-block slots allow different parts.
+const upperSlots = [
   {
-    nameId: "handguard",
+    nameId: "barrel",
     items: [
-      ["h-old", [{ nameId: "rail", items: ["r-old"] }]],
-      ["h-new", [{ nameId: "rail", items: ["r-old", "r-new"] }]],
+      ["b-short", [{ nameId: "gas", items: ["g-std"] }]],
+      ["b-long", [{ nameId: "gas", items: ["g-std", "g-low"] }]],
+    ] as const,
+  },
+  { nameId: "handguard", items: ["h-1"] },
+];
+const tree = tinyTree("w1", [
+  {
+    nameId: "upper",
+    items: [
+      ["u-1", upperSlots],
+      ["u-2", upperSlots],
     ],
   },
+  { nameId: "muzzle", items: ["m-old", "m-new"] },
   { nameId: "stock", items: ["s-keep"] },
-  { nameId: "optic", items: ["o-new"] },
 ]);
 
-const current: BuildV6 = {
-  version: 6,
-  weaponId: "w1",
-  attachments: { muzzle: "m-old", handguard: "h-old", stock: "s-keep" },
-  orphaned: [],
-  createdAt: "2026-04-22T00:00:00Z",
-};
+/** Every id in these tests exists upstream, so a disallowed one is not kept as "gone". */
+const KNOWN: KnownItems = { has: () => true };
 
-const proposed: BuildV6 = {
-  version: 6,
-  weaponId: "w1",
-  attachments: { muzzle: "m-new", handguard: "h-new", optic: "o-new" },
-  orphaned: [],
-  createdAt: "2026-04-22T00:00:00Z",
-};
+function build(attachments: Record<string, string>): BuildV6 {
+  return {
+    version: 6,
+    weaponId: "w1",
+    attachments,
+    orphaned: ["o-1"],
+    createdAt: "2026-04-22T00:00:00Z",
+  };
+}
+
+/** Every row the optimizer view would show: its accept-all selection. */
+function allRows(current: BuildV6, proposed: BuildV6): Set<string> {
+  return new Set(
+    slotDiff(current.attachments, proposed.attachments, tree, partsById([])).map((r) => r.slotId),
+  );
+}
+
+function apply(current: BuildV6, proposed: BuildV6, selected: Iterable<string>) {
+  return buildFromSelection(current, proposed, new Set(selected), tree, KNOWN).attachments;
+}
 
 describe("buildFromSelection", () => {
-  it("equals current build when nothing is selected", () => {
-    const out = buildFromSelection(current, proposed, new Set(), tree);
-    expect(out.attachments).toEqual(current.attachments);
+  it("equals the current build when nothing is selected", () => {
+    const current = build({ muzzle: "m-old", stock: "s-keep" });
+    expect(apply(current, build({ muzzle: "m-new" }), [])).toEqual(current.attachments);
   });
 
-  it("applies every proposed change when all slots selected", () => {
-    const out = buildFromSelection(
-      current,
-      proposed,
-      new Set(["muzzle", "handguard", "optic"]),
-      tree,
+  it("applies only the selected top-level rows", () => {
+    const current = build({ muzzle: "m-old", stock: "s-keep" });
+    const proposed = build({ muzzle: "m-new" });
+    expect(apply(current, proposed, ["muzzle"])).toEqual({ muzzle: "m-new", stock: "s-keep" });
+    expect(apply(current, proposed, ["stock"])).toEqual({ muzzle: "m-old" });
+  });
+
+  it("accept-all on a barrel swap keeps the gas block the proposal kept", () => {
+    const current = build({ upper: "u-1", "upper/barrel": "b-short", "upper/barrel/gas": "g-std" });
+    const proposed = build({ upper: "u-1", "upper/barrel": "b-long", "upper/barrel/gas": "g-std" });
+    const rows = allRows(current, proposed);
+    expect([...rows]).toEqual(["upper/barrel"]);
+    expect(apply(current, proposed, rows)).toEqual(
+      mountedAttachments(tree, proposed.attachments, KNOWN),
     );
-    // stock stays because proposed dropped it; optic is a new addition from the proposal.
-    expect(out.attachments).toEqual({
-      muzzle: "m-new",
-      handguard: "h-new",
-      stock: "s-keep",
-      optic: "o-new",
+  });
+
+  it("accept-all on an upper swap keeps the whole subtree the proposal kept", () => {
+    const subtree = {
+      "upper/barrel": "b-long",
+      "upper/barrel/gas": "g-low",
+      "upper/handguard": "h-1",
+    };
+    const current = build({ upper: "u-1", ...subtree });
+    const proposed = build({ upper: "u-2", ...subtree, muzzle: "m-new" });
+    const rows = allRows(current, proposed);
+    expect([...rows].sort()).toEqual(["muzzle", "upper"]);
+    expect(apply(current, proposed, rows)).toEqual(
+      mountedAttachments(tree, proposed.attachments, KNOWN),
+    );
+  });
+
+  it("drops a deselected row beneath a selected one rather than keeping the old part", () => {
+    const current = build({ upper: "u-1", "upper/barrel": "b-short", "upper/barrel/gas": "g-std" });
+    const proposed = build({ upper: "u-1", "upper/barrel": "b-long", "upper/barrel/gas": "g-low" });
+    expect([...allRows(current, proposed)]).toEqual(["upper/barrel", "upper/barrel/gas"]);
+    expect(apply(current, proposed, ["upper/barrel"])).toEqual({
+      upper: "u-1",
+      "upper/barrel": "b-long",
     });
   });
 
-  it("applies only the selected slots (partial)", () => {
-    const out = buildFromSelection(current, proposed, new Set(["muzzle"]), tree);
-    expect(out.attachments).toEqual({ muzzle: "m-new", handguard: "h-old", stock: "s-keep" });
+  it("keeps a deselected part whose parent is unchanged beneath a selected grandparent", () => {
+    const current = build({ upper: "u-1", "upper/barrel": "b-long", "upper/barrel/gas": "g-std" });
+    const proposed = build({ upper: "u-2", "upper/barrel": "b-long", "upper/barrel/gas": "g-low" });
+    expect([...allRows(current, proposed)].sort()).toEqual(["upper", "upper/barrel/gas"]);
+    expect(apply(current, proposed, ["upper"])).toEqual({
+      upper: "u-2",
+      "upper/barrel": "b-long",
+      "upper/barrel/gas": "g-std",
+    });
   });
 
-  it("removes a slot when selected and proposal drops it", () => {
-    const current2: BuildV6 = { ...current, attachments: { muzzle: "m-old", handguard: "h-old" } };
-    const proposed2: BuildV6 = { ...proposed, attachments: { muzzle: "m-new" } };
-    const out = buildFromSelection(current2, proposed2, new Set(["handguard"]), tree);
-    expect(out.attachments).toEqual({ muzzle: "m-old" });
+  it("lands a selected row beneath a kept parent only where that parent takes it", () => {
+    const current = build({ upper: "u-1", "upper/barrel": "b-short" });
+    const takes = build({ upper: "u-1", "upper/barrel": "b-long", "upper/barrel/gas": "g-std" });
+    const refuses = build({ upper: "u-1", "upper/barrel": "b-long", "upper/barrel/gas": "g-low" });
+    // The short barrel's gas slot takes g-std but not g-low.
+    expect(apply(current, takes, ["upper/barrel/gas"])).toEqual({
+      upper: "u-1",
+      "upper/barrel": "b-short",
+      "upper/barrel/gas": "g-std",
+    });
+    expect(apply(current, refuses, ["upper/barrel/gas"])).toEqual({
+      upper: "u-1",
+      "upper/barrel": "b-short",
+    });
   });
 
-  it("drops what was beneath a replaced part", () => {
-    const current3: BuildV6 = {
-      ...current,
-      attachments: { handguard: "h-old", "handguard/rail": "r-old" },
-    };
-    const proposed3: BuildV6 = { ...proposed, attachments: { handguard: "h-new" } };
-    const out = buildFromSelection(current3, proposed3, new Set(["handguard"]), tree);
-    expect(out.attachments).toEqual({ handguard: "h-new" });
-  });
-
-  it("applies a parent row before its child rows, whatever the selection order", () => {
-    const proposed4: BuildV6 = {
-      ...proposed,
-      attachments: { handguard: "h-new", "handguard/rail": "r-new" },
-    };
-    const out = buildFromSelection(
-      { ...current, attachments: { handguard: "h-old", "handguard/rail": "r-old" } },
-      proposed4,
-      new Set(["handguard/rail", "handguard"]),
-      tree,
-    );
-    expect(out.attachments).toEqual({ handguard: "h-new", "handguard/rail": "r-new" });
-  });
-
-  it("writes no orphan key for a child row accepted without its parent row", () => {
-    const proposed5: BuildV6 = {
-      ...proposed,
-      attachments: { handguard: "h-new", "handguard/rail": "r-new" },
-    };
-    // The current handguard's rail does not take r-new, and an empty handguard has no rail.
-    expect(
-      buildFromSelection(
-        { ...current, attachments: { handguard: "h-old" } },
-        proposed5,
-        new Set(["handguard/rail"]),
-        tree,
-      ).attachments,
-    ).toEqual({ handguard: "h-old" });
-    expect(
-      buildFromSelection(
-        { ...current, attachments: {} },
-        proposed5,
-        new Set(["handguard/rail"]),
-        tree,
-      ).attachments,
-    ).toEqual({});
+  it("removes a part when its row is selected and the proposal empties the slot", () => {
+    const current = build({ upper: "u-1", "upper/handguard": "h-1", muzzle: "m-old" });
+    const proposed = build({ upper: "u-1", muzzle: "m-old" });
+    expect(apply(current, proposed, ["upper/handguard"])).toEqual({
+      upper: "u-1",
+      muzzle: "m-old",
+    });
   });
 
   it("preserves metadata (weaponId, orphaned, createdAt) from current", () => {
-    const out = buildFromSelection(current, proposed, new Set(["muzzle"]), tree);
+    const current = build({ muzzle: "m-old" });
+    const out = buildFromSelection(
+      current,
+      build({ muzzle: "m-new" }),
+      new Set(["muzzle"]),
+      tree,
+      KNOWN,
+    );
     expect(out.weaponId).toBe(current.weaponId);
     expect(out.orphaned).toEqual(current.orphaned);
     expect(out.createdAt).toBe(current.createdAt);

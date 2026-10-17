@@ -134,6 +134,7 @@ export function fetchOgRowsForBuild(
   const attachments = mountedAttachments(
     snapshotWeaponTree(snapshot, args.weaponId),
     args.attachments,
+    new Set(snapshot.parts.map((p) => p.id)),
   );
 
   const mods: OgMod[] = [];

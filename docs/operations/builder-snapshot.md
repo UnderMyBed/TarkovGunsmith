@@ -73,6 +73,7 @@ page." rather than misreading the new file.
 
 ## Saved builds
 
-A shared build may name a part a later snapshot no longer holds. On load, the Builder moves
-such ids off the weapon into the build's orphaned list, where the orphaned-mods banner names
-them "no longer in the game data". A build whose weapon is gone shows the drift banner.
+A shared build may name an id the snapshot does not hold: a part gone upstream, or a real item
+no weapon slot takes (a cartridge saved into a magazine slot). On load, the Builder moves such
+ids off the weapon into the build's orphaned list, where the orphaned-mods banner names them
+"not a part the Builder knows". A build whose weapon is gone shows the drift banner.

@@ -92,7 +92,7 @@ describe("/builder/$id", () => {
     expect(
       await screen.findByText(/1 mod from the saved build couldn't be placed on this weapon\./),
     ).toBeInTheDocument();
-    expect(screen.getByText("mod-vanished — no longer in the game data")).toBeInTheDocument();
+    expect(screen.getByText("mod-vanished — not a part the Builder knows")).toBeInTheDocument();
   });
 
   it("loads a v1 build and migrates its flat modIds into slot attachments once the tree resolves", async () => {

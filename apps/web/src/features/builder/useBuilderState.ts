@@ -150,8 +150,8 @@ export function useBuilderState({
   // tree loads nothing is known to be on the weapon.
   const treeData = tree.data;
   const mounted = useMemo(
-    () => (treeData ? mountedAttachments(treeData, attachments) : {}),
-    [treeData, attachments],
+    () => (treeData ? mountedAttachments(treeData, attachments, byId) : {}),
+    [treeData, attachments, byId],
   );
   const attached = useMemo(
     () => (treeData ? attachedParts(treeData, attachments, byId) : { entries: [], missing: [] }),
