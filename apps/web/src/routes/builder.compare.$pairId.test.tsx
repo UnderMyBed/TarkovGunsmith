@@ -106,10 +106,9 @@ describe("/builder/compare/$pairId", () => {
     );
     await renderRoute(`/builder/compare/${VALID_ID}`);
 
-    // `CompareToolbar` shows "Save changes" (not "Save comparison") once a pairId is
-    // present, plus "Save as new" — this is the loaded-pair toolbar, not the blank draft's.
-    expect(await screen.findByRole("button", { name: "Save changes" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save as new" })).toBeInTheDocument();
+    // `CompareToolbar` shows "Save as new link" (not "Save comparison") once a pairId is
+    // present — this is the loaded-pair toolbar, not the blank draft's.
+    expect(await screen.findByRole("button", { name: "Save as new link" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save comparison" })).not.toBeInTheDocument();
 
     // Side A hydrated from the loaded pair's `left` build (1 attachment); side B is the
