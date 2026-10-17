@@ -81,7 +81,7 @@ Built from upstream, the snapshot must also meet `UPSTREAM_FLOORS` in
 `packages/tarkov-data/src/snapshot/limits.ts`, because a renamed type or link makes rows
 vanish rather than fail to parse:
 
-| Count                                            | Floor | Live, 2026-10-17 |
+| Count                                            | Floor | Live, 2026-10-16 |
 | ------------------------------------------------ | ----- | ---------------- |
 | Weapons                                          | 50    | 164              |
 | Parts                                            | 2000  | 2335             |
@@ -119,7 +119,7 @@ it:
 Every Builder visit downloads the snapshot. `SNAPSHOT_BUDGET` in
 `packages/tarkov-data/src/snapshot/limits.ts` is the one copy of the budget:
 
-| Measure                                   | Budget | Live, 2026-10-17 | Headroom | Why this number                                            |
+| Measure                                   | Budget | Live, 2026-10-16 | Headroom | Why this number                                            |
 | ----------------------------------------- | ------ | ---------------- | -------- | ---------------------------------------------------------- |
 | Brotli at quality 4 (close to the edge's) | 300 KB | 255 KB           | 45 KB    | Room for upstream growth                                   |
 | Raw                                       | 6 MB   | 3991 KB          | 2153 KB  | Bounds the main-thread parse (about 10 ms at today's size) |

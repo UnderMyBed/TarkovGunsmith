@@ -46,7 +46,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   renamed `propertiesType`, `baseItem` or `taskUnlock` yields a valid but gutted snapshot. A
   snapshot built from upstream must hold at least 50 weapons, 2000 parts, 150 offers selling
   through a preset, 150 barter offers, 200 weapon presets, 80 weapons with presets and 45
-  quest-gated offers, about half of live (164, 2335, 303, 304, 399, 164 and 90 on 2026-10-17).
+  quest-gated offers, about half of live (164, 2335, 303, 304, 399, 164 and 90 on 2026-10-16).
 - **Prices stay live in the SPA.** Offers are stored without prices. The SPA prices them from
   the raw `items` document — no translation sibling, price fields only — parsed in a Web
   Worker. Prices more than an hour old are fetched again on the next focus or page mount,
@@ -67,7 +67,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
 
 - The Builder's upstream request on a visit is the raw `items` document for prices; traders,
   tasks, barters and every translation document are gone from its critical path.
-- On the 2026-10-17 live data the snapshot, weapon presets included, is 4.0 MB raw and 255 KB
+- On the 2026-10-16 live data the snapshot, weapon presets included, is 4.0 MB raw and 255 KB
   brotli at quality 4, and parses in about 10 ms; parsing the raw items document took 36 ms.
 - Upstream drift fails a release build, listing every problem, rather than silently emptying a
   picker in production.
@@ -83,7 +83,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   unrelated. That is deliberate: the alternative ships a Builder with records missing.
 - A shared build may name a part a later snapshot no longer holds. Those ids move to the build's
   orphaned list on load rather than staying on the weapon.
-- The brotli headroom is 45 KB on the 2026-10-17 data (255 KB with the weapon presets and
+- The brotli headroom is 45 KB on the 2026-10-16 data (255 KB with the weapon presets and
   weapon stats).
   Sustained growth in parts or offers upstream will reach it and need a deliberate decision.
 - A release build depends on `json.tarkov.dev` answering. Each request times out and is retried
