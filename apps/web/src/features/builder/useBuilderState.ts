@@ -151,7 +151,10 @@ export function useBuilderState({
     () => (treeData && catalog.data ? { tree: treeData, parts: byId } : null),
     [treeData, catalog.data, byId],
   );
-  const dispatch = (action: BuildAction) => setBuild((s) => applyBuildAction(s, action, ctx));
+  // The reducer throws on an action it refuses (no tree yet, a slot that does not take the
+  // part). Applying it here, in the caller's event handler as each Compare side does, keeps
+  // that throw out of a state updater, where React would raise it during render.
+  const dispatch = (action: BuildAction) => setBuild(applyBuildAction(build, action, ctx));
 
   const weaponAvailabilityById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof itemAvailability>>();

@@ -198,6 +198,18 @@ describe("useBuilderState and presets", () => {
     expect(result.current.orphaned).toEqual([]);
   });
 
+  it("throws a refused action to its caller and keeps rendering the build as it was", () => {
+    const kept = { mod_muzzle: "mod-muzzle" };
+    const { result } = renderHook(() =>
+      useBuilderState(args({ initialBuild: saved(WEAPON, kept) })),
+    );
+    // The tree has not loaded, so there is nothing to check the attachment against.
+    expect(() => result.current.handleAttach("mod_stock", "mod-stock")).toThrow(
+      /No slot tree for weapon/,
+    );
+    expect(result.current.attachments).toEqual(kept);
+  });
+
   it("joins the presets' error into the Builder's", () => {
     const error = new Error("presets down");
     presetsQuery = { data: undefined, isLoading: false, error };
