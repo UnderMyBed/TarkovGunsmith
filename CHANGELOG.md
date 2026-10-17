@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.20.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.19.0...v1.20.0) (2026-10-17)
+
+
+### Features
+
+* **builder:** gate quests by what actually gates gear; basic mode assumes them ([#251](https://github.com/UnderMyBed/TarkovGunsmith/issues/251)) ([39d19d1](https://github.com/UnderMyBed/TarkovGunsmith/commit/39d19d1559f828afd0331376fab1f04556c09754))
+* **builder:** keep the in-progress build across reload and tab eviction ([#255](https://github.com/UnderMyBed/TarkovGunsmith/issues/255)) ([130d1b9](https://github.com/UnderMyBed/TarkovGunsmith/commit/130d1b9f3b9f94e6ffdf4d5b3a68a7a5a2e21d07))
+* **builder:** one build core — resolve, reduce, load; orphans never lost, incomplete and conflicting builds flagged ([#252](https://github.com/UnderMyBed/TarkovGunsmith/issues/252)) ([884a0f0](https://github.com/UnderMyBed/TarkovGunsmith/commit/884a0f0727f489728aeab2facc7318e5c0295892))
+* **builder:** theorycraft on a first visit, progression once a profile is set ([#259](https://github.com/UnderMyBed/TarkovGunsmith/issues/259)) ([aa00177](https://github.com/UnderMyBed/TarkovGunsmith/commit/aa00177c865d3682e6978b043cea1e5807c5a40e))
+
+
+### Bug Fixes
+
+* **og:** upgrade stored builds, weigh the weapon, cache cards by path ([#256](https://github.com/UnderMyBed/TarkovGunsmith/issues/256)) ([13ed919](https://github.com/UnderMyBed/TarkovGunsmith/commit/13ed9195800e34b569d7ff6505f2463bd352878e))
+
 ## [1.19.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.18.0...v1.19.0) (2026-10-17)
 
 
