@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { BuilderMode } from "@tarkov/data";
 import type { PricesStatus } from "./build-price.js";
 
@@ -40,6 +40,8 @@ export function usePendingSeed({
   reseed,
 }: UsePendingSeedArgs): UsePendingSeedResult {
   const [pending, setPending] = useState<string | null>(null);
+  // Stable, so a caller's memoized save handler can depend on it.
+  const clear = useCallback(() => setPending(null), []);
 
   if (pending !== null && (mode !== "progression" || prices.state !== "loading")) {
     setPending(null);
@@ -52,6 +54,6 @@ export function usePendingSeed({
     seeded: (id) => {
       if (mode === "progression" && prices.state === "loading") setPending(id);
     },
-    clear: () => setPending(null),
+    clear,
   };
 }

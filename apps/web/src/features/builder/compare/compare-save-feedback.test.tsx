@@ -229,3 +229,146 @@ describe("compare handoff profile, and saving it", () => {
     expect(pair.rightProfile).toEqual(PROFILE);
   });
 });
+
+/**
+ * Saving a loaded pair, and what a save leaves on screen. A stub pair store: GET serves the
+ * stored pairs, POST /api/pairs stores the body under a new id, POST …/fork copies one.
+ */
+describe("compare save — loaded pairs and the viewer's profiles", () => {
+  const STORED = "stra2345";
+  const PROFILE = {
+    mode: "basic",
+    traders: {
+      prapor: 4,
+      therapist: 4,
+      skier: 4,
+      peacekeeper: 4,
+      mechanic: 4,
+      ragman: 4,
+      jaeger: 4,
+    },
+    flea: true,
+    level: 40,
+  };
+  // The sides differ by an orphan, which a load keeps as it is.
+  const side = (orphaned: string[]) => ({
+    version: 6,
+    weaponId: "w-m4a1",
+    attachments: {},
+    orphaned,
+    createdAt: "2026-10-16T00:00:00.000Z",
+  });
+  const LEFT = side([]);
+  const RIGHT = side(["gone-part"]);
+
+  afterEach(() => sessionStorage.clear());
+
+  /** The stub store; `posts` lists every POST as [url, parsed body or null]. */
+  function stubStore(initial: Record<string, unknown>) {
+    const pairs = new Map(Object.entries(initial));
+    const posts: [string, Record<string, unknown> | null][] = [];
+    let n = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url =
+          input instanceof URL ? input.href : typeof input === "string" ? input : input.url;
+        if (init?.method === "POST") {
+          const body =
+            typeof init.body === "string"
+              ? (JSON.parse(init.body) as Record<string, unknown>)
+              : null;
+          posts.push([url, body]);
+          const id = `neww${++n + 2}aaa`;
+          const fork = /\/api\/pairs\/([a-z0-9]+)\/fork$/.exec(url);
+          pairs.set(id, fork ? pairs.get(fork[1]!) : body);
+          return Promise.resolve(jsonResponse({ id, url: `/builder/compare/${id}` }, 201));
+        }
+        const got = /\/api\/pairs\/([a-z0-9]+)$/.exec(url);
+        if (got && pairs.has(got[1]!))
+          return Promise.resolve(jsonResponse(pairs.get(got[1]!), 200));
+        return Promise.reject(new Error(`unexpected fetch: ${url}`));
+      }),
+    );
+    return posts;
+  }
+
+  const stored = (profiles: boolean) => ({
+    [STORED]: {
+      v: 1,
+      createdAt: "2026-10-16T00:00:00.000Z",
+      left: LEFT,
+      right: RIGHT,
+      ...(profiles ? { leftProfile: PROFILE, rightProfile: PROFILE } : {}),
+    },
+  });
+  const optIn = () => screen.findByLabelText("Embed the progression snapshots in the shared URL");
+  const user = () => userEvent.setup();
+
+  it("starts a pair that publishes profiles with the box ticked, and Save changes keeps them", async () => {
+    const posts = stubStore(stored(true));
+    await renderRoute(`/builder/compare/${STORED}`);
+    expect(await optIn()).toBeChecked();
+    await user().click(screen.getByRole("button", { name: "Swap L↔R" }));
+    await user().click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]![1]).toMatchObject({ leftProfile: PROFILE, rightProfile: PROFILE });
+  });
+
+  it("saves as new through the draft once the box is unticked, so no profile is posted", async () => {
+    const posts = stubStore(stored(true));
+    await renderRoute(`/builder/compare/${STORED}`);
+    await user().click(await optIn());
+    await user().click(screen.getByRole("button", { name: "Save as new" }));
+
+    await waitFor(() => expect(posts).toHaveLength(1));
+    const [url, body] = posts[0]!;
+    expect(url).not.toMatch(/\/fork$/);
+    expect(body).not.toHaveProperty("leftProfile");
+    expect(body).not.toHaveProperty("rightProfile");
+  });
+
+  it("saves as new with an unsaved edit kept, and forks only a pair with none", async () => {
+    const posts = stubStore(stored(false));
+    const { router } = await renderRoute(`/builder/compare/${STORED}`);
+    await screen.findByRole("button", { name: "Save as new" });
+    await user().click(screen.getByRole("button", { name: "Swap L↔R" }));
+    await user().click(screen.getByRole("button", { name: "Save as new" }));
+
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]![0]).not.toMatch(/\/fork$/);
+    expect(posts[0]![1]).toMatchObject({ left: RIGHT, right: LEFT });
+
+    // On the new pair, with nothing unsaved, "Save as new" is a fork.
+    await waitFor(() =>
+      expect(router.state.location.pathname).not.toBe(`/builder/compare/${STORED}`),
+    );
+    await user().click(await screen.findByRole("button", { name: "Save as new" }));
+    await waitFor(() => expect(posts).toHaveLength(2));
+    expect(posts[1]![0]).toMatch(/\/fork$/);
+  });
+
+  it("after a progression handoff and a save without the box, still shows the gated view", async () => {
+    const posts = stubStore({});
+    sessionStorage.setItem("compare:leftPrefill", JSON.stringify(LEFT));
+    sessionStorage.setItem("compare:mode", "clone-both");
+    sessionStorage.setItem("compare:profile", JSON.stringify(PROFILE));
+    const { router } = await renderRoute("/builder/compare");
+    expect(await screen.findAllByText("REACHABLE")).toHaveLength(2);
+    await clickSave();
+
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]![1]).not.toHaveProperty("leftProfile");
+    expect(posts[0]![1]).not.toHaveProperty("rightProfile");
+
+    // The saved pair's own route: the viewer's profiles carried over, never published.
+    await waitFor(() =>
+      expect(router.state.location.pathname).toMatch(/^\/builder\/compare\/neww/),
+    );
+    expect(await screen.findByRole("button", { name: "Save changes" })).toBeInTheDocument();
+    expect(await screen.findAllByText("REACHABLE")).toHaveLength(2);
+    expect(await optIn()).not.toBeChecked();
+    expect(sessionStorage.getItem("compare:viewerProfiles")).toBeNull();
+  });
+});
