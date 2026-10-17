@@ -15,6 +15,7 @@ import {
   loadSavedBuild,
   useBuilderData,
   CURRENT_PAIR_VERSION,
+  PlayerProfile,
   type BuildV6,
   type BuildPair,
 } from "@tarkov/data";
@@ -24,9 +25,12 @@ import { shareBlockedReason } from "../useShareBuild.js";
 import { CompareToolbar } from "./compare-toolbar.js";
 import { CompareStatDelta } from "./compare-stat-delta.js";
 import { CompareProgressionRow } from "./compare-progression-row.js";
-import { CompareSide, computeSideSpec } from "./compare-side.js";
-import { useCompareDraft } from "./useCompareDraft.js";
+import { CompareSide, computeSideSpec, reseedSide } from "./compare-side.js";
+import { useCompareDraft, type CompareSide as Side } from "./useCompareDraft.js";
 import { priceBuild, pricesStatus } from "../build-price.js";
+import { usePendingSeed } from "../usePendingSeed.js";
+import { HANDOFF_KEYS } from "../useCompareHandoff.js";
+import { dropViewerProfiles, keepViewerProfiles, peekViewerProfiles } from "./viewer-profiles.js";
 
 export interface CompareWorkspaceProps {
   /** A saved comparison, both sides already through `loadPair`. */
@@ -40,15 +44,25 @@ export function CompareWorkspace({
 }: CompareWorkspaceProps = {}): ReactElement {
   const navigate = useNavigate();
 
+  // The viewer's own profiles, kept across the save that led here when the pair does not
+  // publish them (`viewer-profiles.ts`). The opt-in stays as the pair has it: off.
+  const [carried] = useState(() =>
+    initialPairId === undefined ? null : peekViewerProfiles(initialPairId),
+  );
+  useEffect(() => dropViewerProfiles(), []);
+
   const draft = useCompareDraft(
     initialPair
       ? {
           left: initialPair.left,
           right: initialPair.right,
-          leftProfile: initialPair.leftProfile,
-          rightProfile: initialPair.rightProfile,
+          leftProfile: initialPair.leftProfile ?? carried?.leftProfile,
+          rightProfile: initialPair.rightProfile ?? carried?.rightProfile,
           name: initialPair.name,
           description: initialPair.description,
+          // The pair already publishes them: a re-save keeps them unless the user opts out.
+          embedProfiles:
+            initialPair.leftProfile !== undefined || initialPair.rightProfile !== undefined,
           dirty: false,
         }
       : undefined,
@@ -97,24 +111,66 @@ export function CompareWorkspace({
   // deps array a reader has to trust is intentional — exhaustive-deps can't tell "closes
   // over stale values on purpose" from "forgot to list a dependency" and is right to flag
   // the latter shape either way.
+  // Each side's seed made before live prices arrived is redone once they do, unless that side
+  // was edited since. A side's mode is its own: progression with a profile.
+  const prices = pricesStatus(livePrices);
+  const leftSeed = usePendingSeed({
+    mode: draft.state.leftProfile === undefined ? "theorycraft" : "progression",
+    prices,
+    weaponId: draft.state.left?.weaponId ?? "",
+    reseed: (id) => reseed("left", id),
+  });
+  const rightSeed = usePendingSeed({
+    mode: draft.state.rightProfile === undefined ? "theorycraft" : "progression",
+    prices,
+    weaponId: draft.state.right?.weaponId ?? "",
+    reseed: (id) => reseed("right", id),
+  });
+  function reseed(side: Side, weaponId: string) {
+    const build = side === "left" ? draft.state.left : draft.state.right;
+    if (build === null) return;
+    const profile = side === "left" ? draft.state.leftProfile : draft.state.rightProfile;
+    draft.setSide(side, reseedSide(build, weaponId, presets.data?.[weaponId] ?? [], profile));
+  }
+  // A swap or a clone edits both sides, and a save commits them: twins never diverge later.
+  const clearLeftSeed = leftSeed.clear;
+  const clearRightSeed = rightSeed.clear;
+  const clearSeeds = useCallback(() => {
+    clearLeftSeed();
+    clearRightSeed();
+  }, [clearLeftSeed, clearRightSeed]);
+  const seedOf = (side: Side) => (side === "left" ? leftSeed : rightSeed);
+  const editSide = (side: Side, build: BuildV6 | null) => {
+    draft.setSide(side, build);
+    seedOf(side).clear();
+  };
+
   const builderData = useBuilderData();
   // Set when the game data a pasted build is read against fails to load. Without it the
   // right side cannot be shown at all, and pasting again would fail the same way.
   const [gameDataError, setGameDataError] = useState<string | null>(null);
-  const mountSnapshot = useRef({ initialPair, draft, builderData });
+  const mountSnapshot = useRef({ initialPair, draft, builderData, rightSeed });
   useEffect(() => {
-    const { initialPair, draft, builderData } = mountSnapshot.current;
+    const { initialPair, draft, builderData, rightSeed } = mountSnapshot.current;
     if (initialPair) return;
-    const raw = sessionStorage.getItem("compare:leftPrefill");
-    const mode = sessionStorage.getItem("compare:mode");
-    const rightId = sessionStorage.getItem("compare:rightBuildId");
+    const raw = sessionStorage.getItem(HANDOFF_KEYS.left);
+    const mode = sessionStorage.getItem(HANDOFF_KEYS.mode);
+    const rightId = sessionStorage.getItem(HANDOFF_KEYS.rightBuildId);
+    const rawProfile = sessionStorage.getItem(HANDOFF_KEYS.profile);
     if (!raw || !mode) return;
 
     try {
       const left = JSON.parse(raw) as BuildV6;
       // Only accept the current version; loadBuild upgrades v3/v4 on the way in.
       if (left.version !== 6) return;
+      // Present only for a handoff from progression; a handoff written before the key
+      // existed has none, and is theorycraft as it was. A profile that does not parse drops
+      // the handoff, as a malformed build does.
+      const profile = rawProfile === null ? undefined : PlayerProfile.parse(JSON.parse(rawProfile));
       draft.setSide("left", left);
+      // Both sides, whatever fills the right: the comparison is under the viewer's profile.
+      draft.setProfile("left", profile);
+      draft.setProfile("right", profile);
       if (mode === "clone-both") {
         draft.setSide("right", structuredClone(left));
       } else if (mode === "paste-url" && rightId) {
@@ -134,6 +190,8 @@ export function CompareWorkspace({
             const [right, snapshot] = await Promise.all([loadBuild(fetch, rightId), snapshotLoad]);
             // Through the same load path as /builder/$id: any version, read against the game data.
             draft.setSide("right", loadSavedBuild(right, snapshot));
+            // The pasted build replaces whatever side B held: a seed there is not redone.
+            rightSeed.clear();
           } catch {
             // A game-data failure is shown: it needs a reload, not another paste. A build
             // that failed to load leaves the right side empty, and can be pasted again.
@@ -152,9 +210,7 @@ export function CompareWorkspace({
     } catch {
       // Malformed session storage — skip.
     } finally {
-      sessionStorage.removeItem("compare:leftPrefill");
-      sessionStorage.removeItem("compare:mode");
-      sessionStorage.removeItem("compare:rightBuildId");
+      for (const key of Object.values(HANDOFF_KEYS)) sessionStorage.removeItem(key);
       draft.markClean(); // fresh-clone from Builder shouldn't start "dirty"
     }
     // Run once on mount, against the mount-time snapshot above.
@@ -227,51 +283,64 @@ export function CompareWorkspace({
       .map((side) => (side === null ? null : shareBlockedReason(side)))
       .find((reason) => reason !== null) ?? null;
 
+  // After a save the route remounts on the stored pair. Profiles it does not publish are the
+  // viewer's own, kept for that mount so the view after the save is the view before it.
+  const saved = useCallback(
+    (id: string) => {
+      if (draft.state.embedProfiles) dropViewerProfiles();
+      else
+        keepViewerProfiles(id, {
+          leftProfile: draft.state.leftProfile,
+          rightProfile: draft.state.rightProfile,
+        });
+      draft.markClean();
+      setSavedPairId(id);
+      void navigate({ to: "/builder/compare/$pairId", params: { pairId: id } });
+    },
+    [draft, navigate],
+  );
+
   const handleSave = useCallback(() => {
     if (saveBlocked !== null) return;
+    // Saving commits both sides, as a share commits the Builder's build.
+    clearSeeds();
     const pair: BuildPair = {
       v: CURRENT_PAIR_VERSION,
       createdAt: new Date().toISOString(),
       left: draft.state.left,
       right: draft.state.right,
-      leftProfile: draft.state.leftProfile,
-      rightProfile: draft.state.rightProfile,
+      // A profile is published only when the user opts in, as a Builder share's is.
+      ...(draft.state.embedProfiles
+        ? { leftProfile: draft.state.leftProfile, rightProfile: draft.state.rightProfile }
+        : {}),
       name: draft.state.name,
       description: draft.state.description,
     };
     save.mutate(pair, {
-      onSuccess: (res) => {
-        draft.markClean();
-        setSavedPairId(res.id);
-        void navigate({
-          to: "/builder/compare/$pairId",
-          params: { pairId: res.id },
-        });
-      },
+      onSuccess: (res) => saved(res.id),
       // No onError branch: react-query records the rejection on `save.error`, which the
       // toolbar renders. Swallowing it here — or leaving it unread, as this did — is what
       // made a failed save produce no toast, no message and no state change at all.
     });
-  }, [draft, save, navigate, saveBlocked]);
+  }, [draft, save, saveBlocked, saved, clearSeeds]);
 
+  // A fork copies the stored pair as it is, so only a draft with nothing unsaved is forked.
+  // Any edit, the opt-in included, is saved as a new pair through the same path as Save.
   const handleSaveAsNew = useCallback(() => {
-    if (initialPairId) {
-      fork.mutate(initialPairId, {
-        onSuccess: (res) => {
-          draft.markClean();
-          setSavedPairId(res.id);
-          void navigate({
-            to: "/builder/compare/$pairId",
-            params: { pairId: res.id },
-          });
-        },
-      });
+    if (initialPairId !== undefined && !draft.state.dirty) {
+      clearSeeds();
+      fork.mutate(initialPairId, { onSuccess: (res) => saved(res.id) });
     } else {
       handleSave();
     }
-  }, [initialPairId, fork, draft, navigate, handleSave]);
+  }, [initialPairId, fork, draft.state.dirty, handleSave, saved, clearSeeds]);
 
   const canSwap = draft.state.left !== null || draft.state.right !== null;
+  const hasProfile =
+    draft.state.leftProfile !== undefined || draft.state.rightProfile !== undefined;
+
+  const nameOf = (id: string): string =>
+    weapons.data?.find((w) => w.id === id)?.name ?? byId.get(id)?.name ?? id;
   const canClone = canSwap;
 
   return (
@@ -287,9 +356,20 @@ export function CompareWorkspace({
           saveBlocked={saveBlocked}
           onSave={handleSave}
           onSaveAsNew={handleSaveAsNew}
-          onSwap={draft.swap}
-          onCloneLeftToRight={draft.cloneLeftToRight}
-          onCloneRightToLeft={draft.cloneRightToLeft}
+          embedProfiles={hasProfile ? draft.state.embedProfiles : undefined}
+          onEmbedProfilesChange={draft.setEmbedProfiles}
+          onSwap={() => {
+            draft.swap();
+            clearSeeds();
+          }}
+          onCloneLeftToRight={() => {
+            draft.cloneLeftToRight();
+            clearSeeds();
+          }}
+          onCloneRightToLeft={() => {
+            draft.cloneRightToLeft();
+            clearSeeds();
+          }}
         />
 
         {gameDataError !== null && (
@@ -303,7 +383,8 @@ export function CompareWorkspace({
         <CompareProgressionRow
           left={{ price: leftPrice, gated: draft.state.leftProfile !== undefined }}
           right={{ price: rightPrice, gated: draft.state.rightProfile !== undefined }}
-          prices={pricesStatus(livePrices)}
+          prices={prices}
+          nameOf={nameOf}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -313,7 +394,8 @@ export function CompareWorkspace({
             build={draft.state.left}
             profile={draft.state.leftProfile}
             diff={diff}
-            onBuildChange={(b: BuildV6 | null) => draft.setSide("left", b)}
+            onBuildChange={(b: BuildV6 | null) => editSide("left", b)}
+            onWeaponSeeded={leftSeed.seeded}
           />
           <CompareSide
             label="B"
@@ -321,7 +403,8 @@ export function CompareWorkspace({
             build={draft.state.right}
             profile={draft.state.rightProfile}
             diff={diff}
-            onBuildChange={(b: BuildV6 | null) => draft.setSide("right", b)}
+            onBuildChange={(b: BuildV6 | null) => editSide("right", b)}
+            onWeaponSeeded={rightSeed.seeded}
           />
         </div>
       </div>

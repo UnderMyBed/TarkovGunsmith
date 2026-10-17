@@ -31,6 +31,7 @@ import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import { adaptMod, adaptWeapon, mountedMagazine } from "../data-adapters/adapters.js";
 import { conflictReasonFor, fittedConflictReasonFor } from "./conflict-reason.js";
 import { priceBuild, pricesStatus, type PricesStatus } from "./build-price.js";
+import { usePendingSeed } from "./usePendingSeed.js";
 
 /**
  * A weapon the picker lists. `lockedBy` is set only on the current weapon when the profile
@@ -156,9 +157,17 @@ export function useBuilderState({
   const { weaponId, attachments, orphaned } = build;
   const gate = priceGate(mode, profile);
   const prices = pricesStatus(livePrices);
-  // The weapon a new build was seeded for before live prices arrived, in progression mode,
-  // where the seed reads them. Cleared by any edit: only an untouched seed is redone.
-  const [pendingSeed, setPendingSeed] = useState<string | null>(null);
+  // A progression seed made before live prices arrived is redone once they do, unless the
+  // build is edited or committed first.
+  const pendingSeed = usePendingSeed({
+    mode,
+    prices,
+    weaponId,
+    reseed: (id) => {
+      const seed = seedAttachments(presets.data?.[id] ?? [], mode, profile);
+      setBuild(applyBuildAction(build, { type: "changeWeapon", weaponId: id, seed }, null));
+    },
+  });
 
   const tree = useWeaponTree(weaponId);
   const byId = useMemo(() => partsById(catalog.data ?? []), [catalog.data]);
@@ -172,7 +181,7 @@ export function useBuilderState({
   // that throw out of a state updater, where React would raise it during render.
   const dispatch = (action: BuildAction) => {
     setBuild(applyBuildAction(build, action, ctx));
-    setPendingSeed(null);
+    pendingSeed.clear();
   };
 
   const weaponAvailabilityById = useMemo(() => {
@@ -287,20 +296,7 @@ export function useBuilderState({
   function handleWeaponChange(newWeaponId: string) {
     const seed = seedAttachments(presets.data?.[newWeaponId] ?? [], mode, profile);
     dispatch({ type: "changeWeapon", weaponId: newWeaponId, seed });
-    if (mode === "progression" && prices.state === "loading") setPendingSeed(newWeaponId);
-  }
-
-  // Adjusted during render rather than in an effect, so the redone seed is what first paints
-  // with the prices. A switch to theorycraft drops it: that seed reads no prices. A failed
-  // price fetch keeps the seed made without them, and the prices line says why.
-  if (pendingSeed !== null && (mode !== "progression" || prices.state !== "loading")) {
-    setPendingSeed(null);
-    if (mode === "progression" && prices.state === "ready" && weaponId === pendingSeed) {
-      const seed = seedAttachments(presets.data?.[pendingSeed] ?? [], mode, profile);
-      setBuild(
-        applyBuildAction(build, { type: "changeWeapon", weaponId: pendingSeed, seed }, null),
-      );
-    }
+    pendingSeed.seeded(newWeaponId);
   }
 
   // Replacing a part carries over what still fits on the new one; emptying drops its subtree.
@@ -312,7 +308,7 @@ export function useBuilderState({
   const clearOrphaned = () => dispatch({ type: "dismissOrphaned" });
   const acceptOptimized = (next: Readonly<Record<string, string>>) =>
     dispatch({ type: "acceptOptimized", attachments: next });
-  const commit = () => setPendingSeed(null);
+  const commit = pendingSeed.clear;
 
   return {
     isLoading: snapshot.isLoading || weapons.isLoading || catalog.isLoading || presets.isLoading,
