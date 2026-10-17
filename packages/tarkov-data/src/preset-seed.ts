@@ -14,10 +14,10 @@ export type BuilderMode = "theorycraft" | "progression";
 /**
  * Whether `gate` (a profile, or `null` in theorycraft) can buy this preset as a whole: its
  * trader offers and barters (the entries its weapon's offers carry tagged with this preset)
- * and its own flea listing, as `snapshotWeaponPresets` prices them. The flea listing is the
- * preset's, not the weapon's: an assembled preset is listed on the flea in its own right, at
- * its own price (329 of the 399 live weapon presets are), while the weapon's flea offer is the
- * bare receiver's.
+ * and its own flea listing, as `snapshotWeaponPresets` prices them. An assembled preset is
+ * listed on the flea under its own id (329 of the 399 live weapon presets are). The weapon's
+ * own flea price is not a bare receiver's: wherever both are listed it equals the default
+ * preset's (143 of 143 on 2026-10-17), so the default's listing prices the same thing.
  *
  * `types` is empty because the snapshot already left out the flea listing of a preset upstream
  * flags `noFlea`, which is the only thing `itemAvailability` reads `types` for.
