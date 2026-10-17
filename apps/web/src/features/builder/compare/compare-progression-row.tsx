@@ -31,8 +31,9 @@ function SidePill({ side, pricesReady }: { side: CompareSidePrice; pricesReady: 
       {pricesReady && price?.status === "unknown" && (
         <Pill tone="muted">{price.unpriced.length} UNPRICED</Pill>
       )}
-      {gated && price?.status === "unobtainable" && <Pill tone="muted">LOCKED</Pill>}
-      {gated && price !== null && price.status !== "unobtainable" && (
+      {/* Unlisted flea entries are only known once prices are in: before then a lock is a guess. */}
+      {pricesReady && gated && price?.status === "unobtainable" && <Pill tone="muted">LOCKED</Pill>}
+      {pricesReady && gated && price !== null && price.status !== "unobtainable" && (
         <Pill tone="reliable">REACHABLE</Pill>
       )}
     </span>
