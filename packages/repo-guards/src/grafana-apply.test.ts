@@ -177,8 +177,47 @@ describe("infra/grafana/apply.sh", () => {
     const state = newState({ contactPoints: existingContactPoint, faroApps: existingFaroApp });
     const result = await apply(state, "synthetic-monitoring checks list");
     expect(result.code).not.toBe(0);
+    // The stop happened at the failed list: it is named, and it is the last call made.
+    expect(result.stderr).toContain("fake gcx: failing synthetic-monitoring checks list");
+    expect(result.calls.at(-1)).toMatch(/^synthetic-monitoring checks list /);
     expect(creates(result.calls)).toEqual([]);
     expect(result.output).toBe("");
+  });
+
+  it("stops when a lookup's jq fails inside $(...), which only inherit_errexit catches", async () => {
+    // An array of non-objects passes the array check, then `.spec.job` fails inside
+    // one_or_none, which runs in a command substitution.
+    const state = newState({
+      contactPoints: existingContactPoint,
+      checks: ["x"],
+      faroApps: existingFaroApp,
+    });
+    const result = await apply(state);
+    expect(result.code).not.toBe(0);
+    expect(creates(result.calls)).toEqual([]);
+    expect(result.output).toBe("");
+  });
+
+  it("uses a collector endpoint that already ends in the app key as it is", async () => {
+    const state = newState({
+      contactPoints: existingContactPoint,
+      checks: [check(SITE_JOB, SITE_TARGET, 41), check(API_JOB, API_TARGET, 42)],
+      faroApps: [
+        {
+          metadata: { name: "tarkovgunsmith-web-7" },
+          spec: {
+            name: "tarkovgunsmith-web",
+            appKey: "abc123",
+            collectEndpointURL: "https://faro-collector-prod-us-west-0.grafana.net/collect/abc123/",
+          },
+        },
+      ],
+    });
+    const result = await apply(state);
+    expect(result.code).toBe(0);
+    expect(result.output).toBe(
+      "faro_url=https://faro-collector-prod-us-west-0.grafana.net/collect/abc123\n",
+    );
   });
 
   it("stops when a list returns something other than an array", async () => {
