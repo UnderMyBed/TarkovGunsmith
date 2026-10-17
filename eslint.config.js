@@ -9,7 +9,6 @@ export default tseslint.config(
   {
     ignores: [
       "**/dist/**",
-      "**/build/**",
       "**/.turbo/**",
       "**/.wrangler/**",
       "**/coverage/**",

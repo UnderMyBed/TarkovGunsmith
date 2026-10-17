@@ -19,7 +19,9 @@ interface CompareToolbarProps {
    */
   embedProfiles?: boolean;
   onEmbedProfilesChange: (embed: boolean) => void;
+  /** Saves the draft as a new pair: the action while the comparison has no pairId. */
   onSave: () => void;
+  /** Writes a new pair from a saved one: the action once the comparison has a pairId. */
   onSaveAsNew: () => void;
   onSwap: () => void;
   onCloneLeftToRight: () => void;
@@ -66,23 +68,17 @@ export function CompareToolbar({
   onCloneLeftToRight,
   onCloneRightToLeft,
 }: CompareToolbarProps): ReactElement {
-  const saveLabel = pairId ? "Save changes" : "Save comparison";
+  // Stored pairs are immutable — a share link keeps showing what it showed when it was made —
+  // so a saved pair is never updated in place. Its one save action writes a new pair: a fork
+  // of the stored one when nothing has changed, otherwise a save of the draft.
+  const saved = pairId !== undefined;
+  const blocked = saveBlocked !== null && (!saved || dirty);
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] pb-3">
-      <Button
-        onClick={onSave}
-        disabled={isSaving || saveBlocked !== null || (!dirty && pairId !== undefined)}
-      >
-        {isSaving ? "Saving…" : saveLabel}
+      <Button onClick={saved ? onSaveAsNew : onSave} disabled={isSaving || blocked}>
+        {isSaving ? "Saving…" : saved ? "Save as new link" : "Save comparison"}
       </Button>
-      {pairId && (
-        <Button variant="secondary" onClick={onSaveAsNew} disabled={isSaving}>
-          Save as new
-        </Button>
-      )}
-      {saveBlocked !== null && (
-        <span className="text-sm text-[var(--color-destructive)]">{saveBlocked}</span>
-      )}
+      {blocked && <span className="text-sm text-[var(--color-destructive)]">{saveBlocked}</span>}
       {saveError && (
         <span role="alert" className="text-sm text-[var(--color-destructive)]">
           {saveFailureCopy(saveError)}

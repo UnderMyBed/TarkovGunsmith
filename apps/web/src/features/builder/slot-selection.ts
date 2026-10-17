@@ -54,12 +54,25 @@ export function flattenVisibleSlots(
   return rows;
 }
 
+/** One path of a proposal's tree, as each build has it: the same path can be two slots. */
+interface ProposalSlot {
+  readonly path: string;
+  /** The slot under the current build's part above, when the current build reaches the path. */
+  readonly current?: SlotNode;
+  /** The slot under the proposal's part above, when the proposal reaches the path. */
+  readonly proposed?: SlotNode;
+}
+
 /**
  * The rows of a proposal: every slot either build reaches, depth first, in the order the tree
  * shows them. Under a slot the two builds fill differently, the slots of both parts appear, the
  * current part's first, each path once — so a slot the proposal adds under its new part and one
  * the current part takes away with it both have a row. With `proposed` equal to `current` these
  * are {@link flattenVisibleSlots}' rows.
+ *
+ * Each build is walked through its own slots: two parts can each have a slot at the same path
+ * that take different parts, so each build's part is looked up in the slot its own parent part
+ * has there. A row shows the current build's slot where both builds reach its path.
  */
 export function flattenProposalSlots(
   tree: WeaponTree,
@@ -67,24 +80,32 @@ export function flattenProposalSlots(
   proposed: Readonly<Record<string, string>>,
 ): VisibleSlot[] {
   const rows: VisibleSlot[] = [];
-  const walk = (
-    slots: readonly SlotNode[],
-    level: number,
-    parentPath: string | null,
+  /** The part `attachments` fits in `slot`, unless it is already above it on that build. */
+  const fittedIn = (
+    slot: SlotNode | undefined,
+    attachments: Readonly<Record<string, string>>,
     ancestors: ReadonlySet<string>,
   ) => {
-    slots.forEach((slot, i) => {
-      const fitted = [current[slot.path], proposed[slot.path]]
-        .map((id) => (id ? slot.allowedItems.find((item) => item.id === id) : undefined))
-        .filter((item): item is NonNullable<typeof item> => item !== undefined)
-        .filter((item, j, all) => all.findIndex((other) => other.id === item.id) === j)
-        .filter((item) => !ancestors.has(item.id));
-      const seen = new Set<string>();
-      const children = fitted
-        .flatMap((item) => expandSlots(tree.graph, item.id, slot.path))
-        .filter((child) => !seen.has(child.path) && seen.add(child.path));
+    const id = slot === undefined ? undefined : attachments[slot.path];
+    const item = id === undefined ? undefined : slot!.allowedItems.find((i) => i.id === id);
+    return item === undefined || ancestors.has(item.id) ? undefined : item;
+  };
+  const walk = (
+    slots: readonly ProposalSlot[],
+    level: number,
+    parentPath: string | null,
+    currentAbove: ReadonlySet<string>,
+    proposedAbove: ReadonlySet<string>,
+  ) => {
+    slots.forEach((entry, i) => {
+      const onCurrent = fittedIn(entry.current, current, currentAbove);
+      const onProposed = fittedIn(entry.proposed, proposed, proposedAbove);
+      const children = merge(
+        onCurrent ? expandSlots(tree.graph, onCurrent.id, entry.path) : [],
+        onProposed ? expandSlots(tree.graph, onProposed.id, entry.path) : [],
+      );
       rows.push({
-        slot,
+        slot: (entry.current ?? entry.proposed)!,
         level,
         parentPath,
         hasChildren: children.length > 0,
@@ -92,12 +113,33 @@ export function flattenProposalSlots(
         setSize: slots.length,
       });
       if (children.length > 0) {
-        walk(children, level + 1, slot.path, new Set([...ancestors, ...fitted.map((f) => f.id)]));
+        walk(
+          children,
+          level + 1,
+          entry.path,
+          onCurrent ? new Set([...currentAbove, onCurrent.id]) : currentAbove,
+          onProposed ? new Set([...proposedAbove, onProposed.id]) : proposedAbove,
+        );
       }
     });
   };
-  walk(tree.slots, 1, null, new Set());
+  walk(merge(tree.slots, tree.slots), 1, null, new Set(), new Set());
   return rows;
+}
+
+/** Each path once, the current build's slots first, with the slot each build has there. */
+function merge(
+  currentSlots: readonly SlotNode[],
+  proposedSlots: readonly SlotNode[],
+): ProposalSlot[] {
+  const byPath = new Map<string, { path: string; current?: SlotNode; proposed?: SlotNode }>();
+  for (const slot of currentSlots) byPath.set(slot.path, { path: slot.path, current: slot });
+  for (const slot of proposedSlots) {
+    const entry = byPath.get(slot.path);
+    if (entry) entry.proposed = slot;
+    else byPath.set(slot.path, { path: slot.path, proposed: slot });
+  }
+  return [...byPath.values()];
 }
 
 /**

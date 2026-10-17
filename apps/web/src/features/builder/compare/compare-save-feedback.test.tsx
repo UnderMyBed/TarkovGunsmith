@@ -89,9 +89,9 @@ describe("compare save — failures are visible", () => {
 
     await screen.findByRole("alert");
     expect(router.state.location.pathname).toBe("/builder/compare");
-    // Still the pairId-less toolbar: no "Save as new", and the label hasn't flipped.
+    // Still the pairId-less toolbar: the label hasn't flipped to "Save as new link".
     expect(screen.getByRole("button", { name: "Save comparison" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Save as new" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save as new link" })).not.toBeInTheDocument();
   });
 
   it("disables the save button while the POST is in flight", async () => {
@@ -106,7 +106,7 @@ describe("compare save — failures are visible", () => {
 });
 
 describe("compare save — issue #163", () => {
-  it("flips the toolbar to Save changes as soon as the pair has an id", async () => {
+  it("flips the toolbar to Save as new link as soon as the pair has an id", async () => {
     const fetchMock = stubPairsFetch(() =>
       Promise.resolve(jsonResponse({ id: NEW_ID, url: `/builder/compare/${NEW_ID}` }, 201)),
     );
@@ -116,11 +116,9 @@ describe("compare save — issue #163", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     await waitFor(() => expect(router.state.location.pathname).toBe(`/builder/compare/${NEW_ID}`));
 
-    expect(await screen.findByRole("button", { name: "Save changes" })).toBeInTheDocument();
+    // A stored pair is never updated in place (#182), so its one save says it makes a new link.
+    expect(await screen.findByRole("button", { name: "Save as new link" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save comparison" })).not.toBeInTheDocument();
-    // "Save as new" is the only way to branch off a stored pair, so it has to be reachable
-    // the moment one exists.
-    expect(screen.getByRole("button", { name: "Save as new" })).toBeInTheDocument();
   });
 });
 
@@ -305,12 +303,12 @@ describe("compare save — loaded pairs and the viewer's profiles", () => {
   const optIn = () => screen.findByLabelText("Embed the progression snapshots in the shared URL");
   const user = () => userEvent.setup();
 
-  it("starts a pair that publishes profiles with the box ticked, and Save changes keeps them", async () => {
+  it("starts a pair that publishes profiles with the box ticked, and a new link keeps them", async () => {
     const posts = stubStore(stored(true));
     await renderRoute(`/builder/compare/${STORED}`);
     expect(await optIn()).toBeChecked();
     await user().click(screen.getByRole("button", { name: "Swap L↔R" }));
-    await user().click(screen.getByRole("button", { name: "Save changes" }));
+    await user().click(screen.getByRole("button", { name: "Save as new link" }));
 
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]![1]).toMatchObject({ leftProfile: PROFILE, rightProfile: PROFILE });
@@ -320,7 +318,7 @@ describe("compare save — loaded pairs and the viewer's profiles", () => {
     const posts = stubStore(stored(true));
     await renderRoute(`/builder/compare/${STORED}`);
     await user().click(await optIn());
-    await user().click(screen.getByRole("button", { name: "Save as new" }));
+    await user().click(screen.getByRole("button", { name: "Save as new link" }));
 
     await waitFor(() => expect(posts).toHaveLength(1));
     const [url, body] = posts[0]!;
@@ -332,19 +330,19 @@ describe("compare save — loaded pairs and the viewer's profiles", () => {
   it("saves as new with an unsaved edit kept, and forks only a pair with none", async () => {
     const posts = stubStore(stored(false));
     const { router } = await renderRoute(`/builder/compare/${STORED}`);
-    await screen.findByRole("button", { name: "Save as new" });
+    await screen.findByRole("button", { name: "Save as new link" });
     await user().click(screen.getByRole("button", { name: "Swap L↔R" }));
-    await user().click(screen.getByRole("button", { name: "Save as new" }));
+    await user().click(screen.getByRole("button", { name: "Save as new link" }));
 
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]![0]).not.toMatch(/\/fork$/);
     expect(posts[0]![1]).toMatchObject({ left: RIGHT, right: LEFT });
 
-    // On the new pair, with nothing unsaved, "Save as new" is a fork.
+    // On the new pair, with nothing unsaved, "Save as new link" is a fork.
     await waitFor(() =>
       expect(router.state.location.pathname).not.toBe(`/builder/compare/${STORED}`),
     );
-    await user().click(await screen.findByRole("button", { name: "Save as new" }));
+    await user().click(await screen.findByRole("button", { name: "Save as new link" }));
     await waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[1]![0]).toMatch(/\/fork$/);
   });
@@ -366,7 +364,7 @@ describe("compare save — loaded pairs and the viewer's profiles", () => {
     await waitFor(() =>
       expect(router.state.location.pathname).toMatch(/^\/builder\/compare\/neww/),
     );
-    expect(await screen.findByRole("button", { name: "Save changes" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Save as new link" })).toBeInTheDocument();
     expect(await screen.findAllByText("Reachable")).toHaveLength(2);
     expect(await optIn()).not.toBeChecked();
     expect(sessionStorage.getItem("compare:viewerProfiles")).toBeNull();
