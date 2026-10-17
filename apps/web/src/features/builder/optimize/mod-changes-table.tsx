@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { Button, Card, Pill } from "@tarkov/ui";
 import type { ChangedRow, WeaponChange } from "./slot-diff.js";
 
@@ -25,10 +25,40 @@ export interface ModChangesTableProps {
   weaponChange?: WeaponChange | null;
 }
 
-function deltaClass(delta: number, lowerIsBetter: boolean): string {
-  if (Math.abs(delta) < 0.005) return "text-[var(--color-faint)]";
+function deltaDirection(delta: number, lowerIsBetter: boolean): "better" | "worse" | null {
+  if (Math.abs(delta) < 0.005) return null;
   const improved = lowerIsBetter ? delta < 0 : delta > 0;
-  return improved ? "text-[var(--color-better)]" : "text-[var(--color-worse)]";
+  return improved ? "better" : "worse";
+}
+
+const DIRECTION_CLASS = {
+  better: "text-[var(--color-better)]",
+  worse: "text-[var(--color-worse)]",
+} as const;
+
+/**
+ * A delta cell. The colour is not the only signal: the direction is spoken by screen readers
+ * and shown on hover as well.
+ */
+function DeltaCell({
+  delta,
+  lowerIsBetter,
+  children,
+}: {
+  delta: number;
+  lowerIsBetter: boolean;
+  children: ReactNode;
+}): ReactElement {
+  const direction = deltaDirection(delta, lowerIsBetter);
+  return (
+    <span
+      className={`text-right font-mono text-xs ${direction === null ? "text-[var(--color-faint)]" : DIRECTION_CLASS[direction]}`}
+      title={direction ?? undefined}
+    >
+      {children}
+      {direction !== null && <span className="sr-only"> {direction}</span>}
+    </span>
+  );
 }
 
 function fmtSigned(value: number, decimals = 0): string {
@@ -119,22 +149,18 @@ export function ModChangesTable({
               <span className="text-13 text-[var(--color-primary-text)]">
                 → {row.proposedName ?? "— (removed)"}
               </span>
-              <span className={`text-right font-mono text-xs ${deltaClass(row.ergoDelta, false)}`}>
+              <DeltaCell delta={row.ergoDelta} lowerIsBetter={false}>
                 {fmtSigned(row.ergoDelta)}
-              </span>
+              </DeltaCell>
               {/* `recoilDelta` is a fraction (slot-diff.ts keeps upstream's
                   unit), so it must be scaled here. Unscaled it hit fmtSigned's
                   0-decimal rounding and every changed row rendered "−0". */}
-              <span
-                className={`text-right font-mono text-xs ${deltaClass(row.recoilDelta * 100, true)}`}
-              >
+              <DeltaCell delta={row.recoilDelta * 100} lowerIsBetter>
                 {fmtSigned(row.recoilDelta * 100, 1)}
-              </span>
-              <span
-                className={`text-right font-mono text-xs ${deltaClass(row.priceDelta ?? 0, true)}`}
-              >
+              </DeltaCell>
+              <DeltaCell delta={row.priceDelta ?? 0} lowerIsBetter>
                 {fmtPrice(row.priceDelta)}
-              </span>
+              </DeltaCell>
             </div>
           ))}
         {isResult && weaponChange !== null && (
@@ -150,11 +176,9 @@ export function ModChangesTable({
             </span>
             <span />
             <span />
-            <span
-              className={`text-right font-mono text-xs ${deltaClass(weaponChange.priceDelta ?? 0, true)}`}
-            >
+            <DeltaCell delta={weaponChange.priceDelta ?? 0} lowerIsBetter>
               {fmtPrice(weaponChange.priceDelta)}
-            </span>
+            </DeltaCell>
           </div>
         )}
       </div>

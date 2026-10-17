@@ -39,6 +39,8 @@ export function StatRow({
       : deltaDirection === "down"
         ? "text-[var(--color-worse)]"
         : "text-[var(--color-muted-foreground)]";
+  const directionWord =
+    deltaDirection === "up" ? "better" : deltaDirection === "down" ? "worse" : undefined;
   const barColor =
     barTone === "better"
       ? "bg-[var(--color-better)]"
@@ -58,7 +60,13 @@ export function StatRow({
       <div className="font-mono text-xs text-right text-[var(--color-faint)] line-through decoration-[var(--color-border)]">
         {stock ?? ""}
       </div>
-      <div className={cn("font-mono text-12 text-right", deltaColor)}>{delta ?? ""}</div>
+      <div className={cn("font-mono text-12 text-right", deltaColor)} title={directionWord}>
+        {delta ?? ""}
+        {/* The colour is not the only signal: the direction is spoken and on hover too. */}
+        {delta !== undefined && directionWord !== undefined && (
+          <span className="sr-only"> {directionWord}</span>
+        )}
+      </div>
       <div className="font-mono text-lg text-right font-semibold text-[var(--color-foreground)] tabular-nums">
         {value}
       </div>

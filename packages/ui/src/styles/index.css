@@ -58,7 +58,8 @@
   --color-primary-foreground: #0d2422;
   --color-primary-text: #7fd3c8;
 
-  /* Deltas. Blue and orange differ in lightness too, so the meaning never rests on hue. */
+  /* Deltas. Blue and orange are a colour-blind-safe pair, but they are close in lightness
+   * (1.14:1), so every delta painted with them also says "better" or "worse" in text. */
   --color-better: #8ec5ff;
   --color-worse: #f2a272;
 

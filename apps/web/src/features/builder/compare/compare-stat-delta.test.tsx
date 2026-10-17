@@ -34,6 +34,23 @@ describe("CompareStatDelta ergonomics floor", () => {
     expect(delta).toHaveAttribute("data-direction", "worse");
   });
 
+  /* Better and worse are close in lightness, so the delta also says which way it went. */
+  it("names the delta's direction in words, not colour alone", () => {
+    render(
+      <CompareStatDelta left={{ ...base, ergonomics: 55 }} right={{ ...base, ergonomics: -23 }} />,
+    );
+    const delta = ergonomicsRow()[3]!;
+    expect(delta).toHaveTextContent(/^−55 worse$/);
+    expect(delta).toHaveAttribute("title", "worse");
+    cleanup();
+    render(
+      <CompareStatDelta left={{ ...base, ergonomics: 40 }} right={{ ...base, ergonomics: 50 }} />,
+    );
+    const better = ergonomicsRow()[3]!;
+    expect(better).toHaveTextContent(/^\+10 better$/);
+    expect(better).toHaveAttribute("title", "better");
+  });
+
   it("reads two builds below 0 as handling the same", () => {
     render(
       <CompareStatDelta

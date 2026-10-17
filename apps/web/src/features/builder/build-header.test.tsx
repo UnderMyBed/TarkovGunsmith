@@ -133,7 +133,7 @@ describe("BuildHeader accuracy", () => {
     expect(screen.queryByText("0.34")).not.toBeInTheDocument();
     expect(screen.queryByText("+2.41")).not.toBeInTheDocument();
     // No bar fill: StatRow renders one only when given a percent.
-    expect(row.querySelector("span")).toBeNull();
+    expect(row.querySelector("span[style]")).toBeNull();
   });
 });
 
@@ -145,10 +145,10 @@ describe("BuildHeader ergonomics floor", () => {
     renderHeader([heavy]);
     const row = screen.getByText("Ergonomics").parentElement!;
     expect(row).toHaveAttribute("title", "−23 before the game's floor at 0");
-    // Label, stock 48, delta −48 against the floored 0 (not −71), value 0.
-    expect(row).toHaveTextContent(/^Ergonomics48-480$/);
+    // Label, stock 48, delta −48 (named "worse") against the floored 0 (not −71), value 0.
+    expect(row).toHaveTextContent(/^Ergonomics48-48 worse0$/);
     expect(within(row).getByText("-48")).toBeInTheDocument();
-    expect(row.querySelector("span")).toHaveStyle({ width: "0%" });
+    expect(row.querySelector("span[style]")).toHaveStyle({ width: "0%" });
   });
 
   it("gives no title to a build at or above the floor", () => {

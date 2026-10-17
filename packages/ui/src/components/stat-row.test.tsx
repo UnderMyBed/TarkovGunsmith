@@ -86,6 +86,20 @@ describe("StatRow", () => {
     expect(classSignature(explicit.querySelector('[style*="width"]')!)).toBe(implicitSig);
   });
 
+  /* Better and worse are a colour-blind-safe pair but close in lightness, so the colour is
+   * never the only signal: a directed delta also says which way it went. */
+  it("names a directed delta better or worse, and leaves a neutral one unnamed", () => {
+    render(<StatRow label="Ergo" value={55} delta="+7" deltaDirection="up" />);
+    expect(screen.getByTitle("better")).toHaveTextContent(/^\+7 better$/);
+    cleanup();
+    render(<StatRow label="Weight" value={2.85} delta="+2.10" deltaDirection="down" />);
+    expect(screen.getByTitle("worse")).toHaveTextContent(/^\+2\.10 worse$/);
+    cleanup();
+    render(<StatRow label="Same" value={1} delta="0" />);
+    expect(screen.queryByTitle(/better|worse/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/better|worse/)).not.toBeInTheDocument();
+  });
+
   it("merges a caller className onto the row wrapper", () => {
     const { container } = render(<StatRow label="Styled" value={1} className="extra-class" />);
     expect(container.firstElementChild).toHaveClass("extra-class");

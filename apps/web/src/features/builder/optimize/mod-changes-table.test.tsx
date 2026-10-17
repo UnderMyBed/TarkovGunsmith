@@ -63,6 +63,29 @@ describe("ModChangesTable", () => {
     expect(screen.getByText(/12 slots unchanged/)).toBeInTheDocument();
   });
 
+  /* Better and worse are close in lightness, so each directed delta also says which way it
+   * went. The fixture row gains ergonomics and loses recoil (both better) but costs more. */
+  it("names each delta cell better or worse, not by colour alone", () => {
+    render(
+      <ModChangesTable
+        rows={[row()]}
+        selected={new Set(["muzzle"])}
+        onToggle={vi.fn()}
+        onAcceptAll={vi.fn()}
+        onAcceptSelected={vi.fn()}
+        onDiscard={vi.fn()}
+        scoreDelta={null}
+        mode="result"
+        unchangedCount={0}
+      />,
+    );
+    const better = screen.getAllByTitle("better");
+    expect(better.map((c) => c.textContent)).toEqual(["+1 better", "−4.0 better"]);
+    const worse = screen.getAllByTitle("worse");
+    expect(worse).toHaveLength(1);
+    expect(worse[0]).toHaveTextContent(/ worse$/);
+  });
+
   it("toggles a row via the per-row checkbox", () => {
     const onToggle = vi.fn();
     render(

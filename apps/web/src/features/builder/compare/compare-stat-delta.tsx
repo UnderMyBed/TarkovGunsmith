@@ -23,6 +23,11 @@ function formatDelta(d: number | null): string {
   return `${sign}${Number.isInteger(abs) ? abs.toLocaleString() : abs.toFixed(2)}`;
 }
 
+/** "better" / "worse" for a delta that has a direction, so it is not carried by colour alone. */
+function directionWord(direction: string): "better" | "worse" | undefined {
+  return direction === "better" || direction === "worse" ? direction : undefined;
+}
+
 /** The side as the game handles it: ergonomics floored at 0, so the delta compares that. */
 function asShown(stats: Stats): Stats {
   return stats.ergonomics === undefined
@@ -71,8 +76,13 @@ export function CompareStatDelta({ left, right }: CompareStatDeltaProps): ReactE
           <span
             data-direction={r.direction}
             className="text-right font-mono tabular-nums data-[direction=better]:text-[var(--color-better)] data-[direction=worse]:text-[var(--color-worse)]"
+            title={directionWord(r.direction)}
           >
             {formatDelta(r.delta)}
+            {/* The colour is not the only signal: the direction is spoken and on hover too. */}
+            {directionWord(r.direction) !== undefined && (
+              <span className="sr-only"> {directionWord(r.direction)}</span>
+            )}
           </span>
         </div>
       ))}

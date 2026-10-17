@@ -69,11 +69,12 @@ test.describe("recoil is expressed as a percentage", () => {
     // The RCL % column must show a real percentage. Pre-fix it rendered "−0" on every row,
     // because a fraction hit a zero-decimal formatter. The strongest proposed mod is a
     // -0.24 fraction, so the cell has to read exactly -24.0 percent — one assertion covering
-    // both the unit and the scale.
+    // both the unit and the scale. Less recoil is an improvement, so the cell also carries
+    // the screen-reader "better" that keeps the direction from resting on colour alone.
     const deltaCells = page.locator("span.text-right.font-mono.text-xs");
     await expect
       .poll(async () => await deltaCells.allTextContents(), { timeout: 10_000 })
-      .toContain(STRONGEST_OPTIMIZED_RECOIL_CELL);
+      .toContain(`${STRONGEST_OPTIMIZED_RECOIL_CELL} better`);
 
     await page.getByRole("button", { name: /Accept all/ }).click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
@@ -84,7 +85,7 @@ test.describe("recoil is expressed as a percentage", () => {
       .poll(
         async () => {
           const texts = await page.locator("div.font-mono").allTextContents();
-          return texts.filter((t) => /^[−+]\d+%$/.test(t.trim())).length;
+          return texts.filter((t) => /^[−+]\d+%( better| worse)?$/.test(t.trim())).length;
         },
         { timeout: 10_000 },
       )
