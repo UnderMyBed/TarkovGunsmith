@@ -142,8 +142,9 @@ export function fetchOgRowsForBuild(
    */
   mods: BallisticMod[];
   /**
-   * The availability pill under `args.gate` (`availabilityPill`), from the same weapon, parts
-   * and price; `null` when there is nothing to show.
+   * The availability pill under `args.gate` (`availabilityPill`): what the purchase `priceRub`
+   * prices needs, from the same weapon, parts, presets and price; `null` when there is nothing
+   * to show.
    */
   availability: string | null;
   /**
@@ -186,15 +187,13 @@ export function fetchOgRowsForBuild(
   // The weapon's presets, as the Builder passes them (`priceBuild`): a build bought as a preset
   // does not pay again for the parts it comes with.
   const presets = snapshotWeaponPresets(snapshot, table)[args.weaponId] ?? [];
-  const price = buildPriceUnder(args.gate, { weapon: found, parts, presets });
+  const input = { weapon: found, parts, presets };
+  const price = buildPriceUnder(args.gate, input);
   return {
     weapon,
     mods: parts.map(adaptMod),
-    availability: availabilityPill(
-      args.gate,
-      { weapon: found, parts: [...priced.values()] },
-      price,
-    ),
+    // What it takes to make the purchase `price` stands for: the same input, the same path.
+    availability: availabilityPill(args.gate, input, price),
     priceRub: price.status === "priced" ? price.totalRUB : null,
   };
 }

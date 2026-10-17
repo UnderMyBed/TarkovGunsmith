@@ -4,11 +4,18 @@ import {
   DEFAULT_PROFILE,
   itemAvailability,
   priceGate,
+  resolveBuild,
+  snapshotPart,
   snapshotPartCatalog,
+  snapshotPartsById,
   snapshotWeaponList,
+  snapshotWeaponPresets,
+  snapshotWeaponTree,
+  weaponPaths,
   type AvailabilityInput,
   type BuyForEntry,
   type PlayerProfile,
+  type PriceGate,
 } from "@tarkov/data";
 import { capturedBuilderData } from "../../src/test/captured-data.js";
 import {
@@ -68,12 +75,11 @@ function pill(
   weapon: AvailabilityInput,
   ...parts: AvailabilityInput[]
 ) {
-  const withIds = (x: AvailabilityInput, id: string) => ({ ...x, id });
-  const price = buildPriceUnder(gate, {
-    weapon: withIds(weapon, "weapon"),
-    parts: parts.map((p, i) => withIds(p, `part-${i}`)),
-  });
-  return availabilityPill(gate, { weapon, parts }, price);
+  const input = {
+    weapon: { ...weapon, id: "weapon" },
+    parts: parts.map((p, i) => ({ ...p, id: `part-${i}` })),
+  };
+  return availabilityPill(gate, input, buildPriceUnder(gate, input));
 }
 
 const LL4: PlayerProfile = {
@@ -93,6 +99,12 @@ describe("availabilityPill", () => {
   it("names the highest trader level any path needs, LL1 included", () => {
     expect(pill(null, item(cash("prapor", 1, 20_000)))).toBe("LL1");
     expect(pill(null, item(cash("prapor", 1, 20_000)), item(cash("skier", 3, 4_000)))).toBe("LL3");
+  });
+
+  it("says BARTER only when a barter is at the highest level", () => {
+    const gun = item(cash("mechanic", 3, 30_000));
+    expect(pill(null, gun, item(barter("prapor", 2, 6_000)))).toBe("LL3");
+    expect(pill(null, gun, item(barter("prapor", 3, 6_000)))).toBe("LL3 BARTER");
   });
 
   it("says BARTER, FLEA and QUEST when a path is one, in the Builder's words", () => {
@@ -125,19 +137,34 @@ describe("availabilityPill", () => {
     expect(pill(null, item(), item())).toBeNull();
   });
 
-  it("does not lock a part the preset bought supplies", () => {
-    const gun = item({
-      ...cash("mechanic", 2, 40_000),
-      preset: { id: "preset", normalizedName: "preset" },
-    });
-    const unsold = { ...item(), id: "part" };
-    const price = buildPriceUnder(LL4, {
-      weapon: { ...gun, id: "weapon" },
-      parts: [unsold],
-      presets: [{ id: "preset", attachments: { mod_stock: "part" } }],
-    });
-    expect(price.status).toBe("priced");
-    expect(availabilityPill(LL4, { weapon: gun, parts: [unsold] }, price)).toBe("LL2");
+  it("names the path the price chose: a preset's parts are not steps", () => {
+    const presetOffer = { id: "preset", normalizedName: "preset" };
+    const gun = { ...item({ ...cash("mechanic", 2, 40_000), preset: presetOffer }), id: "weapon" };
+    // Nobody sells the stock on its own, and the scope needs LL4; the preset comes with both.
+    const unsold = { ...item(), id: "stock" };
+    const scope = { ...item(cash("jaeger", 4, 90_000)), id: "scope" };
+    const input = {
+      weapon: gun,
+      parts: [unsold, scope],
+      presets: [{ id: "preset", attachments: { mod_stock: "stock", mod_scope: "scope" } }],
+    };
+    const price = buildPriceUnder(LL4, input);
+    expect(price).toMatchObject({ status: "priced", totalRUB: 40_000, presetId: "preset" });
+    expect(availabilityPill(LL4, input, price)).toBe("LL2");
+  });
+
+  it("names a preset's own flea listing", () => {
+    // No offer on the receiver; the preset item is listed on the flea in its own right.
+    const fleaOnly = {
+      weapon: { ...item(), id: "weapon" },
+      parts: [],
+      presets: [{ id: "preset", attachments: {}, buyFor: [flea(50_000)] }],
+    };
+    for (const gate of [null, { ...DEFAULT_PROFILE, flea: true, level: 20 }]) {
+      const price = buildPriceUnder(gate, fleaOnly);
+      expect(price).toMatchObject({ status: "priced", totalRUB: 50_000 });
+      expect(availabilityPill(gate, fleaOnly, price)).toBe("FLEA");
+    }
   });
 });
 
@@ -243,12 +270,124 @@ describe("the card's pill against the Builder's, over the captured records", () 
     for (const profile of PROFILES) {
       const gate = profile ?? null;
       for (const one of items) {
-        const price = buildPriceUnder(gate, { weapon: one, parts: [] });
-        expect([one.id, availabilityPill(gate, { weapon: one, parts: [] }, price)]).toEqual([
+        const input = { weapon: one, parts: [] };
+        expect([one.id, availabilityPill(gate, input, buildPriceUnder(gate, input))]).toEqual([
           one.id,
           builderPill(one, profile),
         ]);
       }
     }
+  });
+
+  const SOPMOD = "5a8ae73886f7747b2e6e1416";
+  const traders = (n: number) => ({
+    prapor: n,
+    therapist: n,
+    skier: n,
+    peacekeeper: n,
+    mechanic: n,
+    ragman: n,
+    jaeger: n,
+  });
+
+  it("reads one purchase the same under every profile that makes it", async () => {
+    const data = await capturedBuilderData();
+    const table = data.prices.prices;
+    const attachments = snapshotWeaponPresets(data.snapshot, table)[M4A1]!.find(
+      (p) => p.id === SOPMOD,
+    )!.attachments;
+    const profiles: PlayerProfile[] = [
+      { ...DEFAULT_PROFILE, traders: traders(2) },
+      { ...DEFAULT_PROFILE, traders: traders(3) },
+      LL4,
+      ADVANCED_LL4,
+      { ...LL4, flea: true, level: 30 },
+    ];
+    const cards = profiles.map((gate) =>
+      fetchOgRowsForBuild({ weaponId: M4A1, attachments, gate }, data),
+    );
+    // Each buys the SOPMOD II preset by its Peacekeeper LL2 barter, for the same ₽142,000...
+    expect(cards.map((c) => c.priceRub)).toEqual(Array(5).fill(142_000));
+    // ...so each reads the same, though the preset comes with parts that, bought on their own,
+    // need LL4 and the flea.
+    expect(cards.map((c) => c.availability)).toEqual(Array(5).fill("LL2 BARTER"));
+    const parts = new Map(snapshotPartCatalog(data.snapshot, table).map((p) => [p.id, p]));
+    const ownPills = new Set(
+      Object.values(attachments).map((id) => builderPill(parts.get(id)!, LL4)),
+    );
+    expect(ownPills.has("LL4")).toBe(true);
+  });
+
+  it("matches the price's own path, label by label, for every captured weapon and preset", async () => {
+    const data = await capturedBuilderData();
+    const table = data.prices.prices;
+    const partsById = snapshotPartsById(data.snapshot);
+    const presetsBy = snapshotWeaponPresets(data.snapshot, table);
+    const gates: PriceGate[] = [
+      null,
+      DEFAULT_PROFILE,
+      { ...DEFAULT_PROFILE, traders: traders(2) },
+      LL4,
+      ADVANCED_LL4,
+      { ...LL4, flea: true, level: 10 },
+      { ...LL4, flea: true, level: 30 },
+      { ...DEFAULT_PROFILE, flea: true, level: 40 },
+    ];
+
+    /**
+     * The expected pill, from the Builder's per-item labels: the weapon's label on the path
+     * the price chose, then each part's label for every part that path does not come with,
+     * summed up by reading the labels' own text.
+     */
+    function expectedPill(gate: PriceGate, weaponId: string, attachments: Record<string, string>) {
+      const weapon = snapshotWeaponList(data.snapshot, table).find((w) => w.id === weaponId)!;
+      const presets = presetsBy[weaponId] ?? [];
+      const placed = resolveBuild(
+        snapshotWeaponTree(data.snapshot, weaponId),
+        attachments,
+        partsById,
+      ).placed.map(({ itemId }) => snapshotPart(data.snapshot, table, itemId)!);
+      const price = buildPriceUnder(gate, { weapon, parts: placed, presets });
+      if (price.status === "unobtainable") return gate === null ? "skip" : "LOCKED";
+      const path = weaponPaths(gate, weapon, presets).find((p) => p.presetId === price.presetId)!;
+      const left: Record<string, number> = {};
+      const preset = presets.find((p) => p.id === price.presetId);
+      for (const id of Object.values(preset?.attachments ?? {})) left[id] = (left[id] ?? 0) + 1;
+      const labels = [availabilityLabel(path.availability)];
+      for (const part of placed) {
+        if ((left[part.id] ?? 0) > 0) left[part.id]!--;
+        else labels.push(availabilityLabel(itemAvailability(part, gate)));
+      }
+      const levels = labels.map((l) => /^LL(\d+)/.exec(l)?.[1]).filter((n) => n !== undefined);
+      const max = levels.length === 0 ? null : Math.max(...levels.map(Number));
+      const out: string[] = [];
+      if (max !== null) {
+        const barter = labels.some((l) => l.startsWith(`LL${max} BARTER`));
+        out.push(barter ? `LL${max} BARTER` : `LL${max}`);
+      }
+      if (labels.includes("FLEA")) out.push("FLEA");
+      if (labels.some((l) => l.endsWith(" · QUEST"))) out.push("QUEST");
+      return out.length === 0 ? null : out.join(" · ");
+    }
+
+    let compared = 0;
+    for (const weapon of snapshotWeaponList(data.snapshot, table)) {
+      const builds = [{}, ...(presetsBy[weapon.id] ?? []).map((p) => ({ ...p.attachments }))];
+      for (const attachments of builds) {
+        for (const gate of gates) {
+          const expected = expectedPill(gate, weapon.id, attachments);
+          if (expected === "skip") continue;
+          const card = fetchOgRowsForBuild({ weaponId: weapon.id, attachments, gate }, data);
+          expect([weapon.shortName, attachments, gate, card.availability]).toEqual([
+            weapon.shortName,
+            attachments,
+            gate,
+            expected,
+          ]);
+          compared++;
+        }
+      }
+    }
+    expect(compared).toBeGreaterThanOrEqual(40);
   });
 });

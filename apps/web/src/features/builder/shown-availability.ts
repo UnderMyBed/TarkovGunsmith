@@ -1,5 +1,3 @@
-// No React and no DOM, here or in anything imported: the share card's Pages Function imports
-// this module (`functions/lib/og-availability.ts`) so the card says what the Builder says.
 import type { BuilderMode, ItemAvailability } from "@tarkov/data";
 
 /**

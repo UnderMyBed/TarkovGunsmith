@@ -125,11 +125,17 @@ function Side({
           fontSize: 22,
           color: COLORS.paperDim,
           letterSpacing: "0.05em",
+          flexWrap: "wrap",
+          columnGap: 12,
         }}
       >
-        {side.availability === null
-          ? `${side.modCount} MODS`
-          : `${side.modCount} MODS · ${side.availability}`}
+        {/* One unbreakable run per segment, each separator riding on the segment after it, so a
+            long pill wraps between segments and never leaves a separator dangling. */}
+        {[`${side.modCount} MODS`, ...(side.availability?.split(" · ") ?? [])].map((seg, i) => (
+          <span key={i} style={{ whiteSpace: "nowrap" }}>
+            {i === 0 ? seg : `· ${seg}`}
+          </span>
+        ))}
       </div>
       <div
         style={{
