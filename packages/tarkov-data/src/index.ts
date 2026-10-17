@@ -51,7 +51,7 @@ export {
   withAttachment,
 } from "./attached-parts.js";
 export { conflictsWith } from "./conflicts.js";
-export type { Conflict, ConflictContext } from "./conflicts.js";
+export type { Conflict, ConflictContext, ConflictFields } from "./conflicts.js";
 export type { AttachedParts, AttachedPartEntry, KnownItems } from "./attached-parts.js";
 
 // Build schema
@@ -147,8 +147,22 @@ export { useTasks } from "./hooks/useTasks.js";
 export { useProfile } from "./hooks/useProfile.js";
 
 // Presets
-export { WEAPON_PRESETS, presetsForWeapon } from "./presets.js";
-export type { WeaponPreset } from "./presets.js";
+export { presetRecordSchema, selectWeaponPreset, selectWeaponPresets } from "./queries/presets.js";
+export type {
+  PresetFailure,
+  PresetRecord,
+  WeaponPreset,
+  WeaponPresets,
+} from "./queries/presets.js";
+export { DEFAULT_MAX_NODES, placePreset } from "./preset-placement.js";
+export type {
+  PlacePresetInput,
+  PresetPart,
+  PresetPlacement,
+  PresetPlacementFailure,
+} from "./preset-placement.js";
+export { presetAvailability, seedPreset } from "./preset-seed.js";
+export type { BuilderMode, PresetSeed } from "./preset-seed.js";
 
 // Slot diff (Build comparison)
 export { slotDiff } from "./slot-diff.js";

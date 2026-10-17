@@ -11970,6 +11970,3094 @@
           "conflictingCategories": [],
           "buyFromTrader": [],
           "sellToTrader": []
+        },
+        "5ae30db85acfc408fb139a05": {
+          "id": "5ae30db85acfc408fb139a05",
+          "name": "5ae30db85acfc408fb139a05 Name",
+          "shortName": "5ae30db85acfc408fb139a05 ShortName",
+          "normalizedName": "ar-15-colt-m4-carbine-length-handguard",
+          "description": "5ae30db85acfc408fb139a05 Description",
+          "updated": "2026-10-16T21:18:04.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.193,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Colt_M4_Carbine_Length_handguard",
+          "link": "https://tarkov.dev/item/ar-15-colt-m4-carbine-length-handguard",
+          "iconLink": "https://assets.tarkov.dev/5ae30db85acfc408fb139a05-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5ae30db85acfc408fb139a05-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5ae30db85acfc408fb139a05-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5ae30db85acfc408fb139a05-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5ae30db85acfc408fb139a05-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5ae30db85acfc408fb139a05-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 1424,
+          "categories": [
+            "55818a104bdc2db9688b4569",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f75e486f77447ec5d7712",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 7231,
+          "avg24hPrice": 7231,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-12T03:08:03.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 4,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [
+              {
+                "id": "638f211c4822287cad04bea5",
+                "nameId": "mod_handguard",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["637f57a68d137b27f70c4968"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_HANDGUARD"
+              }
+            ],
+            "heatFactor": 1.032,
+            "coolingFactor": 0.991,
+            "increaseSizeForced": false,
+            "increaseSize": {
+              "left": 1
+            }
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 4,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 1780,
+              "priceRUB": 1780,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 50000,
+              "buyLimit": 3
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 16,
+              "priceRUB": 2663,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 45000,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 569,
+              "priceRUB": 569,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 341,
+              "priceRUB": 341,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 555,
+              "priceRUB": 555,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 4,
+              "priceRUB": 512,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 640,
+              "priceRUB": 640,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 569,
+              "priceRUB": 569,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "637f57a68d137b27f70c4968": {
+          "id": "637f57a68d137b27f70c4968",
+          "name": "637f57a68d137b27f70c4968 Name",
+          "shortName": "637f57a68d137b27f70c4968 ShortName",
+          "normalizedName": "ar-15-colt-m4-carbine-length-lower-handguard",
+          "description": "637f57a68d137b27f70c4968 Description",
+          "updated": "2026-10-16T21:18:04.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.129,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Colt_M4_Carbine_Length_lower_handguard",
+          "link": "https://tarkov.dev/item/ar-15-colt-m4-carbine-length-lower-handguard",
+          "iconLink": "https://assets.tarkov.dev/637f57a68d137b27f70c4968-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/637f57a68d137b27f70c4968-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/637f57a68d137b27f70c4968-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/637f57a68d137b27f70c4968-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/637f57a68d137b27f70c4968-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/637f57a68d137b27f70c4968-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 949,
+          "categories": [
+            "55818a104bdc2db9688b4569",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f75e486f77447ec5d7712",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 2000,
+          "avg24hPrice": 2000,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-09-25T12:18:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 7,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [],
+            "heatFactor": 1.029,
+            "coolingFactor": 0.986
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 7,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 11,
+              "priceRUB": 1776,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 45000,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 379,
+              "priceRUB": 379,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 227,
+              "priceRUB": 227,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 370,
+              "priceRUB": 370,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 3,
+              "priceRUB": 341,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 427,
+              "priceRUB": 427,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 379,
+              "priceRUB": 379,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5ae30bad5acfc400185c2dc4": {
+          "id": "5ae30bad5acfc400185c2dc4",
+          "name": "5ae30bad5acfc400185c2dc4 Name",
+          "shortName": "5ae30bad5acfc400185c2dc4 ShortName",
+          "normalizedName": "ar-15-rear-sight-carry-handle",
+          "description": "5ae30bad5acfc400185c2dc4 Description",
+          "updated": "2026-10-16T20:38:04.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.15,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_rear_sight_carry_handle",
+          "link": "https://tarkov.dev/item/ar-15-rear-sight-carry-handle",
+          "iconLink": "https://assets.tarkov.dev/5ae30bad5acfc400185c2dc4-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5ae30bad5acfc400185c2dc4-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5ae30bad5acfc400185c2dc4-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5ae30bad5acfc400185c2dc4-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5ae30bad5acfc400185c2dc4-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5ae30bad5acfc400185c2dc4-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 823,
+          "categories": [
+            "55818ac54bdc2d5b648b456e",
+            "5448fe7a4bdc2d6f028b456b",
+            "550aa4154bdc2dd8348b456b",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f746686f77447ec5d7708",
+            "5b5f73ec86f774093e6cb4fd",
+            "5b5f71b386f774093f2ecf11",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 1000,
+          "avg24hPrice": 1000,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-03T23:28:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesScope",
+            "ergonomics": -1,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [
+              {
+                "id": "5ae9c31e5acfc4039d663545",
+                "nameId": "mod_scope",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "5c1cdd512e22161b267d91ae",
+                    "5c05293e0db83400232fff80",
+                    "5c052a900db834001a66acbd",
+                    "59db7e1086f77448be30ddf3",
+                    "6a19487a4afae114f106ba39"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_SCOPE"
+              }
+            ],
+            "zoomLevels": [[1]],
+            "sightingRange": 600,
+            "sightModes": [1],
+            "zeroingDistances": [[100]]
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": -1,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [
+            "57ac965c24597706be5f975c",
+            "57aca93d2459771f2c7e26db",
+            "544a3a774bdc2d3a388b4567",
+            "5d2dc3e548f035404a1a4798",
+            "57adff4f24597737f373b6e6",
+            "5c0517910db83400232ffee5",
+            "591c4efa86f7741030027726",
+            "570fd79bd2720bc7458b4583",
+            "570fd6c2d2720bc6458b457f",
+            "558022b54bdc2dac148b458d",
+            "5c07dd120db834001c39092d",
+            "5c0a2cec0db834001b7ce47d",
+            "58491f3324597764bc48fa02",
+            "584924ec24597768f12ae244",
+            "5b30b0dc5acfc400153b7124",
+            "6165ac8c290d254f5e6b2f6c",
+            "60a23797a37c940de7062d02",
+            "5d2da1e948f035477b1ce2ba",
+            "5c0505e00db834001b735073",
+            "609a63b6e2ff132951242d09",
+            "584984812459776a704a82a6",
+            "59f9d81586f7744c7506ee62",
+            "570fd721d2720bc5458b4596",
+            "5dff772da3651922b360bf91",
+            "56ea70acd2720b844b8b4594",
+            "5aa66be6e5b5b0214e506e97",
+            "5dfe6104585a0c3e995c7b82",
+            "5d1b5e94d7ad1a2b865a96b0",
+            "5c7d55f52e221644f31bff6a",
+            "616584766ef05c2ce828ef57",
+            "5b3b6dc75acfc47a8773fb1e",
+            "5b2389515acfc4771e1be0c0",
+            "618b9643526131765025ab35",
+            "618bab21526131765025ab3f",
+            "5c86592b2e2216000e69e77c",
+            "5a37ca54c4a282000d72296a",
+            "5d0a29fed7ad1a002769ad08",
+            "5c064c400db834001d23f468",
+            "57c69dd424597774c03b7bbc",
+            "5b3b99265acfc4704b4a1afb",
+            "5aa66a9be5b5b0214e506e89",
+            "5aa66c72e5b5b00016327c93",
+            "5c1cdd302e221602b3137250",
+            "6171407e50224f204c1da3c5",
+            "61713cc4d8e3106d9806c109",
+            "5b31163c5acfc400153b71cb",
+            "5a33b652c4a28232996e407c",
+            "59db7eed86f77461f8380365",
+            "5a1ead28fcdbcb001912fa9f",
+            "5dff77c759400025ea5150cf",
+            "626bb8532c923541184624b4",
+            "61714b2467085e45ef140b2c",
+            "62811f461d5df4475f46a332",
+            "64785e7c19d732620e045e15",
+            "6477772ea8a38bb2050ed4db",
+            "6478641c19d732620e045e17",
+            "655f13e0a246670fb0373245",
+            "6a18508bae175e037a0be420",
+            "6a3ceaf01ac10a22850e295a",
+            "69f9ec80aae020b0db02f670"
+          ],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 9,
+              "priceRUB": 1540,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 4
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 329,
+              "priceRUB": 329,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 197,
+              "priceRUB": 197,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 320,
+              "priceRUB": 320,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 2,
+              "priceRUB": 296,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 370,
+              "priceRUB": 370,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 329,
+              "priceRUB": 329,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "55d4ae6c4bdc2d8b2f8b456e": {
+          "id": "55d4ae6c4bdc2d8b2f8b456e",
+          "name": "55d4ae6c4bdc2d8b2f8b456e Name",
+          "shortName": "55d4ae6c4bdc2d8b2f8b456e ShortName",
+          "normalizedName": "ar-15-high-standard-m4ss-stock",
+          "description": "55d4ae6c4bdc2d8b2f8b456e Description",
+          "updated": "2026-10-16T21:08:05.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.24,
+          "lastOfferCount": 6,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_High_Standard_M4SS_Stock",
+          "link": "https://tarkov.dev/item/ar-15-high-standard-m4ss-stock",
+          "iconLink": "https://assets.tarkov.dev/55d4ae6c4bdc2d8b2f8b456e-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/55d4ae6c4bdc2d8b2f8b456e-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/55d4ae6c4bdc2d8b2f8b456e-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/55d4ae6c4bdc2d8b2f8b456e-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/55d4ae6c4bdc2d8b2f8b456e-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/55d4ae6c4bdc2d8b2f8b456e-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 3119,
+          "categories": [
+            "55818a594bdc2db9688b456a",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f757486f774093e6cb507",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 8000,
+          "avg24hPrice": 18202,
+          "low24hPrice": 8000,
+          "high24hPrice": 34444,
+          "changeLast48h": -13551,
+          "changeLast48hPercent": -42.68,
+          "lastScan": "2026-10-16T20:58:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 6,
+            "recoilModifier": -0.205,
+            "accuracyModifier": 0,
+            "slots": []
+          },
+          "minLevelForFlea": 20,
+          "accuracyModifier": 0,
+          "recoilModifier": -20.5,
+          "ergonomicsModifier": 6,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 35,
+              "priceRUB": 5836,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 3
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 1247,
+              "priceRUB": 1247,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 748,
+              "priceRUB": 748,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 1216,
+              "priceRUB": 1216,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 9,
+              "priceRUB": 1122,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 1403,
+              "priceRUB": 1403,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 1497,
+              "priceRUB": 1497,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 1247,
+              "priceRUB": 1247,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5a339805c4a2826c6e06d73d": {
+          "id": "5a339805c4a2826c6e06d73d",
+          "name": "5a339805c4a2826c6e06d73d Name",
+          "shortName": "5a339805c4a2826c6e06d73d ShortName",
+          "normalizedName": "ar-15-magpul-miad-pistol-grip-fde",
+          "description": "5a339805c4a2826c6e06d73d Description",
+          "updated": "2026-10-16T21:38:07.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.05,
+          "lastOfferCount": 4,
+          "types": ["mods", "pistolGrip"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_MIAD_pistol_grip_(FDE)",
+          "link": "https://tarkov.dev/item/ar-15-magpul-miad-pistol-grip-fde",
+          "iconLink": "https://assets.tarkov.dev/5a339805c4a2826c6e06d73d-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5a339805c4a2826c6e06d73d-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5a339805c4a2826c6e06d73d-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5a339805c4a2826c6e06d73d-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5a339805c4a2826c6e06d73d-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5a339805c4a2826c6e06d73d-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 5900,
+          "categories": [
+            "55818a684bdc2ddd698b456d",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f761f86f774094242f1a1",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 20000,
+          "avg24hPrice": 26666,
+          "low24hPrice": 12500,
+          "high24hPrice": 29999,
+          "changeLast48h": 10615,
+          "changeLast48hPercent": 66.14,
+          "lastScan": "2026-10-16T13:18:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 6,
+            "recoilModifier": -0.012,
+            "accuracyModifier": 0,
+            "slots": [],
+            "increaseSizeForced": false,
+            "increaseSize": {
+              "down": 1
+            }
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": -1.2,
+          "ergonomicsModifier": 6,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 65,
+              "priceRUB": 11037,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 3
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 2360,
+              "priceRUB": 2360,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 1416,
+              "priceRUB": 1416,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 2301,
+              "priceRUB": 2301,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 17,
+              "priceRUB": 2124,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 2655,
+              "priceRUB": 2655,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 2360,
+              "priceRUB": 2360,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "55802d5f4bdc2dac148b458e": {
+          "id": "55802d5f4bdc2dac148b458e",
+          "name": "55802d5f4bdc2dac148b458e Name",
+          "shortName": "55802d5f4bdc2dac148b458e ShortName",
+          "normalizedName": "ar-15-556x45-magpul-pmag-30-gen-m3-w-stanag-30-round-magazine",
+          "description": "55802d5f4bdc2dac148b458e Description",
+          "updated": "2026-10-16T20:48:05.000Z",
+          "width": 1,
+          "height": 2,
+          "weight": 0.138,
+          "lastOfferCount": 2,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_5.56x45_Magpul_PMAG_30_GEN_M3_W_STANAG_30-round_magazine",
+          "link": "https://tarkov.dev/item/ar-15-556x45-magpul-pmag-30-gen-m3-w-stanag-30-round-magazine",
+          "iconLink": "https://assets.tarkov.dev/55802d5f4bdc2dac148b458e-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/55802d5f4bdc2dac148b458e-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/55802d5f4bdc2dac148b458e-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/55802d5f4bdc2dac148b458e-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/55802d5f4bdc2dac148b458e-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/55802d5f4bdc2dac148b458e-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 3797,
+          "categories": [
+            "5448bc234bdc2d3c308b4569",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f754a86f774094242f19b",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 13000,
+          "avg24hPrice": 19976,
+          "low24hPrice": 9888,
+          "high24hPrice": 99000,
+          "changeLast48h": 5577,
+          "changeLast48hPercent": 38.74,
+          "lastScan": "2026-10-16T20:38:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesMagazine",
+            "ergonomics": -0.5,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [],
+            "capacity": 30,
+            "loadModifier": 0,
+            "ammoCheckModifier": -0.1,
+            "malfunctionChance": 0.08,
+            "allowedAmmo": [
+              "59e6920f86f77411d82aa167",
+              "59e6927d86f77411da468256",
+              "54527a984bdc2d4e668b4567",
+              "54527ac44bdc2d36668b4567",
+              "59e68f6f86f7746c9f75e846",
+              "59e6906286f7746c9f75e847",
+              "59e690b686f7746c9f75e848",
+              "59e6918f86f7746c9f75e849",
+              "60194943740c5d77f6705eea",
+              "601949593ae8f707c4608daa",
+              "5c0d5ae286f7741e46554302",
+              "5fbe3ffdf8b6a877a729ea82",
+              "5fd20ff893a8961fc660a954",
+              "619636be6db0f2477964e710",
+              "6196364158ef8c428c287d9f",
+              "6196365d58ef8c428c287da1",
+              "64b8725c4b75259c590fa899"
+            ],
+            "increaseSizeForced": false,
+            "increaseSize": {
+              "down": 1
+            }
+          },
+          "minLevelForFlea": 25,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": -0.5,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 57,
+              "priceRUB": 9587,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 45000,
+              "buyLimit": 20
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 1518,
+              "priceRUB": 1518,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 911,
+              "priceRUB": 911,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 1480,
+              "priceRUB": 1480,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 11,
+              "priceRUB": 1366,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 1708,
+              "priceRUB": 1708,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 1518,
+              "priceRUB": 1518,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "56ea8180d2720bf2698b456a": {
+          "id": "56ea8180d2720bf2698b456a",
+          "name": "56ea8180d2720bf2698b456a Name",
+          "shortName": "56ea8180d2720bf2698b456a ShortName",
+          "normalizedName": "ar-15-kac-qdc-556x45-flash-suppressor-kit",
+          "description": "56ea8180d2720bf2698b456a Description",
+          "updated": "2026-10-16T20:38:04.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.063,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_KAC_QDC_5.56x45_Flash_Suppressor_Kit",
+          "link": "https://tarkov.dev/item/ar-15-kac-qdc-556x45-flash-suppressor-kit",
+          "iconLink": "https://assets.tarkov.dev/56ea8180d2720bf2698b456a-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/56ea8180d2720bf2698b456a-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/56ea8180d2720bf2698b456a-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/56ea8180d2720bf2698b456a-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/56ea8180d2720bf2698b456a-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/56ea8180d2720bf2698b456a-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 5500,
+          "categories": [
+            "550aa4bf4bdc2dd6348b456b",
+            "5448fe394bdc2d0d028b456c",
+            "550aa4154bdc2dd8348b456b",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f724c86f774093f2ecf15",
+            "5b5f724186f77447ed5636ad",
+            "5b5f71b386f774093f2ecf11",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 39500,
+          "avg24hPrice": 35895,
+          "low24hPrice": 20000,
+          "high24hPrice": 39500,
+          "changeLast48h": -3226,
+          "changeLast48hPercent": -8.25,
+          "lastScan": "2026-10-16T20:18:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": -0.5,
+            "recoilModifier": -0.05,
+            "accuracyModifier": 0.03,
+            "slots": [
+              {
+                "id": "57da91d72459771cb524d22c",
+                "nameId": "mod_muzzle",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["57da93632459771cb65bf83f", "57dbb57e2459774673234890"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_MUZZLE"
+              }
+            ],
+            "durabilityBurnFactor": 0.98,
+            "heatFactor": 0.99
+          },
+          "minLevelForFlea": 20,
+          "accuracyModifier": 3,
+          "recoilModifier": -5,
+          "ergonomicsModifier": -0.5,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 61,
+              "priceRUB": 10289,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 2200,
+              "priceRUB": 2200,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 1320,
+              "priceRUB": 1320,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 2145,
+              "priceRUB": 2145,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 16,
+              "priceRUB": 1980,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 2475,
+              "priceRUB": 2475,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 2200,
+              "priceRUB": 2200,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "57da93632459771cb65bf83f": {
+          "id": "57da93632459771cb65bf83f",
+          "name": "57da93632459771cb65bf83f Name",
+          "shortName": "57da93632459771cb65bf83f ShortName",
+          "normalizedName": "kac-qdss-nt4-556x45-sound-suppressor-black",
+          "description": "57da93632459771cb65bf83f Description",
+          "updated": "2026-10-16T20:38:05.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.68,
+          "lastOfferCount": 10,
+          "types": ["mods", "suppressor"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/KAC_QDSS_NT4_5.56x45_sound_suppressor",
+          "link": "https://tarkov.dev/item/kac-qdss-nt4-556x45-sound-suppressor-black",
+          "iconLink": "https://assets.tarkov.dev/57da93632459771cb65bf83f-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/57da93632459771cb65bf83f-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/57da93632459771cb65bf83f-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/57da93632459771cb65bf83f-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/57da93632459771cb65bf83f-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/57da93632459771cb65bf83f-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 47712,
+          "categories": [
+            "550aa4cd4bdc2dd8348b456c",
+            "5448fe394bdc2d0d028b456c",
+            "550aa4154bdc2dd8348b456b",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f731a86f774093e6cb4f9",
+            "5b5f724186f77447ed5636ad",
+            "5b5f71b386f774093f2ecf11",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 24000,
+          "avg24hPrice": 24872,
+          "low24hPrice": 20000,
+          "high24hPrice": 70000,
+          "changeLast48h": -2452,
+          "changeLast48hPercent": -8.97,
+          "lastScan": "2026-10-16T20:28:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": -12,
+            "recoilModifier": -0.005,
+            "accuracyModifier": 0,
+            "slots": [],
+            "durabilityBurnFactor": 1.75,
+            "heatFactor": 1.14,
+            "coolingFactor": 1.05,
+            "increaseSizeForced": true,
+            "increaseSize": {
+              "left": 1
+            }
+          },
+          "minLevelForFlea": 25,
+          "accuracyModifier": 0,
+          "recoilModifier": -0.5,
+          "ergonomicsModifier": -12,
+          "stackMaxSize": 1,
+          "velocity": 0.7,
+          "loudness": -20,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 19084,
+              "priceRUB": 19084,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 11450,
+              "priceRUB": 11450,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 18607,
+              "priceRUB": 18607,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 140,
+              "priceRUB": 17176,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 21470,
+              "priceRUB": 21470,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 19084,
+              "priceRUB": 19084,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "55f84c3c4bdc2d5f408b4576": {
+          "id": "55f84c3c4bdc2d5f408b4576",
+          "name": "55f84c3c4bdc2d5f408b4576 Name",
+          "shortName": "55f84c3c4bdc2d5f408b4576 ShortName",
+          "normalizedName": "ar-15-daniel-defense-ris-ii-95-handguard-coyote-brown",
+          "description": "55f84c3c4bdc2d5f408b4576 Description",
+          "updated": "2026-10-16T21:18:04.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.279,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Daniel_Defense_RIS_II_9.5_handguard",
+          "link": "https://tarkov.dev/item/ar-15-daniel-defense-ris-ii-95-handguard-coyote-brown",
+          "iconLink": "https://assets.tarkov.dev/55f84c3c4bdc2d5f408b4576-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/55f84c3c4bdc2d5f408b4576-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/55f84c3c4bdc2d5f408b4576-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/55f84c3c4bdc2d5f408b4576-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/55f84c3c4bdc2d5f408b4576-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/55f84c3c4bdc2d5f408b4576-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 10449,
+          "categories": [
+            "55818a104bdc2db9688b4569",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f75e486f77447ec5d7712",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 50000,
+          "avg24hPrice": 50000,
+          "low24hPrice": 50000,
+          "high24hPrice": 50000,
+          "changeLast48h": 37522,
+          "changeLast48hPercent": 300.71,
+          "lastScan": "2026-10-16T21:08:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 7.5,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [
+              {
+                "id": "5649d7694bdc2d79388b457f",
+                "nameId": "mod_scope",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["5649a2464bdc2d91118b45a8"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_SCOPE"
+              },
+              {
+                "id": "5649d79a4bdc2d3d1c8b4587",
+                "nameId": "mod_tactical001",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "5a800961159bd4315e3a1657",
+                    "57fd23e32459772d0805bcf1",
+                    "544909bb4bdc2d6f028b4577",
+                    "5d10b49bd7ad1a1a560708b0",
+                    "5c06595c0db834001a66af6c",
+                    "5cc9c20cd7f00c001336c65d",
+                    "5d2369418abbc306c62e0c80",
+                    "5b07dd285acfc4001754240d",
+                    "56def37dd2720bec348b456a",
+                    "5a7b483fe899ef0016170d15",
+                    "61605d88ffa6e502ac5e7eeb",
+                    "5a5f1ce64f39f90b401987bc",
+                    "560d657b4bdc2da74d8b4572",
+                    "5b3a337e5acfc4704b4a19a0",
+                    "5c5952732e2216398b5abda2",
+                    "57d17e212459775a1179a0f5",
+                    "6267c6396b642f77f56f5c1c",
+                    "6272370ee4013c5d7e31f418",
+                    "6272379924e29f06af4d5ecb",
+                    "626becf9582c3e319310b837",
+                    "644a3df63b0b6f03e101e065",
+                    "646f6322f43d0c5d62063715",
+                    "689c8981bce76ccfbf01862f",
+                    "68bedc0365e7dcf94f0cb0fc",
+                    "6a186ccfbe0d66d438005e4e"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_TACTICAL001"
+              },
+              {
+                "id": "5649d7a74bdc2d3b4c8b457d",
+                "nameId": "mod_tactical002",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "5a800961159bd4315e3a1657",
+                    "57fd23e32459772d0805bcf1",
+                    "544909bb4bdc2d6f028b4577",
+                    "5c06595c0db834001a66af6c",
+                    "5cc9c20cd7f00c001336c65d",
+                    "5d2369418abbc306c62e0c80",
+                    "5b07dd285acfc4001754240d",
+                    "56def37dd2720bec348b456a",
+                    "5a7b483fe899ef0016170d15",
+                    "61605d88ffa6e502ac5e7eeb",
+                    "5a5f1ce64f39f90b401987bc",
+                    "560d657b4bdc2da74d8b4572",
+                    "5b3a337e5acfc4704b4a19a0",
+                    "5c5952732e2216398b5abda2",
+                    "57d17e212459775a1179a0f5",
+                    "6267c6396b642f77f56f5c1c",
+                    "6272370ee4013c5d7e31f418",
+                    "6272379924e29f06af4d5ecb",
+                    "626becf9582c3e319310b837",
+                    "644a3df63b0b6f03e101e065",
+                    "689c8981bce76ccfbf01862f",
+                    "68bedc0365e7dcf94f0cb0fc",
+                    "6a186ccfbe0d66d438005e4e"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_TACTICAL002"
+              },
+              {
+                "id": "56eaab87d2720b69698b456f",
+                "nameId": "mod_sight_front",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "5ba26b01d4351e0085325a51",
+                    "5dfa3d950dee1b22f862eae0",
+                    "5c17804b2e2216152006c02f",
+                    "5fb6567747ce63734e3fa1dc",
+                    "5bc09a30d4351e00367fb7c8",
+                    "5c18b90d2e2216152142466b",
+                    "5fc0fa362770a0045c59c677",
+                    "5894a73486f77426d259076c",
+                    "55d4af3a4bdc2d972f8b456f",
+                    "6a15785370efdef7be017253",
+                    "6a3ceadb6280cb85bc03f99a"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_SIGHT_FRONT"
+              },
+              {
+                "id": "56eaacd2d2720b69698b4570",
+                "nameId": "mod_tactical",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "57fd23e32459772d0805bcf1",
+                    "544909bb4bdc2d6f028b4577",
+                    "5d10b49bd7ad1a1a560708b0",
+                    "5c06595c0db834001a66af6c",
+                    "5a7b483fe899ef0016170d15",
+                    "61605d88ffa6e502ac5e7eeb",
+                    "5c5952732e2216398b5abda2",
+                    "644a3df63b0b6f03e101e065",
+                    "68bedc0365e7dcf94f0cb0fc",
+                    "6a186ccfbe0d66d438005e4e"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_TACTICAL"
+              },
+              {
+                "id": "6396aa72feadbf21a603539c",
+                "nameId": "mod_handguard",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["638f1ff84822287cad04be9d", "6396aaa9a52ace83df0840ab"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_HANDGUARD"
+              }
+            ],
+            "heatFactor": 0.987,
+            "coolingFactor": 1.021,
+            "increaseSizeForced": false,
+            "increaseSize": {
+              "left": 1
+            }
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 7.5,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 116,
+              "priceRUB": 19548,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 4,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 4179,
+              "priceRUB": 4179,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 2507,
+              "priceRUB": 2507,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 4075,
+              "priceRUB": 4075,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 31,
+              "priceRUB": 3761,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 4702,
+              "priceRUB": 4702,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 4179,
+              "priceRUB": 4179,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5649a2464bdc2d91118b45a8": {
+          "id": "5649a2464bdc2d91118b45a8",
+          "name": "5649a2464bdc2d91118b45a8 Name",
+          "shortName": "5649a2464bdc2d91118b45a8 ShortName",
+          "normalizedName": "ncstar-mpr45-backup-mount",
+          "description": "5649a2464bdc2d91118b45a8 Description",
+          "updated": "2026-10-16T20:58:02.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.04,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/NcSTAR_MPR45_Backup_mount",
+          "link": "https://tarkov.dev/item/ncstar-mpr45-backup-mount",
+          "iconLink": "https://assets.tarkov.dev/5649a2464bdc2d91118b45a8-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5649a2464bdc2d91118b45a8-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5649a2464bdc2d91118b45a8-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5649a2464bdc2d91118b45a8-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5649a2464bdc2d91118b45a8-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5649a2464bdc2d91118b45a8-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 3088,
+          "categories": [
+            "55818b224bdc2dde698b456f",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f755f86f77447ec5d770e",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 39999,
+          "avg24hPrice": 44740,
+          "low24hPrice": 30000,
+          "high24hPrice": 66666,
+          "changeLast48h": 23630,
+          "changeLast48hPercent": 111.93,
+          "lastScan": "2026-10-16T20:58:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": -1,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [
+              {
+                "id": "5649dc074bdc2d1b2b8b458f",
+                "nameId": "mod_scope",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "57ae0171245977343c27bfcf",
+                    "609bab8b455afd752b2e6138",
+                    "58d39d3d86f77445bb794ae7",
+                    "616554fe50224f204c1da2aa",
+                    "615d8d878004cc50514c3233",
+                    "577d128124597739d65d0e56",
+                    "58d2664f86f7747fec5834f6",
+                    "5a33b2c9c4a282000c5a9511",
+                    "6985bed26be2752c150e6898",
+                    "6a16dc17b7b9778bee072c65"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_SCOPE"
+              }
+            ]
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": -1,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 80,
+              "priceRUB": 13574,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 3
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 1235,
+              "priceRUB": 1235,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 741,
+              "priceRUB": 741,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 1204,
+              "priceRUB": 1204,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 9,
+              "priceRUB": 1111,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 1389,
+              "priceRUB": 1389,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 1482,
+              "priceRUB": 1482,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 1235,
+              "priceRUB": 1235,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "58d39d3d86f77445bb794ae7": {
+          "id": "58d39d3d86f77445bb794ae7",
+          "name": "58d39d3d86f77445bb794ae7 Name",
+          "shortName": "58d39d3d86f77445bb794ae7 ShortName",
+          "normalizedName": "aimpoint-micro-standard-mount",
+          "description": "58d39d3d86f77445bb794ae7 Description",
+          "updated": "2026-10-16T20:58:05.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.015,
+          "lastOfferCount": 2,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Aimpoint_Micro_Standard_Mount",
+          "link": "https://tarkov.dev/item/aimpoint-micro-standard-mount",
+          "iconLink": "https://assets.tarkov.dev/58d39d3d86f77445bb794ae7-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/58d39d3d86f77445bb794ae7-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/58d39d3d86f77445bb794ae7-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/58d39d3d86f77445bb794ae7-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/58d39d3d86f77445bb794ae7-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/58d39d3d86f77445bb794ae7-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 2451,
+          "categories": [
+            "55818b224bdc2dde698b456f",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f755f86f77447ec5d770e",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 9990,
+          "avg24hPrice": 9990,
+          "low24hPrice": 9990,
+          "high24hPrice": 9999,
+          "changeLast48h": -7232,
+          "changeLast48hPercent": -41.99,
+          "lastScan": "2026-10-16T16:48:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 0,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [
+              {
+                "id": "58d39d3d86f77445bb794ae8",
+                "nameId": "mod_scope",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "61657230d92c473c770213d7",
+                    "58d399e486f77442e0016fe7",
+                    "5b3116595acfc40019476364",
+                    "58d39b0386f77443380bf13c"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_SCOPE"
+              }
+            ]
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 0,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 27,
+              "priceRUB": 4585,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 4
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 980,
+              "priceRUB": 980,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 588,
+              "priceRUB": 588,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 955,
+              "priceRUB": 955,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 7,
+              "priceRUB": 882,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 1102,
+              "priceRUB": 1102,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 1176,
+              "priceRUB": 1176,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 980,
+              "priceRUB": 980,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "58d399e486f77442e0016fe7": {
+          "id": "58d399e486f77442e0016fe7",
+          "name": "58d399e486f77442e0016fe7 Name",
+          "shortName": "58d399e486f77442e0016fe7 ShortName",
+          "normalizedName": "aimpoint-micro-t-1-reflex-sight",
+          "description": "58d399e486f77442e0016fe7 Description",
+          "updated": "2026-10-16T20:38:05.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.084,
+          "lastOfferCount": 11,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Aimpoint_Micro_T-1_reflex_sight",
+          "link": "https://tarkov.dev/item/aimpoint-micro-t-1-reflex-sight",
+          "iconLink": "https://assets.tarkov.dev/58d399e486f77442e0016fe7-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/58d399e486f77442e0016fe7-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/58d399e486f77442e0016fe7-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/58d399e486f77442e0016fe7-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/58d399e486f77442e0016fe7-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/58d399e486f77442e0016fe7-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 28344,
+          "categories": [
+            "55818acf4bdc2dde698b456b",
+            "5448fe7a4bdc2d6f028b456b",
+            "550aa4154bdc2dd8348b456b",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f744786f774094242f197",
+            "5b5f73ec86f774093e6cb4fd",
+            "5b5f71b386f774093f2ecf11",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 18998,
+          "avg24hPrice": 23476,
+          "low24hPrice": 10000,
+          "high24hPrice": 34444,
+          "changeLast48h": -4870,
+          "changeLast48hPercent": -17.18,
+          "lastScan": "2026-10-16T20:28:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesScope",
+            "ergonomics": 0,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [],
+            "zoomLevels": [[1]],
+            "sightingRange": 150,
+            "sightModes": [1],
+            "zeroingDistances": [[25, 50, 100]]
+          },
+          "minLevelForFlea": 25,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 0,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 267,
+              "priceRUB": 45071,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 11337,
+              "priceRUB": 11337,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 6802,
+              "priceRUB": 6802,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 11054,
+              "priceRUB": 11054,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 83,
+              "priceRUB": 10203,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 12754,
+              "priceRUB": 12754,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 11337,
+              "priceRUB": 11337,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "638f1ff84822287cad04be9d": {
+          "id": "638f1ff84822287cad04be9d",
+          "name": "638f1ff84822287cad04be9d Name",
+          "shortName": "638f1ff84822287cad04be9d ShortName",
+          "normalizedName": "ar-15-daniel-defense-ris-ii-95-lower-handguard-coyote-brown",
+          "description": "638f1ff84822287cad04be9d Description",
+          "updated": "2026-10-16T21:18:05.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.12,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Daniel_Defense_RIS_II_9.5_lower_handguard",
+          "link": "https://tarkov.dev/item/ar-15-daniel-defense-ris-ii-95-lower-handguard-coyote-brown",
+          "iconLink": "https://assets.tarkov.dev/638f1ff84822287cad04be9d-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/638f1ff84822287cad04be9d-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/638f1ff84822287cad04be9d-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/638f1ff84822287cad04be9d-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/638f1ff84822287cad04be9d-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/638f1ff84822287cad04be9d-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 4478,
+          "categories": [
+            "55818a104bdc2db9688b4569",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f75e486f77447ec5d7712",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 5000,
+          "avg24hPrice": 5000,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-12T13:08:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 7.5,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [
+              {
+                "id": "638f1ff84822287cad04be9e",
+                "nameId": "mod_foregrip",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "5c7fc87d2e221644f31c0298",
+                    "5cda9bcfd7f00c0c0b53e900",
+                    "59f8a37386f7747af3328f06",
+                    "5a7dbfc1159bd40016548fde",
+                    "619386379fb0c665d5490dbe",
+                    "5c87ca002e221600114cb150",
+                    "588226d124597767ad33f787",
+                    "588226dd24597767ad33f789",
+                    "588226e62459776e3e094af7",
+                    "588226ef24597767af46e39c",
+                    "59fc48e086f77463b1118392",
+                    "5fce0cf655375d18a253eff0",
+                    "5cf4fb76d7f00c065703d3ac",
+                    "5b057b4f5acfc4771e1bd3e9",
+                    "5c791e872e2216001219c40a",
+                    "558032614bdc2de7118b4585",
+                    "58c157be86f77403c74b2bb6",
+                    "58c157c886f774032749fb06",
+                    "5f6340d3ca442212f4047eb2",
+                    "591af28e86f77414a27a9e1d",
+                    "5c1cd46f2e22164bef5cfedb",
+                    "5c1bc4812e22164bef5cfde7",
+                    "5c1bc5612e221602b5429350",
+                    "5c1bc5af2e221602b412949b",
+                    "5c1bc5fb2e221602b1779b32",
+                    "5c1bc7432e221602b412949d",
+                    "5c1bc7752e221602b1779b34",
+                    "64806bdd26c80811d408d37a",
+                    "64807a29e5ffe165600abc97",
+                    "648067db042be0705c0b3009",
+                    "65169d5b30425317755f8e25",
+                    "655df24fdf80b12750626d0a",
+                    "655dccfdbdcc6b5df71382b6",
+                    "661e52e29c8b4dadef008577",
+                    "661e53149c8b4dadef008579",
+                    "661e52415be02310ed07a07a",
+                    "661e52b5b099f32c28003586",
+                    "6984b690b457c5047e0c01fa",
+                    "6984b74a5aab442620032fe6",
+                    "6a16f3711c209e26040a5410",
+                    "6a16f3811c209e26040a5413",
+                    "6a675e0706a5419b2508f26c"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_FOREGRIP"
+              },
+              {
+                "id": "6644b1af7b499dcd5301d17b",
+                "nameId": "mod_bipod",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["6644920d49817dc7d505ca71", "676175bb48fa5c377e06fc36"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_BIPOD"
+              }
+            ],
+            "heatFactor": 0.992,
+            "coolingFactor": 1.012
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 7.5,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 50,
+              "priceRUB": 8377,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 45000,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 1791,
+              "priceRUB": 1791,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 1074,
+              "priceRUB": 1074,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 1746,
+              "priceRUB": 1746,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 13,
+              "priceRUB": 1612,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 2015,
+              "priceRUB": 2015,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 1791,
+              "priceRUB": 1791,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "58c157be86f77403c74b2bb6": {
+          "id": "58c157be86f77403c74b2bb6",
+          "name": "58c157be86f77403c74b2bb6 Name",
+          "shortName": "58c157be86f77403c74b2bb6 ShortName",
+          "normalizedName": "tangodown-stubby-bgv-mk46k-foregrip-fde",
+          "description": "58c157be86f77403c74b2bb6 Description",
+          "updated": "2026-10-16T20:28:12.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.072,
+          "lastOfferCount": 7,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/TangoDown_Stubby_BGV-MK46K_foregrip",
+          "link": "https://tarkov.dev/item/tangodown-stubby-bgv-mk46k-foregrip-fde",
+          "iconLink": "https://assets.tarkov.dev/58c157be86f77403c74b2bb6-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/58c157be86f77403c74b2bb6-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/58c157be86f77403c74b2bb6-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/58c157be86f77403c74b2bb6-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/58c157be86f77403c74b2bb6-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/58c157be86f77403c74b2bb6-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 9900,
+          "categories": [
+            "55818af64bdc2d5b648b4570",
+            "550aa4154bdc2dd8348b456b",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f71de86f774093f2ecf13",
+            "5b5f71b386f774093f2ecf11",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 10000,
+          "avg24hPrice": 17673,
+          "low24hPrice": 9999,
+          "high24hPrice": 18482,
+          "changeLast48h": 2499,
+          "changeLast48hPercent": 16.47,
+          "lastScan": "2026-10-16T20:18:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 0,
+            "recoilModifier": -0.015,
+            "accuracyModifier": 0,
+            "slots": []
+          },
+          "minLevelForFlea": 20,
+          "accuracyModifier": 0,
+          "recoilModifier": -1.5,
+          "ergonomicsModifier": 0,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 110,
+              "priceRUB": 18521,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 3960,
+              "priceRUB": 3960,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 2376,
+              "priceRUB": 2376,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 3861,
+              "priceRUB": 3861,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 29,
+              "priceRUB": 3564,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 4455,
+              "priceRUB": 4455,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 3960,
+              "priceRUB": 3960,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "58d2946386f774496974c37e": {
+          "id": "58d2946386f774496974c37e",
+          "name": "58d2946386f774496974c37e Name",
+          "shortName": "58d2946386f774496974c37e ShortName",
+          "normalizedName": "ar-15-magpul-moe-carbine-stock-fde",
+          "description": "58d2946386f774496974c37e Description",
+          "updated": "2026-10-16T21:08:05.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.226,
+          "lastOfferCount": 3,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/AR-15_Magpul_MOE_Carbine_stock",
+          "link": "https://tarkov.dev/item/ar-15-magpul-moe-carbine-stock-fde",
+          "iconLink": "https://assets.tarkov.dev/58d2946386f774496974c37e-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/58d2946386f774496974c37e-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/58d2946386f774496974c37e-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/58d2946386f774496974c37e-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/58d2946386f774496974c37e-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/58d2946386f774496974c37e-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 7633,
+          "categories": [
+            "55818a594bdc2db9688b456a",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f757486f774093e6cb507",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 14444,
+          "avg24hPrice": 18930,
+          "low24hPrice": 12000,
+          "high24hPrice": 22551,
+          "changeLast48h": 3156,
+          "changeLast48hPercent": 20.01,
+          "lastScan": "2026-10-16T20:58:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 8,
+            "recoilModifier": -0.21,
+            "accuracyModifier": 0,
+            "slots": [
+              {
+                "id": "58d2946386f774496974c37f",
+                "nameId": "mod_stock",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["58d2912286f7744e27117493"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_STOCK"
+              }
+            ]
+          },
+          "minLevelForFlea": 20,
+          "accuracyModifier": 0,
+          "recoilModifier": -21,
+          "ergonomicsModifier": 8,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 85,
+              "priceRUB": 14281,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 3,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 4
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 3053,
+              "priceRUB": 3053,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 1831,
+              "priceRUB": 1831,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 2976,
+              "priceRUB": 2976,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 22,
+              "priceRUB": 2747,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 3434,
+              "priceRUB": 3434,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 3663,
+              "priceRUB": 3663,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 3053,
+              "priceRUB": 3053,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "58d2912286f7744e27117493": {
+          "id": "58d2912286f7744e27117493",
+          "name": "58d2912286f7744e27117493 Name",
+          "shortName": "58d2912286f7744e27117493 ShortName",
+          "normalizedName": "magpul-moe-carbine-rubber-buttpad",
+          "description": "58d2912286f7744e27117493 Description",
+          "updated": "2026-10-16T21:08:05.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.055,
+          "lastOfferCount": 8,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Magpul_MOE_Carbine_rubber_buttpad",
+          "link": "https://tarkov.dev/item/magpul-moe-carbine-rubber-buttpad",
+          "iconLink": "https://assets.tarkov.dev/58d2912286f7744e27117493-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/58d2912286f7744e27117493-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/58d2912286f7744e27117493-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/58d2912286f7744e27117493-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/58d2912286f7744e27117493-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/58d2912286f7744e27117493-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 3779,
+          "categories": [
+            "55818a594bdc2db9688b456a",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f757486f774093e6cb507",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 23300,
+          "avg24hPrice": 23050,
+          "low24hPrice": 14222,
+          "high24hPrice": 40000,
+          "changeLast48h": 5280,
+          "changeLast48hPercent": 29.71,
+          "lastScan": "2026-10-16T20:58:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 3,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": []
+          },
+          "minLevelForFlea": 20,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 3,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 5442,
+              "priceRUB": 5442,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f",
+              "minTraderLevel": 4,
+              "taskUnlock": "60e71c11d54b755a3b53eb65",
+              "restockAmount": 70000,
+              "buyLimit": 3
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 42,
+              "priceRUB": 7069,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a",
+              "minTraderLevel": 4,
+              "taskUnlock": "5b477f7686f7744d1b23c4d2",
+              "restockAmount": 43500,
+              "buyLimit": 5
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 1511,
+              "priceRUB": 1511,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 906,
+              "priceRUB": 906,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 1473,
+              "priceRUB": 1473,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 11,
+              "priceRUB": 1360,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 1700,
+              "priceRUB": 1700,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 1813,
+              "priceRUB": 1813,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 1511,
+              "priceRUB": 1511,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5b3b713c5acfc4330140bd8d": {
+          "id": "5b3b713c5acfc4330140bd8d",
+          "name": "5b3b713c5acfc4330140bd8d Name",
+          "shortName": "5b3b713c5acfc4330140bd8d ShortName",
+          "normalizedName": "tokarev-tt-33-762x25-tt-pistol-golden",
+          "description": "5b3b713c5acfc4330140bd8d Description",
+          "updated": "2026-10-16T21:38:07.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.664,
+          "lastOfferCount": 14,
+          "types": ["gun", "wearable"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Tokarev_TT-33_7.62x25_TT_pistol_(Golden)",
+          "link": "https://tarkov.dev/item/tokarev-tt-33-762x25-tt-pistol-golden",
+          "iconLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-8x.webp",
+          "containsItems": [
+            {
+              "item": "5b3baf8f5acfc40dc5296692",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "5b3cadf35acfc400194776a0",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "571a29dc2459771fb2755a6a",
+              "count": 1,
+              "attributes": {}
+            }
+          ],
+          "discardLimit": -1,
+          "basePrice": 23185,
+          "categories": [
+            "5447b5cf4bdc2d65278b4567",
+            "5422acb9af1c889c16000029",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": ["5b5f792486f77447ed5636b3", "5b5f78dc86f77409407a7f8e"],
+          "lastLowPrice": 31109,
+          "avg24hPrice": 37045,
+          "low24hPrice": 30000,
+          "high24hPrice": 55000,
+          "changeLast48h": -18176,
+          "changeLast48hPercent": -32.91,
+          "lastScan": "2026-10-16T21:28:05.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeapon",
+            "caliber": "Caliber762x25TT",
+            "ergonomics": 70,
+            "recoilVertical": 553,
+            "recoilHorizontal": 325,
+            "repairCost": 93,
+            "fireRate": 30,
+            "effectiveDistance": 50,
+            "sightingRange": 100,
+            "maxDurability": 100,
+            "centerOfImpact": 0,
+            "deviationCurve": 2.25,
+            "deviationMax": 11,
+            "recoilDispersion": 10,
+            "recoilAngle": 90,
+            "cameraSnap": 5,
+            "allowedAmmo": [
+              "5735ff5c245977640e39ba7e",
+              "573601b42459776410737435",
+              "573602322459776445391df1",
+              "5736026a245977644601dc61",
+              "573603562459776430731618",
+              "573603c924597764442bd9cb",
+              "5735fdcd2459776445391d61",
+              "68c15f77ed3d7df9220debd6",
+              "68c15a033173b556890b5959",
+              "68c15b4bb30038a118088bd6"
+            ],
+            "slots": [
+              {
+                "id": "5b3b713c5acfc4330140bd8f",
+                "nameId": "mod_barrel",
+                "required": true,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "571a26d524597720680fbe8a",
+                    "571a279b24597720b4066566",
+                    "5b3baf8f5acfc40dc5296692"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_BARREL"
+              },
+              {
+                "id": "5b3b713c5acfc4330140bd90",
+                "nameId": "mod_pistol_grip",
+                "required": true,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "5c0684e50db834002a12585a",
+                    "5bffcf7a0db83400232fea79",
+                    "5c079ec50db834001966a706",
+                    "5b3cadf35acfc400194776a0",
+                    "571a282c2459771fb2755a69"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_PISTOL_GRIP"
+              },
+              {
+                "id": "5b3b713c5acfc4330140bd91",
+                "nameId": "mod_magazine",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["571a29dc2459771fb2755a6a"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_MAGAZINE"
+              },
+              {
+                "id": "5bffd90b0db83400232feb13",
+                "nameId": "mod_muzzle",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["5bffd7ed0db834001d23ebf9"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_MUZZLE"
+              },
+              {
+                "id": "5c07a00c0db834001966a79e",
+                "nameId": "mod_tactical",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["5c079ed60db834001a66b372"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_TACTICAL"
+              }
+            ],
+            "defaultPreset": "5b44abe986f774283e2e3512",
+            "fireModes": ["single"],
+            "presets": ["5b44abe986f774283e2e3512"],
+            "defaultWidth": 2,
+            "defaultHeight": 1,
+            "defaultErgonomics": null,
+            "defaultRecoilVertical": null,
+            "defaultRecoilHorizontal": null,
+            "defaultWeight": null,
+            "defaultAmmo": "5736026a245977644601dc61"
+          },
+          "minLevelForFlea": 0,
+          "maxDurability": 100,
+          "ergonomicsModifier": 70,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "hasGrid": false,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 9274,
+              "priceRUB": 9274,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 5564,
+              "priceRUB": 5564,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 9042,
+              "priceRUB": 9042,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 68,
+              "priceRUB": 8346,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 10433,
+              "priceRUB": 10433,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 9274,
+              "priceRUB": 9274,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5b44abe986f774283e2e3512": {
+          "id": "5b44abe986f774283e2e3512",
+          "name": "5b44abe986f774283e2e3512 Name",
+          "shortName": "5b44abe986f774283e2e3512 ShortName",
+          "normalizedName": "tokarev-tt-33-762x25-tt-pistol-golden-default",
+          "updated": "2026-10-16T21:38:07.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.874,
+          "lastOfferCount": 14,
+          "types": ["preset"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Tokarev_TT-33_7.62x25_TT_pistol_(Golden)",
+          "link": "https://tarkov.dev/item/tokarev-tt-33-762x25-tt-pistol-golden-default",
+          "iconLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-8x.webp",
+          "containsItems": [
+            {
+              "item": "5b3b713c5acfc4330140bd8d",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "5b3baf8f5acfc40dc5296692",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "5b3cadf35acfc400194776a0",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "571a29dc2459771fb2755a6a",
+              "count": 1,
+              "attributes": {}
+            }
+          ],
+          "discardLimit": -1,
+          "basePrice": 47887,
+          "categories": [
+            "5447b5cf4bdc2d65278b4567",
+            "5422acb9af1c889c16000029",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": ["5b5f792486f77447ed5636b3", "5b5f78dc86f77409407a7f8e"],
+          "lastLowPrice": 31109,
+          "avg24hPrice": 37045,
+          "low24hPrice": 30000,
+          "high24hPrice": 55000,
+          "changeLast48h": -18176,
+          "changeLast48hPercent": -32.91,
+          "lastScan": "2026-10-16T21:28:05.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesPreset",
+            "ergonomics": 68,
+            "recoilVertical": 536,
+            "recoilHorizontal": 315,
+            "moa": 12.04,
+            "default": true,
+            "baseItem": "5b3b713c5acfc4330140bd8d"
+          },
+          "minLevelForFlea": 0,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 19153,
+              "priceRUB": 19153,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 11491,
+              "priceRUB": 11491,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 18675,
+              "priceRUB": 18675,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 139,
+              "priceRUB": 17237,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 21547,
+              "priceRUB": 21547,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 19153,
+              "priceRUB": 19153,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 4505,
+              "priceRUB": 4505,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5b3baf8f5acfc40dc5296692": {
+          "id": "5b3baf8f5acfc40dc5296692",
+          "name": "5b3baf8f5acfc40dc5296692 Name",
+          "shortName": "5b3baf8f5acfc40dc5296692 ShortName",
+          "normalizedName": "tt-762x25-116mm-gilded-barrel",
+          "description": "5b3baf8f5acfc40dc5296692 Description",
+          "updated": "2026-10-16T21:18:05.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.06,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/TT_7.62x25_116mm_gilded_barrel",
+          "link": "https://tarkov.dev/item/tt-762x25-116mm-gilded-barrel",
+          "iconLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 9386,
+          "categories": [
+            "555ef6e44bdc2de9068b457e",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f75c686f774094242f19f",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 300000,
+          "avg24hPrice": 300000,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-02T05:58:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesBarrel",
+            "ergonomics": -4,
+            "recoilModifier": -0.03,
+            "accuracyModifier": 0,
+            "slots": [],
+            "centerOfImpact": 0.35,
+            "deviationCurve": 2.25,
+            "deviationMax": 11,
+            "heatFactor": 1.12,
+            "coolingFactor": 1.18
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": -3,
+          "ergonomicsModifier": -4,
+          "stackMaxSize": 1,
+          "velocity": -2.32,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 3754,
+              "priceRUB": 3754,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 2252,
+              "priceRUB": 2252,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 3660,
+              "priceRUB": 3660,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 27,
+              "priceRUB": 3378,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 4223,
+              "priceRUB": 4223,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 4505,
+              "priceRUB": 4505,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 3754,
+              "priceRUB": 3754,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5b3cadf35acfc400194776a0": {
+          "id": "5b3cadf35acfc400194776a0",
+          "name": "5b3cadf35acfc400194776a0 Name",
+          "shortName": "5b3cadf35acfc400194776a0 ShortName",
+          "normalizedName": "tt-ornated-side-grips",
+          "description": "5b3cadf35acfc400194776a0 Description",
+          "updated": "2026-10-16T21:28:10.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.07,
+          "lastOfferCount": 1,
+          "types": ["mods", "pistolGrip"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/TT_ornated_side_grips",
+          "link": "https://tarkov.dev/item/tt-ornated-side-grips",
+          "iconLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 14159,
+          "categories": [
+            "55818a684bdc2ddd698b456d",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f761f86f774094242f1a1",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": null,
+          "avg24hPrice": null,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-16T21:08:37.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 3,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": []
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 3,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 5663,
+              "priceRUB": 5663,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 3398,
+              "priceRUB": 3398,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 5522,
+              "priceRUB": 5522,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 41,
+              "priceRUB": 5097,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 6371,
+              "priceRUB": 6371,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 5663,
+              "priceRUB": 5663,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "571a29dc2459771fb2755a6a": {
+          "id": "571a29dc2459771fb2755a6a",
+          "name": "571a29dc2459771fb2755a6a Name",
+          "shortName": "571a29dc2459771fb2755a6a ShortName",
+          "normalizedName": "tt-762x25-tt-105-8-round-magazine",
+          "description": "571a29dc2459771fb2755a6a Description",
+          "updated": "2026-10-16T20:48:04.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.08,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/TT_7.62x25_tt-105_8-round_magazine",
+          "link": "https://tarkov.dev/item/tt-762x25-tt-105-8-round-magazine",
+          "iconLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 1157,
+          "categories": [
+            "5448bc234bdc2d3c308b4569",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f754a86f774094242f19b",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 2222,
+          "avg24hPrice": 2222,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-11T08:38:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesMagazine",
+            "ergonomics": -1,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [],
+            "capacity": 8,
+            "loadModifier": 0,
+            "ammoCheckModifier": 0,
+            "malfunctionChance": 0.03,
+            "allowedAmmo": [
+              "5735ff5c245977640e39ba7e",
+              "573601b42459776410737435",
+              "573602322459776445391df1",
+              "5736026a245977644601dc61",
+              "573603562459776430731618",
+              "573603c924597764442bd9cb",
+              "5735fdcd2459776445391d61",
+              "68c15a033173b556890b5959",
+              "68c15b4bb30038a118088bd6",
+              "68c15f77ed3d7df9220debd6"
+            ]
+          },
+          "minLevelForFlea": 25,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": -1,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 1574,
+              "priceRUB": 1574,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 10
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 462,
+              "priceRUB": 462,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 277,
+              "priceRUB": 277,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 451,
+              "priceRUB": 451,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 3,
+              "priceRUB": 416,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 520,
+              "priceRUB": 520,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 462,
+              "priceRUB": 462,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
         }
       },
       "armorMaterials": {
@@ -13338,6 +16426,91 @@
     "5c07df7f0db834001b73588a Description": "A reliable steel crowbar manufactured by Freeman company. Caution! May lead to Resonance Cascade.",
     "5d235b4d86f7742e017bc88a Name": "GP coin",
     "5d235b4d86f7742e017bc88a ShortName": "GP",
-    "5d235b4d86f7742e017bc88a Description": "A strange looking golden coin. According to rumors, it was actively used as a means of payment for PMC services during the Contract Wars."
+    "5d235b4d86f7742e017bc88a Description": "A strange looking golden coin. According to rumors, it was actively used as a means of payment for PMC services during the Contract Wars.",
+    "5ae30db85acfc408fb139a05 Name": "AR-15 Colt M4 Carbine Length handguard",
+    "5ae30db85acfc408fb139a05 ShortName": "M4 Carbine",
+    "5ae30db85acfc408fb139a05 Description": "A carbine length handguard manufactured by Colt, a standard-issue handguard for the M4A1 assault rifles.",
+    "5b5f75e486f77447ec5d7712": "Handguards",
+    "5b5f75b986f77447ec5d7710": "Vital parts",
+    "5b5f71a686f77447ed5636ab": "Weapon parts & mods",
+    "637f57a68d137b27f70c4968 Name": "AR-15 Colt M4 Carbine Length lower handguard",
+    "637f57a68d137b27f70c4968 ShortName": "M4 Carbine",
+    "637f57a68d137b27f70c4968 Description": "A carbine length lower handguard part manufactured by Colt, a standard-issue handguard for the M4A1 assault rifles.",
+    "5ae30bad5acfc400185c2dc4 Name": "AR-15 rear sight carry handle",
+    "5ae30bad5acfc400185c2dc4 ShortName": "CHandle",
+    "5ae30bad5acfc400185c2dc4 Description": "A detachable carry handle with a rear sight for AR-15 rifles. Standard-issue for M4A1 assault rifles.",
+    "5b5f746686f77447ec5d7708": "Iron sights",
+    "5b5f73ec86f774093e6cb4fd": "Sights",
+    "5b5f71b386f774093f2ecf11": "Functional mods",
+    "55d4ae6c4bdc2d8b2f8b456e Name": "AR-15 High Standard M4SS Stock",
+    "55d4ae6c4bdc2d8b2f8b456e ShortName": "M4SS",
+    "55d4ae6c4bdc2d8b2f8b456e Description": "The High Standard M4SS telescoping stock closely follows the classic M4A1 stock except for a few geometry details.",
+    "5b5f757486f774093e6cb507": "Stocks & chassis",
+    "5b5f750686f774093e6cb503": "Gear mods",
+    "5a339805c4a2826c6e06d73d Name": "AR-15 Magpul MIAD pistol grip (FDE)",
+    "5a339805c4a2826c6e06d73d ShortName": "MIAD",
+    "5a339805c4a2826c6e06d73d Description": "The Magpul MIAD (Mission Adaptable) polymer pistol grip can be installed on any weapon compatible with AR-15 grips. Flat Dark Earth version.",
+    "5b5f761f86f774094242f1a1": "Pistol grips",
+    "55802d5f4bdc2dac148b458e Name": "AR-15 5.56x45 Magpul PMAG 30 GEN M3 W STANAG 30-round magazine",
+    "55802d5f4bdc2dac148b458e ShortName": "GEN M3",
+    "55802d5f4bdc2dac148b458e Description": "A 30-round 5.56x45 Magpul PMAG GEN M3 30 polymer magazine with an observation slot for faster capacity checking.",
+    "5b5f754a86f774094242f19b": "Magazines",
+    "56ea8180d2720bf2698b456a Name": "AR-15 KAC QDC 5.56x45 Flash Suppressor Kit",
+    "56ea8180d2720bf2698b456a ShortName": "QDC FSK",
+    "56ea8180d2720bf2698b456a Description": "The KAC 5.56 QD muzzle compensator/flash hider is an effective flash suppressor that also serves as a platform for attaching a KAC quick detach QDSS-NT4 sound suppressor. Installed on weapons based on AR-15/M16/M4.",
+    "5b5f724c86f774093f2ecf15": "Flashhiders & brakes",
+    "5b5f724186f77447ed5636ad": "Muzzle devices",
+    "57da93632459771cb65bf83f Name": "KAC QDSS NT4 5.56x45 sound suppressor (Black)",
+    "57da93632459771cb65bf83f ShortName": "NT4",
+    "57da93632459771cb65bf83f Description": "The Knight's Armament Company QDSS NT4 5.56x45 and .223 sound suppressor. Can only be installed on compatible KAC muzzle devices. Black version.",
+    "5b5f731a86f774093e6cb4f9": "Suppressors",
+    "55f84c3c4bdc2d5f408b4576 Name": "AR-15 Daniel Defense RIS II 9.5 handguard (Coyote Brown)",
+    "55f84c3c4bdc2d5f408b4576 ShortName": "RIS II 9.5",
+    "55f84c3c4bdc2d5f408b4576 Description": "The Daniel Defense RIS II 9.5 foregrip is a part of the SOPMOD Block II program to replace the standard M4CQBR or Mk18 foregrips in the US SOCOM service. Made with light but durable aircraft aluminum alloy. Equipped with 4 mounts for installation of additional devices and accessories.",
+    "MOD_TACTICAL001": "Tactical",
+    "MOD_TACTICAL002": "Tactical",
+    "5649a2464bdc2d91118b45a8 Name": "NcSTAR MPR45 Backup mount",
+    "5649a2464bdc2d91118b45a8 ShortName": "MPR45",
+    "5649a2464bdc2d91118b45a8 Description": "A universal mount by NcStar that allows installing an auxiliary sight at 45 degrees angle.",
+    "5b5f755f86f77447ec5d770e": "Mounts",
+    "58d39d3d86f77445bb794ae7 Name": "Aimpoint Micro Standard Mount",
+    "58d39d3d86f77445bb794ae7 ShortName": "AMM",
+    "58d39d3d86f77445bb794ae7 Description": "The Aimpoint Micro Standard Mount base for T-1 and H-1 reflex sights of the Micro series.",
+    "58d399e486f77442e0016fe7 Name": "Aimpoint Micro T-1 reflex sight",
+    "58d399e486f77442e0016fe7 ShortName": "T-1",
+    "58d399e486f77442e0016fe7 Description": "The Micro T-1 compact reflex sight by Aimpoint was designed for use with any kind of firearms and even with bows. Lightweight, compact, and durable.",
+    "5b5f744786f774094242f197": "Compact collimators",
+    "638f1ff84822287cad04be9d Name": "AR-15 Daniel Defense RIS II 9.5 lower handguard (Coyote Brown)",
+    "638f1ff84822287cad04be9d ShortName": "RIS II 9.5",
+    "638f1ff84822287cad04be9d Description": "The Daniel Defense RIS II 9.5 lower handguard. Made with light but durable aircraft aluminum alloy. Equipped with RIS interface for installation of additional devices and accessories. Coyote Brown version.",
+    "MOD_BIPOD": "Bipod",
+    "58c157be86f77403c74b2bb6 Name": "TangoDown Stubby BGV-MK46K foregrip (FDE)",
+    "58c157be86f77403c74b2bb6 ShortName": "MK46K",
+    "58c157be86f77403c74b2bb6 Description": "The TangoDown Stubby BGV-MK46K tactical grip is a short grip for use with weapons in close and extra close quarters combat. It ideally fits assault shotguns and also contains a compartment for batteries or SPTA. Flat Dark Earth version.",
+    "5b5f71de86f774093f2ecf13": "Foregrips",
+    "58d2946386f774496974c37e Name": "AR-15 Magpul MOE Carbine stock (FDE)",
+    "58d2946386f774496974c37e ShortName": "MOE FDE",
+    "58d2946386f774496974c37e Description": "A drop-in replacement buttstock for AR-15/M16 carbines by Magpul Original Equipment. Uses mil-spec sized receiver extension tubes. Frame profile avoids snagging and shields the release latch to prevent accidental activation, includes a standard 0.30\" thick rubber butt-pad to prevent slippage even with body armor or modular gear. Flat Dark Earth version.",
+    "58d2912286f7744e27117493 Name": "Magpul MOE Carbine rubber buttpad",
+    "58d2912286f7744e27117493 ShortName": "MOE RBP",
+    "58d2912286f7744e27117493 Description": "A standard rubber butt-pad for the Magpul MOE Carbine stock series. However, it can also be installed on other models of the series.",
+    "5b3b713c5acfc4330140bd8d Name": "Tokarev TT-33 7.62x25 TT pistol (Golden)",
+    "5b3b713c5acfc4330140bd8d ShortName": "TT Gold",
+    "5b3b713c5acfc4330140bd8d Description": "A legendary pistol that has seen numerous military conflicts throughout the years and is still in service in certain regions of the world, in one variation or another. This one is a classic TT-33, the most mass-produced version. It features a Browning short-recoil tilting-barrel system, but other than that, the construction design is very unique - it is purposefully simple, single-action, and no safety measures except half-cock notch, which makes it be able to withstand horrible operating abuse. Thanks to the powerful 7.62x25 cartridge and relatively long barrel, the TT boasts high muzzle velocity, penetration, and impressive accuracy, even over long distances. A special gold edition.",
+    "5b5f792486f77447ed5636b3": "Pistols",
+    "5b5f78dc86f77409407a7f8e": "Weapons",
+    "single": "Single fire",
+    "5b44abe986f774283e2e3512 Name": "Tokarev TT-33 7.62x25 TT pistol (Golden) Default",
+    "5b44abe986f774283e2e3512 ShortName": "TT Gold Default",
+    "5b3baf8f5acfc40dc5296692 Name": "TT 7.62x25 116mm gilded barrel",
+    "5b3baf8f5acfc40dc5296692 ShortName": "TT gilded",
+    "5b3baf8f5acfc40dc5296692 Description": "A 116mm barrel for the TT pistol, gilded by an unknown gunsmith.",
+    "5b5f75c686f774094242f19f": "Barrels",
+    "5b3cadf35acfc400194776a0 Name": "TT ornated side grips",
+    "5b3cadf35acfc400194776a0 ShortName": "TT swag",
+    "5b3cadf35acfc400194776a0 Description": "Ornated side grips for the TT pistol. So fancy and swaggy.",
+    "571a29dc2459771fb2755a6a Name": "TT 7.62x25 tt-105 8-round magazine",
+    "571a29dc2459771fb2755a6a ShortName": "tt-105",
+    "571a29dc2459771fb2755a6a Description": "A standard late-issue 8-round magazine for the TT pistol. It comes without a lanyard ring."
   }
 }

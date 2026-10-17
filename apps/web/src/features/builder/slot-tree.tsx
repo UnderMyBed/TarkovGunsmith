@@ -310,7 +310,7 @@ function SlotRow({
 
 // ---------- AvailabilityPill ----------
 
-function AvailabilityPill({ availability }: { availability: ItemAvailability | null }) {
+export function AvailabilityPill({ availability }: { availability: ItemAvailability | null }) {
   if (!availability) return null;
   if (availability.available) {
     return <Pill tone="reliable">{availabilityShortLabel(availability) ?? "OK"}</Pill>;
@@ -327,7 +327,7 @@ function availabilityShortLabel(a: ItemAvailability): string | null {
   return null;
 }
 
-function formatRequirement(a: ItemAvailability): string {
+export function formatRequirement(a: ItemAvailability): string {
   if (a.available) return "";
   switch (a.reason) {
     case "trader-ll-required":
