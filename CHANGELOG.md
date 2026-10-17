@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.2](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.22.1...v1.22.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* **builder:** show ergonomics below 0 as the 0 the game floors it to ([#274](https://github.com/UnderMyBed/TarkovGunsmith/issues/274)) ([1f853b5](https://github.com/UnderMyBed/TarkovGunsmith/commit/1f853b55ebf1845caebfd85d2164d77516ad0f19)), closes [#273](https://github.com/UnderMyBed/TarkovGunsmith/issues/273)
+* **e2e:** stop the local dev server dying mid-run, and report it if it ever does ([#276](https://github.com/UnderMyBed/TarkovGunsmith/issues/276)) ([fd9fdda](https://github.com/UnderMyBed/TarkovGunsmith/commit/fd9fdda1bd5a9f5507cb2ace48b095bdb193cb79))
+
 ## [1.22.1](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.22.0...v1.22.1) (2026-10-17)
 
 

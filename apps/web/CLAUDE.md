@@ -66,6 +66,8 @@ Smoke-level Chromium tests live at `apps/web/e2e/`. Run:
 
 Playwright starts two webServers: `wrangler pages dev dist` on 4173 and the builds-api Worker on 8787. CI runs the suite as part of the `Typecheck • Lint • Format • Test` job after build. Every route must be represented in `ROUTES` inside `e2e/routes.ts`, which `smoke.spec.ts` loads at desktop width and `phone.spec.ts` at 390 px. Any new route added to `__root.tsx` nav must also be added there.
 
+Each server writes wrangler's full debug log (every level, unlike its terminal output) to a per-run directory, `$TMPDIR/tarkov-e2e-logs-*/`, which is kept after the run. Global setup watches both ports for the whole run: if a server stops accepting connections, the run stops with a banner that names the server and prints the tail of its log, instead of failing every remaining test with `ERR_CONNECTION_REFUSED`. See `e2e/dev-servers.ts`.
+
 **No spec may depend on a live third party.** Game data is served from the captures in `packages/tarkov-data/src/__fixtures__/`, not from `json.tarkov.dev`:
 
 - Import `test` / `expect` from `./upstream.js`, never from `@playwright/test`. That module intercepts the browser's upstream calls, stubs the `assets.tarkov.dev` image CDN, and **fails the test** on any other live host the page reaches, naming the URL.

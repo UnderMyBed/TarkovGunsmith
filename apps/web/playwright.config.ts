@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import { API_PORT, WEB_PORT, devServers } from "./e2e/dev-servers.js";
 
-const WEB_PORT = 4173;
-const API_PORT = 8787;
+// Each server writes wrangler's full debug log to a kept per-run file, so a server that dies
+// mid-run leaves its cause behind; `e2e/global-setup.ts` prints the tail when that happens.
+const { api: API_SERVER, web: WEB_SERVER } = devServers();
 
 // `wrangler pages dev dist` serves whatever is in `dist/`, and serves nothing at all when it
 // is missing — which surfaces as a 120-second webServer timeout or a wall of 404s several
@@ -58,6 +60,7 @@ export default defineConfig({
       command: `pnpm --filter @tarkov/builds-api exec wrangler dev --persist-to "$(mktemp -d -t tarkov-e2e-kv.XXXXXX)" --ip 127.0.0.1 --port ${API_PORT} --var OG_FIXTURE_BUILD_ID:abcd2345 --var OG_FIXTURE_PAIR_ID:efgh6789 --var OG_FIXTURE_V1_BUILD_ID:abcd2346 --var OG_FIXTURE_V1_PAIR_ID:efgh6782`,
       url: `http://127.0.0.1:${API_PORT}/healthz`,
       timeout: 60_000,
+      env: { WRANGLER_LOG_PATH: API_SERVER.logFile },
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",
@@ -66,6 +69,7 @@ export default defineConfig({
       command: `pnpm --filter @tarkov/web exec wrangler pages dev dist --ip 127.0.0.1 --port ${WEB_PORT} --binding BUILDS_API_URL=http://127.0.0.1:${API_PORT}`,
       url: `http://127.0.0.1:${WEB_PORT}`,
       timeout: 120_000,
+      env: { WRANGLER_LOG_PATH: WEB_SERVER.logFile },
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",
