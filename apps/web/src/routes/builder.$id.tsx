@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import { useLoadBuild, LoadBuildError } from "@tarkov/data";
+import { useMemo } from "react";
+import { loadSavedBuild, useBuilderSnapshot, useLoadBuild, LoadBuildError } from "@tarkov/data";
 import {
   Button,
   Card,
@@ -25,8 +26,15 @@ function LoadedBuilderPage() {
   const { id } = Route.useParams();
   const { view } = Route.useSearch();
   const query = useLoadBuild(id);
+  // A saved build is read against the game data before the editor takes it: any version is
+  // brought to the current one, and an attachment not on the weapon moves to `orphaned`.
+  const snapshot = useBuilderSnapshot();
+  const build = useMemo(
+    () => (query.data && snapshot.data ? loadSavedBuild(query.data, snapshot.data) : null),
+    [query.data, snapshot.data],
+  );
 
-  if (query.isLoading) {
+  if (query.isLoading || snapshot.isLoading) {
     return (
       <div className="flex flex-col gap-4 p-4" role="status" aria-busy="true">
         <Skeleton width="60%" height="2rem" />
@@ -39,13 +47,29 @@ function LoadedBuilderPage() {
     return <LoadErrorCard error={query.error} id={id} onRetry={() => void query.refetch()} />;
   }
 
-  if (!query.data) {
+  if (snapshot.error) {
+    // The build itself loaded; it cannot be shown without the game data it is read against.
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Game data couldn&apos;t be loaded</CardTitle>
+          <CardDescription>{snapshot.error.message}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={() => void snapshot.refetch()} size="sm">
+            Try again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!build) {
     return (
       <LoadErrorCard error={new Error("No data")} id={id} onRetry={() => void query.refetch()} />
     );
   }
 
-  const build = query.data;
   const notice = (
     <Card>
       <CardContent className="pt-6">
@@ -57,48 +81,7 @@ function LoadedBuilderPage() {
     </Card>
   );
 
-  const commonProps = {
-    initialWeaponId: build.weaponId,
-    notice,
-    view,
-  } as const;
-
-  if (build.version === 1) {
-    return <BuilderPage {...commonProps} initialModIds={build.modIds} />;
-  }
-  if (build.version === 2) {
-    return (
-      <BuilderPage
-        {...commonProps}
-        initialAttachments={build.attachments}
-        initialOrphaned={build.orphaned}
-      />
-    );
-  }
-  if (build.version === 6) {
-    return (
-      <BuilderPage
-        {...commonProps}
-        initialAttachments={build.attachments}
-        initialOrphaned={build.orphaned}
-        initialProfileSnapshot={build.profileSnapshot}
-        initialName={build.name}
-        initialDescription={build.description}
-      />
-    );
-  }
-  // Fallback. After `upgradeLoadedBuild` the only versions that reach here are v1 and v2
-  // (both need the weapon's slot tree to place attachments, so `/builder` finishes that
-  // migration once the tree loads). It is NOT a general "older versions land here" branch —
-  // anything v3+ has already been upgraded to the current version above.
-  return (
-    <BuilderPage
-      {...commonProps}
-      initialAttachments={build.attachments}
-      initialOrphaned={build.orphaned}
-      initialProfileSnapshot={build.profileSnapshot}
-    />
-  );
+  return <BuilderPage initialBuild={build} notice={notice} view={view} />;
 }
 
 function LoadErrorCard({ error, id, onRetry }: { error: Error; id: string; onRetry: () => void }) {

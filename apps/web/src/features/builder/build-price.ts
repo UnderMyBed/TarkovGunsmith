@@ -1,6 +1,6 @@
 import {
-  attachedParts,
   buildPriceUnder,
+  resolveBuild,
   type AttachablePart,
   type BuildPrice,
   type PriceGate,
@@ -26,7 +26,7 @@ export function priceBuild(
   presets: readonly PricedPreset[],
 ): BuildPrice | null {
   if (weapon === undefined || tree === undefined || tree.weaponId !== weapon.id) return null;
-  const parts = attachedParts(tree, attachments, byId).entries.map((e) => e.part);
+  const parts = resolveBuild(tree, attachments, byId).placed.map((e) => e.part);
   return buildPriceUnder(gate, { weapon, parts, presets });
 }
 

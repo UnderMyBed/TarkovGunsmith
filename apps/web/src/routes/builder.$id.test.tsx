@@ -109,6 +109,28 @@ describe("/builder/$id", () => {
     await expectNotSeeded(1);
   });
 
+  it("orphans a saved part whose slot path the build does not have, instead of hiding it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          version: 6,
+          weaponId: "w-m4a1",
+          // No part fitted at mod_muzzle has a mod_stock slot: the stock is on no slot here.
+          attachments: { mod_muzzle: "mod-muzzle", "mod_muzzle/mod_stock": "mod-stock" },
+          orphaned: [],
+          createdAt: new Date().toISOString(),
+        }),
+      ),
+    );
+    await renderRoute(`/builder/${VALID_ID}`);
+
+    expect(await screen.findByText("1 attached")).toBeInTheDocument();
+    expect(
+      await screen.findByText(/1 mod from the saved build couldn't be placed on this weapon\./),
+    ).toBeInTheDocument();
+  });
+
   it("loads a v1 build and migrates its flat modIds into slot attachments once the tree resolves", async () => {
     vi.stubGlobal(
       "fetch",

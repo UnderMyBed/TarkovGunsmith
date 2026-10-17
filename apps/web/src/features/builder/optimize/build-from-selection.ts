@@ -45,15 +45,5 @@ export function buildFromSelection(
     else if (parentKept(path)) itemId = currentOn[path];
     if (itemId !== undefined) merged[path] = itemId;
   }
-  const attachments = mountedAttachments(tree, merged, parts);
-  return {
-    version: 6,
-    weaponId: current.weaponId,
-    attachments,
-    orphaned: current.orphaned,
-    createdAt: current.createdAt,
-    ...(current.name !== undefined ? { name: current.name } : {}),
-    ...(current.description !== undefined ? { description: current.description } : {}),
-    ...(current.profileSnapshot !== undefined ? { profileSnapshot: current.profileSnapshot } : {}),
-  };
+  return { ...current, attachments: mountedAttachments(tree, merged, parts) };
 }

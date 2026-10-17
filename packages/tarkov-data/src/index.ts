@@ -72,6 +72,7 @@ export {
   DEFAULT_PROFILE,
   CURRENT_BUILD_VERSION,
 } from "./build-schema.js";
+export { ORPHANED_CAP } from "./build-schema.js";
 
 // Build pair schema
 export { BuildPair, BuildPairV1, CURRENT_PAIR_VERSION } from "./pair-schema.js";
