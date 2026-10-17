@@ -1,4 +1,6 @@
 /**
+ * Preflight, then a watch on the servers for the rest of the run.
+ *
  * Preflight: prove a browser can actually start before 35 specs try one each.
  *
  * Playwright ships its own Chromium build but not the system libraries it links against.
@@ -8,16 +10,36 @@
  * per-test timeout of everything that never got a browser.
  *
  * One launch up front turns that into a single actionable message.
+ *
+ * Watch: see `dev-servers.ts`. Playwright starts the webServers before global setup and stops
+ * them after the teardown this function returns, so the watch runs only while both servers are
+ * meant to be up — and it starts only once both ports have accepted a connection.
  */
 import { chromium } from "@playwright/test";
+import { devServers, portAccepts, watchDevServers } from "./dev-servers.js";
 
 const INSTALL_DEPS = "pnpm --filter @tarkov/web exec playwright install-deps chromium";
 const INSTALL_BROWSER = "pnpm --filter @tarkov/web exec playwright install chromium";
 
+export default async function globalSetup(): Promise<() => void> {
+  await preflightBrowser();
+
+  const servers = Object.values(devServers());
+  for (const server of servers) {
+    if (!(await portAccepts(server.port))) {
+      throw new Error(
+        `${server.name} is not accepting connections on 127.0.0.1:${server.port} after startup.\n` +
+          `Its wrangler log: ${server.logFile}`,
+      );
+    }
+  }
+  return watchDevServers(servers);
+}
+
 // No launch options on purpose: `devices["Desktop Chrome"]` sets no `channel`, so a bare
 // `chromium.launch()` resolves to the very binary the specs will use. A preflight that
 // launched something else could pass while every test still failed.
-export default async function globalSetup(): Promise<void> {
+async function preflightBrowser(): Promise<void> {
   try {
     const browser = await chromium.launch();
     await browser.close();
