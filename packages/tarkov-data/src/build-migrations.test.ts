@@ -85,11 +85,21 @@ describe("migrateV1ToV2", () => {
     expect(v2.orphaned).toEqual([]);
   });
 
-  it("deduplicates repeated mod ids (v1 allowed duplicates; v2 does not)", () => {
-    const tree = [leaf("mod_muzzle", ["mod-a"])];
-    const v2 = migrateV1ToV2({ ...v1, modIds: ["mod-a", "mod-a", "mod-a"] }, tree);
-    expect(v2.attachments).toEqual({ mod_muzzle: "mod-a" });
-    expect(v2.orphaned).toEqual([]);
+  it("fits a repeated mod id in the next free slot that allows it, and orphans it once when none is left", () => {
+    const tree = [leaf("mod_tactical", ["mod-a"]), leaf("mod_tactical_001", ["mod-a"])];
+    const v2 = migrateV1ToV2({ ...v1, modIds: ["mod-a", "mod-a", "mod-a", "mod-a"] }, tree);
+    expect(v2.attachments).toEqual({ mod_tactical: "mod-a", mod_tactical_001: "mod-a" });
+    expect(v2.orphaned).toEqual(["mod-a"]);
+  });
+
+  it("never overwrites a placed mod: a later mod for a taken slot takes the next free one or is orphaned", () => {
+    const tree = [
+      leaf("mod_scope", ["scope-a", "scope-b", "mount-b"]),
+      leaf("mod_mount", ["mount-b"]),
+    ];
+    const v2 = migrateV1ToV2({ ...v1, modIds: ["scope-a", "mount-b", "scope-b"] }, tree);
+    expect(v2.attachments).toEqual({ mod_scope: "scope-a", mod_mount: "mount-b" });
+    expect(v2.orphaned).toEqual(["scope-b"]);
   });
 
   it("keeps every mod it cannot place, past 64 too: nothing is dropped", () => {
@@ -356,48 +366,46 @@ describe("upgradeLoadedBuild", () => {
 });
 
 /**
- * Placements the pre-#214 tree (depth 3, recursing only into WeaponMod children) produced for a
- * v1 build listing every item in the fixture, captured by running that implementation over this
- * same fixture before it was replaced. v1 share links must keep migrating to exactly this.
- * Every fixture item the old tree cannot place is an orphan, so the counts
- * track the fixture: when it grows, re-derive them by running the pre-#214 implementation over it
- * (last done when the preset parts and the golden TT landed, by running the pre-#214 `weaponTree.ts` and
- * `migrateV1ToV2` from 4b9dd32 over the fixture). The PM and TT default cartridges added since
- * appear in no slot's `allowedItems`, so no tree can place them: each adds one orphan.
+ * Placements for a v1 build listing every item in the fixture, sorted by id, on the legacy tree
+ * (depth 3, recursing only into WeaponMod children, as the pre-#214 tree did). Each id takes
+ * the first free slot that allows it; every id the tree cannot place is an orphan, so placed
+ * plus orphaned is every id. The counts track the fixture: when it grows, re-derive them from
+ * `migrateV1ToV2` over it.
  */
 const LEGACY_V1_PLACEMENTS = [
   {
     weaponId: "5447a9cd4bdc2dbd208b4567",
-    orphanedCount: 48,
+    orphanedCount: 84,
     attachments: {
-      "mod_reciever/mod_handguard/mod_tactical001": "5a7b483fe899ef0016170d15",
-      "mod_reciever/mod_scope": "58d39d3d86f77445bb794ae7",
-      mod_magazine: "61840d85568c120fdd2962a5",
-      mod_pistol_grip: "5c0e2ff6d174af02a1659d4a",
-      mod_reciever: "5d4405aaa4b9361e6a4e6bd3",
-      "mod_reciever/mod_barrel": "68a63ac58e1fe612970728f2",
-      mod_charge: "5c0faf68d174af02a96260b8",
-      "mod_stock/mod_stock_000": "606587d11246154cad35d635",
-      "mod_reciever/mod_handguard": "63f4ba71f31d4a33b87bd046",
+      "mod_reciever/mod_handguard/mod_tactical001": "544909bb4bdc2d6f028b4577",
+      "mod_reciever/mod_scope": "544a3a774bdc2d3a388b4567",
+      mod_magazine: "55802d5f4bdc2dac148b458e",
+      mod_pistol_grip: "55802f5d4bdc2dac148b458f",
+      mod_reciever: "55d355e64bdc2d962f8b4569",
+      "mod_reciever/mod_barrel": "55d35ee94bdc2d61338b4568",
+      mod_charge: "55d44fd14bdc2d962f8b456e",
+      "mod_stock/mod_stock_000": "55d4ae6c4bdc2d8b2f8b456e",
+      "mod_reciever/mod_handguard": "55f84c3c4bdc2d5f408b4576",
       "mod_reciever/mod_handguard/mod_tactical": "5649a2464bdc2d91118b45a8",
-      mod_stock: "5c0faeddd174af02a962601f",
+      mod_stock: "5649be884bdc2d79388b4577",
       "mod_stock/mod_stock_000/mod_stock": "58d2912286f7744e27117493",
       "mod_reciever/mod_scope/mod_scope": "58d399e486f77442e0016fe7",
-      "mod_stock/mod_stock": "5d4406a8a4b9361e4f6eb8b7",
-      "mod_reciever/mod_sight_rear": "5dfa3d7ac41b2312ea33362a",
-      "mod_reciever/mod_handguard/mod_handguard": "638f1ff84822287cad04be9d",
+      "mod_stock/mod_stock": "5a33cae9c4a28232980eb086",
+      "mod_reciever/mod_handguard/mod_tactical002": "5a7b483fe899ef0016170d15",
+      "mod_reciever/mod_sight_rear": "5ae30bad5acfc400185c2dc4",
+      "mod_reciever/mod_handguard/mod_handguard": "637f57a68d137b27f70c4968",
       mod_charge_001: "675307301f7c19a9780f2668",
-      "mod_stock/mod_stock_003": "6985eca7de77dd8dd50025ba",
+      "mod_stock/mod_stock_003": "6984b82c5aab442620032fe8",
     },
   },
   {
     weaponId: "5448bd6b4bdc2dfc2f8b4569",
-    orphanedCount: 93,
+    orphanedCount: 97,
     attachments: {
-      mod_magazine: "55d485be4bdc2d962f8b456f",
+      mod_magazine: "5448c12b4bdc2d02308b456f",
       "mod_pistolgrip/mod_tactical/mod_scope": "58d39d3d86f77445bb794ae7",
-      "mod_pistolgrip/mod_tactical": "5a7b4900e899ef197b331a2a",
-      mod_pistolgrip: "637b6d610aef6cfc5e02dd14",
+      "mod_pistolgrip/mod_tactical": "5a7b483fe899ef0016170d15",
+      mod_pistolgrip: "6374a7e7417239a7bf00f042",
       mod_reciever: "6374a822e629013b9c0645c8",
       "mod_reciever/mod_sight_rear": "63c6adcfb4ba094317063742",
     },
@@ -406,7 +414,7 @@ const LEGACY_V1_PLACEMENTS = [
 
 describe("legacyV1MigrationSlots", () => {
   it.each(LEGACY_V1_PLACEMENTS)(
-    "places v1 mods on $weaponId exactly as the old eager tree did",
+    "places v1 mods on $weaponId on the legacy tree, losing none",
     async ({ weaponId, attachments, orphanedCount }) => {
       const client = fixtureClient();
       const doc = await client.fetchResource<ItemsDocument>("items");
@@ -422,6 +430,8 @@ describe("legacyV1MigrationSlots", () => {
       );
       expect(v2.attachments).toEqual(attachments);
       expect(v2.orphaned).toHaveLength(orphanedCount);
+      const kept = new Set([...Object.values(v2.attachments), ...v2.orphaned]);
+      expect(Object.keys(doc.items).filter((id) => !kept.has(id))).toEqual([]);
     },
   );
 });

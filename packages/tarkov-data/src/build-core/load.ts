@@ -17,11 +17,13 @@ import { applyBuildAction } from "./reducer.js";
  * the one load path for `/builder/$id`, a loaded comparison's two sides, a build pasted into
  * Compare, and the Builder's handoff to Compare.
  *
- * - v1 places its bare mod ids with the frozen legacy tree (`migrateV1ToV2`), as every v1 link
- *   always has; v2 to v5 step up through the migrations.
+ * - v1 places its bare mod ids on the frozen legacy tree (`migrateV1ToV2`): each one in the
+ *   first free slot that allows it, and any with no free slot left in `orphaned`. v2 to v5
+ *   step up through the migrations.
  * - Every attachment not on the weapon then moves to `orphaned` (`applyBuildAction`'s `load`):
  *   a part beneath an empty parent, one its slot no longer takes, or one the game data no
- *   longer holds. Nothing is dropped, and nothing is capped here.
+ *   longer holds. Nothing is dropped, and nothing is capped here. `orphaned` lists ids, so
+ *   two copies of one part that are both off the weapon appear in it once.
  * - A build whose weapon the game data no longer holds has no slots to check against: it keeps
  *   every attachment the game data still holds, where it was saved, and orphans the rest. A v1
  *   build's mod ids, which cannot be placed without the weapon, all become orphans.

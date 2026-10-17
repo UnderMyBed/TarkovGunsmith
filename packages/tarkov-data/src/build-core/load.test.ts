@@ -8,6 +8,10 @@ const M4A1_UPPER = "55d355e64bdc2d962f8b4569";
 const HANDGUARD_ID = "5ae30db85acfc408fb139a05";
 const COLT_A2_GRIP = "55d4b9964bdc2d1d4e8b456e";
 const HANDGUARD = "mod_reciever/mod_handguard";
+const ELCAN = "57ac965c24597706be5f975c";
+const AIMPOINT_MOUNT = "58d39d3d86f77445bb794ae7";
+const PEQ15 = "544909bb4bdc2d6f028b4577";
+const KAC_RIS = "55f84c3c4bdc2d5f408b4576";
 const GONE_WEAPON = "111111111111111111111111";
 const BOGUS = "000000000000000000000000";
 const CREATED = "2026-01-01T00:00:00.000Z";
@@ -39,6 +43,43 @@ describe("loadSavedBuild", () => {
       mod_reciever: M4A1_UPPER,
       [HANDGUARD]: HANDGUARD_ID,
     });
+  });
+
+  it("v1: a later mod for a slot already taken never overwrites it; with no free slot it is orphaned", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    // The Aimpoint mount also fits the upper's scope slot. It used to overwrite the ELCAN there,
+    // and the ELCAN was then neither placed nor orphaned.
+    const v1 = parse({
+      version: 1,
+      weaponId: M4A1,
+      modIds: [M4A1_UPPER, ELCAN, AIMPOINT_MOUNT],
+      createdAt: CREATED,
+    });
+    const loaded = loadSavedBuild(v1, snapshot);
+    expect(loaded.attachments).toEqual({
+      mod_reciever: M4A1_UPPER,
+      "mod_reciever/mod_scope": ELCAN,
+    });
+    expect(loaded.orphaned).toEqual([AIMPOINT_MOUNT]);
+  });
+
+  it("v1: each copy of a repeated id takes the next free slot that allows it", async () => {
+    // A preset can fit the same part twice; v1 used to keep only the first copy.
+    const { snapshot } = await fixtureSnapshot();
+    const v1 = parse({
+      version: 1,
+      weaponId: M4A1,
+      modIds: [M4A1_UPPER, KAC_RIS, PEQ15, PEQ15],
+      createdAt: CREATED,
+    });
+    const loaded = loadSavedBuild(v1, snapshot);
+    expect(loaded.attachments).toEqual({
+      mod_reciever: M4A1_UPPER,
+      [HANDGUARD]: KAC_RIS,
+      [`${HANDGUARD}/mod_tactical001`]: PEQ15,
+      [`${HANDGUARD}/mod_tactical002`]: PEQ15,
+    });
+    expect(loaded.orphaned).toEqual([]);
   });
 
   it("v1 on a weapon the game data no longer holds: every mod id is kept as an orphan", async () => {
