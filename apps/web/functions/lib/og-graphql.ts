@@ -8,6 +8,7 @@ import {
   parseBuilderSnapshot,
   snapshotPart,
   snapshotWeaponList,
+  snapshotWeaponPresets,
   snapshotWeaponTree,
   type AttachablePart,
   type BuilderPrices,
@@ -172,6 +173,9 @@ export function fetchOgRowsForBuild(
     const part = priced.get(id);
     return part === undefined ? [] : [part];
   });
-  const price = buildPriceUnder(args.gate, { weapon: found, parts });
+  // The weapon's presets, as the Builder passes them (`priceBuild`): a build bought as a preset
+  // does not pay again for the parts it comes with.
+  const presets = snapshotWeaponPresets(snapshot, table)[args.weaponId] ?? [];
+  const price = buildPriceUnder(args.gate, { weapon: found, parts, presets });
   return { weapon, mods, attachments, priceRub: price.status === "priced" ? price.totalRUB : null };
 }

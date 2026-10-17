@@ -3,8 +3,16 @@ import {
   BUILDER_SNAPSHOT_SCHEMA,
   buildBuilderSnapshot,
   DEFAULT_PROFILE,
+  partsById,
+  snapshotPartCatalog,
+  snapshotWeaponList,
+  snapshotWeaponPresets,
+  snapshotWeaponTree,
+  type PriceGate,
   type SnapshotDocuments,
 } from "@tarkov/data";
+import { capturedBuilderData } from "../../src/test/captured-data.js";
+import { priceBuild } from "../../src/features/builder/build-price.js";
 import { hydrateBuildCard } from "@tarkov/og";
 import { availabilityPillText } from "./og-availability.js";
 import {
@@ -254,6 +262,56 @@ describe("fetchOgRowsForBuild", () => {
     expect(() =>
       fetchOgRowsForBuild({ weaponId: "ghost", attachments: {}, gate: null }, ogData()),
     ).toThrow(/weapon ghost not found/);
+  });
+});
+
+describe("fetchOgRowsForBuild over the captured documents", () => {
+  const M4A1 = "5447a9cd4bdc2dbd208b4567";
+  const M4A1_CARBINE = "5af08cf886f774223c269184";
+  const PM = "5448bd6b4bdc2dfc2f8b4569";
+  const PM_DEFAULT = "58414967245977598f1ad391";
+
+  const captured = (): Promise<OgData> => capturedBuilderData();
+
+  /** What the Builder shows for the same build (`priceBuild`), as a card total. */
+  function builderTotal(
+    data: OgData,
+    weaponId: string,
+    attachments: Record<string, string>,
+    gate: PriceGate,
+  ) {
+    const { snapshot } = data;
+    const table = data.prices.prices;
+    const price = priceBuild(
+      gate,
+      snapshotWeaponList(snapshot, table).find((w) => w.id === weaponId),
+      snapshotWeaponTree(snapshot, weaponId),
+      attachments,
+      partsById(snapshotPartCatalog(snapshot, table)),
+      snapshotWeaponPresets(snapshot, table)[weaponId] ?? [],
+    );
+    return price?.status === "priced" ? price.totalRUB : null;
+  }
+
+  it("prices a stock-preset build as the Builder does: the preset, its parts not paid again", async () => {
+    const data = await captured();
+    const presets = snapshotWeaponPresets(data.snapshot, data.prices.prices);
+    for (const [weaponId, presetId] of [
+      [M4A1, M4A1_CARBINE],
+      [PM, PM_DEFAULT],
+    ] as const) {
+      const attachments = { ...presets[weaponId]!.find((p) => p.id === presetId)!.attachments };
+      for (const gate of [null, { ...DEFAULT_PROFILE, flea: true, level: 40 }]) {
+        const card = fetchOgRowsForBuild({ weaponId, attachments, gate }, data).priceRub;
+        expect(card).not.toBeNull();
+        expect(card).toBe(builderTotal(data, weaponId, attachments, gate));
+      }
+    }
+    // The Carbine's own flea listing, which the Builder's e2e suite shows too.
+    const carbine = { ...presets[M4A1]!.find((p) => p.id === M4A1_CARBINE)!.attachments };
+    expect(
+      fetchOgRowsForBuild({ weaponId: M4A1, attachments: carbine, gate: null }, data).priceRub,
+    ).toBe(26_666);
   });
 });
 
