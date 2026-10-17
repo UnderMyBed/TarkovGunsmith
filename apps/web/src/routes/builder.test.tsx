@@ -46,6 +46,23 @@ const presetOption = (name: RegExp) =>
  * Pick the fixture M4A1 (which starts from its default preset: the muzzle and the stock), then
  * clear it with the Empty preset.
  */
+/**
+ * Select the slot tree's row labelled `slot`, and return the inspector's row for the part whose
+ * text matches `name`.
+ */
+async function partIn(
+  user: ReturnType<typeof userEvent.setup>,
+  slot: string,
+  name: RegExp,
+): Promise<HTMLElement> {
+  await user.click(screen.getByRole("treeitem", { name: new RegExp(`^${slot}\\b`) }));
+  const row = within(screen.getByRole("list", { name: "Parts" }))
+    .getAllByRole("listitem")
+    .find((li) => name.test(li.textContent ?? ""));
+  if (!row) throw new Error(`no ${String(name)} in the ${slot} inspector`);
+  return row;
+}
+
 async function selectFixtureWeapon(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByText("1 weapons available on your profile");
   await pickWeapon(user);
@@ -81,7 +98,7 @@ describe("/builder", () => {
     await selectFixtureWeapon(user);
 
     // Both fixture slots resolved from the weapon's raw `properties.slots`.
-    expect(screen.getByText("Muzzle")).toBeInTheDocument();
+    expect(screen.getByRole("treeitem", { name: /^Muzzle\b/ })).toBeInTheDocument();
     expect(screen.getByText("Stock")).toBeInTheDocument();
     // Stock spec (no mods attached yet).
     expect(stat("Mods attached")).toHaveTextContent("0");
@@ -98,9 +115,7 @@ describe("/builder", () => {
     await renderRoute("/builder");
     await selectFixtureWeapon(user);
 
-    const stockButton = screen.getByRole("button", {
-      name: /AR-15 Magpul MOE Carbine stock \(FDE\)/,
-    });
+    const stockButton = await partIn(user, "Stock", /AR-15 Magpul MOE Carbine stock \(FDE\)/);
     // mod-stock (the MOE stock) needs Peacekeeper LL3; DEFAULT_PROFILE's traders are all LL1
     // and flea is off,
     // so itemAvailability has no satisfying path — the SlotTree renders it LOCKED with the
@@ -108,13 +123,11 @@ describe("/builder", () => {
     expect(within(stockButton).getByText("Locked")).toBeInTheDocument();
     expect(within(stockButton).getByText("peacekeeper LL3")).toBeInTheDocument();
 
-    const muzzleButton = screen.getByRole("button", {
-      name: /AR-15 Colt USGI A2 5.56x45 flash hider/,
-    });
+    const muzzleButton = await partIn(user, "Muzzle", /AR-15 Colt USGI A2 5.56x45 flash hider/);
     // mod-muzzle (the A2 flash hider) needs only Mechanic LL1, available under the default profile.
     expect(within(muzzleButton).getByText("LL1")).toBeInTheDocument();
 
-    await user.click(muzzleButton);
+    await user.click(within(muzzleButton).getByRole("button", { name: /^Fit / }));
 
     expect(await screen.findByText("1 attached")).toBeInTheDocument();
     expect(stat("Mods attached")).toHaveTextContent("1");
@@ -241,9 +254,7 @@ describe("/builder on a first visit", () => {
     await screen.findByText("2 attached", { exact: true });
 
     // The Peacekeeper LL3 stock is open in theorycraft, and the toggle is not offered there.
-    const stockButton = screen.getByRole("button", {
-      name: /AR-15 Magpul MOE Carbine stock \(FDE\)/,
-    });
+    const stockButton = await partIn(user, "Stock", /AR-15 Magpul MOE Carbine stock \(FDE\)/);
     expect(within(stockButton).queryByText("Locked")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Show all items")).not.toBeInTheDocument();
 
@@ -251,7 +262,11 @@ describe("/builder on a first visit", () => {
     const panel = screen.getByRole("dialog", { name: "Your progression" });
     await user.click(within(panel).getByRole("button", { name: "LL1" }));
     await screen.findByText("1 weapons available on your profile");
-    expect(within(stockButton).getByText("Locked")).toBeInTheDocument();
+    expect(
+      within(await partIn(user, "Stock", /AR-15 Magpul MOE Carbine stock \(FDE\)/)).getByText(
+        "Locked",
+      ),
+    ).toBeInTheDocument();
   });
 });
 
@@ -267,7 +282,11 @@ describe("/builder draft", () => {
     await renderRoute("/builder");
     await pickFixture(user);
     await user.click(
-      screen.getByRole("button", { name: /AR-15 Colt USGI A2 5.56x45 flash hider/ }),
+      // The default preset fitted it already, so this is its (inert) Fitted.
+      within(await partIn(user, "Muzzle", /AR-15 Colt USGI A2 5.56x45 flash hider/)).getByRole(
+        "button",
+        { name: /^(Fit|Fitted:) / },
+      ),
     );
     await user.type(screen.getByLabelText("Build name"), "Night raid");
     cleanup();

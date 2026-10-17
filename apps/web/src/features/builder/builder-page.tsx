@@ -15,6 +15,8 @@ import { OptimizeView } from "./optimize/optimize-view.js";
 import { PresetSelect } from "./preset-select.js";
 import { ProgressionPanel, ProgressionStatus } from "./progression-panel.js";
 import { QuestNameProvider } from "./quest-names.js";
+import { SlotInspector } from "./slot-inspector.js";
+import { useSlotSelection } from "./slot-selection.js";
 import { SnapshotBanner } from "./snapshot-banner.js";
 import { StatStrip } from "./stat-strip.js";
 import { applySyncedProfile } from "./synced-profile.js";
@@ -142,6 +144,8 @@ export function BuilderPage({
   const openProgression = () => setProgressionOpen(true);
 
   const weapon = builder.selectedWeapon;
+  const selection = useSlotSelection(builder.tree.data, builder.attachments);
+  const selectedSlot = selection.selected?.slot ?? null;
 
   return (
     <QuestNameProvider>
@@ -228,16 +232,15 @@ export function BuilderPage({
             )}
 
             <div className="flex flex-wrap items-start gap-4">
-              <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
+              <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-4 lg:max-w-[460px]">
                 {weapon ? (
                   <BuildPanel
                     tree={builder.tree}
                     attachments={builder.attachments}
                     attachedCount={builder.attachedCount}
-                    onAttach={builder.handleAttach}
+                    selection={selection}
                     getAvailability={(id) => builder.availabilityById.get(id) ?? null}
                     mode={mode}
-                    getConflict={builder.getConflict}
                     getFittedConflict={builder.getFittedConflict}
                     orphaned={builder.orphaned}
                     modNames={builder.modNamesById}
@@ -279,7 +282,21 @@ export function BuilderPage({
                   </section>
                 )}
               </div>
-              <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-4 lg:max-w-[460px]">
+              <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
+                {weapon && selectedSlot && (
+                  <SlotInspector
+                    id={selection.inspectorId}
+                    slot={selectedSlot}
+                    fittedId={builder.attachments[selectedSlot.path] ?? null}
+                    parts={builder.partsById}
+                    onAttach={builder.handleAttach}
+                    getAvailability={(id) => builder.availabilityById.get(id) ?? null}
+                    getConflict={builder.getConflict}
+                    mode={mode}
+                    pricesReady={builder.prices.state === "ready"}
+                    onEscape={selection.focusTreeRow}
+                  />
+                )}
                 <DetailsPanel
                   name={saveMeta.buildName}
                   description={saveMeta.buildDescription}

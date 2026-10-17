@@ -3,28 +3,17 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  buildBuilderSnapshot,
-  staticBuilderDataSource,
-  TarkovDataProvider,
-  type ItemAvailability,
-  type TarkovJsonClient,
-  type WeaponTree,
-} from "@tarkov/data";
+import type { ItemAvailability, SlotDiffMap, WeaponTree } from "@tarkov/data";
 import { tinyTree, type SlotSpec } from "../../test/tiny-tree.js";
+import { SlotInspector } from "./slot-inspector.js";
+import { useSlotSelection } from "./slot-selection.js";
 import { SlotTree } from "./slot-tree.js";
-import { QuestNameProvider } from "./quest-names.js";
 
 afterEach(() => cleanup());
 
-/* These tests exist to survive the Builder redesign, so they assert only on what a user can
- * see and do: slot names, the attached-vs-empty readout, the option buttons, the requirement
- * that blocks a mod, and the `onAttach` calls the component reports upward. Nothing here
- * asserts a class name, an inline style, or a prop path — a restyle that keeps the behaviour
- * should keep this file green. */
-
-// ---------- Fixture builders ----------
+/* What a user sees and does in the tree: slot names, the fitted-vs-empty readout, which slot is
+ * selected, and the keys that move between rows and into the inspector. Nothing here asserts a
+ * class name or an inline style. The parts themselves are the inspector's: slot-inspector.test. */
 
 const NAMES = {
   "mod-dtk": "Zenit DTK-1 muzzle brake",
@@ -49,180 +38,145 @@ const STOCK: SlotSpec = {
   items: ["mod-stock"],
 };
 
-/** Built through the real slot graph, so child rows come from lazy expansion as in the app. */
 function tree(slots: readonly SlotSpec[]): WeaponTree {
   return { ...tinyTree("w-m4a1", slots, NAMES), weaponName: "Colt M4A1" };
 }
 
 const DEFAULT_TREE = tree([MUZZLE, STOCK]);
 
-// ---------- Rendering helpers ----------
-
-/**
- * The disclosure region for one named slot. Scoping through the slot's own name (rather than
- * a test id or a class) keeps assertions readable while `within()` stops a name that appears
- * in two slots from matching the wrong one.
- */
-function slotRegion(name: string): HTMLElement {
-  const label = screen.getAllByText(name).find((el) => el.closest("details") !== null);
-  const region = label?.closest("details");
-  if (!region) throw new Error(`no slot region found for "${name}"`);
-  return region;
+interface HarnessProps {
+  tree?: WeaponTree;
+  attachments?: Record<string, string>;
+  onAttach?: (path: string, itemId: string | null) => void;
+  getAvailability?: (itemId: string) => ItemAvailability | null;
+  getFittedConflict?: (path: string) => string | null;
+  diff?: SlotDiffMap;
 }
 
-/** Expand a slot the way a user does — by activating its header. */
-async function openSlot(user: ReturnType<typeof userEvent.setup>, name: string) {
-  const region = slotRegion(name);
-  const summary = region.querySelector("summary");
-  if (!summary) throw new Error(`slot "${name}" has no header to activate`);
-  await user.click(summary);
-  return region;
-}
-
-function renderTree(props?: Partial<React.ComponentProps<typeof SlotTree>>) {
-  const onAttach = vi.fn();
-  const utils = render(
-    <SlotTree tree={DEFAULT_TREE} attachments={{}} onAttach={onAttach} {...props} />,
+/** The tree and the inspector wired through one selection, as the Builder wires them. */
+function Workbench({
+  tree: t = DEFAULT_TREE,
+  attachments = {},
+  onAttach = vi.fn(),
+  getAvailability,
+  getFittedConflict,
+  diff,
+}: HarnessProps) {
+  const selection = useSlotSelection(t, attachments);
+  const slot = selection.selected?.slot;
+  return (
+    <>
+      <SlotTree
+        selection={selection}
+        attachments={attachments}
+        getAvailability={getAvailability}
+        getFittedConflict={getFittedConflict}
+        diff={diff}
+      />
+      {slot && (
+        <SlotInspector
+          id={selection.inspectorId}
+          slot={slot}
+          fittedId={attachments[slot.path] ?? null}
+          parts={new Map()}
+          onAttach={onAttach}
+          getAvailability={getAvailability ?? (() => null)}
+          mode="theorycraft"
+          pricesReady={false}
+          onEscape={selection.focusTreeRow}
+        />
+      )}
+    </>
   );
-  return { onAttach, ...utils };
 }
 
-// ---------- Availability fixtures ----------
+function row(label: string): HTMLElement {
+  return screen.getByRole("treeitem", { name: new RegExp(`^${label}\\b`) });
+}
 
-const AVAILABLE_TRADER: ItemAvailability = {
-  available: true,
-  kind: "trader",
-  traderNormalizedName: "prapor",
-  minLevel: 1,
-  priceRUB: 3000,
-  preset: null,
-  assumedQuest: null,
-};
-const AVAILABLE_FLEA: ItemAvailability = { available: true, kind: "flea", priceRUB: 4500 };
+function rows(): HTMLElement[] {
+  return screen.getAllByRole("treeitem");
+}
 
-describe("SlotTree — empty weapon", () => {
+describe("SlotTree — rows", () => {
   it("says the weapon has no mod slots rather than rendering an empty shell", () => {
-    render(<SlotTree tree={tree([])} attachments={{}} onAttach={vi.fn()} />);
+    render(<Workbench tree={tree([])} />);
     expect(screen.getByText("This weapon has no mod slots.")).toBeInTheDocument();
-  });
-});
-
-describe("SlotTree — slot headers", () => {
-  it("lists every top-level slot by name", () => {
-    renderTree();
-    expect(screen.getByText("Muzzle")).toBeInTheDocument();
-    expect(screen.getByText("Stock")).toBeInTheDocument();
+    expect(screen.queryByRole("tree")).not.toBeInTheDocument();
   });
 
-  it("reads as empty until something is attached, then reads as the attached mod", () => {
-    const { rerender } = renderTree();
-    expect(within(slotRegion("Muzzle")).getByText(/— empty —/)).toBeInTheDocument();
+  it("lists every top-level slot as a tree row at level 1", () => {
+    render(<Workbench />);
+    expect(screen.getByRole("tree", { name: "Slots" })).toBeInTheDocument();
+    expect(rows().map((r) => r.dataset.slotPath)).toEqual(["mod_muzzle", "mod_stock"]);
+    expect(row("Muzzle")).toHaveAttribute("aria-level", "1");
+    expect(row("Muzzle")).toHaveAttribute("aria-posinset", "1");
+    expect(row("Muzzle")).toHaveAttribute("aria-setsize", "2");
+  });
 
-    rerender(
-      <SlotTree tree={DEFAULT_TREE} attachments={{ mod_muzzle: "mod-dtk" }} onAttach={vi.fn()} />,
+  it("reads as empty until something is fitted, then names the fitted part", () => {
+    const { rerender } = render(<Workbench />);
+    expect(within(row("Muzzle")).getByText("empty")).toBeInTheDocument();
+    rerender(<Workbench attachments={{ mod_muzzle: "mod-dtk" }} />);
+    expect(within(row("Muzzle")).queryByText("empty")).not.toBeInTheDocument();
+    expect(within(row("Muzzle")).getByText("Zenit DTK-1 muzzle brake")).toBeInTheDocument();
+  });
+
+  it("marks a required slot, and flags it while it is empty", () => {
+    const { rerender } = render(<Workbench />);
+    expect(row("Stock")).toHaveAccessibleName(/required/);
+    expect(within(row("Stock")).getByText("Required")).toBeInTheDocument();
+    expect(within(row("Muzzle")).queryByText("Required")).not.toBeInTheDocument();
+    rerender(<Workbench attachments={{ mod_stock: "mod-stock" }} />);
+    expect(within(row("Stock")).queryByText("Required")).not.toBeInTheDocument();
+  });
+
+  it("carries the fitted part's availability pill and any clash it has", () => {
+    render(
+      <Workbench
+        attachments={{ mod_muzzle: "mod-dtk" }}
+        getAvailability={(id) =>
+          id === "mod-dtk"
+            ? {
+                available: true,
+                kind: "trader",
+                traderNormalizedName: "prapor",
+                minLevel: 1,
+                priceRUB: 3000,
+                preset: null,
+                assumedQuest: null,
+              }
+            : null
+        }
+        getFittedConflict={(path) => (path === "mod_muzzle" ? "Conflicts with CTR" : null)}
+      />,
     );
-    const muzzle = slotRegion("Muzzle");
-    expect(within(muzzle).queryByText(/— empty —/)).not.toBeInTheDocument();
-    // The header now carries the mod name; the option button carries it too, hence getAllBy.
-    expect(within(muzzle).getAllByText("Zenit DTK-1 muzzle brake").length).toBeGreaterThan(0);
-  });
-
-  it("flags a required slot while it is empty, and stops flagging it once filled", () => {
-    const { rerender } = renderTree();
-    expect(within(slotRegion("Stock")).getByText("Required")).toBeInTheDocument();
-    expect(within(slotRegion("Muzzle")).queryByText("Required")).not.toBeInTheDocument();
-
-    rerender(
-      <SlotTree tree={DEFAULT_TREE} attachments={{ mod_stock: "mod-stock" }} onAttach={vi.fn()} />,
-    );
-    expect(within(slotRegion("Stock")).queryByText("Required")).not.toBeInTheDocument();
-  });
-
-  it("counts the options each slot offers, singular and plural", () => {
-    renderTree();
-    expect(within(slotRegion("Muzzle")).getByText("2 opts")).toBeInTheDocument();
-    expect(within(slotRegion("Stock")).getByText("1 opt")).toBeInTheDocument();
-  });
-});
-
-describe("SlotTree — expanding a slot", () => {
-  it("keeps a slot's options out of view until its header is activated", async () => {
-    const user = userEvent.setup();
-    renderTree();
-
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    expect(option).not.toBeVisible();
-
-    await openSlot(user, "Muzzle");
-    expect(option).toBeVisible();
-  });
-});
-
-describe("SlotTree — attaching and detaching", () => {
-  it("reports the slot path and item id when an option is chosen", async () => {
-    const user = userEvent.setup();
-    const { onAttach } = renderTree();
-    await openSlot(user, "Muzzle");
-
-    await user.click(screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ }));
-
-    expect(onAttach).toHaveBeenCalledWith("mod_muzzle", "mod-dtk");
-  });
-
-  it("reports a null item id when the slot is emptied via — none —", async () => {
-    const user = userEvent.setup();
-    const { onAttach } = renderTree({ attachments: { mod_muzzle: "mod-dtk" } });
-    await openSlot(user, "Muzzle");
-
-    await user.click(within(slotRegion("Muzzle")).getByRole("button", { name: /— none —/ }));
-
-    expect(onAttach).toHaveBeenCalledWith("mod_muzzle", null);
-  });
-
-  it("offers — none — even on a required slot, so a wrong pick is always reversible", async () => {
-    const user = userEvent.setup();
-    const { onAttach } = renderTree({ attachments: { mod_stock: "mod-stock" } });
-    await openSlot(user, "Stock");
-
-    await user.click(within(slotRegion("Stock")).getByRole("button", { name: /— none —/ }));
-
-    expect(onAttach).toHaveBeenCalledWith("mod_stock", null);
+    expect(within(row("Muzzle")).getByText("LL1")).toBeInTheDocument();
+    expect(within(row("Muzzle")).getByText("Conflicts with CTR")).toBeInTheDocument();
   });
 });
 
 describe("SlotTree — nested slots", () => {
-  it("reveals an attached mod's own sub-slots, and reports the child path when one is filled", async () => {
-    const user = userEvent.setup();
-    const { onAttach } = renderTree({ attachments: { mod_muzzle: "mod-adapter" } });
-
-    // The adapter's sub-slot is only reachable because the adapter is attached.
-    expect(screen.getByText("Suppressor mount")).toBeInTheDocument();
-
-    await openSlot(user, "Suppressor mount");
-    await user.click(screen.getByRole("button", { name: /Nightforce suppressor/ }));
-
-    expect(onAttach).toHaveBeenCalledWith("mod_muzzle/mod_muzzle", "mod-can");
+  it("shows a fitted part's own slots as the rows under it, one level deeper", () => {
+    render(<Workbench attachments={{ mod_muzzle: "mod-adapter" }} />);
+    const child = row("Suppressor mount");
+    expect(child).toHaveAttribute("data-slot-path", "mod_muzzle/mod_muzzle");
+    expect(child).toHaveAttribute("aria-level", "2");
+    expect(row("Muzzle")).toHaveAttribute("aria-expanded", "true");
+    expect(rows().map((r) => r.dataset.slotPath)).toEqual([
+      "mod_muzzle",
+      "mod_muzzle/mod_muzzle",
+      "mod_stock",
+    ]);
   });
 
-  it("hides sub-slots that belong to a mod that is not attached", () => {
-    renderTree({ attachments: { mod_muzzle: "mod-dtk" } });
-    // mod-dtk has no children; the adapter's sub-slot must not leak into the tree.
+  it("hides the slots of a part that is not fitted", () => {
+    render(<Workbench attachments={{ mod_muzzle: "mod-dtk" }} />);
     expect(screen.queryByText("Suppressor mount")).not.toBeInTheDocument();
+    expect(row("Muzzle")).not.toHaveAttribute("aria-expanded");
   });
 
-  it("tracks the child slot's own attachment independently of its parent", () => {
-    renderTree({
-      attachments: { mod_muzzle: "mod-adapter", "mod_muzzle/mod_muzzle": "mod-can" },
-    });
-    const child = slotRegion("Suppressor mount");
-    expect(within(child).queryByText(/— empty —/)).not.toBeInTheDocument();
-    expect(within(child).getAllByText("Nightforce suppressor").length).toBeGreaterThan(0);
-  });
-});
-
-describe("SlotTree — depth", () => {
-  it("shows a slot as deep as the attached parts go, with no level cap", () => {
-    // Five levels, each slot holding a part that has the next slot.
+  it("shows a slot as deep as the fitted parts go, with no level cap", () => {
     const chain = (depth: number): SlotSpec => ({
       nameId: `mod_l${depth}`,
       name: `Level ${depth}`,
@@ -234,240 +188,52 @@ describe("SlotTree — depth", () => {
       path = path ? `${path}/mod_l${d}` : `mod_l${d}`;
       attachments[path] = `part-${d}`;
     }
-    render(<SlotTree tree={tree([chain(1)])} attachments={attachments} onAttach={vi.fn()} />);
-    expect(screen.getByText("Level 5")).toBeInTheDocument();
+    render(<Workbench tree={tree([chain(1)])} attachments={attachments} />);
+    expect(row("Level 5")).toHaveAttribute("aria-level", "5");
   });
 });
 
-describe("SlotTree — conflicts", () => {
-  const getConflict = (path: string, itemId: string) =>
-    path === "mod_muzzle" && itemId === "mod-adapter" ? "Conflicts with CTR" : null;
+describe("SlotTree — selection", () => {
+  it("selects the first slot by default and shows it in the inspector", () => {
+    render(<Workbench />);
+    expect(row("Muzzle")).toHaveAttribute("aria-selected", "true");
+    expect(row("Stock")).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("region", { name: "Muzzle options" })).toBeInTheDocument();
+  });
 
-  it("shows a conflicting option disabled, with the reason, and never attaches it", async () => {
+  it("selects a slot when its row is clicked", async () => {
     const user = userEvent.setup();
-    const { onAttach } = renderTree({ getConflict });
-    await openSlot(user, "Muzzle");
-
-    const option = screen.getByRole("button", { name: /SureFire muzzle adapter/ });
-    expect(option).toBeDisabled();
-    expect(within(option).getByText("Conflicts with CTR")).toBeInTheDocument();
-    await user.click(option);
-    expect(onAttach).not.toHaveBeenCalled();
-
-    // Its neighbours stay choosable.
-    expect(screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ })).toBeEnabled();
+    render(<Workbench />);
+    await user.click(row("Stock"));
+    expect(row("Stock")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("region", { name: "Stock options" })).toBeInTheDocument();
   });
 
-  it("names the clash beside a fitted part that conflicts with another fitted part", () => {
-    renderTree({
-      attachments: { mod_muzzle: "mod-adapter" },
-      getFittedConflict: (path) => (path === "mod_muzzle" ? "Conflicts with CTR" : null),
-    });
-    expect(within(slotRegion("Muzzle")).getByText("Conflicts with CTR")).toBeInTheDocument();
-  });
-
-  it("never disables the option that is already attached", async () => {
-    const user = userEvent.setup();
-    renderTree({ getConflict, attachments: { mod_muzzle: "mod-adapter" } });
-    await openSlot(user, "Muzzle");
-    expect(
-      within(slotRegion("Muzzle")).getByRole("button", { name: /SureFire muzzle adapter/ }),
-    ).toBeEnabled();
-  });
-});
-
-describe("SlotTree — slots with no concrete options", () => {
-  it("names the categories a slot accepts when it has no resolved items", () => {
-    const categorySlot: SlotSpec = {
-      nameId: "mod_scope",
-      name: "Scope",
-      items: [],
-      allowedCategories: [
-        { id: "c-1", name: "Assault scope", normalizedName: "assault-scope" },
-        { id: "c-2", name: "Reflex sight", normalizedName: "reflex-sight" },
-      ],
-    };
-    render(<SlotTree tree={tree([categorySlot])} attachments={{}} onAttach={vi.fn()} />);
-
-    const region = slotRegion("Scope");
-    expect(within(region).getByText(/Assault scope · Reflex sight/)).toBeInTheDocument();
-    // Nothing to choose, so no picker is offered at all.
-    expect(within(region).queryByRole("button")).not.toBeInTheDocument();
-  });
-
-  it("says so plainly when a slot resolves to neither items nor categories", () => {
-    const barrenSlot: SlotSpec = { nameId: "mod_mount", name: "Mount", items: [] };
-    render(<SlotTree tree={tree([barrenSlot])} attachments={{}} onAttach={vi.fn()} />);
-
-    expect(
-      within(slotRegion("Mount")).getByText("No explicit allowed items or categories."),
-    ).toBeInTheDocument();
-  });
-});
-
-describe("SlotTree — availability", () => {
-  it("shows no source badge at all when availability is unknown", () => {
-    renderTree({ getAvailability: () => null, attachments: { mod_muzzle: "mod-dtk" } });
-    expect(screen.queryByText("Locked")).not.toBeInTheDocument();
-    expect(screen.queryByText("LL1")).not.toBeInTheDocument();
-    expect(screen.queryByText("Flea")).not.toBeInTheDocument();
-  });
-
-  it("labels an option reachable from a trader with that trader's loyalty level", () => {
-    renderTree({ getAvailability: () => AVAILABLE_TRADER });
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    expect(within(option).getByText("LL1")).toBeInTheDocument();
-  });
-
-  it("labels an option reachable by a trader barter with the level and barter", () => {
-    renderTree({
-      getAvailability: () => ({
-        available: true,
-        kind: "barter",
-        traderNormalizedName: "mechanic",
-        minLevel: 1,
-        priceRUB: 11406,
-        barterId: "6ad1e5fdef48f022220a3f0c3",
-        preset: null,
-        assumedQuest: null,
-      }),
-    });
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    expect(within(option).getByText("LL1 barter")).toBeInTheDocument();
-  });
-
-  it("labels an option reachable only on the flea market as Flea", () => {
-    renderTree({ getAvailability: () => AVAILABLE_FLEA });
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    expect(within(option).getByText("Flea")).toBeInTheDocument();
-  });
-
-  it("carries the attached mod's source badge up into the collapsed slot header", () => {
-    renderTree({
-      attachments: { mod_muzzle: "mod-dtk" },
-      getAvailability: (id) => (id === "mod-dtk" ? AVAILABLE_TRADER : null),
-    });
-    // Readable without expanding the slot: the header itself reports the source.
-    const summary = slotRegion("Muzzle").querySelector("summary");
-    expect(summary).not.toBeNull();
-    expect(within(summary as HTMLElement).getByText("LL1")).toBeInTheDocument();
-  });
-
-  it.each([
-    [
-      "a trader loyalty level the player has not reached",
-      {
-        available: false,
-        reason: "trader-ll-required",
-        traderNormalizedName: "mechanic",
-        minLevel: 2,
-        payment: "cash",
-        preset: null,
-      },
-      "mechanic LL2",
-    ],
-    [
-      "a trader loyalty level on a barter",
-      {
-        available: false,
-        reason: "trader-ll-required",
-        traderNormalizedName: "peacekeeper",
-        minLevel: 2,
-        payment: "barter",
-        preset: null,
-      },
-      "peacekeeper LL2 barter",
-    ],
-    [
-      "an unfinished quest",
-      {
-        available: false,
-        reason: "quest-required",
-        questNormalizedName: "gunsmith-master-part-1",
-        traderNormalizedName: "mechanic",
-        payment: "cash",
-        preset: null,
-      },
-      // Outside a QuestNameProvider no name is known; the slug is never shown.
-      "Quest",
-    ],
-    [
-      "a flea-market player-level gate",
-      { available: false, reason: "flea-level-required", minPlayerLevel: 20 },
-      "Flea level 20",
-    ],
-    ["no flea access", { available: false, reason: "flea-locked" }, "Flea only"],
-    [
-      "a trader the profile does not track",
-      {
-        available: false,
-        reason: "untracked-trader",
-        traderNormalizedName: "ref",
-        minLevel: 3,
-        payment: "barter",
-      },
-      "ref LL3 (not in profile)",
-    ],
-    ["nothing selling it", { available: false, reason: "no-sources" }, "No sources"],
-  ] as const satisfies readonly (readonly [string, ItemAvailability, string])[])(
-    "marks an option LOCKED and names the blocker when it is gated by %s",
-    (_label, availability, expected) => {
-      renderTree({ getAvailability: () => availability });
-      const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-      expect(within(option).getByText("Locked")).toBeInTheDocument();
-      expect(within(option).getByText(expected)).toBeInTheDocument();
-    },
-  );
-
-  it("still offers a locked option — gating informs the choice, it does not block it", async () => {
-    const user = userEvent.setup();
-    const { onAttach } = renderTree({
-      getAvailability: () => ({ available: false, reason: "no-sources" }),
-    });
-    await openSlot(user, "Muzzle");
-
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    expect(option).toBeEnabled();
-    await user.click(option);
-
-    expect(onAttach).toHaveBeenCalledWith("mod_muzzle", "mod-dtk");
-  });
-
-  it("keeps the same options and blockers visible whether or not showAll is set", () => {
-    // `showAll` only controls how strongly an unreachable option is de-emphasised. It must
-    // never remove an option or drop the reason it is unreachable — that would make the
-    // toggle a filter, which it is not.
-    const gated: ItemAvailability = { available: false, reason: "flea-locked" };
-    const { rerender } = renderTree({ getAvailability: () => gated });
-    expect(screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ })).toBeInTheDocument();
-    expect(screen.getAllByText("Flea only").length).toBe(3);
-
-    rerender(
-      <SlotTree
-        tree={DEFAULT_TREE}
-        attachments={{}}
-        onAttach={vi.fn()}
-        getAvailability={() => gated}
-        showAll
-      />,
-    );
-    expect(screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ })).toBeInTheDocument();
-    expect(screen.getAllByText("Flea only").length).toBe(3);
-  });
-});
-
-describe("SlotTree — compare mode", () => {
-  it("stays fully readable and interactive when a slot diff is supplied", async () => {
-    // Compare mode annotates rows that differ between two builds. The annotation is a visual
-    // cue only, so what is asserted here is the part that must not regress: supplying a diff
-    // changes nothing about what the tree shows or what it lets you do.
+  it("keeps the selection when a part is fitted, and its children appear", async () => {
     const user = userEvent.setup();
     const onAttach = vi.fn();
+    const { rerender } = render(<Workbench onAttach={onAttach} />);
+    await user.click(screen.getByRole("button", { name: "Fit SureFire muzzle adapter" }));
+    expect(onAttach).toHaveBeenCalledWith("mod_muzzle", "mod-adapter");
+    rerender(<Workbench onAttach={onAttach} attachments={{ mod_muzzle: "mod-adapter" }} />);
+    expect(row("Muzzle")).toHaveAttribute("aria-selected", "true");
+    expect(row("Suppressor mount")).toBeInTheDocument();
+  });
+
+  it("falls back to the nearest slot still on the tree when the selected one goes", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<Workbench attachments={{ mod_muzzle: "mod-adapter" }} />);
+    await user.click(row("Suppressor mount"));
+    expect(row("Suppressor mount")).toHaveAttribute("aria-selected", "true");
+    rerender(<Workbench attachments={{ mod_muzzle: "mod-dtk" }} />);
+    expect(row("Muzzle")).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("stays readable and selectable when Compare supplies a slot diff", async () => {
+    const user = userEvent.setup();
     render(
-      <SlotTree
-        tree={DEFAULT_TREE}
+      <Workbench
         attachments={{ mod_muzzle: "mod-dtk" }}
-        onAttach={onAttach}
         diff={
           new Map([
             ["mod_muzzle", "differs"],
@@ -476,212 +242,75 @@ describe("SlotTree — compare mode", () => {
         }
       />,
     );
-
-    expect(screen.getByText("Muzzle")).toBeInTheDocument();
-    expect(screen.getByText("Stock")).toBeInTheDocument();
-
-    await openSlot(user, "Stock");
-    await user.click(screen.getByRole("button", { name: /Magpul CTR carbine stock/ }));
-    expect(onAttach).toHaveBeenCalledWith("mod_stock", "mod-stock");
+    expect(row("Muzzle")).toHaveAttribute("data-diff", "differs");
+    expect(row("Muzzle")).toHaveAccessibleName(/differs from the other build/);
+    expect(row("Stock")).toHaveAttribute("data-diff", "left-only");
+    await user.click(row("Stock"));
+    expect(row("Stock")).toHaveAttribute("aria-selected", "true");
   });
 });
 
-describe("SlotTree — arrow-key navigation", () => {
-  /* Every traversal test below expands the slots it walks through first. That is deliberate,
-   * not incidental setup: the arrow-key handler builds its roving-focus list from the DOM
-   * without regard to whether a slot is open, so in a real browser the list contains option
-   * buttons that a closed <details> has rendered as `display: none`. `HTMLElement.focus()` on
-   * an unrendered element is a no-op per spec, so the focus would silently fail to move —
-   * whereas jsdom, which does no layout, moves it happily. Asserting traversal across
-   * COLLAPSED slots would therefore be asserting a jsdom artefact. See the PR body: the
-   * resulting stuck-focus behaviour is a real bug, out of scope for a tests-only change. */
+describe("SlotTree — keyboard", () => {
+  it("keeps exactly one row in the tab order, the selected one", () => {
+    render(<Workbench attachments={{ mod_muzzle: "mod-adapter" }} />);
+    const tabbable = rows().filter((r) => r.tabIndex === 0);
+    expect(tabbable).toEqual([row("Muzzle")]);
+  });
 
-  /** The slot headers, in the order the tree presents them. */
-  function headers(): HTMLElement[] {
-    return Array.from(document.querySelectorAll<HTMLElement>("details > summary"));
-  }
-
-  it("walks down and back up an expanded slot's rows with the arrow keys", async () => {
+  it("walks the rows with Down, Up, Home and End, stopping at the ends", async () => {
     const user = userEvent.setup();
-    renderTree();
-    await openSlot(user, "Muzzle");
-    const muzzle = headers()[0]!;
-    const none = within(slotRegion("Muzzle")).getByRole("button", { name: /— none —/ });
-    const dtk = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-
-    muzzle.focus();
+    render(<Workbench attachments={{ mod_muzzle: "mod-adapter" }} />);
+    const [muzzle, mount, stock] = rows();
+    muzzle!.focus();
     await user.keyboard("{ArrowDown}");
-    expect(none).toHaveFocus();
-
+    expect(mount).toHaveFocus();
     await user.keyboard("{ArrowDown}");
-    expect(dtk).toHaveFocus();
-
+    expect(stock).toHaveFocus();
+    await user.keyboard("{ArrowDown}");
+    expect(stock).toHaveFocus();
     await user.keyboard("{ArrowUp}");
-    expect(none).toHaveFocus();
-  });
-
-  it("crosses from the last row of one slot into the next slot's header", async () => {
-    const user = userEvent.setup();
-    renderTree();
-    await openSlot(user, "Muzzle");
-    const adapter = screen.getByRole("button", { name: /SureFire muzzle adapter/ });
-    const stockHeader = headers()[1];
-
-    adapter.focus();
-    await user.keyboard("{ArrowDown}");
-    expect(stockHeader).toHaveFocus();
-  });
-
-  it("stops at the ends instead of wrapping around", async () => {
-    const user = userEvent.setup();
-    renderTree();
-    await openSlot(user, "Muzzle");
-    await openSlot(user, "Stock");
-    const muzzle = headers()[0]!;
-    const lastRow = screen.getByRole("button", { name: /Magpul CTR carbine stock/ });
-
-    muzzle.focus();
-    await user.keyboard("{ArrowUp}");
+    expect(mount).toHaveFocus();
+    await user.keyboard("{Home}");
     expect(muzzle).toHaveFocus();
-
-    lastRow.focus();
-    await user.keyboard("{ArrowDown}");
-    expect(lastRow).toHaveFocus();
+    await user.keyboard("{End}");
+    expect(stock).toHaveFocus();
+    // The tab stop follows the focus; the selection does not.
+    expect(stock!.tabIndex).toBe(0);
+    expect(muzzle).toHaveAttribute("aria-selected", "true");
   });
 
-  it("steps into an expanded slot's options rather than skipping over them", async () => {
+  it("moves Right into a fitted part's slots and Left back to their parent", async () => {
     const user = userEvent.setup();
-    renderTree();
-    const muzzle = headers()[0]!;
-
-    muzzle.focus();
+    render(<Workbench attachments={{ mod_muzzle: "mod-adapter" }} />);
+    row("Muzzle").focus();
     await user.keyboard("{ArrowRight}");
-    // The slot's options are now reachable, and ArrowDown lands on the first of them.
-    await user.keyboard("{ArrowDown}");
-    expect(within(slotRegion("Muzzle")).getByRole("button", { name: /— none —/ })).toHaveFocus();
-  });
-
-  it("opens a collapsed slot with ArrowRight and closes it again with ArrowLeft", async () => {
-    const user = userEvent.setup();
-    renderTree();
-    const muzzle = headers()[0]!;
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-
-    muzzle.focus();
+    expect(row("Suppressor mount")).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(row("Muzzle")).toHaveFocus();
+    // A row with no slots under it stays put.
+    row("Stock").focus();
     await user.keyboard("{ArrowRight}");
-    expect(option).toBeVisible();
-
-    await user.keyboard("{ArrowLeft}");
-    expect(option).not.toBeVisible();
+    expect(row("Stock")).toHaveFocus();
   });
 
-  it("leaves an already-open slot open on ArrowRight and an already-closed one closed on ArrowLeft", async () => {
+  it("selects with Enter or Space and moves focus into the inspector; Escape comes back", async () => {
     const user = userEvent.setup();
-    renderTree();
-    const muzzle = headers()[0]!;
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-
-    muzzle.focus();
-    await user.keyboard("{ArrowLeft}");
-    expect(option).not.toBeVisible();
-
-    await user.keyboard("{ArrowRight}{ArrowRight}");
-    expect(option).toBeVisible();
-  });
-
-  it("does not expand or collapse a slot when the focus is on an option button", async () => {
-    const user = userEvent.setup();
-    renderTree();
-    await openSlot(user, "Muzzle");
-    const none = within(slotRegion("Muzzle")).getByRole("button", { name: /— none —/ });
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-
-    none.focus();
-    await user.keyboard("{ArrowLeft}");
-    // Still open: ArrowLeft from inside the body must not fold the slot away underneath you.
-    expect(option).toBeVisible();
-    expect(none).toHaveFocus();
-  });
-
-  it("ignores keys that are not arrows", async () => {
-    const user = userEvent.setup();
-    renderTree();
-    const muzzle = headers()[0]!;
-
-    muzzle.focus();
-    await user.keyboard("x");
-    expect(muzzle).toHaveFocus();
-  });
-});
-
-describe("SlotTree — quests", () => {
-  /** A Builder snapshot whose task list names one quest, as the snapshot's gating list does. */
-  function renderWithQuests(getAvailability: (id: string) => ItemAvailability | null) {
-    const { snapshot, prices } = buildBuilderSnapshot(
-      {
-        items: { items: { stamp: { id: "stamp", updated: "2026-10-16T00:00:00.000Z" } } },
-        tasks: { tasks: {} },
-        traders: {},
-        barters: [],
-      },
-      "fixtures",
+    render(<Workbench />);
+    row("Muzzle").focus();
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(row("Stock")).toHaveAttribute("aria-selected", "true");
+    const stockSearch = within(screen.getByRole("region", { name: "Stock options" })).getByRole(
+      "searchbox",
     );
-    const builderData = staticBuilderDataSource(
-      {
-        ...snapshot,
-        tasks: [
-          {
-            id: "5a03296886f774569778596a",
-            name: "I Need More Power",
-            normalizedName: "i-need-more-power",
-            kappaRequired: false,
-            trader: { normalizedName: "peacekeeper" },
-          },
-        ],
-      },
-      prices,
-    );
-    const noClient: TarkovJsonClient = {
-      fetchResource: (resource) => Promise.reject(new Error(`unexpected fetch of ${resource}`)),
-    };
-    return render(
-      <QueryClientProvider client={new QueryClient()}>
-        <TarkovDataProvider client={noClient} builderData={builderData}>
-          <QuestNameProvider>
-            <SlotTree
-              tree={DEFAULT_TREE}
-              attachments={{}}
-              onAttach={vi.fn()}
-              getAvailability={getAvailability}
-            />
-          </QuestNameProvider>
-        </TarkovDataProvider>
-      </QueryClientProvider>,
-    );
-  }
+    expect(stockSearch).toHaveFocus();
 
-  it("marks an option whose quest basic mode assumes, and names the quest", async () => {
-    renderWithQuests(() => ({
-      ...AVAILABLE_TRADER,
-      minLevel: 3,
-      assumedQuest: "i-need-more-power",
-    }));
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    const pill = within(option).getByText("LL3 · quest");
-    expect(await within(option).findByTitle("Assumes I Need More Power is complete")).toBe(pill);
-  });
+    await user.keyboard("{Escape}");
+    expect(row("Stock")).toHaveFocus();
 
-  it("names a missing quest by its display name, never its slug", async () => {
-    renderWithQuests(() => ({
-      available: false,
-      reason: "quest-required",
-      questNormalizedName: "i-need-more-power",
-      traderNormalizedName: "peacekeeper",
-      payment: "cash",
-      preset: null,
-    }));
-    const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    expect(await within(option).findByText("Quest: I Need More Power")).toBeInTheDocument();
-    expect(within(option).queryByText(/i-need-more-power/)).not.toBeInTheDocument();
+    await user.keyboard("{ArrowUp}[Space]");
+    expect(row("Muzzle")).toHaveAttribute("aria-selected", "true");
+    expect(
+      within(screen.getByRole("region", { name: "Muzzle options" })).getByRole("searchbox"),
+    ).toHaveFocus();
   });
 });

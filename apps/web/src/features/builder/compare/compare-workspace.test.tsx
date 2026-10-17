@@ -388,11 +388,11 @@ describe("CompareWorkspace seeding before live prices arrive", () => {
     const { container, rerender } = render(<CompareWorkspace />);
     await pickOnB(user);
     const muzzle = container.querySelector<HTMLElement>(
-      'details[data-slot-path="mod_muzzle"] > summary',
+      '[role="treeitem"][data-slot-path="mod_muzzle"]',
     );
     if (muzzle === null) throw new Error("side B's muzzle slot is not rendered");
     await user.click(muzzle);
-    await user.click(screen.getByRole("button", { name: /mod-muzzle/ }));
+    await user.click(screen.getByRole("button", { name: /^Fit mod-muzzle/ }));
     // No save before the prices: a save would commit the seed by itself.
     const edited = { ...FLEA_ATTACHMENTS, ...PRAPOR_ATTACHMENTS };
 
