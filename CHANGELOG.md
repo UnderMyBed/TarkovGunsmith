@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.27.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.26.0...v1.27.0) (2026-10-17)
+
+
+### Features
+
+* **builder:** phone layout — slot sheet, action bar, 3×2 strip (redesign 5/5) ([#299](https://github.com/UnderMyBed/TarkovGunsmith/issues/299)) ([d7217fa](https://github.com/UnderMyBed/TarkovGunsmith/commit/d7217faf4c5fe115c848181a1ddffb038b8526a8))
+
+
+### Bug Fixes
+
+* **compare:** real dialogs, an honest save label, and side-aware diff names ([#298](https://github.com/UnderMyBed/TarkovGunsmith/issues/298)) ([b3f24df](https://github.com/UnderMyBed/TarkovGunsmith/commit/b3f24df3e82ea6145ef1e83a09b969369722c2b3))
+* **lint:** lint the share-card Pages Function under functions/og/build ([#296](https://github.com/UnderMyBed/TarkovGunsmith/issues/296)) ([3f4cdbe](https://github.com/UnderMyBed/TarkovGunsmith/commit/3f4cdbec03fe28661f1f5752e0710e6ec5f89f46))
+* **optimizer:** a partial apply never leaves two parts that conflict ([#300](https://github.com/UnderMyBed/TarkovGunsmith/issues/300)) ([0a68847](https://github.com/UnderMyBed/TarkovGunsmith/commit/0a68847c976e59ffb873fc373f0cb7607f65c9a1))
+* **optimizer:** show every proposed change in the slot tree ([#302](https://github.com/UnderMyBed/TarkovGunsmith/issues/302)) ([ada636c](https://github.com/UnderMyBed/TarkovGunsmith/commit/ada636c6fea9bddec2d9179972f4747e2fb38183)), closes [#301](https://github.com/UnderMyBed/TarkovGunsmith/issues/301)
+
 ## [1.26.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.25.0...v1.26.0) (2026-10-17)
 
 
