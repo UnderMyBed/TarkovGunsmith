@@ -146,8 +146,9 @@ test.describe("builder optimizer diff view", () => {
     await expect(page.getByText("IDLE", { exact: true })).toBeVisible();
     await expect(page.getByText(/RUN THE SOLVER/i)).toBeVisible();
 
-    // The cancelled worker was terminated before its script arrived: once the script is
-    // served, nothing reports, and the view stays IDLE with no proposal.
+    // Serving the held script must not revive the cancelled run's view. This does not prove
+    // a late reply is dropped (a reply would need longer than these checks wait); that
+    // guarantee is covered in useOptimizer.test.ts.
     release();
     await served;
     await expect(page.getByText("IDLE", { exact: true })).toBeVisible();
