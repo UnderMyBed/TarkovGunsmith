@@ -1,39 +1,68 @@
 # `@tarkov/optimizer`
 
-Pure-TypeScript constraint solver for Tarkov weapon builds. Given a weapon,
-its slot tree, an allowed mod list, constraints (budget, profile, pinned
-slots), and an objective (min-recoil / max-ergonomics / min-weight /
-max-accuracy), returns the best build its heuristic branch-and-bound search
-finds. It is not provably optimal: the bound covers only pending slots, not the
-sub-slots of candidates not yet chosen, and a result may leave required slots
-empty or contain conflicting parts (#225).
+Pure-TypeScript solver for Tarkov weapon builds. Given a weapon, its slot tree, the part
+catalog, constraints (profile, budget, pinned slots) and an objective (min-recoil /
+max-ergonomics / min-weight / max-accuracy), `optimize` returns the best build exactly: every
+required slot filled, no two parts that clash, every pin kept wherever its path exists, inside
+the budget — and no such build scores better on the objective, then costs less, then has fewer
+parts. When none exists it says why.
 
-## What's in this package
+## How it works
 
-- `optimize(input)` → `OptimizationResult` — top-level entry point.
-- `objective.ts` — `score(objective, stats)` numeric scorer (smaller = better uniformly).
-- `bounds.ts` — lower-bound heuristic for remaining slots (enables B&B pruning).
-- `feasibility.ts` — availability + pinned-slot checks.
-- `branch-and-bound.ts` — recursive DFS core. It prunes on the budget, which covers the whole
-  build: the weapon by its cheapest path (the receiver, or a preset that comes with some of the
-  parts) plus every part that path does not supply, priced by `@tarkov/data`'s `priceUnder`.
-  An unknown price never fits a budget. `optimize` refuses a budget the cheapest weapon path
-  is already over, or one a pinned part with no known price makes uncheckable, with a message.
+- `problem.ts` — reduces the input to what the search needs: each reachable part's objective
+  figure (an integer in millionths), dispersion key (max-accuracy: the part that sets the
+  build's `centerOfImpact` / `deviationMax`), price under the profile, availability and
+  conflicts; and each way to buy the weapon (`@tarkov/data`'s `weaponPaths`: the receiver, or a
+  preset and the parts it supplies).
+- `frontier.ts` / `relaxed.ts` — a keyed Pareto-frontier DP over the slot DAG, memoised per part
+  and per slot definition. For a set of constraints it gives the best build on a weapon path that
+  ignores part conflicts and preset cover counts: a lower bound. With no budget it keeps one
+  point per dispersion key; with one, the (price, figure) frontier.
+- `search.ts` — best-first search over constraint sets. The node with the lowest bound is taken
+  next; its build's clashes are read with `@tarkov/data`'s `resolveBuild`, the rule the Builder
+  flags builds by. A build that breaks nothing is the answer; otherwise the node is split so
+  every valid build stays in some child and the broken one in none (see the function's comment
+  for the rules). Weapon paths share one search tree, and memoised values carry from a node to
+  its children except where a new constraint reaches them.
+- `solve.ts` — max-accuracy rates MOA itself, `multiplier(key) × (1 − Σ accuracyModifier)`, and
+  first looks for a build whose multiplier is 0, which beats every other.
+- `diagnose.ts` — why no build exists, in the order the user can act on: the budget (naming the
+  cheapest complete build), the pins, a required slot nothing obtainable fills, or parts that
+  cannot be fitted together.
+- `pins.ts` — which pins the build keeps, and why it drops the rest.
+
+Prices follow `@tarkov/data`'s `buildPriceUnder` rule: the weapon by its cheapest path plus
+every part that path does not supply. An unknown price never fits a budget, and ranks after any
+known one.
+
+## What it assumes of the data
+
+`pnpm verify:upstream` checks each of these against the live document:
+
+- the slot graph has no cycle (the DP throws on one);
+- no build can hold two parts that set dispersion (the DP throws on one);
+- `centerOfImpact` is never negative, so for every barrel a higher summed `accuracyModifier` is a
+  lower MOA;
+- a build's summed `accuracyModifier` stays inside (−1, 1), so no MOA is negative.
+
+The max-accuracy objective is exact for MOA as `weaponSpec` computes it, but the
+`(1 − Σ accuracyModifier)` factor itself **has no upstream oracle**: upstream's preset `moa` leaves
+accuracy modifiers out, so nothing confirms the factor matches the game.
 
 ## Conventions
 
-- **Pure functions only.** Same inputs → same outputs. Deterministic
-  tie-breaking: lowest total price, then lexicographic attachment-key order.
-- **No side effects.** No network, no clock except the monotonic
-  `performance.now()` used for timeout accounting.
-- **One function per file**, alongside its `.test.ts`.
-- **TDD strictly.** Write the test first; commit the failing test; then implement.
-- **100% line coverage** (branches 95%), enforced by vitest config.
+- **Pure functions.** Same inputs, same output. The only clock read is `Date.now()` against the
+  `timeoutMs` safety net (default 2 s), which returns `timeout` with no partial build.
+- **Tests:** unit tests per module; `solve.property.test.ts` checks 400 random problems against
+  a brute-force oracle; `goldens.test.ts` runs real M4A1, AKM and RSASS records
+  (`src/__fixtures__/goldens.json`, written by `scripts/optimizer-goldens.ts`) and pins the
+  optima an independent MILP found. Coverage is enforced at 100% lines, branches, functions and
+  statements.
 - **No React.** UI integration lives in `apps/web/src/features/builder/optimize/`.
 
 ## Out of scope
 
 - Fetching game data (that's `@tarkov/data`).
-- Stat computation (that's `@tarkov/ballistics` — the solver calls `weaponSpec` at each leaf).
+- Stat computation (that's `@tarkov/ballistics` — the result's `stats` come from `weaponSpec`).
 - UI / React / dialogs (that's `apps/web`).
-- Caching, memoization, or persistence — callers handle that.
+- Caching or persistence — callers handle that.

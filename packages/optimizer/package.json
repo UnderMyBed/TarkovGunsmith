@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Pure-TS constraint solver for Tarkov weapon builds. Heuristic branch-and-bound over slot decisions (not provably optimal, see #225); budget + availability + profile constraints.",
+  "description": "Pure-TS exact solver for Tarkov weapon builds: the best build for an objective under required slots, part conflicts, pins, a budget and a profile.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
