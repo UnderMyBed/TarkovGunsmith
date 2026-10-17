@@ -141,6 +141,35 @@ describe("useKeyboardShortcuts — / focus", () => {
     expect(screen.getByLabelText("Weapon")).toHaveFocus();
   });
 
+  it("puts the caret in the Builder's weapon combobox, which comes before any <select>", async () => {
+    const user = userEvent.setup();
+    function Workbench() {
+      useKeyboardShortcuts();
+      return (
+        <>
+          <input
+            type="text"
+            role="combobox"
+            aria-label="Weapon"
+            aria-expanded={false}
+            aria-controls="weapons"
+          />
+          <label>
+            Preset
+            <select>
+              <option>Default</option>
+            </select>
+          </label>
+        </>
+      );
+    }
+    render(<Workbench />);
+
+    await user.keyboard("/");
+
+    expect(screen.getByRole("combobox", { name: "Weapon" })).toHaveFocus();
+  });
+
   it("does nothing on a page with no picker to focus", async () => {
     const user = userEvent.setup();
     function Bare() {

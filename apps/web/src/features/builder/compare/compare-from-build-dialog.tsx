@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useId, useState, type ReactElement } from "react";
 import { Button, Card, CardContent, Input } from "@tarkov/ui";
 
 const BUILD_ID_REGEX = /^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/;
@@ -29,6 +29,7 @@ export function CompareFromBuildDialog({
   const [mode, setMode] = useState<Mode>("clone-both");
   const [pasteValue, setPasteValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const titleId = useId();
 
   if (!open) return null;
 
@@ -66,9 +67,12 @@ export function CompareFromBuildDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <Card className="w-full max-w-md">
+      {/* Named as a dialog so its own Compare button is told apart from the workbench's. */}
+      <Card role="dialog" aria-labelledby={titleId} className="w-full max-w-md">
         <CardContent className="flex flex-col gap-4 p-6">
-          <h2 className="text-lg font-bold">Compare this build</h2>
+          <h2 id={titleId} className="text-lg font-bold">
+            Compare this build
+          </h2>
 
           <label className="flex items-start gap-2">
             <input
