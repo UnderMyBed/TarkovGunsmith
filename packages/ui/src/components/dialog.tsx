@@ -57,6 +57,13 @@ export interface DialogProps {
   onClose: () => void;
   /** `id` of the element (typically DialogTitle) that labels the dialog. */
   labelledBy?: string;
+  /** The dialog's accessible name, for a dialog with no visible title to point at. */
+  "aria-label"?: string;
+  /**
+   * Where the panel sits: centred (the default), or anchored full-width to the bottom edge as a
+   * sheet, the way a phone presents a picker. Wrap a bottom dialog's content in <SheetPanel>.
+   */
+  placement?: "center" | "bottom";
   /** Close when the backdrop is clicked. Defaults to true. */
   closeOnBackdropClick?: boolean;
   children: ReactNode;
@@ -80,6 +87,8 @@ export function Dialog({
   open,
   onClose,
   labelledBy,
+  "aria-label": ariaLabel,
+  placement = "center",
   closeOnBackdropClick = true,
   children,
 }: DialogProps) {
@@ -178,7 +187,10 @@ export function Dialog({
   return createPortal(
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-background)]/80 transition-opacity duration-150"
+      className={cn(
+        "fixed inset-0 z-50 flex bg-[var(--color-background)]/80 transition-opacity duration-150",
+        placement === "bottom" ? "items-end" : "items-center justify-center",
+      )}
       onClick={
         closeOnBackdropClick
           ? // Only close when the click lands directly on the backdrop, not when it
@@ -199,8 +211,9 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
+        aria-label={ariaLabel}
         tabIndex={-1}
-        className="outline-none"
+        className={cn("outline-none", placement === "bottom" && "w-full min-w-0")}
       >
         {children}
       </div>
@@ -220,6 +233,31 @@ export function DialogPanel({ className, children, ...props }: DialogPanelProps)
     <Card className={cn("w-full max-w-2xl", className)} {...props}>
       {children}
     </Card>
+  );
+}
+
+export type SheetPanelProps = HTMLAttributes<HTMLDivElement>;
+
+/**
+ * The visible panel inside a bottom <Dialog>: full width, rounded on top, with a grab handle,
+ * no taller than the screen less a strip of the page behind, and scrolling inside itself.
+ * Its bottom padding clears a phone's home indicator.
+ */
+export function SheetPanel({ className, children, ...props }: SheetPanelProps) {
+  return (
+    <div
+      className={cn(
+        "max-h-[calc(100dvh-3rem)] w-full overflow-y-auto overscroll-contain rounded-t-[var(--radius-panel)] border-t border-[var(--color-border-strong)] bg-[var(--color-card)] pb-[env(safe-area-inset-bottom)] text-[var(--color-card-foreground)]",
+        className,
+      )}
+      {...props}
+    >
+      <div
+        aria-hidden
+        className="mx-auto mt-2 h-1 w-10 rounded-full bg-[var(--color-border-strong)]"
+      />
+      {children}
+    </div>
   );
 }
 

@@ -85,7 +85,16 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
   ],
   ["stamp.tsx", ["border-[1.5px]", "px-2.5", "border-[var(--color-destructive)]"]],
   ["skeleton.tsx", ["animate-pulse", "space-y-2"]],
-  ["dialog.tsx", ["max-w-2xl", "duration-150"]],
+  [
+    "dialog.tsx",
+    [
+      "max-w-2xl",
+      "duration-150",
+      // SheetPanel's height cap and rounded top: without them a sheet runs off the screen.
+      "max-h-[calc(100dvh-3rem)]",
+      "rounded-t-[var(--radius-panel)]",
+    ],
+  ],
   [
     "pill.tsx",
     [

@@ -3,9 +3,9 @@ import { useState, type ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Dialog, DialogBody, DialogPanel, DialogTitle } from "./dialog.js";
+import { Dialog, DialogBody, DialogPanel, DialogTitle, SheetPanel } from "./dialog.js";
 import { Card } from "./card.js";
-import { classList } from "../__test-utils__/class-set.js";
+import { classList, classSignature } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
 
@@ -455,5 +455,52 @@ describe("DialogTitle and DialogBody", () => {
     expect(body).toHaveClass("extra-body");
     expect(body).toHaveClass(...ownBody);
     expect(body).toHaveTextContent("Body copy");
+  });
+});
+
+describe("Dialog placement", () => {
+  function Sheet({ onClose = vi.fn() }: { onClose?: () => void }) {
+    return (
+      <Dialog open onClose={onClose} placement="bottom" aria-label="Muzzle options">
+        <SheetPanel data-testid="sheet">
+          <button type="button">First</button>
+        </SheetPanel>
+      </Dialog>
+    );
+  }
+
+  it("is named by aria-label when there is no title to point at", () => {
+    render(<Sheet />);
+    expect(screen.getByRole("dialog", { name: "Muzzle options" })).toBeInTheDocument();
+  });
+
+  it("anchors a bottom dialog differently from the centred default", () => {
+    render(<Panel />);
+    const centred = classSignature(screen.getByRole("dialog").parentElement!);
+    cleanup();
+    render(<Sheet />);
+    expect(classSignature(screen.getByRole("dialog").parentElement!)).not.toBe(centred);
+  });
+
+  it("keeps the dialog's focus, Escape and focus return in a bottom sheet", () => {
+    const opener = document.createElement("button");
+    document.body.appendChild(opener);
+    opener.focus();
+    const onClose = vi.fn();
+    const { unmount } = render(<Sheet onClose={onClose} />);
+    expect(screen.getByRole("button", { name: "First" })).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(opener).toHaveFocus();
+    opener.remove();
+  });
+
+  it("SheetPanel merges a caller's className over its own", () => {
+    render(<SheetPanel data-testid="base" />);
+    const own = classList(screen.getByTestId("base"));
+    cleanup();
+    render(<SheetPanel data-testid="sheet" className="extra" />);
+    expect(screen.getByTestId("sheet")).toHaveClass("extra", ...own);
   });
 });
