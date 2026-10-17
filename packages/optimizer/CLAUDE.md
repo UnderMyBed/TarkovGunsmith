@@ -29,8 +29,8 @@ parts. When none exists it says why.
 - `diagnose.ts` — why no build exists, in the order the user can act on: the budget (naming the
   cheapest complete build; the pinned parts nobody prices, when unpinning them gives a build of
   known price; the other pins to lift, when only dropping those does; or else the profile, as the
-  failure's `cause`), the pins, a
-  required slot nothing obtainable fills, parts that come only with the gun and are needed more
+  failure's `cause`), the pins (naming the ones the build that breaks the fewest breaks, found
+  with the pins made soft: a pinned part still sits at its own path), a required slot nothing obtainable fills, parts that come only with the gun and are needed more
   often than any way to buy it supplies them, or parts that cannot be fitted together.
 - `pins.ts` — which pins the build keeps, and why it drops the rest.
 

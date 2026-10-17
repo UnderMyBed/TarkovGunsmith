@@ -544,17 +544,18 @@ describe("optimize — why no build exists", () => {
     });
   });
 
-  it("names the pins that clash", () => {
+  it("names the pin to drop when two pins clash", () => {
     const parts = SMALL_MODS.map((m) =>
       m.id === "grip_vertical" ? { ...m, conflictingItems: ["muzzle_brake"] } : m,
     );
     const pins = { muzzle: "muzzle_brake", grip: "grip_vertical", stock: "stock_standard" };
+    // Either pin of the pair could go; the build that breaks the fewest breaks the brake's,
+    // leaving the muzzle empty, the cheapest way.
     const clash = {
       ok: false,
       reason: "pin-conflict",
-      paths: ["grip", "muzzle"],
-      message:
-        "No complete build keeps every pin. The pins that clash: Vertical grip, Brake. Unpin one and run it again.",
+      paths: ["muzzle"],
+      message: "No complete build keeps every pin. Unpin Brake and run it again.",
     };
     expect(run({ parts, pins })).toEqual(clash);
     // Upstream records a conflict on either part.
@@ -562,11 +563,35 @@ describe("optimize — why no build exists", () => {
       m.id === "muzzle_brake" ? { ...m, conflictingItems: ["grip_vertical"] } : m,
     );
     expect(run({ parts: listedOnBrake, pins })).toEqual(clash);
+    const { muzzle: _, ...rest } = pins;
+    expect(ok(run({ parts, pins: rest })).build.attachments).toMatchObject(rest);
+  });
+
+  it("names every pin a build needs gone, when one alone is not enough", () => {
+    const slotTree = tree(["a", "b", "c", "d"].map((s) => ({ nameId: s, items: [`${s}1`] })));
+    const parts = [
+      part("a1", { price: 100, conflicts: ["b1"] }),
+      part("b1", { price: 200 }),
+      part("c1", { price: 100, conflicts: ["d1"] }),
+      part("d1", { price: 200 }),
+    ];
+    const pins = { a: "a1", b: "b1", c: "c1", d: "d1" };
+    expect(run({ slotTree, parts, pins })).toEqual({
+      ok: false,
+      reason: "pin-conflict",
+      paths: ["b", "d"],
+      message: "No complete build keeps every pin. Unpin b1, d1 and run it again.",
+    });
+    expect(run({ slotTree, parts, pins: { a: "a1", c: "c1", d: "d1" } }).ok).toBe(false);
+    expect(ok(run({ slotTree, parts, pins: { a: "a1", c: "c1" } })).build.attachments).toEqual({
+      a: "a1",
+      c: "c1",
+    });
   });
 
   // #266 review (b, p2): the pinned part is the only filler of a required slot, and nobody
   // sells it; dropping every pin also dropped the part, which read as an empty required slot.
-  it("names a pin clash when a pinned part nobody sells is the only filler of a required slot", () => {
+  it("keeps a pinned part nobody sells at its own path when it names the pins to drop", () => {
     const slotTree = tree([
       { nameId: "stock", required: true, items: ["s"] },
       { nameId: "muzzle", items: ["m1", "m2"] },
@@ -579,9 +604,8 @@ describe("optimize — why no build exists", () => {
     expect(run({ slotTree, parts, pins: { stock: "s", muzzle: "m1" } })).toEqual({
       ok: false,
       reason: "pin-conflict",
-      paths: ["muzzle", "stock"],
-      message:
-        "No complete build keeps every pin. The pins that clash: m1, s. Unpin one and run it again.",
+      paths: ["muzzle"],
+      message: "No complete build keeps every pin. Unpin m1 and run it again.",
     });
     // Unpinning the muzzle is enough.
     expect(ok(run({ slotTree, parts, pins: { stock: "s" } })).build.attachments).toEqual({
@@ -589,7 +613,7 @@ describe("optimize — why no build exists", () => {
     });
   });
 
-  it("names every pin when no two clash with each other directly", () => {
+  it("names only the pin in the way, not the ones no build is stopped by", () => {
     const gripRequired = tree([
       { nameId: "muzzle", items: ["muzzle_brake", "muzzle_silencer"] },
       { nameId: "grip", required: true, items: ["grip_vertical"] },
@@ -607,10 +631,103 @@ describe("optimize — why no build exists", () => {
     ).toEqual({
       ok: false,
       reason: "pin-conflict",
-      paths: ["muzzle", "stock", "stock/x"],
-      message:
-        "No complete build keeps every pin. The pins that clash: Silencer, empty stock, ghost. Unpin one and run it again.",
+      paths: ["muzzle"],
+      message: "No complete build keeps every pin. Unpin Silencer and run it again.",
     });
+  });
+
+  // #269 review: a pinned part nobody sells sits only at its own pin's path. Made available
+  // everywhere, it filled required slots it could never fill, and pins took the blame for
+  // what no unpinning fixes.
+  describe("blames no pin when unpinning cannot help", () => {
+    const unsold = (id: string) => part(id, { price: "unsold" });
+    const sold = (id: string, conflicts?: string[]) =>
+      part(id, { price: 100, ...(conflicts === undefined ? {} : { conflicts }) });
+    const cases: {
+      name: string;
+      slots: SlotSpec[];
+      parts: AttachablePart[];
+      pins: Record<string, string | null>;
+      reason: string;
+      slotPath?: string;
+    }[] = [
+      {
+        // #269 review a, P1 (b, A): the pinned part is also the only filler of a required slot.
+        name: "the pinned part is the only filler of another, required slot",
+        slots: [
+          { nameId: "mount", required: true, items: ["x"] },
+          { nameId: "tac", items: ["x", "t2"] },
+        ],
+        parts: [unsold("x"), sold("t2")],
+        pins: { tac: "x" },
+        reason: "required-slot",
+        slotPath: "mount",
+      },
+      {
+        // #269 review b, C: an empty pin alongside.
+        name: "the same, with an empty pin alongside",
+        slots: [
+          { nameId: "stock", required: true, items: ["x"] },
+          { nameId: "muzzle", items: ["x", "m2"] },
+          { nameId: "sight", items: ["m2"] },
+        ],
+        parts: [unsold("x"), sold("m2")],
+        pins: { muzzle: "x", sight: null },
+        reason: "required-slot",
+        slotPath: "stock",
+      },
+      {
+        // #269 review a, P2: a stale pin, on a path no build has.
+        name: "the pin is on a path no build has",
+        slots: [
+          { nameId: "mount", required: true, items: ["x"] },
+          { nameId: "tac", items: ["t2"] },
+        ],
+        parts: [unsold("x"), sold("t2")],
+        pins: { "gone/deep": "x" },
+        reason: "required-slot",
+        slotPath: "mount",
+      },
+      {
+        // #269 review a, P3: every build has parts that clash, pinned or not.
+        name: "every build clashes either way",
+        slots: [
+          { nameId: "q", required: true, items: ["y1", "x"] },
+          { nameId: "r", required: true, items: ["r"] },
+          { nameId: "tac", items: ["x", "t2"] },
+        ],
+        parts: [unsold("x"), sold("y1", ["r"]), sold("r"), sold("t2")],
+        pins: { tac: "x" },
+        reason: "no-valid-combinations",
+      },
+      {
+        // #269 review a, P4: a required slot nothing fills, behind a clash.
+        name: "a required slot nothing fills, with a clash elsewhere",
+        slots: [
+          { nameId: "mount", required: true, items: ["x"] },
+          { nameId: "a", required: true, items: ["a1"] },
+          { nameId: "b", required: true, items: ["b1"] },
+          { nameId: "tac", items: ["x", "t2"] },
+        ],
+        parts: [unsold("x"), sold("a1", ["b1"]), sold("b1"), sold("t2")],
+        pins: { tac: "x" },
+        reason: "required-slot",
+        slotPath: "mount",
+      },
+    ];
+    for (const c of cases) {
+      it(c.name, () => {
+        const slotTree = tree(c.slots);
+        const pinned = run({ slotTree, parts: c.parts, pins: c.pins });
+        expect(pinned).toMatchObject({
+          ok: false,
+          reason: c.reason,
+          ...(c.slotPath === undefined ? {} : { slotPath: c.slotPath }),
+        });
+        // Unpinning everything changes nothing: the pins were never the cause.
+        expect(run({ slotTree, parts: c.parts })).toEqual(pinned);
+      });
+    }
   });
 
   it("names a required slot nothing obtainable fills", () => {

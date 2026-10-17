@@ -416,7 +416,7 @@ describe("OptimizeView", () => {
           ok: false,
           reason: "pin-conflict",
           paths: ["muzzle"],
-          message: "No complete build keeps every pin. The pins that clash: Part m-old.",
+          message: "No complete build keeps every pin. Unpin Part m-old and run it again.",
         },
         {},
         ["Muzzle"],
@@ -448,24 +448,26 @@ describe("OptimizeView", () => {
       expect(pinState("Muzzle")).toBe("free");
     });
 
-    it("offers to unpin each clashing pin by name", async () => {
+    it("unpins every pin a build needs gone, together", async () => {
       const alert = await fail(
         {
           ok: false,
           reason: "pin-conflict",
           paths: ["handguard", "muzzle"],
           message:
-            "No complete build keeps every pin. The pins that clash: Part h-old, Part m-old.",
+            "No complete build keeps every pin. Unpin Part h-old, Part m-old and run it again.",
         },
         { attachments: { muzzle: "m-old", handguard: "h-old" } },
         ["Muzzle", "Handguard"],
       );
       expect(alert).toHaveTextContent("PINS CLASH");
-      expect(alert).toHaveTextContent("Unpin one of them.");
+      expect(alert).toHaveTextContent("Unpin all of them.");
       solver.result = undefined;
-      fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part h-old" }));
+      fireEvent.click(within(alert).getByRole("button", { name: "UNPIN Part h-old, Part m-old" }));
       const pins = lastWorker().request?.constraints.pinnedSlots;
-      expect(pins && [...pins]).toEqual([["muzzle", "m-old"]]);
+      expect(pins && [...pins]).toEqual([]);
+      expect(pinState("Muzzle")).toBe("free");
+      expect(pinState("Handguard")).toBe("free");
     });
 
     it("names an empty pin by its slot", async () => {
@@ -473,7 +475,7 @@ describe("OptimizeView", () => {
         ok: false,
         reason: "pin-conflict",
         paths: ["handguard"],
-        message: "No complete build keeps every pin. The pins that clash: empty handguard.",
+        message: "No complete build keeps every pin. Unpin empty handguard and run it again.",
       };
       renderView();
       pin("Handguard", "EMPTY");

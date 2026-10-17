@@ -220,8 +220,9 @@ function describe({
       return {
         heading: "PINS CLASH",
         message: failure.message,
-        hint: "Unpin one of them.",
-        actions: <>{failure.paths.map((path) => unpin([path], pinLabel(path)))}</>,
+        // The named pins are the ones a build needs gone, together: one alone may not do.
+        hint: failure.paths.length === 1 ? "Unpin it." : "Unpin all of them.",
+        actions: unpin(failure.paths, failure.paths.map(pinLabel).join(", ")),
       };
     case "no-valid-combinations":
       return {
