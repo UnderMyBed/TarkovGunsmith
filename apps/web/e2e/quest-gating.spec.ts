@@ -43,7 +43,7 @@ async function openBufferTubeStockSlot(page: Page) {
   await page.locator('details[data-slot-path="mod_stock"] > summary').click();
   const slot = page.locator('details[data-slot-path="mod_stock/mod_stock_000"]');
   await slot.locator(":scope > summary").click();
-  return slot.getByRole("button", { name: new RegExp(PRS.replace(/[()]/g, "\\$&")) });
+  return slot.getByRole("button", { name: new RegExp(PRS.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) });
 }
 
 test.describe("quest gating", () => {
