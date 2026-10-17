@@ -7,6 +7,7 @@ import {
   type BuyForEntry,
   type PlayerProfile,
   type PricedPreset,
+  type WeaponListItem,
 } from "@tarkov/data";
 import { useBuilderState, type UseBuilderStateArgs } from "./useBuilderState.js";
 
@@ -18,12 +19,17 @@ let presetsQuery: {
   isLoading: boolean;
   error: Error | null;
 } = idleQuery;
+let weaponsQuery: {
+  data: WeaponListItem[] | undefined;
+  isLoading: boolean;
+  error: Error | null;
+} = idleQuery;
 vi.mock("@tarkov/data", async () => {
   const actual = await vi.importActual<typeof TarkovData>("@tarkov/data");
   return {
     ...actual,
     useBuilderSnapshot: () => idleQuery,
-    useWeaponList: () => idleQuery,
+    useWeaponList: () => weaponsQuery,
     usePartCatalog: () => idleQuery,
     useWeaponTree: () => idleQuery,
     useWeaponPresets: () => presetsQuery,
@@ -34,6 +40,7 @@ vi.mock("@tarkov/data", async () => {
 afterEach(() => {
   cleanup();
   presetsQuery = idleQuery;
+  weaponsQuery = idleQuery;
 });
 
 const WEAPON = "w-m4a1";
@@ -170,5 +177,58 @@ describe("useBuilderState and presets", () => {
     presetsQuery = { data: undefined, isLoading: false, error };
     const { result } = renderHook(() => useBuilderState(args()));
     expect(result.current.error).toBe(error);
+  });
+});
+
+// Only what `itemAvailability`, the picker and the stat adapter read. The stats are the live
+// M4A1's (as in build-header.test.tsx); no assertion reads them.
+function weapon(id: string, name: string, buyFor: BuyForEntry[]): WeaponListItem {
+  return {
+    id,
+    name,
+    types: [],
+    weight: 0.75,
+    properties: { ergonomics: 48, recoilVertical: 119, recoilHorizontal: 342 },
+    buyFor,
+  } as unknown as WeaponListItem;
+}
+
+describe("useBuilderState weapon options", () => {
+  const OPEN = weapon("w-open", "AK-74N", [trader("prapor", 1, 30_000, "w-open")]);
+  // Mechanic LL4 and no flea listing: locked on a fresh profile.
+  const LOCKED = weapon(WEAPON, "M4A1", [trader("mechanic", 4, 90_000, WEAPON)]);
+  const OTHER_LOCKED = weapon("w-other", "HK 416A5", [trader("peacekeeper", 4, 99_000, "x")]);
+
+  function render(initialWeaponId: string) {
+    weaponsQuery = { data: [OTHER_LOCKED, LOCKED, OPEN], isLoading: false, error: null };
+    return renderHook(() => useBuilderState(args({ initialWeaponId, profile: DEFAULT_PROFILE })));
+  }
+
+  it("keeps the current weapon listed, with its requirement, when the profile cannot buy it", () => {
+    const { result } = render(WEAPON);
+    expect(result.current.weaponOptions.map((w) => w.id)).toEqual(["w-open", WEAPON]);
+    const current = result.current.weaponOptions.find((w) => w.id === WEAPON);
+    expect(current?.lockedBy).toMatchObject({
+      available: false,
+      reason: "trader-ll-required",
+      traderNormalizedName: "mechanic",
+      minLevel: 4,
+    });
+    expect(result.current.weaponOptions.find((w) => w.id === "w-open")?.lockedBy).toBeNull();
+  });
+
+  it("lists only available weapons when the current one is available or none is chosen", () => {
+    expect(render("").result.current.weaponOptions.map((w) => w.id)).toEqual(["w-open"]);
+    expect(render("w-open").result.current.weaponOptions.map((w) => w.id)).toEqual(["w-open"]);
+  });
+
+  it("marks nothing when every weapon is shown", () => {
+    const { result } = render(WEAPON);
+    act(() => result.current.setShowAllWeapons(true));
+    expect(result.current.weaponOptions.map((w) => [w.id, w.lockedBy])).toEqual([
+      ["w-open", null],
+      ["w-other", null],
+      [WEAPON, null],
+    ]);
   });
 });
