@@ -45,7 +45,8 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   from upstream must hold at least 50 weapons, 2000 parts, 150 offers selling through a preset
   and 150 barter offers, about half of live (164, 2335, 303 and 304 on 2026-10-17).
 - **Prices stay live in the SPA.** Offers are stored without prices. The SPA prices them from
-  the raw `items` document — no translation sibling, price fields only — refreshed hourly.
+  the raw `items` document — no translation sibling, price fields only — parsed in a Web
+  Worker and refetched past the HTTP cache once the cached copy is more than an hour old.
 - **OG cards price from the release.** A separate `/data/builder-prices.json`, generated with
   the snapshot, prices the share cards. Only the OG Functions read it; the SPA never downloads
   it. A card is cached for 30 days, so its price is a point-in-time figure regardless.

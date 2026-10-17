@@ -15,8 +15,18 @@ export const BUILDER_SNAPSHOT_URL = "/data/builder-snapshot.json";
 
 export const tarkovClient: TarkovJsonClient = createTarkovClient(TARKOV_JSON_API_BASE);
 
-/** The Builder's game data from the snapshot, priced from upstream's live items document. */
+/**
+ * The Builder's game data from the snapshot, priced from upstream's live items document in a
+ * Web Worker (`prices.worker.ts`). Where `Worker` does not exist — Node, the unit tests — the
+ * prices are fetched on the calling thread instead.
+ */
 export const builderData: BuilderDataSource = createBuilderDataSource({
   snapshotUrl: BUILDER_SNAPSHOT_URL,
   itemsUrl: `${TARKOV_JSON_API_BASE}items`,
+  ...(typeof Worker === "undefined"
+    ? {}
+    : {
+        createPriceWorker: () =>
+          new Worker(new URL("./prices.worker.ts", import.meta.url), { type: "module" }),
+      }),
 });
