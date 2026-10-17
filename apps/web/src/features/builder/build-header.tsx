@@ -157,15 +157,9 @@ export function BuildHeader({
                 percent={clampPercent(currentSpec.weight * 20)}
                 barTone={currentSpec.weight > stockSpec.weight ? "destructive" : "primary"}
               />
-              <StatRow
-                label="MOA"
-                stock={stockSpec.accuracy.toFixed(2)}
-                delta={formatDelta(currentSpec.accuracy - stockSpec.accuracy, true)}
-                deltaDirection={deltaDirection(currentSpec.accuracy - stockSpec.accuracy, true)}
-                value={currentSpec.accuracy.toFixed(2)}
-                percent={clampInverse(currentSpec.accuracy, stockSpec.accuracy)}
-                barTone="primary"
-              />
+              {/* The value alone: stock here is the bare receiver, whose MOA has no barrel in
+                  it, so every real build would read as a regression against it. */}
+              <StatRow label="MOA" value={currentSpec.accuracy.toFixed(2)} />
             </div>
           )}
         </CardContent>

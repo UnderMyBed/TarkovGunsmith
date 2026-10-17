@@ -100,12 +100,30 @@ describe("BuildHeader recoil delta", () => {
   });
 });
 
+// AR-15 5.56x45 10.3 inch barrel (55d35ee94bdc2d61338b4568), live values.
+const BARREL_10_3: BallisticMod = {
+  id: "55d35ee94bdc2d61338b4568",
+  name: "AR-15 5.56x45 10.3 inch barrel",
+  ergonomicsDelta: -2,
+  recoilModifier: -0.052000000000000005,
+  weight: 0.409,
+  accuracyModifier: 0,
+  centerOfImpact: 0.07,
+  deviationMax: 22,
+  velocity: -11,
+  sightingRange: null,
+};
+
 describe("BuildHeader accuracy", () => {
-  it("labels accuracy in MOA to two decimals", () => {
-    // Bare M4A1: 0.01 cm centerOfImpact × 100 / 2.9089 = 0.34 MOA. The mods carry no
-    // accuracy modifier, so stock and current agree.
-    renderHeader(realMods);
-    expect(screen.getByText("MOA")).toBeInTheDocument();
-    expect(screen.getAllByText("0.34")).toHaveLength(2);
+  it("shows the build's MOA alone, with no comparison against the barrel-less stock", () => {
+    // (0.01 + 0.07) cm × 100 / 2.9089 = 2.75 MOA. The stock receiver alone is 0.34, which
+    // a delta or a bar would show every real build as worse than.
+    renderHeader([BARREL_10_3]);
+    const row = screen.getByText("MOA").parentElement!;
+    expect(row).toHaveTextContent(/^MOA2\.75$/);
+    expect(screen.queryByText("0.34")).not.toBeInTheDocument();
+    expect(screen.queryByText("+2.41")).not.toBeInTheDocument();
+    // No bar fill: StatRow renders one only when given a percent.
+    expect(row.querySelector("span")).toBeNull();
   });
 });
