@@ -11,7 +11,7 @@ export interface UseSaveMetadataResult {
 }
 
 /**
- * Save-time metadata for a build: the optional name/description shown on `BuildHeader` and
+ * Save-time metadata for a build: the optional name/description edited in the Details panel and
  * persisted into a shared build, plus whether the current profile snapshot rides along.
  * Grouped into one hook because all three are edited independently (three separate inputs)
  * but always read together — `useShareBuild`'s POST payload, `useCompareHandoff`'s left-side

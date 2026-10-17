@@ -13,7 +13,7 @@ const META = "text-11 text-[var(--color-muted-foreground)]";
 
 /**
  * Where live prices stand, in one line: loading, how old they are, or why there are none. The
- * Builder's weapon panel and Compare show the same line, so a missing price always has a reason.
+ * Builder's Details panel and Compare show the same line, so a missing price always has a reason.
  */
 export function PricesLine({ prices }: { prices: PricesStatus }) {
   if (prices.state === "loading") return <p className={META}>Prices loading…</p>;

@@ -227,7 +227,7 @@ describe("useBuilderState and presets", () => {
 });
 
 // Only what `itemAvailability`, the picker and the stat adapter read. The stats are the live
-// M4A1's (as in build-header.test.tsx); no assertion reads them.
+// M4A1's (as in src/test/weapon-fixtures.ts); no assertion reads them.
 function weapon(id: string, name: string, buyFor: BuyForEntry[]): WeaponListItem {
   return {
     id,

@@ -101,7 +101,7 @@ export function CompareWorkspace({
 
   // One-shot sessionStorage prefill consumer. Runs on mount for the blank
   // /builder/compare route (no loader-supplied initialPair). Lets the
-  // Builder "Compare ↔" button hand off a draft build without a share URL.
+  // Builder's Compare dialog hand off a draft build without a share URL.
   //
   // This deliberately wants the *mount-time* snapshot of `initialPair` and `draft`, not
   // whatever they are on some later render — it must run exactly once, and re-running it

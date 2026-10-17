@@ -34,7 +34,7 @@ That drives every convention below:
   hooks, `withQueryClient()` for the `buildsApi`/`pairsApi`-backed ones). That wrapper file
   builds its provider tree with `createElement` instead of JSX so it — and every hook test
   that imports it — can stay a plain `.ts` file; see its own comment for why. The `apps/web`
-  pattern this otherwise mirrors (e.g. `features/builder/build-header.test.tsx`) uses real JSX
+  pattern this otherwise mirrors (e.g. `features/builder/stat-strip.test.tsx`) uses real JSX
   because that package's root ESLint config already has a `.test.tsx`-aware project entry —
   this package's didn't, and adding one is `eslint.config.js`, out of scope here.
 

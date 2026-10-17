@@ -12,7 +12,7 @@ export interface UseShareBuildArgs {
 }
 
 export interface UseShareBuildResult {
-  /** Set for 5s after a successful share; drives the "Build URL copied" toast + BuildHeader's sharedId. */
+  /** Set for 5s after a successful share; drives the "Build URL copied" toast and the workbench bar's "Shared" stamp. */
   shareUrl: string | null;
   share: () => void;
   isSaving: boolean;

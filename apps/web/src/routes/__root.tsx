@@ -62,7 +62,9 @@ function SiteShell() {
   return (
     <div className="min-h-full bg-[var(--color-background)] text-[var(--color-foreground)]">
       {/* First focusable element on every page: a keyboard user can jump the masthead and
-       * the two nav disclosures instead of tabbing through them on every route.
+       * its nav instead of tabbing through them on every route. A workbench page (the
+       * Builder) has no masthead: its workbench bar is the start of <main>, so there the link
+       * lands on the bar, whose weapon picker is the page's first control.
        *
        * Parked off-screen with a transform rather than `sr-only`, and revealed by undoing
        * that transform on focus. `sr-only`/`not-sr-only` both set `position`, as does the

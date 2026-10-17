@@ -168,10 +168,12 @@ function SharedBuildEditor({
       view={view}
       draftKey={draftKey}
       onDraftWritten={() => {
+        // Edited only while the edit is stored. Every edit here has a weapon, so it is stored
+        // unless storage itself failed (full, or disabled; `writeDraft` warns). Then there are
+        // no stored edits to revert, so the page claims none and closes a Revert prompt left
+        // open, which would otherwise come back by itself once a later write succeeds.
         const stored = hasDraft(draftKey);
         setEdited(stored);
-        // With the edits gone there is nothing to discard: a prompt left open would come back
-        // by itself with the next edit.
         if (!stored) setConfirmingRevert(false);
       }}
     />
