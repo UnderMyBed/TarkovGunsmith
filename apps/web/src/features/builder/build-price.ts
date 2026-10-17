@@ -60,6 +60,34 @@ export function describeBuildPrice(price: BuildPrice, nameOf: (id: string) => st
   }
 }
 
+/**
+ * {@link describeBuildPrice} in two parts, for a cell that sets the figure in the numeric face
+ * and the words around it in the body face: `figure` is the rouble amount alone (`null` when
+ * nothing can be bought), `note` the rest of the line (`null` when there is nothing to add).
+ */
+export function buildPriceParts(
+  price: BuildPrice,
+  nameOf: (id: string) => string,
+): { readonly figure: string | null; readonly note: string | null } {
+  switch (price.status) {
+    case "priced":
+      return {
+        figure: formatRub(price.totalRUB),
+        note:
+          price.cheaperUnpriced === undefined
+            ? null
+            : `May cost less bought another way (no price for ${price.cheaperUnpriced.unpriced.map(nameOf).join(", ")})`,
+      };
+    case "unknown":
+      return {
+        figure: formatRub(price.knownRUB),
+        note: `Known so far; no price for ${price.unpriced.map(nameOf).join(", ")}`,
+      };
+    case "unobtainable":
+      return { figure: null, note: `Can't be bought: ${price.missing.map(nameOf).join(", ")}` };
+  }
+}
+
 /** Where live prices stand, for the line that says how old they are. */
 export type PricesStatus =
   | { readonly state: "loading" }
