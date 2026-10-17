@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import { renderRoute } from "../test/render-route.js";
 import { DRAFT_KEY, sharedDraftKey } from "../features/builder/build-draft.js";
 
@@ -194,8 +194,138 @@ describe("/builder/$id edits", () => {
     expect(screen.getByDisplayValue("Shared one")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Revert" }));
+    await user.click(screen.getByRole("button", { name: "Keep my edits" }));
+    expect(screen.getByText("0 attached")).toBeInTheDocument();
+    expect(localStorage.getItem(sharedDraftKey(VALID_ID))).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Revert" }));
+    expect(
+      screen.getByText("Discard your edits and go back to the shared build?"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Discard" }));
     expect(await screen.findByText("1 attached")).toBeInTheDocument();
     expect(screen.queryByText("Edited from the shared build")).not.toBeInTheDocument();
     expect(localStorage.getItem(sharedDraftKey(VALID_ID))).toBeNull();
+  });
+});
+
+describe("/builder/$id edits, empty weapon", () => {
+  it("says the build is edited only while edits are stored", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          jsonResponse({
+            version: 6,
+            weaponId: "w-m4a1",
+            attachments: { mod_muzzle: "mod-muzzle" },
+            orphaned: [],
+            createdAt: new Date().toISOString(),
+          }),
+        ),
+      ),
+    );
+    await renderRoute(`/builder/${VALID_ID}`);
+    await screen.findByText("1 attached");
+    const weaponSelect = screen
+      .getAllByRole<HTMLSelectElement>("combobox")
+      .find((el) => el.querySelector('option[value=""]'));
+    if (!weaponSelect) throw new Error("weapon <select> not found");
+
+    // No weapon is no build: nothing is stored, and the page does not claim an edit.
+    await user.selectOptions(weaponSelect, "");
+    expect(localStorage.getItem(sharedDraftKey(VALID_ID))).toBeNull();
+    expect(screen.queryByText("Edited from the shared build")).not.toBeInTheDocument();
+
+    await user.selectOptions(weaponSelect, "w-m4a1");
+    expect(await screen.findByText("Edited from the shared build")).toBeInTheDocument();
+  });
+});
+
+describe("/builder/$id edits across a refetch", () => {
+  /** Let the query's batched notifications reach the page. */
+  const settle = () => act(() => new Promise((r) => setTimeout(r, 50)));
+
+  const SHARED = {
+    version: 6,
+    weaponId: "w-m4a1",
+    attachments: { mod_muzzle: "mod-muzzle" },
+    orphaned: [],
+    createdAt: new Date().toISOString(),
+    name: "Shared one",
+  };
+
+  /** Load the shared build with fetch switchable to failing, and empty it: one stored edit. */
+  async function editShared() {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const net: { fail: boolean; gate: Promise<void> | null } = { fail: false, gate: null };
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockImplementation(() =>
+          net.fail
+            ? Promise.reject(new TypeError("Failed to fetch"))
+            : (net.gate ?? Promise.resolve()).then(() => jsonResponse(SHARED)),
+        ),
+    );
+    const { queryClient } = await renderRoute(`/builder/${VALID_ID}`);
+    await screen.findByText("1 attached");
+    const group = await screen.findByRole("group", { name: "Presets" });
+    await user.click(within(group).getByRole("button", { name: /^Empty/ }));
+    await user.click(await screen.findByRole("button", { name: "Replace" }));
+    await screen.findByText("0 attached");
+    const stored = localStorage.getItem(sharedDraftKey(VALID_ID));
+    expect(stored).not.toBeNull();
+    return { user, net, queryClient, stored };
+  }
+
+  it("a failed background refetch keeps the editor and the edit", async () => {
+    const { user, net, queryClient } = await editShared();
+    net.fail = true;
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ["build", VALID_ID] });
+    });
+    await settle();
+    expect(screen.getByText("0 attached")).toBeInTheDocument();
+    expect(screen.queryByText("Couldn't reach build storage")).not.toBeInTheDocument();
+
+    net.fail = false;
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ["build", VALID_ID] });
+    });
+    await settle();
+    await user.type(screen.getByPlaceholderText("Build name (optional)"), "X");
+    const stored = JSON.parse(localStorage.getItem(sharedDraftKey(VALID_ID)) ?? "") as {
+      build: { attachments: object; name: string };
+    };
+    expect(stored.build).toMatchObject({ attachments: {}, name: "Shared oneX" });
+  });
+
+  it("an editor mounted again starts from the stored edit, not the copy read at first mount", async () => {
+    const { user, net, queryClient, stored } = await editShared();
+    // The build drops out of the cache and loads again: the editor unmounts and mounts anew.
+    let open = () => {};
+    net.gate = new Promise((r) => (open = r));
+    let reset: Promise<void> = Promise.resolve();
+    act(() => {
+      reset = queryClient.resetQueries({ queryKey: ["build", VALID_ID] });
+    });
+    expect(await screen.findByRole("status", { busy: true })).toBeInTheDocument();
+    await act(async () => {
+      open();
+      await reset;
+    });
+    await settle();
+    expect(await screen.findByText("0 attached")).toBeInTheDocument();
+    expect(screen.getByText("Edited from the shared build")).toBeInTheDocument();
+    expect(localStorage.getItem(sharedDraftKey(VALID_ID))).toBe(stored);
+
+    await user.type(screen.getByPlaceholderText("Build name (optional)"), "X");
+    const after = JSON.parse(localStorage.getItem(sharedDraftKey(VALID_ID)) ?? "") as {
+      build: { attachments: object; name: string };
+    };
+    expect(after.build).toMatchObject({ attachments: {}, name: "Shared oneX" });
   });
 });

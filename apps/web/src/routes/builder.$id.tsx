@@ -1,7 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { useMemo, useState } from "react";
-import { loadSavedBuild, useBuilderSnapshot, useLoadBuild, LoadBuildError } from "@tarkov/data";
+import {
+  loadSavedBuild,
+  useBuilderSnapshot,
+  useLoadBuild,
+  LoadBuildError,
+  type BuilderSnapshot,
+  type BuildV6,
+} from "@tarkov/data";
 import {
   Button,
   Card,
@@ -12,7 +19,12 @@ import {
   Skeleton,
 } from "@tarkov/ui";
 import { BuilderPage } from "../features/builder/builder-page.js";
-import { clearDraft, readDraft, sharedDraftKey } from "../features/builder/build-draft.js";
+import {
+  clearDraft,
+  hasDraft,
+  readDraft,
+  sharedDraftKey,
+} from "../features/builder/build-draft.js";
 
 const builderIdSearchSchema = z.object({
   view: z.enum(["editor", "optimize"]).optional(),
@@ -25,6 +37,11 @@ export const Route = createFileRoute("/builder/$id")({
 
 function LoadedBuilderPage() {
   const { id } = Route.useParams();
+  // Keyed by id: nothing from one shared build's page carries over to another's.
+  return <SharedBuildPage key={id} id={id} />;
+}
+
+function SharedBuildPage({ id }: { id: string }) {
   const { view } = Route.useSearch();
   const query = useLoadBuild(id);
   // A saved build is read against the game data before the editor takes it: any version is
@@ -34,23 +51,7 @@ function LoadedBuilderPage() {
     () => (query.data && snapshot.data ? loadSavedBuild(query.data, snapshot.data) : null),
     [query.data, snapshot.data],
   );
-  // Edits to this shared build, kept under its own key so a reload or an evicted tab returns
-  // to them. Read through the same load as the shared build. The author's embedded profile
-  // stays the shared build's: a draft records the build alone.
-  const draftKey = sharedDraftKey(id);
-  const [stored, setStored] = useState(() => readDraft(draftKey));
-  const [edited, setEdited] = useState(stored !== null);
   const [generation, setGeneration] = useState(0);
-  const draft = useMemo(
-    () =>
-      stored && snapshot.data && build
-        ? {
-            ...loadSavedBuild(stored, snapshot.data),
-            ...(build.profileSnapshot ? { profileSnapshot: build.profileSnapshot } : {}),
-          }
-        : null,
-    [stored, snapshot.data, build],
-  );
 
   if (query.isLoading || snapshot.isLoading) {
     return (
@@ -61,11 +62,12 @@ function LoadedBuilderPage() {
     );
   }
 
-  if (query.error) {
+  // A failed background refetch keeps the data it had: the editor stays, and so do its edits.
+  if (query.error && !query.data) {
     return <LoadErrorCard error={query.error} id={id} onRetry={() => void query.refetch()} />;
   }
 
-  if (snapshot.error) {
+  if (snapshot.error && !snapshot.data) {
     // The build itself loaded; it cannot be shown without the game data it is read against.
     return (
       <Card>
@@ -82,51 +84,101 @@ function LoadedBuilderPage() {
     );
   }
 
-  if (!build) {
+  if (!build || !snapshot.data) {
     return (
       <LoadErrorCard error={new Error("No data")} id={id} onRetry={() => void query.refetch()} />
     );
   }
 
-  const notice = (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-sm text-[var(--color-muted-foreground)]">
-          Loaded build <code>{id}</code>. Changes you make here won&apos;t update the saved copy —
-          use &quot;Share build&quot; to create a new URL.
-        </p>
-      </CardContent>
-    </Card>
+  return (
+    <SharedBuildEditor
+      key={generation}
+      id={id}
+      shared={build}
+      snapshot={snapshot.data}
+      view={view}
+      onRevert={() => setGeneration((g) => g + 1)}
+    />
   );
+}
+
+/**
+ * The editor over a shared build. Edits are kept under the build's own key so a reload or an
+ * evicted tab returns to them, read through the same load as the shared build; the author's
+ * embedded profile stays the shared build's, since a draft records the build alone. The stored
+ * edits are read each time this mounts, so the editor never starts from an older copy.
+ */
+function SharedBuildEditor({
+  id,
+  shared,
+  snapshot,
+  view,
+  onRevert,
+}: {
+  id: string;
+  shared: BuildV6;
+  snapshot: BuilderSnapshot;
+  view: "editor" | "optimize" | undefined;
+  onRevert: () => void;
+}) {
+  const draftKey = sharedDraftKey(id);
+  const [initialBuild] = useState<BuildV6>(() => {
+    const stored = readDraft(draftKey);
+    if (stored === null) return shared;
+    return {
+      ...loadSavedBuild(stored, snapshot),
+      ...(shared.profileSnapshot ? { profileSnapshot: shared.profileSnapshot } : {}),
+    };
+  });
+  // Whether edits are actually stored: emptying the weapon removes them.
+  const [edited, setEdited] = useState(() => hasDraft(draftKey));
+  const [confirmingRevert, setConfirmingRevert] = useState(false);
 
   const revert = () => {
     clearDraft(draftKey);
-    setStored(null);
-    setEdited(false);
-    setGeneration((g) => g + 1);
+    onRevert();
   };
+
+  const notice = (
+    <>
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-sm text-[var(--color-muted-foreground)]">
+            Loaded build <code>{id}</code>. Changes you make here won&apos;t update the saved copy —
+            use &quot;Share build&quot; to create a new URL.
+          </p>
+        </CardContent>
+      </Card>
+      {edited && !confirmingRevert && (
+        <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted-foreground)]">
+          <span>Edited from the shared build</span>
+          <span aria-hidden>·</span>
+          <Button variant="ghost" size="sm" onClick={() => setConfirmingRevert(true)}>
+            Revert
+          </Button>
+        </div>
+      )}
+      {edited && confirmingRevert && (
+        <div role="alert" className="flex flex-wrap items-center gap-2 text-sm">
+          <span>Discard your edits and go back to the shared build?</span>
+          <Button size="sm" variant="destructive" onClick={revert}>
+            Discard
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setConfirmingRevert(false)}>
+            Keep my edits
+          </Button>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <BuilderPage
-      key={generation}
-      initialBuild={draft ?? build}
-      notice={
-        <>
-          {notice}
-          {edited && (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-muted-foreground)]">
-              <span>Edited from the shared build</span>
-              <span aria-hidden>·</span>
-              <Button variant="ghost" size="sm" onClick={revert}>
-                Revert
-              </Button>
-            </div>
-          )}
-        </>
-      }
+      initialBuild={initialBuild}
+      notice={notice}
       view={view}
       draftKey={draftKey}
-      onDraftWritten={() => setEdited(true)}
+      onDraftWritten={() => setEdited(hasDraft(draftKey))}
     />
   );
 }

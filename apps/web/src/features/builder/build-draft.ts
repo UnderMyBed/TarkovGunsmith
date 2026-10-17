@@ -125,6 +125,15 @@ export function writeDraft(key: string, d: DraftBuild, now: number = Date.now())
   }
 }
 
+/** Whether a value is stored at `key`, readable or not. Storage that throws holds none. */
+export function hasDraft(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** Remove the draft at `key`. */
 export function clearDraft(key: string): void {
   try {

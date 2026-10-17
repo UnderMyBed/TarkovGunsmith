@@ -107,6 +107,10 @@ test.describe("Builder draft", () => {
     await expect(attached(page, 0)).toBeVisible();
 
     await page.getByRole("button", { name: "Revert" }).click();
+    await page.getByRole("button", { name: "Keep my edits" }).click();
+    await expect(attached(page, 0)).toBeVisible();
+    await page.getByRole("button", { name: "Revert" }).click();
+    await page.getByRole("button", { name: "Discard" }).click();
     await expect(attached(page, 2)).toBeVisible();
     await expect(page.getByText("Edited from the shared build")).toHaveCount(0);
     // The /builder draft is a separate build, never written from here.
