@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, describe, it, expect } from "vitest";
-import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderRoute } from "../test/render-route.js";
 import { stubMatchMedia } from "../test/match-media.js";
@@ -96,6 +96,26 @@ describe("/builder on a phone", () => {
     // A further press and release lands on the sheet's focused Close button, as it should.
     await user.keyboard(" ");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens the sheet once for a held Enter, and only for a Space pressed on the row", async () => {
+    const user = userEvent.setup();
+    await pickTheM4A1(user);
+    muzzleRow().focus();
+
+    // A Space released on the row without its press there opens nothing.
+    fireEvent.keyUp(muzzleRow(), { key: " " });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    // Held Enter: the first press opens the sheet; the repeats do not reach its Close button.
+    fireEvent.keyDown(muzzleRow(), { key: "Enter" });
+    const sheet = screen.getByRole("dialog", { name: "Muzzle options" });
+    expect(sheet).toContainElement(document.activeElement as HTMLElement);
+    // A repeat lands on the sheet's focused Close button; cancelling it stops the click.
+    const close = within(sheet).getByRole("button", { name: "Close" });
+    expect(close).toHaveFocus();
+    expect(fireEvent.keyDown(close, { key: "Enter", repeat: true })).toBe(false);
+    expect(fireEvent.keyDown(close, { key: "Enter" })).toBe(true);
   });
 
   it("closes the sheet for good when history leaves the editor under it", async () => {

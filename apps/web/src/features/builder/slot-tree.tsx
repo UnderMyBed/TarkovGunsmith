@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import type { ItemAvailability, SlotDiffMap, SlotDiffStatus } from "@tarkov/data";
 import { Pill, cn, focusRing } from "@tarkov/ui";
 import { useQuestName, type QuestName } from "./quest-names.js";
@@ -62,6 +62,8 @@ export function SlotTree({
 }: SlotTreeProps) {
   const { rows, selected } = selection;
   const keys = useTreeKeys(rows, selection.treeId, selected?.slot.path ?? null);
+  // The row a Space press began on: only its own release opens the sheet.
+  const spaceDownOn = useRef<string | null>(null);
   if (rows.length === 0) {
     return (
       <p className="text-xs text-[var(--color-muted-foreground)]">This weapon has no mod slots.</p>
@@ -71,16 +73,25 @@ export function SlotTree({
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>, index: number) => {
     if (keys.navigate(e, index)) return;
     if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    // A held key opening a sheet would repeat into the sheet's Close button and back.
+    if (opensSheet && e.repeat) return;
     // Space opening a sheet waits for its release (onKeyUp): opened on the press, the sheet
     // takes the focus, and the release then clicks its Close button in browsers that activate
     // a button on keyup alone.
-    if (!(opensSheet && e.key === " ")) selection.activate(rows[index]!.slot.path);
-    e.preventDefault();
+    if (opensSheet && e.key === " ") {
+      spaceDownOn.current = rows[index]!.slot.path;
+      return;
+    }
+    selection.activate(rows[index]!.slot.path);
   };
   const onKeyUp = (e: KeyboardEvent<HTMLDivElement>, index: number) => {
     if (!opensSheet || e.key !== " ") return;
-    selection.activate(rows[index]!.slot.path);
     e.preventDefault();
+    const path = rows[index]!.slot.path;
+    const pressedHere = spaceDownOn.current === path;
+    spaceDownOn.current = null;
+    if (pressedHere) selection.activate(path);
   };
 
   return (
