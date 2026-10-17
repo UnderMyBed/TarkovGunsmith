@@ -34,12 +34,17 @@ interface CacheEntry {
  *                  `https://json.tarkov.dev/regular/`.
  * @param fetchImpl - Optional fetch implementation (defaults to global fetch).
  * @param ttlMs - Cache lifetime. Upstream regenerates roughly daily.
+ * @param options.requireTranslations - Fail a resource whose `_en` document cannot be fetched,
+ *   instead of leaving every text field as its translation key. The snapshot generator sets
+ *   this: a release built while `items_en` is down would otherwise ship a Builder of keys.
  */
 export function createTarkovClient(
   baseUrl: string,
   fetchImpl?: typeof fetch,
   ttlMs = 3_600_000,
+  options: { readonly requireTranslations?: boolean } = {},
 ): TarkovJsonClient {
+  const requireTranslations = options.requireTranslations ?? false;
   // Resolved per call rather than captured at construction: a module-scope client would
   // otherwise pin whatever `fetch` existed at import time, which breaks test doubles and any
   // runtime that installs its own fetch after module evaluation.
@@ -69,13 +74,22 @@ export function createTarkovClient(
       if (hit !== undefined && now - hit.at < ttlMs) return hit.promise as Promise<T>;
 
       const promise = (async () => {
-        // The translation document is optional: a missing one leaves keys in place rather
-        // than failing a request that already has perfectly good data.
+        // The translation document is optional unless required: a missing one leaves keys in
+        // place rather than failing a request that already has perfectly good data.
         const [raw, lang] = await Promise.all([
           getJson(resource, true),
           getJson(`${resource}_en`, false).catch(() => undefined),
         ]);
         const doc = raw as TranslatedDocument<T>;
+        // Required only where there is something to translate: upstream serves no `_en` for a
+        // document that lists no translation paths (`barters`).
+        if (requireTranslations && lang === undefined && (doc.translations?.length ?? 0) > 0) {
+          throw new TarkovApiError(
+            `Failed to fetch ${resource}_en, which ${resource} needs for its text`,
+            `${resource}_en`,
+            0,
+          );
+        }
         const langData = (lang as { data?: Record<string, string> } | undefined)?.data ?? {};
         return mergeTranslations(doc, langData);
       })();

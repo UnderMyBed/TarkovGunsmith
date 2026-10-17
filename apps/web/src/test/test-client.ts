@@ -1,4 +1,4 @@
-import type { TarkovJsonClient } from "@tarkov/data";
+import { TarkovApiError, type TarkovJsonClient } from "@tarkov/data";
 import { ITEMS_DOCUMENT, TRADERS_DOCUMENT, TASKS_DOCUMENT, BARTERS_DOCUMENT } from "./fixtures.js";
 
 const RESOURCES: Record<string, unknown> = {
@@ -28,7 +28,10 @@ export function createTestClient(options?: {
   return {
     fetchResource<T>(resource: string): Promise<T> {
       if (errorResources.has(resource)) {
-        return Promise.reject(new Error(`fixture client: forced failure for "${resource}"`));
+        // The error the real client raises for an upstream failure.
+        return Promise.reject(
+          new TarkovApiError(`fixture client: forced failure for "${resource}"`, resource, 503),
+        );
       }
       const doc = RESOURCES[resource];
       if (doc === undefined) {

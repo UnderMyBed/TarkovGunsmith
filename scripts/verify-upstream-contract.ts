@@ -36,7 +36,7 @@ import {
   UBR_GEN2_STOCK,
   VP09_MUZZLE_BRAKE,
 } from "../packages/ballistics/src/__fixtures__/weapons.js";
-import { brotliCompressSync } from "node:zlib";
+import { brotliCompressSync, constants } from "node:zlib";
 import { createTarkovClient } from "../packages/tarkov-data/src/client.js";
 import { fetchAmmoList } from "../packages/tarkov-data/src/queries/ammoList.js";
 import { fetchArmorList } from "../packages/tarkov-data/src/queries/armorList.js";
@@ -291,8 +291,15 @@ const SNAPSHOT_BUDGET = { brotliBytes: 250 * 1024, rawBytes: 4.5 * 1024 * 1024 }
  * offer that disagree on price is a problem here — and would fail that deploy. Checking on a
  * schedule finds it before a release does.
  */
+/** Brotli at quality 4, roughly what Cloudflare's edge serves the file at. */
+const edgeBrotli = (text: string): number =>
+  brotliCompressSync(text, { params: { [constants.BROTLI_PARAM_QUALITY]: 4 } }).length;
+
 async function checkBuilderSnapshot(): Promise<void> {
-  const client = createTarkovClient(API_BASE);
+  // Translations required, exactly as the release build reads them.
+  const client = createTarkovClient(API_BASE, undefined, undefined, {
+    requireTranslations: true,
+  });
   let generated: ReturnType<typeof buildBuilderSnapshot>;
   try {
     generated = buildBuilderSnapshot(await fetchSnapshotDocuments(client), "upstream");
@@ -315,7 +322,7 @@ async function checkBuilderSnapshot(): Promise<void> {
   );
   const text = JSON.stringify(snapshot);
   const raw = Buffer.byteLength(text);
-  const brotli = brotliCompressSync(text).length;
+  const brotli = edgeBrotli(text);
   const kb = (bytes: number) => `${(bytes / 1024).toFixed(0)} KB`;
   check(
     "snapshot/size",
@@ -329,12 +336,13 @@ async function checkBuilderSnapshot(): Promise<void> {
   const pricesText = JSON.stringify(prices);
   notes.push(
     `builder snapshot: ${snapshot.weapons.length} weapons, ${snapshot.parts.length} parts, ` +
-      `${kb(raw)} raw, ${kb(brotli)} brotli, JSON.parse ${parseMs.toFixed(1)} ms ` +
-      `(budget ${kb(SNAPSHOT_BUDGET.rawBytes)} raw / ${kb(SNAPSHOT_BUDGET.brotliBytes)} brotli)`,
+      `${kb(raw)} raw, ${kb(brotli)} brotli (q4), JSON.parse ${parseMs.toFixed(1)} ms ` +
+      `(budget ${kb(SNAPSHOT_BUDGET.rawBytes)} raw / ${kb(SNAPSHOT_BUDGET.brotliBytes)} brotli q4; ` +
+      `headroom ${kb(SNAPSHOT_BUDGET.brotliBytes - brotli)} brotli)`,
   );
   notes.push(
     `builder prices: ${kb(Buffer.byteLength(pricesText))} raw, ` +
-      `${kb(brotliCompressSync(pricesText).length)} brotli; data as of ${snapshot.dataAsOf}`,
+      `${kb(edgeBrotli(pricesText))} brotli (q4); data as of ${snapshot.dataAsOf}`,
   );
 }
 

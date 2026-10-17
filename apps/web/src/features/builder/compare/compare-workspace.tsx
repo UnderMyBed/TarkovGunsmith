@@ -9,6 +9,7 @@ import {
   useForkPair,
   slotDiff,
   loadBuild,
+  useBuilderData,
   CURRENT_PAIR_VERSION,
   type BuildV6,
   type BuildPair,
@@ -18,6 +19,7 @@ import { CompareStatDelta } from "./compare-stat-delta.js";
 import { CompareProgressionRow } from "./compare-progression-row.js";
 import { CompareSide, computeSideSpec } from "./compare-side.js";
 import { useCompareDraft } from "./useCompareDraft.js";
+import { withKnownSide } from "./known-parts.js";
 
 export interface CompareWorkspaceProps {
   initialPair?: BuildPair;
@@ -85,9 +87,10 @@ export function CompareWorkspace({
   // deps array a reader has to trust is intentional — exhaustive-deps can't tell "closes
   // over stale values on purpose" from "forgot to list a dependency" and is right to flag
   // the latter shape either way.
-  const mountSnapshot = useRef({ initialPair, draft });
+  const builderData = useBuilderData();
+  const mountSnapshot = useRef({ initialPair, draft, builderData });
   useEffect(() => {
-    const { initialPair, draft } = mountSnapshot.current;
+    const { initialPair, draft, builderData } = mountSnapshot.current;
     if (initialPair) return;
     const raw = sessionStorage.getItem("compare:leftPrefill");
     const mode = sessionStorage.getItem("compare:mode");
@@ -114,8 +117,12 @@ export function CompareWorkspace({
         // package that's already resident.
         void (async () => {
           try {
-            const right = await loadBuild(fetch, rightId);
-            if (right.version === 6) draft.setSide("right", right);
+            const [right, snapshot] = await Promise.all([
+              loadBuild(fetch, rightId),
+              builderData.snapshot(),
+            ]);
+            // Resolved against the game data like every other way a build is loaded.
+            if (right.version === 6) draft.setSide("right", withKnownSide(right, snapshot));
           } catch {
             // Swallow — user sees empty right side; can paste again.
           }

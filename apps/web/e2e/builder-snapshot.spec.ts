@@ -27,7 +27,7 @@ test.describe("Builder snapshot", () => {
     expect(SNAPSHOT.source).toBe("fixtures");
   });
 
-  test("names the data's age and asks upstream for prices only", async ({ page }) => {
+  test("says when its data was taken and asks upstream for prices only", async ({ page }) => {
     const upstream: string[] = [];
     page.on("request", (request) => {
       const url = new URL(request.url());
@@ -45,7 +45,7 @@ test.describe("Builder snapshot", () => {
     }).format(new Date(SNAPSHOT.dataAsOf));
     const stamp = page.locator(`time[datetime="${SNAPSHOT.dataAsOf}"]`);
     await expect(stamp).toHaveText(label);
-    await expect(page.getByText(/^Game data ·/)).toBeVisible();
+    await expect(page.getByText(/^Data as of/)).toBeVisible();
 
     await page.waitForLoadState("networkidle");
     expect([...new Set(upstream)]).toEqual(["/regular/items"]);

@@ -87,17 +87,25 @@ function sortedRecord<T>(entries: Iterable<readonly [string, T]>): Record<string
 
 const byId = (a: { id: string }, b: { id: string }) => compareStrings(a.id, b.id);
 
+/** What upstream leaves in a text field whose translation did not apply. */
+const translationKey = (id: string, field: "Name" | "ShortName"): string => `${id} ${field}`;
+
 /**
  * Build the Builder snapshot, and the release-time prices beside it, from the upstream
  * documents.
  *
- * Strict by design. Records are picked by type — an item whose `properties.propertiesType` is
- * not a weapon or part type is simply not a candidate — but a candidate that fails its schema
- * is drift, as is a trader, task or barter that fails, a task whose trader does not resolve, a
- * weapon-reachable slot item that is not a part, and two copies of one trader offer that
- * disagree on price. Every problem is collected and thrown together as a
- * {@link SnapshotDriftError}: nothing is dropped and carried on past. A deploy must fail rather
- * than ship a Builder with options silently missing.
+ * Strict for everything the snapshot holds or derives from: every trader and task; every
+ * buildable weapon; every part a weapon's slots reach, its `conflictingSlotIds` and `updated`;
+ * every offer on those (cash, preset and barter: trader, quest gate, loyalty level, price
+ * fields); every barter rewarding one of them, or a preset of one, and each of its
+ * ingredients; and two copies of one trader offer that disagree on price. Names that are
+ * still translation keys are drift too: the translation document did not apply. Every problem
+ * is collected and thrown together as a {@link SnapshotDriftError}, so a deploy fails rather
+ * than ship a Builder with options missing or mislabelled.
+ *
+ * Records the Builder never reads are not checked, so they cannot block a release: weapons
+ * flagged `specialSlot`, part-typed items no weapon reaches, barters rewarding anything else,
+ * and items of other types.
  *
  * Output is deterministic: arrays and maps are sorted by id, so the same documents give a
  * byte-identical file.
@@ -140,33 +148,37 @@ export function buildBuilderSnapshot(
     else fail(`tasks/${key}: ${describeIssues(parsed.error)}`);
   }
 
-  const barters: Barter[] = [];
-  for (const [index, raw] of docs.barters.entries()) {
-    const parsed = barterSchema.safeParse(raw);
-    if (parsed.success) barters.push(parsed.data);
-    else fail(`barters[${index}]: ${describeIssues(parsed.error)}`);
-  }
-
   let newest = Number.NEGATIVE_INFINITY;
+  const updatedOf = new Map<string, number>();
   const weapons: SnapshotWeapon[] = [];
   const allParts = new Map<string, SnapshotPart>();
+  // Part-typed items that fail their schema. Drift only if a weapon reaches them.
+  const brokenParts = new Map<string, string>();
+  const presetBases = new Map<string, string>();
   for (const [key, raw] of Object.entries(items)) {
     const updated = Date.parse(String((raw as { updated?: unknown } | null)?.updated));
-    if (updated > newest) newest = updated;
+    if (!Number.isNaN(updated)) {
+      updatedOf.set(key, updated);
+      if (updated > newest) newest = updated;
+    }
 
     const type = propertiesTypeOf(raw);
     if (type === "ItemPropertiesWeapon") {
+      const types = (raw as { types?: unknown }).types;
+      if (Array.isArray(types) && !isBuildableWeapon({ types: types as string[] })) continue;
       const parsed = snapshotWeaponSchema.safeParse(raw);
-      if (!parsed.success) fail(`items/${key} (${type}): ${describeIssues(parsed.error)}`);
-      else if (isBuildableWeapon(parsed.data)) weapons.push(parsed.data);
+      if (parsed.success) weapons.push(parsed.data);
+      else fail(`items/${key} (${type}): ${describeIssues(parsed.error)}`);
     } else if (type !== undefined && PART_TYPES.has(type)) {
       const parsed = snapshotPartSchema.safeParse(raw);
       if (parsed.success) allParts.set(parsed.data.id, parsed.data);
-      else fail(`items/${key} (${type}): ${describeIssues(parsed.error)}`);
+      else brokenParts.set(key, `items/${key} (${type}): ${describeIssues(parsed.error)}`);
+    } else if (type === "ItemPropertiesPreset") {
+      const base = (raw as { properties: { baseItem?: unknown } }).properties.baseItem;
+      if (typeof base === "string") presetBases.set(key, base);
     }
   }
   if (newest === Number.NEGATIVE_INFINITY) fail("items: no item carries an `updated` timestamp");
-  throwIfProblems();
 
   // Walk the slot graph from the buildable weapons. Everything a weapon can reach must be a
   // part, or it would be an option the Builder offers but cannot price, gate or add up.
@@ -179,20 +191,42 @@ export function buildBuilderSnapshot(
     reached.add(owner);
     for (const slot of graph.owners[owner]?.slots ?? []) {
       for (const id of slot.allowedItemIds) {
-        if (!allParts.has(id)) {
-          fail(
-            `items/${id} (${String(propertiesTypeOf(items[id]))}): allowed in slot ` +
-              `${slot.nameId} of ${owner} but is not a part`,
-          );
+        if (allParts.has(id)) {
+          stack.push(id);
           continue;
         }
-        stack.push(id);
+        fail(
+          brokenParts.get(id) ??
+            `items/${id} (${String(propertiesTypeOf(items[id]))}): allowed in slot ` +
+              `${slot.nameId} of ${owner} but is not a part`,
+        );
       }
     }
   }
-  throwIfProblems();
 
   const parts = [...allParts.values()].filter((p) => reached.has(p.id)).sort(byId);
+  const partIds = new Set(parts.map((p) => p.id));
+  const slotIds = new Set(
+    Object.values(graph.owners).flatMap((owner) => owner.slots.map((slot) => slot.id)),
+  );
+  for (const item of [...weapons, ...parts]) {
+    if (!updatedOf.has(item.id)) fail(`items/${item.id}: no valid \`updated\` timestamp`);
+    if (item.name === translationKey(item.id, "Name")) {
+      fail(`items/${item.id}: name is still its translation key; the _en document did not apply`);
+    }
+    if (item.shortName === translationKey(item.id, "ShortName")) {
+      fail(
+        `items/${item.id}: shortName is still its translation key; the _en document did not apply`,
+      );
+    }
+  }
+  for (const part of parts) {
+    for (const slotId of part.conflictingSlotIds) {
+      if (!slotIds.has(slotId)) {
+        fail(`items/${part.id}: conflictingSlotIds names slot ${slotId}, which no item has`);
+      }
+    }
+  }
   const slots = sortedRecord<SlotOwner>(
     [...reached].flatMap((id) => {
       const owner = graph.owners[id];
@@ -200,7 +234,23 @@ export function buildBuilderSnapshot(
     }),
   );
 
-  const collect = createOfferCollector({ items, traders, tasks, barters });
+  // Only barters rewarding a weapon or part — or a preset of one — feed the snapshot.
+  const rewardsSnapshotItem = (id: unknown): boolean => {
+    if (typeof id !== "string") return true; // cannot tell: treat as in scope, and report it
+    if (weaponIds.has(id) || partIds.has(id)) return true;
+    const base = presetBases.get(id);
+    return base !== undefined && (weaponIds.has(base) || partIds.has(base));
+  };
+  const barters: Barter[] = [];
+  for (const [index, raw] of docs.barters.entries()) {
+    const offered = (raw as { offeredItem?: { item?: unknown } } | null)?.offeredItem?.item;
+    if (!rewardsSnapshotItem(offered)) continue;
+    const parsed = barterSchema.safeParse(raw);
+    if (parsed.success) barters.push(parsed.data);
+    else fail(`barters[${index}]: ${describeIssues(parsed.error)}`);
+  }
+
+  const collect = createOfferCollector({ items, traders, tasks, barters }, fail);
   const offers = new Map<string, UnpricedOffer[]>();
   for (const { id } of [...weapons, ...parts]) offers.set(id, collect(items[id]));
 
@@ -211,10 +261,25 @@ export function buildBuilderSnapshot(
     for (const offer of list) {
       if (offer.kind !== "barter") continue;
       for (const { itemId } of offer.vendor.requiredItems) {
-        if (weaponIds.has(itemId) || allParts.has(itemId)) continue;
+        // A weapon or part in the snapshot is already named there. Anything else, including a
+        // part-typed item no weapon reaches, is named here or its barter could not be priced.
+        if (weaponIds.has(itemId) || partIds.has(itemId)) continue;
         const raw = items[itemId];
-        if (!isRecord(raw)) continue;
-        ingredientNames.set(itemId, typeof raw.name === "string" ? raw.name : itemId);
+        const at = `barters/${offer.vendor.barterId}`;
+        if (!isRecord(raw)) {
+          fail(`${at}: required item ${itemId} is not in the items document`);
+          continue;
+        }
+        if (typeof raw.name !== "string") {
+          fail(`${at}: required item ${itemId} has no name`);
+          continue;
+        }
+        if (raw.name === translationKey(itemId, "Name")) {
+          fail(
+            `items/${itemId}: name is still its translation key; the _en document did not apply`,
+          );
+        }
+        ingredientNames.set(itemId, raw.name);
       }
     }
   }

@@ -3,6 +3,7 @@ import type { WeaponListItem } from "../queries/weaponList.js";
 import { expandSlots, type SlotGraph, type WeaponTree } from "../queries/slot-graph.js";
 import { offerPriceIds, priceOffers, type PriceTable } from "../queries/shared/buy-for.js";
 import type { BuilderSnapshot, SnapshotPart } from "./types.js";
+import { ORPHANED_CAP } from "../build-schema.js";
 
 interface Derived {
   readonly graph: SlotGraph;
@@ -114,7 +115,9 @@ export function snapshotPriceIds(snapshot: BuilderSnapshot): string[] {
  * Such an id cannot be shown, priced or counted, and silently dropping it would lose the
  * author's choice without a word. `orphaned` is where the Builder already lists what it could
  * not place, and a re-shared build carries it on. Ids already orphaned stay, without
- * duplicates.
+ * duplicates, unless the list would pass {@link ORPHANED_CAP}, which every saved build must
+ * respect: then the oldest are dropped, so the ids this load found are the ones kept. New ids
+ * are added in slot-path order, so the result is the same for the same build.
  */
 export function orphanUnknownParts(
   snapshot: BuilderSnapshot,
@@ -124,9 +127,11 @@ export function orphanUnknownParts(
   const { parts } = derive(snapshot);
   const kept: Record<string, string> = {};
   const nextOrphaned = [...orphaned];
-  for (const [path, itemId] of Object.entries(attachments)) {
+  const paths = Object.keys(attachments).sort((a, b) => Number(a > b) - Number(a < b));
+  for (const path of paths) {
+    const itemId = attachments[path]!;
     if (parts.has(itemId)) kept[path] = itemId;
     else if (!nextOrphaned.includes(itemId)) nextOrphaned.push(itemId);
   }
-  return { attachments: kept, orphaned: nextOrphaned };
+  return { attachments: kept, orphaned: nextOrphaned.slice(-ORPHANED_CAP) };
 }

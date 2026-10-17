@@ -44,6 +44,31 @@ describe("createTarkovClient", () => {
     expect(result.t1!.name).toBe("t1 Nickname");
   });
 
+  it("fails a resource whose translation document is missing when translations are required", async () => {
+    const client = createTarkovClient(
+      BASE,
+      stubFetch({
+        "/traders": { data: { t1: { name: "t1 Nickname" } }, translations: ["$.data.*.name"] },
+      }),
+      undefined,
+      { requireTranslations: true },
+    );
+    await expect(client.fetchResource("traders")).rejects.toMatchObject({
+      name: "TarkovApiError",
+      resource: "traders_en",
+    });
+  });
+
+  it("does not require translations for a document that lists none", async () => {
+    const client = createTarkovClient(
+      BASE,
+      stubFetch({ "/barters": { data: [{ id: "b1" }] } }),
+      undefined,
+      { requireTranslations: true },
+    );
+    await expect(client.fetchResource("barters")).resolves.toEqual([{ id: "b1" }]);
+  });
+
   it("throws TarkovApiError carrying the resource and status", async () => {
     const client = createTarkovClient(BASE, stubFetch({}));
     await expect(client.fetchResource("items")).rejects.toMatchObject({

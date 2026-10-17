@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildBuilderSnapshot, type SnapshotDocuments } from "@tarkov/data";
+import { buildBuilderSnapshot, DEFAULT_PROFILE, type SnapshotDocuments } from "@tarkov/data";
+import { hydrateBuildCard } from "@tarkov/og";
+import { availabilityPillText } from "./og-availability.js";
 import {
   fetchOgRowsForBuild,
   loadOgData,
@@ -33,6 +35,7 @@ function part(id: string, extra: Record<string, unknown>) {
     conflictingItems: [],
     conflictingSlotIds: [],
     buyFromTrader: [],
+    updated: "2026-10-16T12:00:00.000Z",
     ...extra,
   };
 }
@@ -144,33 +147,49 @@ describe("fetchOgRowsForBuild", () => {
     });
   });
 
-  it("returns mods with their priced offers, the trader level flattened up", () => {
+  it("returns mods with their prices, and every offer with its trader level", () => {
     const out = fetchOgRowsForBuild(
       { weaponId: "w1", attachments: { mod_foregrip: "m1", mod_stock: "bartered" } },
       ogData(),
     );
     const [m1, bartered] = out.mods;
     expect(m1).toMatchObject({ id: "m1", shortName: "RVG", weight: 0.1 });
-    expect(m1!.buyFor).toEqual([
-      { vendor: { normalizedName: "prapor" }, priceRUB: 8000, minTraderLevel: 2 },
-      { vendor: { normalizedName: "flea-market" }, priceRUB: 9000, minTraderLevel: undefined },
+    expect(m1!.buyFor).toEqual([{ priceRUB: 8000 }, { priceRUB: 9000 }]);
+    expect(m1!.offers).toEqual([
+      { vendor: { normalizedName: "prapor" }, minTraderLevel: 2 },
+      { vendor: { normalizedName: "flea-market" }, minTraderLevel: undefined },
     ]);
     // A barter is gated on its own trader level, priced from its inputs' flea prices.
-    expect(bartered!.buyFor).toEqual([
-      { vendor: { normalizedName: "prapor" }, priceRUB: 400, minTraderLevel: 3 },
-    ]);
+    expect(bartered!.buyFor).toEqual([{ priceRUB: 400 }]);
+    expect(bartered!.offers).toEqual([{ vendor: { normalizedName: "prapor" }, minTraderLevel: 3 }]);
   });
 
-  it("leaves an unpriced offer off the card rather than pricing it at 0", () => {
+  it("keeps an unpriced part's offers for the pill, and prices it at nothing, not 0", () => {
+    // What a Ref barter for GP coins looks like: an offer whose cost has no flea price.
     const data = ogData();
     const trader = { ...data.prices.prices.trader };
     for (const key of Object.keys(trader)) trader[key] = null;
-    const items = { ...data.prices.prices.items, m1: [null, null, null] as const };
+    const items = { ...data.prices.prices.items, nuts: [null, null, null] as const };
     const out = fetchOgRowsForBuild(
-      { weaponId: "w1", attachments: { mod_foregrip: "m1" } },
+      { weaponId: "w1", attachments: { mod_stock: "bartered" } },
       { ...data, prices: { ...data.prices, prices: { items, trader } } },
     );
-    expect(out.mods[0]!.buyFor).toEqual([]);
+    const [bartered] = out.mods;
+    expect(bartered!.buyFor).toEqual([]);
+    expect(bartered!.offers).toEqual([{ vendor: { normalizedName: "prapor" }, minTraderLevel: 3 }]);
+    expect(availabilityPillText(out.mods, DEFAULT_PROFILE)).toBe("LL3");
+    const vm = hydrateBuildCard({
+      build: {
+        version: 6,
+        weaponId: "w1",
+        attachments: out.attachments,
+        orphaned: [],
+        createdAt: "2026-10-16T00:00:00.000Z",
+      },
+      weapon: out.weapon,
+      mods: out.mods,
+    });
+    expect(vm.priceRub).toBeNull();
   });
 
   it("counts a barrel's modifiers, and only a cartridge's weight", () => {

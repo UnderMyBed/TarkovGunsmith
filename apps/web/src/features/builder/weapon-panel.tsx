@@ -15,7 +15,7 @@ export interface WeaponPanelProps {
   saveFailed: boolean;
   embedProfileOnSave: boolean;
   onEmbedProfileOnSaveChange: (embed: boolean) => void;
-  /** When the game data was last updated upstream (ISO 8601), once it has loaded. */
+  /** When the Builder's data was taken from upstream (ISO 8601), once it has loaded. */
   dataAsOf: string | null;
 }
 
@@ -56,7 +56,7 @@ export function WeaponPanel({
         </CardDescription>
         {dataAsOf !== null && (
           <p className="font-mono text-10 uppercase tracking-18 text-[var(--color-muted-foreground)]">
-            Game data · <time dateTime={dataAsOf}>{DATA_DATE.format(new Date(dataAsOf))}</time>
+            Data as of <time dateTime={dataAsOf}>{DATA_DATE.format(new Date(dataAsOf))}</time>
           </p>
         )}
       </CardHeader>

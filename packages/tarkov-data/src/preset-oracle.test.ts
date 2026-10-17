@@ -40,7 +40,9 @@ interface PresetRecord {
   containsItems: { item: string; count: number }[];
 }
 
-const client = fixtureClient({ items: oracle });
+// No barters: the oracle's items capture holds presets and their parts, not the ingredients the
+// shared barter sample names, and this test reads stats only.
+const client = fixtureClient({ items: oracle, barters: { document: { data: [] }, lang: {} } });
 
 /**
  * Place a preset's parts through the slot graph, greedily, as a player would. Returns what was

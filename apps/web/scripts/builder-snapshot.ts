@@ -7,19 +7,21 @@
  *
  * `TARKOV_SNAPSHOT_SOURCE` picks the documents:
  *
- *   - `fixtures` (the default) — the committed captures in
- *     `packages/tarkov-data/src/__fixtures__/`, served through the same client and
- *     translation merge as live data. Local dev, CI and the e2e suite run on these, so no
- *     build depends on upstream being reachable.
- *   - `upstream` — live `json.tarkov.dev`. The release deploy builds with this.
+ *   - `fixtures` — the committed captures in `packages/tarkov-data/src/__fixtures__/`, served
+ *     through the same client and translation merge as live data. The default for `build`, so
+ *     CI and the e2e suite never depend on upstream being reachable.
+ *   - `upstream` — live `json.tarkov.dev`. The default for `dev` (`--default-source=upstream`),
+ *     and what the release deploy builds with. Each request times out and is retried once on
+ *     a 5xx or network failure.
  *
  * Generation is strict: any record that no longer matches the schemas fails the build with
  * every problem listed, rather than shipping a snapshot with rows missing.
  *
  *   TARKOV_SNAPSHOT_SOURCE=upstream pnpm exec tsx scripts/builder-snapshot.ts
+ *   pnpm exec tsx scripts/builder-snapshot.ts --default-source=upstream
  */
 import { mkdirSync, writeFileSync } from "node:fs";
-import { brotliCompressSync } from "node:zlib";
+import { brotliCompressSync, constants } from "node:zlib";
 import {
   buildBuilderSnapshot,
   createTarkovClient,
@@ -28,14 +30,22 @@ import {
   type SnapshotSource,
 } from "@tarkov/data";
 import { upstreamFixtureBody } from "../e2e/upstream-fixtures.js";
+import { createRetryingFetch } from "./upstream-fetch.js";
 
 const UPSTREAM_BASE = "https://json.tarkov.dev/regular/";
 const OUT_DIR = new URL("../public/data/", import.meta.url);
 
-function sourceFromEnv(): SnapshotSource {
-  const value = process.env.TARKOV_SNAPSHOT_SOURCE ?? "fixtures";
-  if (value === "fixtures" || value === "upstream") return value;
-  throw new Error(`TARKOV_SNAPSHOT_SOURCE must be "fixtures" or "upstream", got "${value}"`);
+function isSource(value: string): value is SnapshotSource {
+  return value === "fixtures" || value === "upstream";
+}
+
+/** `TARKOV_SNAPSHOT_SOURCE` if set, else `--default-source=…`, else `fixtures`. */
+function chooseSource(): SnapshotSource {
+  const flag = process.argv.find((a) => a.startsWith("--default-source="));
+  const fallback = flag === undefined ? "fixtures" : flag.slice("--default-source=".length);
+  const value = process.env.TARKOV_SNAPSHOT_SOURCE ?? fallback;
+  if (isSource(value)) return value;
+  throw new Error(`the snapshot source must be "fixtures" or "upstream", got "${value}"`);
 }
 
 /** A fetch that answers every upstream resource from the committed captures. */
@@ -53,16 +63,24 @@ function write(name: string, value: unknown): void {
   const text = JSON.stringify(value);
   writeFileSync(new URL(name, OUT_DIR), text);
   const kb = (bytes: number) => `${(bytes / 1024).toFixed(0)} KB`;
+  // Quality 4 approximates what Cloudflare's edge serves; the budget is checked at that
+  // quality by `pnpm verify:upstream`.
+  const brotli = brotliCompressSync(text, {
+    params: { [constants.BROTLI_PARAM_QUALITY]: 4 },
+  }).length;
   process.stdout.write(
-    `  ${name}: ${kb(new TextEncoder().encode(text).length)} raw, ${kb(brotliCompressSync(text).length)} brotli\n`,
+    `  ${name}: ${kb(new TextEncoder().encode(text).length)} raw, ${kb(brotli)} brotli (q4)\n`,
   );
 }
 
 async function main(): Promise<void> {
-  const source = sourceFromEnv();
+  const source = chooseSource();
+  // Translations are required: without them every name would ship as its key.
   const client = createTarkovClient(
     UPSTREAM_BASE,
-    source === "fixtures" ? fixtureFetch : undefined,
+    source === "fixtures" ? fixtureFetch : createRetryingFetch(),
+    undefined,
+    { requireTranslations: true },
   );
   process.stdout.write(`builder snapshot: reading ${source} documents\n`);
   const { snapshot, prices } = buildBuilderSnapshot(await fetchSnapshotDocuments(client), source);

@@ -274,13 +274,27 @@ function buildLookups(traders: readonly BuyForTrader[], tasks: readonly BuyForTa
   return { traderById, taskById };
 }
 
+/**
+ * The quest gate on an offer. An id the tasks document does not hold is reported: left `null`
+ * it would read as "no quest needed", showing a quest-locked offer as obtainable.
+ */
 function resolveTaskUnlock(
   taskUnlock: unknown,
   taskById: ReadonlyMap<string, string>,
+  at: string,
+  fail: OfferProblem,
 ): { id: string; normalizedName: string } | null {
-  if (typeof taskUnlock !== "string") return null;
+  if (taskUnlock === null || taskUnlock === undefined) return null;
+  if (typeof taskUnlock !== "string") {
+    fail(`${at}: taskUnlock is not a string`);
+    return null;
+  }
   const normalizedName = taskById.get(taskUnlock);
-  return normalizedName === undefined ? null : { id: taskUnlock, normalizedName };
+  if (normalizedName === undefined) {
+    fail(`${at}: taskUnlock ${taskUnlock} is not in the tasks document`);
+    return null;
+  }
+  return { id: taskUnlock, normalizedName };
 }
 
 /** What `barterCostRUB` needs to know about one required item. */
@@ -328,23 +342,48 @@ export function barterCostRUB(
   return { priceRUB: Math.round(total / barter.offeredItem.count), reason: null };
 }
 
+/**
+ * Reports a problem with one offer. The generator collects these as drift; at runtime the
+ * collector stays lenient and the offending offer is skipped or its gate left `null`.
+ */
+export type OfferProblem = (line: string) => void;
+
+const ignoreProblem: OfferProblem = () => undefined;
+
 /** Cash `buyFromTrader` offers on one upstream item, joined to trader/task names. */
 function cashOffers(
   sellerId: string,
   item: object,
   lookups: Lookups,
+  fail: OfferProblem,
   preset?: OfferPreset,
 ): UnpricedOffer[] {
   const { buyFromTrader } = item as { buyFromTrader?: unknown };
-  if (!Array.isArray(buyFromTrader)) return [];
+  if (buyFromTrader === undefined || buyFromTrader === null) return [];
+  if (!Array.isArray(buyFromTrader)) {
+    fail(`items/${sellerId}: buyFromTrader is not an array`);
+    return [];
+  }
   const offers: UnpricedOffer[] = [];
-  for (const raw of buyFromTrader as unknown[]) {
-    if (raw === null || typeof raw !== "object") continue;
+  for (const [index, raw] of (buyFromTrader as unknown[]).entries()) {
+    const at = `items/${sellerId}: buyFromTrader[${index}]`;
+    if (raw === null || typeof raw !== "object") {
+      fail(`${at} is not an object`);
+      continue;
+    }
     const offer = raw as RawTraderOffer;
+    if (typeof offer.priceRUB !== "number") fail(`${at}: priceRUB is not a number`);
+    if (typeof offer.currency !== "string") fail(`${at}: currency is not a string`);
 
     const normalizedName =
       typeof offer.trader === "string" ? lookups.traderById.get(offer.trader) : undefined;
-    if (normalizedName === undefined) continue;
+    if (normalizedName === undefined) {
+      fail(`${at}: trader ${String(offer.trader)} is not in the traders document`);
+      continue;
+    }
+    if (typeof offer.minTraderLevel !== "number") {
+      fail(`${at}: minTraderLevel is not a number`);
+    }
 
     offers.push({
       kind: "cash",
@@ -354,7 +393,7 @@ function cashOffers(
         __typename: "TraderOffer",
         normalizedName,
         minTraderLevel: typeof offer.minTraderLevel === "number" ? offer.minTraderLevel : null,
-        taskUnlock: resolveTaskUnlock(offer.taskUnlock, lookups.taskById),
+        taskUnlock: resolveTaskUnlock(offer.taskUnlock, lookups.taskById, at, fail),
         trader: { normalizedName },
       },
       ...(preset === undefined ? {} : { preset }),
@@ -404,11 +443,15 @@ export type OfferCollector = (item: unknown) => UnpricedOffer[];
  * own flea offer already covers flea access.
  *
  * An item without a string id gets no offers: nothing could price them. An offer whose trader
- * id resolves to nothing is dropped, because availability compares on `normalizedName` and a
+ * id resolves to nothing is skipped, because availability compares on `normalizedName` and a
  * blank one would silently match nothing; an unresolvable `taskUnlock` keeps the offer with a
- * `null` gate.
+ * `null` gate. Each of those, and every malformed `buyFromTrader` entry, is reported through
+ * `fail`: the snapshot generator turns them into drift, while runtime callers may ignore them.
  */
-export function createOfferCollector(sources: OfferSources): OfferCollector {
+export function createOfferCollector(
+  sources: OfferSources,
+  fail: OfferProblem = ignoreProblem,
+): OfferCollector {
   const lookups = buildLookups(sources.traders, sources.tasks);
 
   const bartersByOffered = new Map<string, Barter[]>();
@@ -437,15 +480,19 @@ export function createOfferCollector(sources: OfferSources): OfferCollector {
     const offers: UnpricedOffer[] = [];
     for (const barter of bartersByOffered.get(itemId) ?? []) {
       const normalizedName = lookups.traderById.get(barter.trader);
+      const at = `barters/${barter.id}`;
       // Same rule as cash offers: an unresolvable trader cannot be gated or named.
-      if (normalizedName === undefined) continue;
+      if (normalizedName === undefined) {
+        fail(`${at}: trader ${barter.trader} is not in the traders document`);
+        continue;
+      }
       offers.push({
         kind: "barter",
         vendor: {
           __typename: "TraderBarter",
           normalizedName,
           minTraderLevel: barter.minTraderLevel,
-          taskUnlock: resolveTaskUnlock(barter.taskUnlock, lookups.taskById),
+          taskUnlock: resolveTaskUnlock(barter.taskUnlock, lookups.taskById, at, fail),
           trader: { normalizedName },
           barterId: barter.id,
           offeredCount: barter.offeredItem.count,
@@ -465,10 +512,10 @@ export function createOfferCollector(sources: OfferSources): OfferCollector {
     if (item === null || typeof item !== "object") return [];
     const { id } = item as { id?: unknown };
     if (typeof id !== "string") return [];
-    const offers = [...cashOffers(id, item, lookups), ...barterOffers(id)];
+    const offers = [...cashOffers(id, item, lookups, fail), ...barterOffers(id)];
     for (const { raw, preset } of presetsByBase.get(id) ?? []) {
       offers.push(
-        ...cashOffers(preset.id, raw, lookups, preset),
+        ...cashOffers(preset.id, raw, lookups, fail, preset),
         ...barterOffers(preset.id, preset),
       );
     }

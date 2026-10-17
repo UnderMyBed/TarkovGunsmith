@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fixtureSnapshot } from "../__test-utils__/fixture-snapshot.js";
+import { BuildV6, ORPHANED_CAP } from "../build-schema.js";
 import {
   orphanUnknownParts,
   snapshotPart,
@@ -83,5 +84,25 @@ describe("orphanUnknownParts", () => {
       },
       orphaned: ["also-gone", "kept-from-before", "gone-upstream"],
     });
+  });
+});
+
+describe("orphanUnknownParts at the cap", () => {
+  it("never passes the cap a saved build must respect, keeping the ids it just found", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    const earlier = Array.from(
+      { length: ORPHANED_CAP },
+      (_, i) => `old-${String(i).padStart(2, "0")}`,
+    );
+    const result = orphanUnknownParts(
+      snapshot,
+      { mod_stock: "new-b", mod_charge: "new-a", mod_reciever: "55d355e64bdc2d962f8b4569" },
+      earlier,
+    );
+    expect(result.orphaned).toHaveLength(ORPHANED_CAP);
+    // Oldest dropped; new ids appended in slot-path order (mod_charge before mod_stock).
+    expect(result.orphaned.slice(0, 2)).toEqual(["old-02", "old-03"]);
+    expect(result.orphaned.slice(-2)).toEqual(["new-a", "new-b"]);
+    expect(BuildV6.shape.orphaned.safeParse(result.orphaned).success).toBe(true);
   });
 });

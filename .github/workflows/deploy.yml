@@ -89,7 +89,10 @@ jobs:
 
   builds-api:
     name: Deploy builds-api Worker
-    needs: preflight
+    # After pages: its build generates the Builder snapshot from live upstream and fails on
+    # drift. A release that cannot build the SPA must not ship the Worker either, or the two
+    # would run different releases.
+    needs: [preflight, pages]
     if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     concurrency:
@@ -133,6 +136,7 @@ jobs:
     needs: preflight
     if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(main): release') }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     concurrency:
       group: deploy-pages
       cancel-in-progress: false
@@ -165,11 +169,15 @@ jobs:
           TARKOV_SNAPSHOT_SOURCE: upstream
         run: pnpm --filter "@tarkov/web..." build
 
-      - name: Assert the snapshot is live data
-        # A fixture snapshot would deploy a Builder with two weapons in it.
+      - name: Assert the snapshot is live data, within its size budget
+        # A fixture snapshot would deploy a Builder with two weapons in it. Every Builder visit
+        # downloads the snapshot; 4.5 MB raw is its budget (docs/operations/builder-snapshot.md).
         run: |
           jq -e '.source == "upstream"' apps/web/dist/data/builder-snapshot.json
           jq -e '.source == "upstream"' apps/web/dist/data/builder-prices.json
+          size=$(stat -c %s apps/web/dist/data/builder-snapshot.json)
+          echo "builder-snapshot.json: $size bytes raw"
+          [ "$size" -le 4718592 ] || { echo "over the 4.5 MB raw budget"; exit 1; }
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v4

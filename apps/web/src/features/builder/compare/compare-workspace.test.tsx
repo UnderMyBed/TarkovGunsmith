@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { createTestBuilderData } from "../../../test/test-builder-data.js";
+import { createTestClient } from "../../../test/test-client.js";
 import type * as TarkovData from "@tarkov/data";
 import type { BuildV6 } from "@tarkov/data";
 import { CompareWorkspace } from "./compare-workspace.js";
@@ -25,7 +27,14 @@ vi.mock("@tarkov/data", async () => {
     useWeaponTree: () => idleQuery,
     useSavePair: () => ({ mutate: vi.fn(), isPending: false, error: null }),
     useForkPair: () => ({ mutate: vi.fn(), isPending: false, error: null }),
+    useBuilderData: () => mockBuilderData,
   };
+});
+
+// The real snapshot the route tests run on, so the paste-url side resolves against real data.
+let mockBuilderData: TarkovData.BuilderDataSource;
+beforeAll(async () => {
+  mockBuilderData = await createTestBuilderData(createTestClient());
 });
 
 const leftBuild: BuildV6 = {
@@ -61,6 +70,38 @@ describe("CompareWorkspace sessionStorage prefill", () => {
     // markClean() ran in the `finally` block — a fresh clone from Builder should not start
     // the page in a "you have unsaved changes" state.
     expect(screen.queryByText(/unsaved/i)).not.toBeInTheDocument();
+  });
+
+  it("resolves a pasted right-hand build against the game data, orphaning unknown parts", async () => {
+    sessionStorage.setItem("compare:leftPrefill", JSON.stringify(leftBuild));
+    sessionStorage.setItem("compare:mode", "paste-url");
+    sessionStorage.setItem("compare:rightBuildId", "abcd2345");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              ...leftBuild,
+              weaponId: "w-right",
+              attachments: { mod_stock: "gone-part" },
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          ),
+        ),
+      ),
+    );
+    try {
+      render(<CompareWorkspace />);
+      // Side B holds the build with the unknown part moved off the weapon, as the Builder
+      // would load it: nothing attached, and the part named in its orphan banner.
+      expect(
+        await screen.findByText("gone-part — not a part the Builder knows"),
+      ).toBeInTheDocument();
+      expect(screen.getAllByText("0 attached")).toHaveLength(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("does not touch sessionStorage when a loader-supplied initialPair is present", () => {

@@ -30,7 +30,11 @@ export type SnapshotPart = z.infer<typeof snapshotPartSchema>;
 export interface BuilderSnapshot {
   readonly schema: typeof BUILDER_SNAPSHOT_SCHEMA;
   readonly source: SnapshotSource;
-  /** The newest `updated` timestamp in the items document (ISO 8601): the data's own age. */
+  /**
+   * The newest `updated` timestamp in the items document (ISO 8601). Upstream refreshes some
+   * item every few minutes, so this is in effect when the snapshot was taken, not when the
+   * game last changed.
+   */
   readonly dataAsOf: string;
   /** Buildable weapons, sorted by id. */
   readonly weapons: readonly SnapshotWeapon[];

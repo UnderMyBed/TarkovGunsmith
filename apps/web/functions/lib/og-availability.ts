@@ -1,14 +1,15 @@
 import type { PlayerProfile } from "@tarkov/data";
 
+/** One way to obtain a mod. Priced or not: the pill asks who sells it, not for how much. */
 export interface AvailabilityOffer {
   vendor: { normalizedName: string };
-  priceRUB: number;
   minTraderLevel?: number;
 }
 
 export interface AvailabilityMod {
   id: string;
-  buyFor: AvailabilityOffer[];
+  /** Every offer, including those without a price (a barter whose inputs have none). */
+  offers: AvailabilityOffer[];
 }
 
 export type AvailabilityPill = "FLEA" | "LL2" | "LL3" | "LL4";
@@ -34,11 +35,11 @@ export function availabilityPillText(
   let maxLevel = 1;
 
   for (const mod of mods) {
-    if (mod.buyFor.length === 0) {
+    if (mod.offers.length === 0) {
       needsFlea = true;
       continue;
     }
-    const traderOffers = mod.buyFor.filter((o) => o.vendor.normalizedName !== "flea-market");
+    const traderOffers = mod.offers.filter((o) => o.vendor.normalizedName !== "flea-market");
     if (traderOffers.length === 0) {
       needsFlea = true;
       continue;

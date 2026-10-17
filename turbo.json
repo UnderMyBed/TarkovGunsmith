@@ -19,6 +19,7 @@
       "outputs": ["dist/**", "public/data/**"]
     },
     "dev": {
+      "env": ["TARKOV_SNAPSHOT_SOURCE"],
       "cache": false,
       "persistent": true
     },

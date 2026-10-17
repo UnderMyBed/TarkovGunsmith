@@ -13,9 +13,9 @@ import {
 } from "@tarkov/data";
 
 /**
- * The mods returned here serve two consumers: `hydrateBuildCard` (reads `buyFor[].priceRUB`)
- * and `availabilityPillText` (reads `buyFor[].vendor.normalizedName` + `minTraderLevel`). This
- * intersection type lets TypeScript see that one row satisfies both contracts.
+ * The mods returned here serve two consumers: `hydrateBuildCard` totals `buyFor[].priceRUB`
+ * (priced offers only), and `availabilityPillText` reads `offers` (every offer, priced or not).
+ * This intersection type lets TypeScript see that one row satisfies both contracts.
  */
 export type OgMod = HydrateMod & AvailabilityMod;
 
@@ -79,25 +79,27 @@ interface Args {
 }
 
 /**
- * The card's offers for one part: only the priced ones. A part with none prices the card at
- * nothing rather than at 0 — `hydrateBuildCard` leaves the total out when any mod has no offer.
+ * Every offer on one part, for the availability pill. Unpriced ones count: a Ref barter whose
+ * GP-coin cost has no flea price still says which trader, at which level, sells the part.
  */
-function cardOffers(buyFor: readonly BuyForEntry[]): AvailabilityOffer[] {
-  const offers: AvailabilityOffer[] = [];
-  for (const entry of buyFor) {
-    if (entry.priceRUB === null) continue;
-    const { vendor } = entry;
-    offers.push({
-      vendor: { normalizedName: vendor.normalizedName },
-      priceRUB: entry.priceRUB,
-      // Flattened up from the vendor, where availabilityPillText expects it.
-      minTraderLevel:
-        vendor.__typename === "TraderOffer" || vendor.__typename === "TraderBarter"
-          ? (vendor.minTraderLevel ?? undefined)
-          : undefined,
-    });
-  }
-  return offers;
+function availabilityOffers(buyFor: readonly BuyForEntry[]): AvailabilityOffer[] {
+  return buyFor.map(({ vendor }) => ({
+    vendor: { normalizedName: vendor.normalizedName },
+    // Flattened up from the vendor, where availabilityPillText expects it.
+    minTraderLevel:
+      vendor.__typename === "TraderOffer" || vendor.__typename === "TraderBarter"
+        ? (vendor.minTraderLevel ?? undefined)
+        : undefined,
+  }));
+}
+
+/**
+ * The prices the card totals: only the priced offers. A part with none leaves the card's
+ * total out rather than counting it at 0 — `hydrateBuildCard` omits the total when any mod
+ * has no price.
+ */
+function cardPrices(buyFor: readonly BuyForEntry[]): { priceRUB: number }[] {
+  return buyFor.flatMap((entry) => (entry.priceRUB === null ? [] : [{ priceRUB: entry.priceRUB }]));
 }
 
 /**
@@ -154,7 +156,8 @@ export function fetchOgRowsForBuild(
         recoilModifier: stats.recoilModifier,
         accuracyModifier: stats.accuracyModifier,
       },
-      buyFor: cardOffers(part.buyFor ?? []),
+      buyFor: cardPrices(part.buyFor ?? []),
+      offers: availabilityOffers(part.buyFor ?? []),
     });
   }
 

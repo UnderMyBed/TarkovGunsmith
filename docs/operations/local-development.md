@@ -13,13 +13,19 @@ pnpm install
 cp apps/builds-api/.dev.vars.example apps/builds-api/.dev.vars
 cp apps/web/.dev.vars.example apps/web/.dev.vars
 
-pnpm dev        # starts web + both workers in one terminal
+pnpm dev        # starts web + both workers in one terminal; the Builder reads live data
+TARKOV_SNAPSHOT_SOURCE=fixtures pnpm dev   # the same, offline, on the committed captures
 
 # In a second terminal:
 pnpm seed:build # POSTs a fixture build to local builds-api; prints the share URL
 ```
 
 Open the printed share URL (`http://localhost:5173/builder/<id>`) to confirm the full save/load round-trip works.
+
+`pnpm dev` first generates the Builder snapshot from live `json.tarkov.dev` (about 160 weapons).
+With upstream unreachable that step fails and says so; there is no automatic fallback. Set
+`TARKOV_SNAPSHOT_SOURCE=fixtures` to run on the committed captures instead, which hold two
+weapons. See [`builder-snapshot.md`](./builder-snapshot.md).
 
 ## What runs where
 

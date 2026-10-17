@@ -366,7 +366,7 @@ describe("upgradeLoadedBuild", () => {
 const LEGACY_V1_PLACEMENTS = [
   {
     weaponId: "5447a9cd4bdc2dbd208b4567",
-    orphanedCount: 37,
+    orphanedCount: 38,
     attachments: {
       "mod_reciever/mod_handguard/mod_tactical": "5a7b483fe899ef0016170d15",
       "mod_reciever/mod_scope": "57aca93d2459771f2c7e26db",

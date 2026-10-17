@@ -117,6 +117,7 @@ export const ITEMS_DOCUMENT: {
     },
     "mod-muzzle": {
       id: "mod-muzzle",
+      updated: "2026-10-16T12:00:00.000Z",
       name: "Zenit DTK-1 muzzle brake",
       shortName: "DTK-1",
       iconLink: ICON,
@@ -147,6 +148,7 @@ export const ITEMS_DOCUMENT: {
     },
     "mod-stock": {
       id: "mod-stock",
+      updated: "2026-10-16T12:00:00.000Z",
       name: "Magpul CTR carbine stock",
       shortName: "CTR",
       iconLink: ICON,

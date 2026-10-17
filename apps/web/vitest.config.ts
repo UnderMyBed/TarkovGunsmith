@@ -11,7 +11,12 @@ export default defineConfig({
   test: {
     // `functions/**` (not just `functions/lib/**`) so the Pages Function route
     // handlers themselves are testable, not only the helpers they import.
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "functions/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "functions/**/*.test.ts",
+      "scripts/**/*.test.ts",
+    ],
     environment: "node",
     coverage: {
       provider: "v8",

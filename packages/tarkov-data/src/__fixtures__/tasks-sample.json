@@ -768,6 +768,202 @@
           "lightkeeperRequired": false,
           "taskImageLink": "https://assets.tarkov.dev/5c1234c286f77406fa13baeb.webp",
           "map": "56f40101d2720b2a4d8b45d6"
+        },
+        "5a03296886f774569778596a": {
+          "id": "5a03296886f774569778596a",
+          "name": "5a03296886f774569778596a name",
+          "trader": "5935c25fb3acc3127c3d8cd9",
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/I_Need_More_Power",
+          "minPlayerLevel": 0,
+          "taskRequirements": [],
+          "traderRequirements": [],
+          "objectives": [
+            {
+              "id": "5a3ba62786f7742c9d4f5ee9",
+              "description": "5a3ba62786f7742c9d4f5ee9",
+              "type": "visit",
+              "optional": false,
+              "zones": [
+                {
+                  "id": "place_peacemaker_008_4_N1",
+                  "map": "5704e554d2720bac5b8b456e",
+                  "position": {
+                    "x": -336.55,
+                    "y": 0.14,
+                    "z": -76.43
+                  },
+                  "outline": [
+                    {
+                      "x": -338.05,
+                      "y": -0.86,
+                      "z": -77.93
+                    },
+                    {
+                      "x": -338.05,
+                      "y": -0.86,
+                      "z": -74.93
+                    },
+                    {
+                      "x": -335.05,
+                      "y": -0.86,
+                      "z": -74.93
+                    },
+                    {
+                      "x": -335.05,
+                      "y": -0.86,
+                      "z": -77.93
+                    }
+                  ],
+                  "top": 1.14,
+                  "bottom": -0.86
+                }
+              ],
+              "maps": ["5704e554d2720bac5b8b456e"]
+            },
+            {
+              "id": "6a5cd11e5cf929b0f5d76816",
+              "description": "6a5cd11e5cf929b0f5d76816",
+              "type": "giveItem",
+              "count": 3,
+              "optional": false,
+              "items": ["5d1b36a186f7742523398433", "5d1b371186f774253763a656"],
+              "dogTagLevel": 0,
+              "maxDurability": 100,
+              "minDurability": 0,
+              "foundInRaid": true
+            },
+            {
+              "id": "5a3ba65f86f7743af1475f11",
+              "description": "5a3ba65f86f7743af1475f11",
+              "type": "visit",
+              "optional": false,
+              "zones": [
+                {
+                  "id": "place_peacemaker_008_4_N2",
+                  "map": "5704e554d2720bac5b8b456e",
+                  "position": {
+                    "x": -171.16,
+                    "y": 0.14,
+                    "z": -75.51
+                  },
+                  "outline": [
+                    {
+                      "x": -172.66,
+                      "y": -0.86,
+                      "z": -78.01
+                    },
+                    {
+                      "x": -172.66,
+                      "y": -0.86,
+                      "z": -73.01
+                    },
+                    {
+                      "x": -169.66,
+                      "y": -0.86,
+                      "z": -73.01
+                    },
+                    {
+                      "x": -169.66,
+                      "y": -0.86,
+                      "z": -78.01
+                    }
+                  ],
+                  "top": 1.14,
+                  "bottom": -0.86
+                }
+              ],
+              "requiredKeys": [["5a13ef0686f7746e5a411744", "5a0ee34586f774023b6ee092"]],
+              "maps": ["5704e554d2720bac5b8b456e"]
+            }
+          ],
+          "failConditions": [],
+          "startRewards": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "finishRewards": {
+            "traderStanding": [
+              {
+                "standing": 0.25,
+                "trader": "5935c25fb3acc3127c3d8cd9"
+              }
+            ],
+            "items": [
+              {
+                "item": "5696686a4bdc2da3298b456a",
+                "count": 1100,
+                "attributes": {}
+              },
+              {
+                "item": "62a0a16d0b9d3c46de5b6e97",
+                "count": 2,
+                "attributes": {}
+              }
+            ],
+            "offerUnlock": [
+              {
+                "id": "6a7068311b36e561b500d8a2",
+                "level": 3,
+                "item": "5d44069ca4b9361ebd26fc37",
+                "count": 1,
+                "contains": [],
+                "attributes": [],
+                "trader": "5935c25fb3acc3127c3d8cd9"
+              }
+            ],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "failureOutcome": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "restartable": false,
+          "experience": 10000,
+          "factionName": "Any",
+          "neededKeys": [
+            {
+              "map": "5704e554d2720bac5b8b456e",
+              "keys": ["5a13ef0686f7746e5a411744", "5a0ee34586f774023b6ee092"]
+            }
+          ],
+          "availableDelaySecondsMin": 0,
+          "availableDelaySecondsMax": 0,
+          "otherRequirements": [
+            {
+              "id": "6a5e6258fe76f81230c9b8f7",
+              "type": "globalVariable",
+              "variableId": "6a5ba450a7851e16ce0bde44",
+              "compareMethod": ">=",
+              "value": 5
+            }
+          ],
+          "normalizedName": "i-need-more-power",
+          "kappaRequired": false,
+          "lightkeeperRequired": false,
+          "taskImageLink": "https://assets.tarkov.dev/5a03296886f774569778596a.webp",
+          "map": "5704e554d2720bac5b8b456e"
         }
       }
     },
@@ -811,6 +1007,10 @@
     "5ac244eb86f7741356335af1 name": "Gunsmith - M4A1",
     "639872fe8871e1272b10ccf6 name": "Gunsmith Master - Part 1",
     "5a27b80086f774429a5d7e20 name": "Eagle Eye",
-    "5c1234c286f77406fa13baeb name": "Setup"
+    "5c1234c286f77406fa13baeb name": "Setup",
+    "5a03296886f774569778596a name": "I Need More Power",
+    "5a3ba62786f7742c9d4f5ee9": "Locate the generators in the east wing of the Health Resort on Shoreline",
+    "6a5cd11e5cf929b0f5d76816": "Hand over the found in raid item: Metal fuel tank or Expeditionary fuel tank",
+    "5a3ba65f86f7743af1475f11": "Locate the generators in the west wing of the Health Resort on Shoreline"
   }
 }

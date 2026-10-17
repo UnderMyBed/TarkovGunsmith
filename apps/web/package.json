@@ -14,7 +14,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
-    "dev": "pnpm snapshot && vite",
+    "dev": "tsx scripts/builder-snapshot.ts --default-source=upstream && vite",
     "snapshot": "tsx scripts/builder-snapshot.ts",
     "preview": "vite preview",
     "pages:dev": "wrangler pages dev",

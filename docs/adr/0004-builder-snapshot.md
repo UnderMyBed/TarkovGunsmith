@@ -22,15 +22,23 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
 - **A build-time snapshot.** `apps/web/scripts/builder-snapshot.ts` generates
   `/data/builder-snapshot.json` on every build: buildable weapons, every part reachable through
   their slots, the slot graph, every offer with its price left out, traders, tasks, and
-  `dataAsOf` (the newest `updated` timestamp upstream). The Builder, Compare, and the OG cards
+  `dataAsOf` (the newest `updated` timestamp upstream — in effect the time the snapshot was
+  taken, since upstream refreshes some item every few minutes). The Builder, Compare, and the OG cards
   read it instead of the upstream documents.
-- **Generated, not committed.** The release deploy generates it from live `json.tarkov.dev`;
-  every other build, including CI and the e2e suite, generates it from the committed captures.
+- **Generated, not committed.** The release deploy and local dev generate it from live
+  `json.tarkov.dev`; CI and the e2e suite generate it from the committed captures.
   Each file records which (`source`), and the deploy refuses to ship a fixture snapshot.
-- **Strict generation.** Every record must match its schema, every weapon-reachable slot item
-  must be a part, and duplicate trader offers must agree on price. Any failure fails the build
-  with every problem listed, so drift stops a release instead of reaching users. The lenient
-  per-record parse paths are removed.
+- **Strict generation, scoped to what the snapshot holds.** Everything the snapshot contains or
+  derives from must parse: every trader and task, every buildable weapon, every part a weapon's
+  slots reach (with its `updated` and `conflictingSlotIds`), every offer on those (trader, quest
+  gate, loyalty level, price fields), every barter rewarding one of them or a preset of one,
+  and each barter ingredient. Weapon-reachable slot items must be parts, duplicate trader offers
+  must agree on price, and names must not still be translation keys; the generator also
+  requires every translation document upstream lists paths for. Any failure fails the build
+  with every problem listed, so drift stops a release instead of reaching users. Records the
+  Builder never reads — special-slot weapons, part-typed items no weapon reaches, barters
+  rewarding anything else — are not checked, so unrelated upstream records cannot block a
+  release. The lenient per-record parse paths are removed.
 - **Prices stay live in the SPA.** Offers are stored without prices. The SPA prices them from
   the raw `items` document — no translation sibling, price fields only — refreshed hourly.
 - **OG cards price from the release.** A separate `/data/builder-prices.json`, generated with
@@ -38,8 +46,9 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   it. A card is cached for 30 days, so its price is a point-in-time figure regardless.
 - **Versioned.** Both files carry `schema`. A tab holding code from an earlier deploy refuses a
   file of another version with "Game data was updated. Reload the page."
-- **Budget.** The snapshot must stay within 250 KB brotli and 4.5 MB raw, checked against live
-  data by `pnpm verify:upstream`.
+- **Budget.** The snapshot must stay within 250 KB brotli (measured at quality 4, near what the
+  edge serves) and 4.5 MB raw, checked against live data by `pnpm verify:upstream`; the deploy
+  also checks the raw size.
 
 ## Consequences
 
@@ -47,19 +56,23 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
 
 - The Builder's upstream request on a visit is the raw `items` document for prices; traders,
   tasks, barters and every translation document are gone from its critical path.
-- On the 2026-10-16 live data the snapshot is 3.7 MB raw and 181 KB brotli, and parses in under
-  10 ms; parsing the raw items document took 36 ms.
+- On the 2026-10-16 live data the snapshot is 3.7 MB raw and 236 KB brotli at quality 4, and
+  parses in under 10 ms; parsing the raw items document took 36 ms.
 - Upstream drift fails a release build, listing every problem, rather than silently emptying a
   picker in production.
 - The OG cards read the deploy's own static assets and make no upstream request.
-- Local dev, CI and the e2e suite never depend on upstream being reachable to build.
+- CI and the e2e suite never depend on upstream being reachable to build. Local dev reads live
+  data by default and can run offline on the captures.
 
 **Bad / accepted**
 
 - Structural data is as old as the last release. A game patch reaches the Builder only when a
-  release is cut; `dataAsOf` is shown in the weapon panel so the age is visible.
+  release is cut; the weapon panel shows "Data as of <date>" so the snapshot's age is visible.
 - A release cannot ship while upstream is drifted, even if the change being released is
   unrelated. That is deliberate: the alternative ships a Builder with records missing.
 - A shared build may name a part a later snapshot no longer holds. Those ids move to the build's
   orphaned list on load rather than staying on the weapon.
-- The fixture snapshot holds only the captured weapons, so local dev shows two of them.
+- The brotli budget has little headroom: 14 KB on the 2026-10-16 data. Growth in parts or offers
+  upstream will reach it.
+- A release build depends on `json.tarkov.dev` answering. Each request times out and is retried
+  once; a longer outage fails the build, and production keeps the previous release.

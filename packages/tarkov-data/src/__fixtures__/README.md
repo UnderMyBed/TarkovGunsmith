@@ -36,6 +36,17 @@ undercuts its cash gate (Badger latch, Mechanic LL1), a barter-only scope (ELCAN
 GP-coin barter. Every item those barters require is in `items-sample.json` with its flea price,
 except GP coin, which has none upstream.
 
+Added 2026-10-16 with the Builder snapshot's strict generation: the task "I Need More Power"
+(`5a03296886f774569778596a`), which a captured offer is quest-locked behind and which strict
+generation requires to resolve; and the PVS-7 Wilcox adapter (`5c11046cd174af02a012e42b`), a
+helmet mount — part-typed, flea-priced, and reached by no weapon slot — for the barter-ingredient
+tests.
+
+`legacy-buy-for.json` pins what the offer resolver returned for every fixture weapon and part
+before offers were split from prices (main at `2b8c53b`, over these same captures).
+`generate.test.ts` checks the snapshot against it. Regenerate it only when a capture changes
+those items' offers, and from the pre-split resolver, never from the code under test.
+
 `preset-oracle-sample.json` holds six upstream weapon presets with their base weapons and every
 part they list, captured 2026-10-16, for `preset-oracle.test.ts`: the presets' own ergonomics and
 recoil are the oracle the Builder's stat path must reproduce.
