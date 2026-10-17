@@ -43,10 +43,19 @@ export type { Barter, BarterItem } from "./queries/barters.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
 export { partsById, isModLikePart } from "./queries/parts.js";
 export type { AttachablePart, AttachablePartType, ModLikePart } from "./queries/parts.js";
-export { attachedParts, mountedAttachments, withAttachment } from "./attached-parts.js";
 export { conflictsWith } from "./conflicts.js";
 export type { Conflict, ConflictContext, ConflictFields } from "./conflicts.js";
-export type { AttachedParts, AttachedPartEntry, KnownItems } from "./attached-parts.js";
+export { resolveBuild } from "./build-core/resolve.js";
+export { applyBuildAction, toBuildPayload } from "./build-core/reducer.js";
+export type { BuildAction, BuildContext, BuildMeta, BuildState } from "./build-core/reducer.js";
+export { loadSavedBuild } from "./build-core/load.js";
+export type {
+  BuildConflict,
+  OrphanReason,
+  OrphanedAttachment,
+  PlacedPart,
+  ResolvedBuild,
+} from "./build-core/resolve.js";
 
 // Build schema
 export {
@@ -61,6 +70,7 @@ export {
   DEFAULT_PROFILE,
   CURRENT_BUILD_VERSION,
 } from "./build-schema.js";
+export { ORPHANED_CAP } from "./build-schema.js";
 
 // Build pair schema
 export { BuildPair, BuildPairV1, CURRENT_PAIR_VERSION } from "./pair-schema.js";
@@ -123,8 +133,8 @@ export {
   SnapshotVersionError,
 } from "./snapshot/load.js";
 export {
-  orphanUnknownParts,
   snapshotPart,
+  snapshotPartsById,
   snapshotPartCatalog,
   snapshotPriceIds,
   snapshotSlotGraph,

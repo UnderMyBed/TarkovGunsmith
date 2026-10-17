@@ -1,7 +1,7 @@
 // apps/web/src/features/builder/builder-page.tsx
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
-import { presetAvailability, useProfile, useTasks, type PlayerProfile } from "@tarkov/data";
+import { presetAvailability, useProfile, useTasks, type BuildV6 } from "@tarkov/data";
 import { QuestNameProvider } from "./quest-names.js";
 import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
 import { Button, Card, CardContent } from "@tarkov/ui";
@@ -22,19 +22,11 @@ import { PresetPicker } from "./preset-picker.js";
 import { SpecPanel } from "./spec-panel.js";
 
 export interface BuilderPageProps {
-  initialWeaponId?: string;
-  /** v1 hydration — flat list of mod ids. Will be migrated once the weapon tree loads. */
-  initialModIds?: string[];
-  /** v2 hydration — slot → item id map. */
-  initialAttachments?: Record<string, string>;
-  /** v2 hydration — unplaceable mods from an earlier v1 migration. */
-  initialOrphaned?: string[];
-  /** v3 hydration — profile snapshot embedded in the shared build. */
-  initialProfileSnapshot?: PlayerProfile;
-  /** v4 hydration — optional build name. */
-  initialName?: string;
-  /** v4 hydration — optional build description. */
-  initialDescription?: string;
+  /**
+   * A saved build to open, already through `loadSavedBuild` (current version, every attachment
+   * on the weapon). Its name, description and embedded profile seed the page too.
+   */
+  initialBuild?: BuildV6;
   notice?: React.ReactNode;
   view?: "editor" | "optimize";
 }
@@ -59,17 +51,7 @@ export interface BuilderPageProps {
  * both route files import it as a normal (non-route) dependency, which the splitter treats
  * like any other lazy-chunk-eligible import.
  */
-export function BuilderPage({
-  initialWeaponId = "",
-  initialModIds,
-  initialAttachments,
-  initialOrphaned,
-  initialProfileSnapshot,
-  initialName,
-  initialDescription,
-  notice,
-  view = "editor",
-}: BuilderPageProps = {}) {
+export function BuilderPage({ initialBuild, notice, view = "editor" }: BuilderPageProps = {}) {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useProfile();
@@ -81,13 +63,10 @@ export function BuilderPage({
     tasksError: tasks.error,
   });
 
-  const saveMeta = useSaveMetadata(initialName, initialDescription);
+  const saveMeta = useSaveMetadata(initialBuild?.name, initialBuild?.description);
 
   const builder = useBuilderState({
-    initialWeaponId,
-    initialModIds,
-    initialAttachments,
-    initialOrphaned,
+    initialBuild,
     profile,
     buildName: saveMeta.buildName,
     buildDescription: saveMeta.buildDescription,
@@ -106,24 +85,10 @@ export function BuilderPage({
       : null;
 
   const shareBuild = useShareBuild({
-    selectedWeaponId: builder.selectedWeapon?.id,
-    attachments: builder.attachments,
-    orphaned: builder.orphaned,
-    profile,
-    embedProfileOnSave: saveMeta.embedProfileOnSave,
-    buildName: saveMeta.buildName,
-    buildDescription: saveMeta.buildDescription,
+    build: builder.selectedWeapon ? builder.currentBuild : null,
   });
 
-  const compareHandoff = useCompareHandoff({
-    weaponId: builder.weaponId,
-    attachments: builder.attachments,
-    orphaned: builder.orphaned,
-    profile,
-    embedProfileOnSave: saveMeta.embedProfileOnSave,
-    buildName: saveMeta.buildName,
-    buildDescription: saveMeta.buildDescription,
-  });
+  const compareHandoff = useCompareHandoff({ build: builder.currentBuild });
 
   const handleOpenOptimizer = () =>
     void navigate({ to: ".", search: (s) => ({ ...s, view: "optimize" as const }) });
@@ -151,6 +116,8 @@ export function BuilderPage({
           weaponName={builder.selectedWeapon?.shortName ?? builder.selectedWeapon?.name ?? null}
           weaponId={builder.weaponId || null}
           modCount={builder.attachedCount}
+          missingRequired={builder.selectedWeapon ? builder.missingRequired : []}
+          conflicts={builder.conflicts}
           sharedId={shareBuild.shareUrl?.split("/").pop() ?? null}
           onCompare={builder.selectedWeapon ? compareHandoff.open : undefined}
           onOptimize={builder.selectedWeapon ? handleOpenOptimizer : undefined}
@@ -166,7 +133,7 @@ export function BuilderPage({
             {notice}
             {builder.upstreamDriftInfo && <UpstreamDriftBanner {...builder.upstreamDriftInfo} />}
 
-            <SnapshotBanner snapshot={initialProfileSnapshot} onUseSnapshot={setProfile} />
+            <SnapshotBanner snapshot={initialBuild?.profileSnapshot} onUseSnapshot={setProfile} />
 
             <div data-profile-editor>
               <ProfileEditor profile={profile} onChange={setProfile} sync={sync} />
@@ -193,6 +160,7 @@ export function BuilderPage({
               onShare={shareBuild.share}
               isSaving={shareBuild.isSaving}
               saveFailed={shareBuild.saveFailed}
+              shareBlocked={shareBuild.blocked}
               embedProfileOnSave={saveMeta.embedProfileOnSave}
               onEmbedProfileOnSaveChange={saveMeta.setEmbedProfileOnSave}
               dataAsOf={builder.dataAsOf}
@@ -230,6 +198,7 @@ export function BuilderPage({
                   onAttach={builder.handleAttach}
                   getAvailability={(id) => builder.availabilityById.get(id) ?? null}
                   getConflict={builder.getConflict}
+                  getFittedConflict={builder.getFittedConflict}
                   orphaned={builder.orphaned}
                   modNames={builder.modNamesById}
                   onDismissOrphaned={builder.clearOrphaned}
@@ -261,7 +230,7 @@ export function BuilderPage({
             currentStats={builder.spec}
             currentPrice={builder.buildPrice}
             onAccept={(build) => {
-              builder.acceptOptimized(build.attachments, build.orphaned);
+              builder.acceptOptimized(build.attachments);
               handleExitOptimizer();
             }}
             onExit={handleExitOptimizer}

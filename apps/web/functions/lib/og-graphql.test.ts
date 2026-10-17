@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  adaptMod,
+  adaptWeapon,
+  resolveBuild,
   BUILDER_SNAPSHOT_SCHEMA,
   buildBuilderSnapshot,
   DEFAULT_PROFILE,
@@ -14,6 +17,7 @@ import {
 import { capturedBuilderData } from "../../src/test/captured-data.js";
 import { priceBuild } from "../../src/features/builder/build-price.js";
 import { hydrateBuildCard } from "@tarkov/og";
+import { weaponSpec } from "@tarkov/ballistics";
 import { availabilityPillText } from "./og-availability.js";
 import {
   fetchOgRowsForBuild,
@@ -345,6 +349,56 @@ describe("fetchOgRowsForBuild over the captured documents", () => {
     expect(
       fetchOgRowsForBuild({ weaponId: M4A1, attachments: carbine, gate: null }, data).priceRub,
     ).toBe(26_666);
+  });
+});
+
+describe("the card's stats against the Builder's for one build", () => {
+  const M4A1 = "5447a9cd4bdc2dbd208b4567";
+  const SOPMOD = "5a8ae73886f7747b2e6e1416";
+  const PEQ15 = "544909bb4bdc2d6f028b4577";
+  const HANDGUARD = "mod_reciever/mod_handguard";
+
+  it("counts a part fitted in two slots twice, as the Builder does", async () => {
+    const data = await capturedBuilderData();
+    const { snapshot } = data;
+    const table = data.prices.prices;
+    const sopmod = snapshotWeaponPresets(snapshot, table)[M4A1]!.find((p) => p.id === SOPMOD)!;
+    const attachments = {
+      ...sopmod.attachments,
+      [`${HANDGUARD}/mod_tactical`]: PEQ15,
+      [`${HANDGUARD}/mod_tactical002`]: PEQ15,
+    };
+
+    const rows = fetchOgRowsForBuild({ weaponId: M4A1, attachments, gate: null }, data);
+    const build = {
+      version: 6 as const,
+      weaponId: M4A1,
+      attachments: rows.attachments,
+      orphaned: [],
+      createdAt: "2026-10-16T00:00:00.000Z",
+    };
+    const card = hydrateBuildCard({ build, weapon: rows.weapon, mods: rows.mods }).stats;
+
+    const weapon = snapshotWeaponList(snapshot, table).find((w) => w.id === M4A1)!;
+    const tree = snapshotWeaponTree(snapshot, M4A1);
+    const { placed } = resolveBuild(
+      tree,
+      attachments,
+      partsById(snapshotPartCatalog(snapshot, table)),
+    );
+    // The SOPMOD II already carries one PEQ-15; the build adds two more.
+    expect(placed.filter((p) => p.itemId === PEQ15)).toHaveLength(3);
+    expect(rows.mods.filter((m) => m.id === PEQ15)).toHaveLength(1);
+    const builder = weaponSpec(
+      adaptWeapon(weapon),
+      placed.map((p) => adaptMod(p.part)),
+    );
+
+    expect(card.ergo).toBeCloseTo(builder.ergonomics, 10);
+    expect(card.recoilV).toBeCloseTo(builder.verticalRecoil, 10);
+    expect(card.recoilH).toBeCloseTo(builder.horizontalRecoil, 10);
+    expect(card.accuracy).toBeCloseTo(builder.accuracy, 10);
+    // Weight is left out here: the card drops the weapon's own weight (#228).
   });
 });
 

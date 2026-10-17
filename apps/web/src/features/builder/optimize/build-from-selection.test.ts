@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mountedAttachments, partsById, type BuildV6, type KnownItems } from "@tarkov/data";
+import { partsById, resolveBuild, type AttachablePart, type BuildV6 } from "@tarkov/data";
 import { buildFromSelection } from "./build-from-selection.js";
 import { slotDiff } from "./slot-diff.js";
 import { tinyTree } from "../../../test/tiny-tree.js";
@@ -27,8 +27,30 @@ const tree = tinyTree("w1", [
   { nameId: "stock", items: ["s-keep"] },
 ]);
 
-/** Every id in these tests exists upstream, so a disallowed one is not kept as "gone". */
-const KNOWN: KnownItems = { has: () => true };
+/** Every id in these tests is a part with no stats and no conflicts: structure only. */
+const KNOWN = partsById(
+  ["u-1", "u-2", "b-short", "b-long", "g-std", "g-low", "h-1", "m-old", "m-new", "s-keep"].map(
+    (id): AttachablePart => ({
+      id,
+      name: id,
+      shortName: id,
+      iconLink: "https://assets.tarkov.dev/x.webp",
+      weight: 0,
+      types: ["mods"],
+      minLevelForFlea: null,
+      properties: {
+        propertiesType: "ItemPropertiesWeaponMod",
+        ergonomics: 0,
+        recoilModifier: 0,
+        accuracyModifier: 0,
+        velocity: 0,
+      },
+      buyFor: [],
+      conflictingItems: [],
+      conflictingSlotIds: [],
+    }),
+  ),
+);
 
 function build(attachments: Record<string, string>): BuildV6 {
   return {
@@ -43,7 +65,7 @@ function build(attachments: Record<string, string>): BuildV6 {
 /** Every row the optimizer view would show: its accept-all selection. */
 function allRows(current: BuildV6, proposed: BuildV6): Set<string> {
   return new Set(
-    slotDiff(current.attachments, proposed.attachments, tree, partsById([])).map((r) => r.slotId),
+    slotDiff(current.attachments, proposed.attachments, tree, KNOWN).map((r) => r.slotId),
   );
 }
 
@@ -70,7 +92,7 @@ describe("buildFromSelection", () => {
     const rows = allRows(current, proposed);
     expect([...rows]).toEqual(["upper/barrel"]);
     expect(apply(current, proposed, rows)).toEqual(
-      mountedAttachments(tree, proposed.attachments, KNOWN),
+      resolveBuild(tree, proposed.attachments, KNOWN).attachments,
     );
   });
 
@@ -85,7 +107,7 @@ describe("buildFromSelection", () => {
     const rows = allRows(current, proposed);
     expect([...rows].sort()).toEqual(["muzzle", "upper"]);
     expect(apply(current, proposed, rows)).toEqual(
-      mountedAttachments(tree, proposed.attachments, KNOWN),
+      resolveBuild(tree, proposed.attachments, KNOWN).attachments,
     );
   });
 

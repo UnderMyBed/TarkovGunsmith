@@ -179,8 +179,9 @@ export function gatingQuestProblems(count: number, cap: number = COMPLETED_QUEST
 
 /**
  * Problems with one reached owner's raw slots. The slot graph reads slots leniently — a slot
- * without a `nameId` or `allowedItems` simply offers nothing — so a renamed slot field would
- * otherwise ship a Builder with empty slots, or with slot paths no saved build matches.
+ * without a `nameId` or `allowedItems` simply offers nothing, one without a boolean `required`
+ * is optional — so a renamed slot field would otherwise ship a Builder with empty slots, slot
+ * paths no saved build matches, or no required slots at all.
  */
 function slotShapeProblems(ownerId: string, raw: unknown): string[] {
   // A reached owner parsed as a weapon or part, so it has `properties`.
@@ -197,6 +198,9 @@ function slotShapeProblems(ownerId: string, raw: unknown): string[] {
     for (const field of ["id", "nameId", "name"] as const) {
       if (!isNonEmptyString(slot[field])) problems.push(`${at}.${field} is not a non-empty string`);
     }
+    // The graph reads `required === true`, so a renamed or retyped flag would quietly make every
+    // slot optional, and a build missing its barrel would stop being flagged incomplete.
+    if (typeof slot.required !== "boolean") problems.push(`${at}.required is not a boolean`);
     const filters = slot.filters as { allowedItems?: unknown } | null | undefined;
     if (!Array.isArray(filters?.allowedItems)) {
       problems.push(`${at}.filters.allowedItems is not an array`);
@@ -212,7 +216,7 @@ function slotShapeProblems(ownerId: string, raw: unknown): string[] {
  * Strict for everything the snapshot holds or derives from: every trader and task, and their
  * names (only the tasks that gate an offer are kept, and no more of them than a profile can
  * record); every buildable weapon; every part a weapon's slots reach, its `conflictingSlotIds`
- * and `updated`; the slots of every reached item (`id`, `nameId`, `name`,
+ * and `updated`; the slots of every reached item (`id`, `nameId`, `name`, `required`,
  * `filters.allowedItems`); every preset's `baseItem`, and the `normalizedName` of each preset
  * of a snapshot item; every buildable weapon's presets, which must place into the slot graph
  * with exactly one default per weapon; every offer on those (cash, preset and barter: trader, quest gate,

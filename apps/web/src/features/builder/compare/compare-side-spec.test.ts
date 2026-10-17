@@ -69,11 +69,20 @@ const MAG = part("55d4887d4bdc2d962f8b4570", 0.117, {
   malfunctionChance: 0.08,
 });
 
+/** The M4A1 upper receiver, as captured. */
+const UPPER_PART = part("55d355e64bdc2d962f8b4569", 0.27, {
+  propertiesType: "ItemPropertiesWeaponMod",
+  ergonomics: 5,
+  recoilModifier: -0.01,
+  accuracyModifier: 0,
+  velocity: 0,
+});
+
 function build(attachments: Record<string, string>): BuildV6 {
   return { version: 6, weaponId: M4A1.id, attachments, orphaned: [], createdAt: "x" };
 }
 
-const UPPER = "55d355e64bdc2d962f8b4569";
+const UPPER = UPPER_PART.id;
 const TREE = tinyTree(M4A1.id, [
   { nameId: "mod_reciever", items: [[UPPER, [{ nameId: "mod_barrel", items: [BARREL.id] }]]] },
   { nameId: "mod_magazine", items: [MAG.id] },
@@ -87,10 +96,10 @@ describe("computeSideSpec", () => {
       build({ mod_reciever: UPPER, "mod_reciever/mod_barrel": BARREL.id, mod_magazine: MAG.id }),
       TREE,
       [M4A1],
-      [BARREL, MAG],
+      [UPPER_PART, BARREL, MAG],
     );
-    expect(spec?.ergonomics).toBeCloseTo(48 - 2 - 1.5, 10);
-    expect(spec?.verticalRecoil).toBeCloseTo(119 * (1 - 0.052), 10);
+    expect(spec?.ergonomics).toBeCloseTo(48 + 5 - 2 - 1.5, 10);
+    expect(spec?.verticalRecoil).toBeCloseTo(119 * (1 - 0.052 - 0.01), 10);
     // The barrel sets the dispersion: (0.01 + 0.07) cm at 100/2.9089 MOA per cm.
     expect(spec?.accuracy).toBeCloseTo(2.750228, 5);
     expect(spec?.muzzleVelocity).toBeCloseTo(922 * 0.89, 6);

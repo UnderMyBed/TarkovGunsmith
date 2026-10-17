@@ -258,6 +258,14 @@ describe("SlotTree — conflicts", () => {
     expect(screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ })).toBeEnabled();
   });
 
+  it("names the clash beside a fitted part that conflicts with another fitted part", () => {
+    renderTree({
+      attachments: { mod_muzzle: "mod-adapter" },
+      getFittedConflict: (path) => (path === "mod_muzzle" ? "Conflicts with CTR" : null),
+    });
+    expect(within(slotRegion("Muzzle")).getByText("Conflicts with CTR")).toBeInTheDocument();
+  });
+
   it("never disables the option that is already attached", async () => {
     const user = userEvent.setup();
     renderTree({ getConflict, attachments: { mod_muzzle: "mod-adapter" } });

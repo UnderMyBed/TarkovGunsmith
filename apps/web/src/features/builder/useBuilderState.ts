@@ -6,18 +6,21 @@ import {
   useWeaponList,
   useWeaponPresets,
   useWeaponTree,
-  attachedParts,
+  applyBuildAction,
   builderMode,
-  mountedAttachments,
-  withAttachment,
   itemAvailability,
-  legacyV1MigrationSlots,
   partsById,
   priceGate,
+  resolveBuild,
   seedAttachments,
+  toBuildPayload,
   type AttachablePart,
+  type BuildAction,
+  type BuildContext,
   type BuildPrice,
+  type BuildState,
   type BuildV6,
+  type ResolvedBuild,
   type PlayerProfile,
   type PriceGate,
   type PricedPreset,
@@ -26,9 +29,7 @@ import {
 import type { MountedMagazine } from "@tarkov/data";
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import { adaptMod, adaptWeapon, mountedMagazine } from "../data-adapters/adapters.js";
-import { useV1Migration } from "./useV1Migration.js";
-import { useSnapshotOrphans } from "./useSnapshotOrphans.js";
-import { conflictReasonFor } from "./conflict-reason.js";
+import { conflictReasonFor, fittedConflictReasonFor } from "./conflict-reason.js";
 import { priceBuild, pricesStatus, type PricesStatus } from "./build-price.js";
 
 /**
@@ -44,10 +45,11 @@ const EMPTY_PARTS: AttachablePart[] = [];
 const NO_PRESETS: PricedPreset[] = [];
 
 export interface UseBuilderStateArgs {
-  initialWeaponId: string;
-  initialModIds: string[] | undefined;
-  initialAttachments: Record<string, string> | undefined;
-  initialOrphaned: string[] | undefined;
+  /**
+   * A saved build to start from, already through `loadSavedBuild`: current version, every
+   * attachment on the weapon, the rest in `orphaned`. `undefined` for a new build.
+   */
+  initialBuild: BuildV6 | undefined;
   /** Needed for availability gating (weapon list filter, per-mod LOCKED pills). */
   profile: PlayerProfile;
   /** Save metadata — folded into `currentBuild` alongside the weapon/mod state below. */
@@ -77,16 +79,24 @@ export interface UseBuilderStateResult {
   partsById: ReadonlyMap<string, AttachablePart>;
 
   attachments: Record<string, string>;
-  /** How many parts are on the weapon: filled slots the tree shows, not stale keys. */
+  /** The build resolved against its slot tree; `null` until the tree and parts load. */
+  resolved: ResolvedBuild<AttachablePart> | null;
+  /** How many parts are on the weapon: one per filled slot. */
   attachedCount: number;
   orphaned: string[];
   handleAttach: (path: string, itemId: string | null) => void;
   applyPreset: (next: Readonly<Record<string, string>>) => void;
   clearOrphaned: () => void;
-  acceptOptimized: (attachments: Record<string, string>, orphaned: string[]) => void;
+  acceptOptimized: (attachments: Readonly<Record<string, string>>) => void;
   modNamesById: Record<string, string>;
   /** Why a part cannot go at a slot path given the current build, or `null`. */
   getConflict: (path: string, itemId: string) => string | null;
+  /** For a fitted part, which fitted part it clashes with, or `null`. */
+  getFittedConflict: (path: string) => string | null;
+  /** Labels of the required slots the build leaves empty. */
+  missingRequired: readonly string[];
+  /** One line per pair of fitted parts that clash, by short name: "ADAR stock × M4SS". */
+  conflicts: readonly string[];
   availabilityById: Map<string, ReturnType<typeof itemAvailability>>;
 
   spec: WeaponSpec | null;
@@ -112,10 +122,7 @@ export interface UseBuilderStateResult {
  * their own independent payloads from the same pieces.
  */
 export function useBuilderState({
-  initialWeaponId,
-  initialModIds,
-  initialAttachments,
-  initialOrphaned,
+  initialBuild,
   profile,
   buildName,
   buildDescription,
@@ -127,32 +134,27 @@ export function useBuilderState({
   const presets = useWeaponPresets();
   const livePrices = useLivePrices();
 
-  const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
-  const [attachments, setAttachments] = useState<Record<string, string>>(
-    () => initialAttachments ?? {},
-  );
-  const [orphaned, setOrphaned] = useState<string[]>(() => initialOrphaned ?? []);
+  const [build, setBuild] = useState<BuildState>(() => ({
+    weaponId: initialBuild?.weaponId ?? "",
+    attachments: { ...initialBuild?.attachments },
+    orphaned: [...(initialBuild?.orphaned ?? [])],
+  }));
+  const { weaponId, attachments, orphaned } = build;
   const [showAllWeapons, setShowAllWeapons] = useState(false);
   const mode = builderMode(showAllWeapons);
   const gate = priceGate(mode, profile);
 
   const tree = useWeaponTree(weaponId);
-
-  // v1 links migrate against the frozen legacy tree, so their mods land where they always did.
-  const legacyV1Slots = useMemo(
-    () => (initialModIds && tree.data ? legacyV1MigrationSlots(tree.data) : undefined),
-    [initialModIds, tree.data],
+  const byId = useMemo(() => partsById(catalog.data ?? []), [catalog.data]);
+  const treeData = tree.data;
+  const ctx = useMemo<BuildContext | null>(
+    () => (treeData && catalog.data ? { tree: treeData, parts: byId } : null),
+    [treeData, catalog.data, byId],
   );
-  useV1Migration(initialWeaponId, initialModIds, legacyV1Slots, setAttachments, setOrphaned);
-  // Parts a shared build names that the game data no longer holds become orphans. (v1 links
-  // carry no attachments; their migration orphans whatever it cannot place.)
-  useSnapshotOrphans(
-    snapshot.data,
-    initialAttachments,
-    initialOrphaned,
-    setAttachments,
-    setOrphaned,
-  );
+  // The reducer throws on an action it refuses (no tree yet, a slot that does not take the
+  // part). Applying it here, in the caller's event handler as each Compare side does, keeps
+  // that throw out of a state updater, where React would raise it during render.
+  const dispatch = (action: BuildAction) => setBuild(applyBuildAction(build, action, ctx));
 
   const weaponAvailabilityById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof itemAvailability>>();
@@ -182,20 +184,13 @@ export function useBuilderState({
     [weapons.data, weaponId],
   );
 
-  const byId = useMemo(() => partsById(catalog.data ?? []), [catalog.data]);
-
-  // Only parts on the weapon count — never a stale key under a removed or replaced part. One
-  // entry per slot: a part fitted twice counts twice, for stats and price alike. Until the
-  // tree loads nothing is known to be on the weapon.
-  const treeData = tree.data;
-  const mounted = useMemo(
-    () => (treeData ? mountedAttachments(treeData, attachments, byId) : {}),
-    [treeData, attachments, byId],
+  // Only parts on the weapon count, one entry per slot: a part fitted twice counts twice, for
+  // stats and price alike. Until the tree and parts load nothing is known to be on it.
+  const resolved = useMemo(
+    () => (ctx ? resolveBuild(ctx.tree, attachments, byId) : null),
+    [ctx, attachments, byId],
   );
-  const attached = useMemo(
-    () => (treeData ? attachedParts(treeData, attachments, byId) : { entries: [], missing: [] }),
-    [treeData, attachments, byId],
-  );
+  const placed = resolved?.placed;
 
   const modNamesById = useMemo(
     () => Object.fromEntries((catalog.data ?? []).map((m) => [m.id, m.name])),
@@ -214,11 +209,11 @@ export function useBuilderState({
     if (!selectedWeapon) return null;
     return weaponSpec(
       adaptWeapon(selectedWeapon),
-      attached.entries.map((e) => adaptMod(e.part)),
+      (placed ?? []).map((e) => adaptMod(e.part)),
     );
-  }, [selectedWeapon, attached]);
+  }, [selectedWeapon, placed]);
 
-  const magazine = useMemo(() => mountedMagazine(attached.entries), [attached]);
+  const magazine = useMemo(() => mountedMagazine(placed ?? []), [placed]);
 
   const stockSpec = useMemo(() => {
     if (!selectedWeapon) return null;
@@ -226,8 +221,9 @@ export function useBuilderState({
   }, [selectedWeapon]);
 
   // Only meaningful for loaded builds; a fresh build is made from the data on hand. Parts that
-  // have gone are not counted here: `useSnapshotOrphans` moves them to `orphaned`, and the
-  // orphan banner names them.
+  // have gone are not counted here: `loadSavedBuild` moved them to `orphaned`, and the orphan
+  // banner names them.
+  const initialWeaponId = initialBuild?.weaponId;
   const upstreamDriftInfo = useMemo(() => {
     if (!initialWeaponId || !weapons.data) return null;
     return weapons.data.some((w) => w.id === initialWeaponId)
@@ -236,22 +232,24 @@ export function useBuilderState({
   }, [initialWeaponId, weapons.data]);
 
   const currentBuild = useMemo<BuildV6>(
-    () => ({
-      version: 6,
-      weaponId,
-      attachments,
-      orphaned,
-      createdAt: new Date().toISOString(),
-      ...(buildName.trim().length > 0 ? { name: buildName.trim() } : {}),
-      ...(buildDescription.trim().length > 0 ? { description: buildDescription.trim() } : {}),
-      ...(embedProfileOnSave ? { profileSnapshot: profile } : {}),
-    }),
-    [weaponId, attachments, orphaned, buildName, buildDescription, embedProfileOnSave, profile],
+    () =>
+      toBuildPayload(build, {
+        name: buildName,
+        description: buildDescription,
+        ...(embedProfileOnSave ? { profile } : {}),
+      }),
+    [build, buildName, buildDescription, embedProfileOnSave, profile],
   );
 
   const getConflict = useMemo(
     () => (tree.data ? conflictReasonFor(tree.data, attachments, byId) : () => null),
     [tree.data, attachments, byId],
+  );
+
+  const shortNameOf = (id: string) => byId.get(id)?.shortName ?? id;
+  const getFittedConflict = useMemo(
+    () => fittedConflictReasonFor(resolved?.conflicts ?? [], (id) => byId.get(id)?.shortName ?? id),
+    [resolved, byId],
   );
 
   const weaponPresets = presets.data?.[weaponId] ?? NO_PRESETS;
@@ -266,29 +264,19 @@ export function useBuilderState({
   // A new build starts from the weapon's preset; loading a saved build never comes through
   // here, so a shared build is never re-seeded. Show-all is theorycraft until #241.
   function handleWeaponChange(newWeaponId: string) {
-    setWeaponId(newWeaponId);
-    setAttachments(seedAttachments(presets.data?.[newWeaponId] ?? [], mode, profile));
-    setOrphaned([]);
+    const seed = seedAttachments(presets.data?.[newWeaponId] ?? [], mode, profile);
+    dispatch({ type: "changeWeapon", weaponId: newWeaponId, seed });
   }
 
-  // Replacing or clearing a part drops everything beneath it: those slots were the old part's.
-  function handleAttach(path: string, itemId: string | null) {
-    setAttachments((prev) => withAttachment(prev, path, itemId));
-  }
-
+  // Replacing a part carries over what still fits on the new one; emptying drops its subtree.
+  const handleAttach = (path: string, itemId: string | null) =>
+    dispatch({ type: "attach", path, itemId });
   // Orphans are the saved build's own data: only dismissing them clears the list.
-  function applyPreset(next: Readonly<Record<string, string>>) {
-    setAttachments({ ...next });
-  }
-
-  function clearOrphaned() {
-    setOrphaned([]);
-  }
-
-  function acceptOptimized(nextAttachments: Record<string, string>, nextOrphaned: string[]) {
-    setAttachments(nextAttachments);
-    setOrphaned(nextOrphaned);
-  }
+  const applyPreset = (next: Readonly<Record<string, string>>) =>
+    dispatch({ type: "applyPreset", attachments: next });
+  const clearOrphaned = () => dispatch({ type: "dismissOrphaned" });
+  const acceptOptimized = (next: Readonly<Record<string, string>>) =>
+    dispatch({ type: "acceptOptimized", attachments: next });
 
   return {
     isLoading: snapshot.isLoading || weapons.isLoading || catalog.isLoading || presets.isLoading,
@@ -308,7 +296,8 @@ export function useBuilderState({
     partsById: byId,
 
     attachments,
-    attachedCount: Object.keys(mounted).length,
+    resolved,
+    attachedCount: placed?.length ?? 0,
     orphaned,
     handleAttach,
     applyPreset,
@@ -316,6 +305,11 @@ export function useBuilderState({
     acceptOptimized,
     modNamesById,
     getConflict,
+    getFittedConflict,
+    missingRequired: resolved?.missingRequired.map((slot) => slot.label) ?? [],
+    conflicts:
+      resolved?.conflicts.map((c) => `${shortNameOf(c.a.itemId)} × ${shortNameOf(c.b.itemId)}`) ??
+      [],
     availabilityById,
 
     spec,

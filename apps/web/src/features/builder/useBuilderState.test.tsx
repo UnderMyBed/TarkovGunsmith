@@ -4,12 +4,15 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import type * as TarkovData from "@tarkov/data";
 import {
   DEFAULT_PROFILE,
+  type AttachablePart,
+  type BuildV6,
   type BuyForEntry,
   type PlayerProfile,
   type PricedPreset,
   type WeaponListItem,
 } from "@tarkov/data";
 import { useBuilderState, type UseBuilderStateArgs } from "./useBuilderState.js";
+import { tinyTree } from "../../test/tiny-tree.js";
 
 // Only the presets matter here, so the game-data hooks are inert and `useWeaponPresets`
 // answers whatever the test has set, as it would once its query resolves.
@@ -24,14 +27,17 @@ let weaponsQuery: {
   isLoading: boolean;
   error: Error | null;
 } = idleQuery;
+let treeQuery: { data: unknown; isLoading: boolean; error: Error | null } = idleQuery;
+let catalogQuery: { data: AttachablePart[] | undefined; isLoading: boolean; error: Error | null } =
+  idleQuery;
 vi.mock("@tarkov/data", async () => {
   const actual = await vi.importActual<typeof TarkovData>("@tarkov/data");
   return {
     ...actual,
     useBuilderSnapshot: () => idleQuery,
     useWeaponList: () => weaponsQuery,
-    usePartCatalog: () => idleQuery,
-    useWeaponTree: () => idleQuery,
+    usePartCatalog: () => catalogQuery,
+    useWeaponTree: () => treeQuery,
     useWeaponPresets: () => presetsQuery,
     useLivePrices: () => idleQuery,
   };
@@ -41,6 +47,8 @@ afterEach(() => {
   cleanup();
   presetsQuery = idleQuery;
   weaponsQuery = idleQuery;
+  treeQuery = idleQuery;
+  catalogQuery = idleQuery;
 });
 
 const WEAPON = "w-m4a1";
@@ -95,12 +103,23 @@ const PRESETS = { [WEAPON]: [DEFAULT, FLEA, PRAPOR] };
 
 const FLEA_PROFILE: PlayerProfile = { ...DEFAULT_PROFILE, flea: true, level: 20 };
 
+/** A saved build as `loadSavedBuild` hands it over. */
+function saved(
+  weaponId: string,
+  attachments: Record<string, string> = {},
+  orphaned: string[] = [],
+): BuildV6 {
+  return { version: 6, weaponId, attachments, orphaned, createdAt: "2026-10-16T00:00:00.000Z" };
+}
+
+/** Only the two fields the build core reads from a part. */
+function part(id: string): AttachablePart {
+  return { id, conflictingItems: [], conflictingSlotIds: [] } as unknown as AttachablePart;
+}
+
 function args(overrides: Partial<UseBuilderStateArgs> = {}): UseBuilderStateArgs {
   return {
-    initialWeaponId: "",
-    initialModIds: undefined,
-    initialAttachments: undefined,
-    initialOrphaned: undefined,
+    initialBuild: undefined,
     profile: FLEA_PROFILE,
     buildName: "",
     buildDescription: "",
@@ -112,16 +131,16 @@ function args(overrides: Partial<UseBuilderStateArgs> = {}): UseBuilderStateArgs
 describe("useBuilderState and presets", () => {
   it("never seeds a loaded build, even when the presets arrive after it", () => {
     presetsQuery = { data: undefined, isLoading: true, error: null };
-    const saved = { mod_muzzle: "mod-muzzle" };
+    const kept = { mod_muzzle: "mod-muzzle" };
     const { result, rerender } = renderHook(() =>
-      useBuilderState(args({ initialWeaponId: WEAPON, initialAttachments: saved })),
+      useBuilderState(args({ initialBuild: saved(WEAPON, kept) })),
     );
     expect(result.current.isLoading).toBe(true);
 
     presetsQuery = { data: PRESETS, isLoading: false, error: null };
     rerender();
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.attachments).toEqual(saved);
+    expect(result.current.attachments).toEqual(kept);
   });
 
   it("seeds the default when every weapon is shown (theorycraft), whatever it costs", () => {
@@ -151,7 +170,7 @@ describe("useBuilderState and presets", () => {
   it("starts empty for a weapon without presets", () => {
     presetsQuery = { data: PRESETS, isLoading: false, error: null };
     const { result } = renderHook(() =>
-      useBuilderState(args({ initialAttachments: { mod_muzzle: "mod-muzzle" } })),
+      useBuilderState(args({ initialBuild: saved(WEAPON, { mod_muzzle: "mod-muzzle" }) })),
     );
     act(() => result.current.handleWeaponChange("w-other"));
     expect(result.current.attachments).toEqual({});
@@ -159,10 +178,17 @@ describe("useBuilderState and presets", () => {
 
   it("keeps a loaded build's orphans when a preset is applied", () => {
     presetsQuery = { data: PRESETS, isLoading: false, error: null };
+    treeQuery = {
+      data: tinyTree(WEAPON, [
+        { nameId: "mod_muzzle", items: ["mod-muzzle"] },
+        { nameId: "mod_stock", items: ["mod-stock"] },
+      ]),
+      isLoading: false,
+      error: null,
+    };
+    catalogQuery = { data: [part("mod-muzzle"), part("mod-stock")], isLoading: false, error: null };
     const { result } = renderHook(() =>
-      useBuilderState(
-        args({ initialWeaponId: WEAPON, initialAttachments: {}, initialOrphaned: ["gone"] }),
-      ),
+      useBuilderState(args({ initialBuild: saved(WEAPON, {}, ["gone"]) })),
     );
     act(() => result.current.applyPreset(DEFAULT.attachments));
     expect(result.current.attachments).toEqual(DEFAULT.attachments);
@@ -170,6 +196,18 @@ describe("useBuilderState and presets", () => {
 
     act(() => result.current.clearOrphaned());
     expect(result.current.orphaned).toEqual([]);
+  });
+
+  it("throws a refused action to its caller and keeps rendering the build as it was", () => {
+    const kept = { mod_muzzle: "mod-muzzle" };
+    const { result } = renderHook(() =>
+      useBuilderState(args({ initialBuild: saved(WEAPON, kept) })),
+    );
+    // The tree has not loaded, so there is nothing to check the attachment against.
+    expect(() => result.current.handleAttach("mod_stock", "mod-stock")).toThrow(
+      /No slot tree for weapon/,
+    );
+    expect(result.current.attachments).toEqual(kept);
   });
 
   it("joins the presets' error into the Builder's", () => {
@@ -212,7 +250,8 @@ describe("useBuilderState weapon options", () => {
 
   function render(initialWeaponId: string) {
     weaponsQuery = { data: [OTHER_LOCKED, LOCKED, OPEN], isLoading: false, error: null };
-    return renderHook(() => useBuilderState(args({ initialWeaponId, profile: DEFAULT_PROFILE })));
+    const initialBuild = initialWeaponId ? saved(initialWeaponId) : undefined;
+    return renderHook(() => useBuilderState(args({ initialBuild, profile: DEFAULT_PROFILE })));
   }
 
   it("keeps the current weapon listed, with its requirement, when the profile cannot buy it", () => {

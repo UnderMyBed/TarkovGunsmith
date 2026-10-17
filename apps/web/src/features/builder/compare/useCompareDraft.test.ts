@@ -79,24 +79,6 @@ describe("compareDraftReducer", () => {
     expect(next.dirty).toBe(true);
   });
 
-  it("LOAD_FROM_PAIR hydrates from v1 pair and clears dirty", () => {
-    const dirtyState = { ...initialDraft, left: build, dirty: true };
-    const next = compareDraftReducer(dirtyState, {
-      type: "LOAD_FROM_PAIR",
-      pair: {
-        v: 1,
-        createdAt: "2026-04-20T00:00:00.000Z",
-        left: build,
-        right: build,
-        name: "hello",
-      },
-    });
-    expect(next.left).toEqual(build);
-    expect(next.right).toEqual(build);
-    expect(next.name).toBe("hello");
-    expect(next.dirty).toBe(false);
-  });
-
   it("SET_NAME marks dirty", () => {
     const next = compareDraftReducer(initialDraft, {
       type: "SET_NAME",

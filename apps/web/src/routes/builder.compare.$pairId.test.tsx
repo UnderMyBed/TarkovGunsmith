@@ -117,4 +117,37 @@ describe("/builder/compare/$pairId", () => {
     expect(await screen.findByText("1 attached")).toBeInTheDocument();
     expect(screen.getByText("No build selected.")).toBeInTheDocument();
   });
+
+  it("keeps a v1 and a v2 side, migrated like /builder/$id, rather than dropping them", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          v: 1,
+          createdAt: new Date().toISOString(),
+          left: {
+            version: 1,
+            weaponId: "w-m4a1",
+            modIds: ["mod-muzzle", "mod-vanished"],
+            createdAt: new Date().toISOString(),
+          },
+          right: {
+            version: 2,
+            weaponId: "w-m4a1",
+            attachments: { mod_muzzle: "mod-muzzle", mod_stock: "mod-stock" },
+            orphaned: [],
+            createdAt: new Date().toISOString(),
+          },
+        }),
+      ),
+    );
+    await renderRoute(`/builder/compare/${VALID_ID}`);
+
+    // Both sides are on screen: the v1 side places its muzzle and orphans the id the game data
+    // does not hold; the v2 side keeps both of its parts.
+    expect(await screen.findByText("1 attached")).toBeInTheDocument();
+    expect(screen.getByText("2 attached")).toBeInTheDocument();
+    expect(screen.queryByText("No build selected.")).not.toBeInTheDocument();
+    expect(screen.getByText("mod-vanished — not a part the Builder knows")).toBeInTheDocument();
+  });
 });

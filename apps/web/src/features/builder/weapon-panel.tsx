@@ -18,6 +18,8 @@ export interface WeaponPanelProps {
   onShare: () => void;
   isSaving: boolean;
   saveFailed: boolean;
+  /** Why the build cannot be shared as it stands, or `null`. */
+  shareBlocked?: string | null;
   embedProfileOnSave: boolean;
   onEmbedProfileOnSaveChange: (embed: boolean) => void;
   /** When the Builder's data was taken from upstream (ISO 8601), once it has loaded. */
@@ -56,6 +58,7 @@ export function WeaponPanel({
   onShare,
   isSaving,
   saveFailed,
+  shareBlocked = null,
   embedProfileOnSave,
   onEmbedProfileOnSaveChange,
   dataAsOf,
@@ -118,9 +121,12 @@ export function WeaponPanel({
         {hasSelectedWeapon && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
-              <Button onClick={onShare} disabled={isSaving} size="sm">
+              <Button onClick={onShare} disabled={isSaving || shareBlocked !== null} size="sm">
                 {isSaving ? "Saving…" : "Share build"}
               </Button>
+              {shareBlocked !== null && (
+                <span className="text-sm text-[var(--color-destructive)]">{shareBlocked}</span>
+              )}
               {saveFailed && (
                 <span className="text-sm text-[var(--color-destructive)]">
                   Couldn&apos;t save — try again

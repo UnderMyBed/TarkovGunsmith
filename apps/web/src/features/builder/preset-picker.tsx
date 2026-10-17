@@ -1,8 +1,8 @@
 import { useState } from "react";
 import {
-  mountedAttachments,
+  resolveBuild,
+  type ConflictFields,
   type ItemAvailability,
-  type KnownItems,
   type WeaponPreset,
   type WeaponTree,
 } from "@tarkov/data";
@@ -15,8 +15,8 @@ export interface PresetPickerProps {
   presets: readonly WeaponPreset[];
   /** The weapon's slot tree, to compare builds by the parts actually on the weapon. */
   tree: WeaponTree;
-  /** The ids that exist upstream (the part catalog by id). */
-  known: KnownItems;
+  /** The part catalog by id: what a build is resolved against. */
+  known: ReadonlyMap<string, ConflictFields>;
   /** The build's current attachments. */
   attachments: Readonly<Record<string, string>>;
   /** Whether the profile can buy each preset. Omitted in theorycraft mode. */
@@ -46,7 +46,7 @@ function sameAttachments(
  * The weapon's upstream presets, plus an empty build, as one-click starting points.
  *
  * The chip whose parts match the build is marked current, comparing only the parts actually on
- * the weapon (`mountedAttachments`), so a stale key under a removed part changes nothing.
+ * the weapon (`resolveBuild`), so a stale key under a removed part changes nothing.
  * Applying replaces every part, so
  * when the build holds parts that match no preset (the player's own work) the picker asks
  * before replacing them.
@@ -72,10 +72,10 @@ export function PresetPicker({
     })),
     EMPTY_OPTION,
   ];
-  const mounted = mountedAttachments(tree, attachments, known);
-  const current = options.find((o) =>
-    sameAttachments(mountedAttachments(tree, o.attachments, known), mounted),
-  );
+  const onWeapon = (a: Readonly<Record<string, string>>) =>
+    resolveBuild(tree, a, known).attachments;
+  const mounted = onWeapon(attachments);
+  const current = options.find((o) => sameAttachments(onWeapon(o.attachments), mounted));
   const pending = options.find((o) => o.id === pendingId);
 
   function choose(option: Option) {

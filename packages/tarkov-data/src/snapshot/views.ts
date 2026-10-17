@@ -10,7 +10,6 @@ import {
 import type { PriceTable } from "../prices/table.js";
 import type { WeaponPreset } from "../queries/presets.js";
 import type { BuilderSnapshot, SnapshotPart } from "./types.js";
-import { ORPHANED_CAP } from "../build-schema.js";
 
 interface Derived {
   readonly graph: SlotGraph;
@@ -83,6 +82,14 @@ export function snapshotPart(
 ): AttachablePart | undefined {
   const part = derive(snapshot).parts.get(id);
   return part === undefined ? undefined : { ...part, buyFor: pricedOffers(snapshot, id, prices) };
+}
+
+/**
+ * Every snapshot part by id, unpriced: what checking a build against the game data needs (which
+ * ids exist, and their conflict lists). Built once per snapshot.
+ */
+export function snapshotPartsById(snapshot: BuilderSnapshot): ReadonlyMap<string, SnapshotPart> {
+  return derive(snapshot).parts;
 }
 
 /** The buildable weapons, each with its offers priced from `prices`. */
@@ -164,33 +171,4 @@ export function snapshotWeaponPresets(
     });
   }
   return out;
-}
-
-/**
- * Move a shared build's attachments whose item the snapshot does not hold into its `orphaned`
- * list: a part gone upstream since the build was shared, or a real item no weapon slot takes
- * (the snapshot carries only slot-reachable parts).
- *
- * Such an id cannot be shown, priced or counted, and silently dropping it would lose the
- * author's choice without a word. `orphaned` is where the Builder already lists what it could
- * not place, and a re-shared build carries it on. Ids already orphaned stay, without
- * duplicates, unless the list would pass {@link ORPHANED_CAP}, which every saved build must
- * respect: then the oldest are dropped, so the ids this load found are the ones kept. New ids
- * are added in slot-path order, so the result is the same for the same build.
- */
-export function orphanUnknownParts(
-  snapshot: BuilderSnapshot,
-  attachments: Readonly<Record<string, string>>,
-  orphaned: readonly string[],
-): { attachments: Record<string, string>; orphaned: string[] } {
-  const { parts } = derive(snapshot);
-  const kept: Record<string, string> = {};
-  const nextOrphaned = [...orphaned];
-  const paths = Object.keys(attachments).sort((a, b) => Number(a > b) - Number(a < b));
-  for (const path of paths) {
-    const itemId = attachments[path]!;
-    if (parts.has(itemId)) kept[path] = itemId;
-    else if (!nextOrphaned.includes(itemId)) nextOrphaned.push(itemId);
-  }
-  return { attachments: kept, orphaned: nextOrphaned.slice(-ORPHANED_CAP) };
 }

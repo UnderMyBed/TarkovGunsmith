@@ -7,7 +7,6 @@ import type {
   BuildV5,
   BuildV6,
 } from "./build-schema.js";
-import { ORPHANED_CAP } from "./build-schema.js";
 import { expandSlots, type SlotGraph, type WeaponTree } from "./queries/slot-graph.js";
 
 /**
@@ -58,35 +57,24 @@ function legacyLevel(
 }
 
 /**
- * Migrate a v1 build to v2 using the weapon's resolved slot tree.
+ * Migrate a v1 build to v2 using the weapon's legacy slot tree.
  *
- * For each `modId` in the v1 build we walk the tree (pre-order) and place
- * the mod in the first slot whose `allowedItemIds` contains it. If no slot
- * accepts the mod, it goes into `orphaned[]`.
+ * Each `modId`, in order, goes into the first slot (pre-order) that allows it and is still
+ * empty. A repeated id is another copy of the part: it takes the next free slot that allows
+ * it, the way a preset fits a flashlight on two rails. A mod with no free slot that allows it
+ * goes into `orphaned[]`, once per distinct id: `orphaned` lists ids, not copies.
  *
- * Duplicates in v1 `modIds` are deduped: once a mod has been placed or
- * orphaned, subsequent occurrences are ignored.
- *
- * Orphaned list is capped at {@link ORPHANED_CAP}; extra entries are silently
- * dropped (the user can always re-enter them manually, and 64 is already a
- * larger bucket than any realistic build could fill).
+ * Nothing is dropped. A v1 build holds at most 64 mod ids, so `orphaned` stays within
+ * {@link ORPHANED_CAP}.
  */
 export function migrateV1ToV2(v1: BuildV1, tree: readonly SlotNodeForMigration[]): BuildV2 {
   const attachments: Record<string, string> = {};
   const orphaned: string[] = [];
-  const seen = new Set<string>();
 
   for (const modId of v1.modIds) {
-    if (seen.has(modId)) continue;
-    seen.add(modId);
-
-    const path = findSlotPathFor(modId, tree);
-    if (path !== null) {
-      attachments[path] = modId;
-    } else if (orphaned.length < ORPHANED_CAP) {
-      orphaned.push(modId);
-    }
-    // else: silently drop — orphaned list is full.
+    const path = findFreeSlotPathFor(modId, tree, attachments);
+    if (path !== null) attachments[path] = modId;
+    else if (!orphaned.includes(modId)) orphaned.push(modId);
   }
 
   return {
@@ -98,10 +86,14 @@ export function migrateV1ToV2(v1: BuildV1, tree: readonly SlotNodeForMigration[]
   };
 }
 
-function findSlotPathFor(modId: string, nodes: readonly SlotNodeForMigration[]): string | null {
+function findFreeSlotPathFor(
+  modId: string,
+  nodes: readonly SlotNodeForMigration[],
+  taken: Readonly<Record<string, string>>,
+): string | null {
   for (const node of nodes) {
-    if (node.allowedItemIds.has(modId)) return node.path;
-    const nested = findSlotPathFor(modId, node.children);
+    if (node.allowedItemIds.has(modId) && taken[node.path] === undefined) return node.path;
+    const nested = findFreeSlotPathFor(modId, node.children, taken);
     if (nested !== null) return nested;
   }
   return null;
@@ -164,7 +156,7 @@ export function migrateV4ToV5(v4: BuildV4): BuildV5 {
  * What v6 marks is that the reader understood `profileSnapshot.level` — not that the value
  * is trustworthy. Be precise about this, because the obvious stronger claim is false: this
  * function stamps 6 onto v5 builds whose level came from the parser default, and
- * `upgradeLoadedBuild` runs on every load, so re-sharing a migrated build persists a v6
+ * every load steps a v5 build up to 6, so re-sharing a migrated build persists a v6
  * record carrying a defaulted level. A v6 stamp therefore does NOT prove the author set a
  * level. Nothing branches on that today; do not add anything that does.
  */
@@ -173,18 +165,15 @@ export function migrateV5ToV6(v5: BuildV5): BuildV6 {
 }
 
 /**
- * Bring a parsed build forward to the current version, where that can be done without
- * extra inputs.
+ * Bring a parsed build forward to the current version, where that can be done without the
+ * game data.
  *
- * v3, v4 and v5 upgrade cleanly. v1 and v2 are left alone: `migrateV1ToV2` needs the
- * weapon's slot tree to place attachments, which no transport module has access to, so
- * `/builder` performs that step once the tree has loaded.
+ * v3, v4 and v5 step up to v6; v1, v2 and v6 come back as they are. The builds and pairs API
+ * clients run this on every build they fetch, so the quest rename in v5 is never skipped.
  *
- * **Every transport that hands a `Build` to the UI must run this.** `/builder/$id` renders
- * the full editor only for the current version, and `useCompareDraft` drops any pair side
- * whose version isn't current — an un-upgraded build doesn't error, it silently vanishes.
- * The quest rename in v5 is invisible the same way: an un-upgraded v4 keeps its retired
- * `gunsmith-part-N` names and just loses those unlocks.
+ * This is not the whole load. v1 and v2 builds still need the weapon's slot tree, and every
+ * build still needs its attachments checked against it: `loadSavedBuild` does both, and is
+ * what `/builder/$id`, a saved comparison's sides and a build pasted into Compare go through.
  */
 export function upgradeLoadedBuild(build: Build): Build {
   if (build.version === 3) return migrateV5ToV6(migrateV4ToV5(migrateV3ToV4(build)));

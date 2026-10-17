@@ -14,6 +14,8 @@ export interface ModsPanelProps {
   getAvailability: (itemId: string) => ItemAvailability | null;
   /** See `SlotTree`'s `getConflict`. */
   getConflict: (path: string, itemId: string) => string | null;
+  /** See `SlotTree`'s `getFittedConflict`. */
+  getFittedConflict?: (path: string) => string | null;
   orphaned: readonly string[];
   modNames: Readonly<Record<string, string>>;
   onDismissOrphaned: () => void;
@@ -31,6 +33,7 @@ export function ModsPanel({
   onAttach,
   getAvailability,
   getConflict,
+  getFittedConflict,
   orphaned,
   modNames,
   onDismissOrphaned,
@@ -71,6 +74,7 @@ export function ModsPanel({
             onAttach={onAttach}
             getAvailability={getAvailability}
             getConflict={getConflict}
+            getFittedConflict={getFittedConflict}
             showAll={showAll}
           />
         )}

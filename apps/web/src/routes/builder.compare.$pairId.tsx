@@ -11,7 +11,7 @@ import {
   Skeleton,
 } from "@tarkov/ui";
 import { CompareWorkspace } from "../features/builder/compare/compare-workspace.js";
-import { withKnownParts } from "../features/builder/compare/known-parts.js";
+import { loadPair } from "../features/builder/compare/known-parts.js";
 
 export const Route = createFileRoute("/builder/compare/$pairId")({
   component: LoadedComparePage,
@@ -53,10 +53,26 @@ function LoadedComparePage() {
     );
   }
 
-  // Without a snapshot the workspace's own data hooks fail and show it; the pair goes in as
-  // loaded.
-  const pair = snapshot.data ? withKnownParts(query.data, snapshot.data) : query.data;
-  return <CompareWorkspace initialPair={pair} initialPairId={pairId} />;
+  if (!snapshot.data) {
+    // The pair itself loaded; its sides cannot be read without the game data.
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Game data couldn&apos;t be loaded</CardTitle>
+          <CardDescription>{snapshot.error?.message ?? "No game data"}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={() => void snapshot.refetch()} size="sm">
+            Try again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <CompareWorkspace initialPair={loadPair(query.data, snapshot.data)} initialPairId={pairId} />
+  );
 }
 
 function LoadErrorCard({ error, id, onRetry }: { error: Error; id: string; onRetry: () => void }) {

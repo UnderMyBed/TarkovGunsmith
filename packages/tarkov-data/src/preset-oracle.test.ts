@@ -9,7 +9,7 @@ import { fixtureClient } from "./__fixtures__/client.js";
 import oracle from "./__fixtures__/preset-oracle-sample.json" with { type: "json" };
 import { partsById, snapshotPartSchema, type AttachablePart } from "./queries/parts.js";
 import { presetRecordSchema, selectWeaponPreset } from "./queries/presets.js";
-import { attachedParts } from "./attached-parts.js";
+import { resolveBuild } from "./build-core/resolve.js";
 import { adaptMod, adaptWeapon } from "./ballistic-adapters.js";
 import type { ItemsDocument } from "./queries/documents.js";
 
@@ -25,7 +25,7 @@ import type { ItemsDocument } from "./queries/documents.js";
  *
  * One upstream convention needs care. A preset lists a repeated part once with a `count`
  * (the M700 MRS: 3× KeyMod rail), and upstream's preset stats count each DISTINCT part once.
- * The Builder counts every physical part, matching `attachedParts` and, as an unverified
+ * The Builder counts every physical part, matching `resolveBuild` and, as an unverified
  * assumption, the in-game sum over fitted mods. So the oracle is checked over distinct parts,
  * and the per-part figure must differ from it by exactly the extra copies.
  */
@@ -65,7 +65,7 @@ async function statsOf(presetId: string) {
   if (preset === null || "reason" in preset) throw new Error(`preset ${presetId} was not placed`);
 
   const byId = partsById(parts);
-  const { entries, missing } = attachedParts(tree, preset.attachments, byId);
+  const { placed: entries, orphaned: missing } = resolveBuild(tree, preset.attachments, byId);
   const weapon = adaptWeapon(weapons.find((w) => w.id === weaponId)!);
   const perPart = weaponSpec(
     weapon,

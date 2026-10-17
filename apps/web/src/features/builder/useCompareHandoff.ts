@@ -1,16 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CURRENT_BUILD_VERSION, type PlayerProfile } from "@tarkov/data";
+import type { BuildV6 } from "@tarkov/data";
 import type { CompareFromBuildConfirm } from "./compare/compare-from-build-dialog.js";
 
 export interface UseCompareHandoffArgs {
-  weaponId: string;
-  attachments: Readonly<Record<string, string>>;
-  orphaned: string[];
-  profile: PlayerProfile;
-  embedProfileOnSave: boolean;
-  buildName: string;
-  buildDescription: string;
+  /** The current build (`toBuildPayload`), handed to Compare as its left side. */
+  build: BuildV6;
 }
 
 export interface UseCompareHandoffResult {
@@ -31,18 +26,7 @@ export function useCompareHandoff(args: UseCompareHandoffArgs): UseCompareHandof
   const [isOpen, setIsOpen] = useState(false);
 
   function confirm(result: CompareFromBuildConfirm) {
-    const leftBuild = {
-      version: CURRENT_BUILD_VERSION,
-      weaponId: args.weaponId,
-      attachments: args.attachments,
-      orphaned: args.orphaned,
-      createdAt: new Date().toISOString(),
-      ...(args.embedProfileOnSave ? { profileSnapshot: args.profile } : {}),
-      ...(args.buildName.trim().length > 0 ? { name: args.buildName.trim() } : {}),
-      ...(args.buildDescription.trim().length > 0
-        ? { description: args.buildDescription.trim() }
-        : {}),
-    };
+    const leftBuild: BuildV6 = { ...args.build, createdAt: new Date().toISOString() };
     sessionStorage.setItem("compare:leftPrefill", JSON.stringify(leftBuild));
     sessionStorage.setItem("compare:mode", result.mode);
     if (result.mode === "paste-url") {

@@ -68,7 +68,7 @@ export const DEFAULT_MAX_NODES = 10_000;
  * remaining part's slots.
  *
  * - **Counts.** A part listed with `count: 3` is three physical parts in three slots. This is
- *   an assumption, matching {@link attachedParts} and the in-game sum over fitted mods, but
+ *   an assumption, matching `resolveBuild` and the in-game sum over fitted mods, but
  *   not verified in-game. Upstream's own preset ergonomics count each distinct part once, so
  *   the presets that repeat a part read differently from upstream's figure
  *   (`preset-oracle.test.ts` pins the exact difference).

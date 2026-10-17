@@ -79,6 +79,11 @@ export interface SlotTreeProps {
    * A conflicting option is shown disabled with this reason beside it.
    */
   getConflict?: (path: string, itemId: string) => string | null;
+  /**
+   * Why the part already fitted at `path` clashes with another part on the weapon, or `null`.
+   * A saved build, a preset or an optimizer result can hold such a pair; it is shown, not removed.
+   */
+  getFittedConflict?: (path: string) => string | null;
 }
 
 // ---------- SlotTree root ----------
@@ -91,6 +96,7 @@ export function SlotTree({
   showAll,
   diff,
   getConflict,
+  getFittedConflict,
 }: SlotTreeProps) {
   if (tree.slots.length === 0) {
     return (
@@ -123,6 +129,7 @@ export function SlotTree({
           depth={0}
           diff={diff}
           getConflict={getConflict}
+          getFittedConflict={getFittedConflict}
         />
       ))}
     </ul>
@@ -144,6 +151,7 @@ function SlotRow({
   depth,
   diff,
   getConflict,
+  getFittedConflict,
 }: {
   tree: WeaponTree;
   slot: SlotNode;
@@ -156,6 +164,7 @@ function SlotRow({
   depth: number;
   diff?: SlotDiffMap;
   getConflict?: (path: string, itemId: string) => string | null;
+  getFittedConflict?: (path: string) => string | null;
 }) {
   const questName = useQuestName();
   const selectedId = attachments[slot.path] ?? null;
@@ -169,6 +178,7 @@ function SlotRow({
   const selectedAvailability =
     selectedItem && getAvailability ? getAvailability(selectedItem.id) : null;
 
+  const fittedConflict = selectedItem ? (getFittedConflict?.(slot.path) ?? null) : null;
   const indentPx = depth * 20;
   const diffStatus = diff?.get(slot.path);
   const diffDataAttr = diffStatus ? { "data-diff": diffStatus } : {};
@@ -198,7 +208,14 @@ function SlotRow({
           </span>
           <span className="flex-1 text-sm truncate">
             {selectedItem ? (
-              <span className="text-[var(--color-foreground)]">{selectedItem.name}</span>
+              <>
+                <span className="text-[var(--color-foreground)]">{selectedItem.name}</span>
+                {fittedConflict !== null && (
+                  <span className="ml-2 font-mono text-10 tracking-18 uppercase text-[var(--color-destructive)]">
+                    {fittedConflict}
+                  </span>
+                )}
+              </>
             ) : (
               <span className="italic text-[var(--color-paper-dim)]">
                 — empty —
@@ -302,6 +319,7 @@ function SlotRow({
                   depth={depth + 1}
                   diff={diff}
                   getConflict={getConflict}
+                  getFittedConflict={getFittedConflict}
                 />
               ))}
             </ul>

@@ -5,6 +5,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import type { WeaponListItem } from "@tarkov/data";
 import { WeaponPanel, type WeaponPanelProps } from "./weapon-panel.js";
 import type { WeaponOption } from "./useBuilderState.js";
+import { shareBlockedReason } from "./useShareBuild.js";
 
 afterEach(() => cleanup());
 
@@ -132,5 +133,16 @@ describe("WeaponPanel", () => {
       />,
     );
     expect(screen.getByTestId("build-cost")).toHaveTextContent("Build costCan't be bought: AKM");
+  });
+
+  it("refuses to share a build holding more orphans than a saved build may carry, saying why", () => {
+    const orphans = (n: number) => Array.from({ length: n }, (_, i) => `gone-${i}`);
+    expect(shareBlockedReason({ orphaned: orphans(64) })).toBeNull();
+    const reason = shareBlockedReason({ orphaned: orphans(65) });
+    expect(reason).toBe("Dismiss orphaned parts to share this build");
+
+    render(<WeaponPanel {...props({ hasSelectedWeapon: true, shareBlocked: reason })} />);
+    expect(screen.getByRole("button", { name: "Share build" })).toBeDisabled();
+    expect(screen.getByText("Dismiss orphaned parts to share this build")).toBeInTheDocument();
   });
 });

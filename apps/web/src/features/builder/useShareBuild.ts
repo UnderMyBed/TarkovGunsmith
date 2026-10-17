@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
-import { useSaveBuild, CURRENT_BUILD_VERSION, type PlayerProfile } from "@tarkov/data";
+import { useSaveBuild, ORPHANED_CAP, type BuildV6 } from "@tarkov/data";
+
+/** Why a build cannot be shared as it stands, or `null` when it can. */
+export function shareBlockedReason(build: Pick<BuildV6, "orphaned">): string | null {
+  return build.orphaned.length > ORPHANED_CAP ? "Dismiss orphaned parts to share this build" : null;
+}
 
 export interface UseShareBuildArgs {
-  /** The weapon id to share, or undefined when no weapon is selected (share is a no-op then). */
-  selectedWeaponId: string | undefined;
-  attachments: Readonly<Record<string, string>>;
-  // Build's `orphaned` field is a mutable `string[]` (the Zod schema doesn't distinguish
-  // readonly), so this stays `string[]` rather than `readonly string[]` to keep the payload
-  // below assignable without a cast.
-  orphaned: string[];
-  profile: PlayerProfile;
-  embedProfileOnSave: boolean;
-  buildName: string;
-  buildDescription: string;
+  /** The build to share (`toBuildPayload`), or `null` when no weapon is selected. */
+  build: BuildV6 | null;
 }
 
 export interface UseShareBuildResult {
@@ -21,33 +17,27 @@ export interface UseShareBuildResult {
   share: () => void;
   isSaving: boolean;
   saveFailed: boolean;
+  /** Why sharing is refused right now ({@link shareBlockedReason}), or `null`. */
+  blocked: string | null;
 }
 
 /**
  * POSTs the current build to the builds-api, copies the resulting share URL to the
  * clipboard, and surfaces it as a toast for 5s. `share()` reads `args` fresh on every call
- * (it's a plain function, not memoized) — same shape as the inline `handleShare` this was
- * extracted from, so no `useCallback` dependency array to keep honest.
+ * (it's a plain function, not memoized), and stamps the build with the time it is shared.
+ *
+ * A build holding more orphaned ids than a saved build may carry is not sent: the orphans are
+ * the saved build's own data, so the user dismisses them rather than the share dropping some.
  */
 export function useShareBuild(args: UseShareBuildArgs): UseShareBuildResult {
   const saveMutation = useSaveBuild();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const blocked = args.build === null ? null : shareBlockedReason(args.build);
 
   function share() {
-    if (!args.selectedWeaponId) return;
+    if (args.build === null || blocked !== null) return;
     saveMutation.mutate(
-      {
-        version: CURRENT_BUILD_VERSION,
-        weaponId: args.selectedWeaponId,
-        attachments: args.attachments,
-        orphaned: args.orphaned,
-        createdAt: new Date().toISOString(),
-        ...(args.embedProfileOnSave ? { profileSnapshot: args.profile } : {}),
-        ...(args.buildName.trim().length > 0 ? { name: args.buildName.trim() } : {}),
-        ...(args.buildDescription.trim().length > 0
-          ? { description: args.buildDescription.trim() }
-          : {}),
-      },
+      { ...args.build, createdAt: new Date().toISOString() },
       {
         onSuccess: (result) => {
           // Build the shareable URL from the SPA origin so it points at the /builder/$id
@@ -73,5 +63,6 @@ export function useShareBuild(args: UseShareBuildArgs): UseShareBuildResult {
     share,
     isSaving: saveMutation.isPending,
     saveFailed: Boolean(saveMutation.error),
+    blocked,
   };
 }

@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  Pill,
   Stamp,
   StatRow,
   WeaponSilhouette,
@@ -24,6 +25,10 @@ export interface BuildHeaderProps {
   stockSpec: WeaponSpec | null;
   /** Mod count, for the meta line. */
   modCount?: number;
+  /** Labels of the required slots the build leaves empty: flags the build incomplete. */
+  missingRequired?: readonly string[];
+  /** One line per pair of fitted parts that clash ("ADAR stock × M4SS"): flags a conflict. */
+  conflicts?: readonly string[];
   /** Truthy when the build has been saved and has a share URL. */
   sharedId?: string | null;
   /** When provided, renders a "Compare ↔" action in the header. */
@@ -42,6 +47,8 @@ export function BuildHeader({
   currentSpec,
   stockSpec,
   modCount,
+  missingRequired = [],
+  conflicts = [],
   sharedId,
   onCompare,
   onOptimize,
@@ -72,6 +79,23 @@ export function BuildHeader({
                 : "— MODS"}
               {sharedId ? ` · BUILD · ${sharedId.slice(0, 8)}` : ""}
             </div>
+            {(missingRequired.length > 0 || conflicts.length > 0) && (
+              <div className="flex flex-wrap items-center gap-2">
+                {missingRequired.length > 0 && (
+                  <Pill
+                    tone="marginal"
+                    title={`Required slots empty: ${missingRequired.join(", ")}`}
+                  >
+                    Incomplete · {missingRequired.length} required empty
+                  </Pill>
+                )}
+                {conflicts.length > 0 && (
+                  <Pill tone="accent" title={conflicts.join("; ")}>
+                    Conflict · {conflicts.length}
+                  </Pill>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {onCompare && (

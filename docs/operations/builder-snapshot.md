@@ -64,8 +64,8 @@ Generation is strict for everything the snapshot holds or derives from:
   ammo resolved to that cartridge's `shortName` and `initialSpeed` (a weapon whose default ammo
   is missing, or is not ammo, is drift);
 - every part a weapon's slots reach, with its `updated` and `conflictingSlotIds`;
-- the slots of every item a weapon reaches: `id`, `nameId` and `name` non-empty, and
-  `filters.allowedItems` a list;
+- the slots of every item a weapon reaches: `id`, `nameId` and `name` non-empty, `required` a
+  boolean, and `filters.allowedItems` a list;
 - every preset's `baseItem`, and the `normalizedName` of each preset of a weapon or part;
 - every buildable weapon's presets: each must place into the slot graph, and a weapon with
   presets must have exactly one default;

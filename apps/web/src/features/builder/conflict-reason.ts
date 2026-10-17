@@ -1,4 +1,9 @@
-import { conflictsWith, type AttachablePart, type WeaponTree } from "@tarkov/data";
+import {
+  conflictsWith,
+  type AttachablePart,
+  type BuildConflict,
+  type WeaponTree,
+} from "@tarkov/data";
 
 /**
  * Build the `getConflict` callback `SlotTree` takes: for a candidate part at a slot path, the
@@ -19,5 +24,33 @@ export function conflictReasonFor(
     const name = parts.get(first.withItemId)?.shortName ?? first.withItemId;
     const others = new Set(conflicts.map((c) => c.withItemId)).size - 1;
     return others > 0 ? `Conflicts with ${name} +${others}` : `Conflicts with ${name}`;
+  };
+}
+
+/**
+ * Build `SlotTree`'s `getFittedConflict` from a resolved build's conflicts: for the part at a
+ * path, which part on the weapon it clashes with, as "Conflicts with <name>" (several read as
+ * the first plus a count), or `null`. `nameOf` names an item id.
+ */
+export function fittedConflictReasonFor(
+  conflicts: readonly BuildConflict[],
+  nameOf: (itemId: string) => string,
+): (path: string) => string | null {
+  const others = new Map<string, string[]>();
+  const add = (path: string, itemId: string) => {
+    const list = others.get(path) ?? [];
+    if (!list.includes(itemId)) list.push(itemId);
+    others.set(path, list);
+  };
+  for (const { a, b } of conflicts) {
+    add(a.path, b.itemId);
+    add(b.path, a.itemId);
+  }
+  return (path) => {
+    const [first, ...rest] = others.get(path) ?? [];
+    if (first === undefined) return null;
+    return rest.length > 0
+      ? `Conflicts with ${nameOf(first)} +${rest.length}`
+      : `Conflicts with ${nameOf(first)}`;
   };
 }
