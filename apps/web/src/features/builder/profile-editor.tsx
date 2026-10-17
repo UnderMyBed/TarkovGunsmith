@@ -124,7 +124,7 @@ export function ProfileEditor({ profile, onChange, sync }: ProfileEditorProps): 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <CardTitle>Your progression</CardTitle>
             <CardDescription>
