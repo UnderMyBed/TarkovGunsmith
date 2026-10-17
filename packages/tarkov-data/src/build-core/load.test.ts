@@ -104,15 +104,19 @@ describe("loadSavedBuild", () => {
     expect(loaded.profileSnapshot?.completedQuests).toEqual(["gunsmith-master-part-1"]);
   });
 
-  it("v6 on a weapon the game data no longer holds keeps its attachments as saved", async () => {
+  it("v6 on a weapon the game data no longer holds keeps known parts where saved, orphans the rest", async () => {
     const { snapshot } = await fixtureSnapshot();
     const v6 = parse({
       version: 6,
       weaponId: GONE_WEAPON,
-      attachments: { mod_stock: BOGUS },
+      attachments: { [HANDGUARD]: HANDGUARD_ID, mod_stock: BOGUS, mod_pistol_grip: BOGUS },
       orphaned: [],
       createdAt: CREATED,
     });
-    expect(loadSavedBuild(v6, snapshot)).toEqual(v6);
+    expect(loadSavedBuild(v6, snapshot)).toEqual({
+      ...v6,
+      attachments: { [HANDGUARD]: HANDGUARD_ID },
+      orphaned: [BOGUS],
+    });
   });
 });

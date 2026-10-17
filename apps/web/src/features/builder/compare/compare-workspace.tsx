@@ -12,21 +12,24 @@ import {
   useForkPair,
   slotDiff,
   loadBuild,
+  loadSavedBuild,
   useBuilderData,
   CURRENT_PAIR_VERSION,
   type BuildV6,
   type BuildPair,
 } from "@tarkov/data";
+import type { LoadedPair } from "./known-parts.js";
+import { shareBlockedReason } from "../useShareBuild.js";
 import { CompareToolbar } from "./compare-toolbar.js";
 import { CompareStatDelta } from "./compare-stat-delta.js";
 import { CompareProgressionRow } from "./compare-progression-row.js";
 import { CompareSide, computeSideSpec } from "./compare-side.js";
 import { useCompareDraft } from "./useCompareDraft.js";
-import { withKnownSide } from "./known-parts.js";
 import { priceBuild, pricesStatus } from "../build-price.js";
 
 export interface CompareWorkspaceProps {
-  initialPair?: BuildPair;
+  /** A saved comparison, both sides already through `loadPair`. */
+  initialPair?: LoadedPair;
   initialPairId?: string;
 }
 
@@ -39,8 +42,8 @@ export function CompareWorkspace({
   const draft = useCompareDraft(
     initialPair
       ? {
-          left: initialPair.left?.version === 6 ? initialPair.left : null,
-          right: initialPair.right?.version === 6 ? initialPair.right : null,
+          left: initialPair.left,
+          right: initialPair.right,
           leftProfile: initialPair.leftProfile,
           rightProfile: initialPair.rightProfile,
           name: initialPair.name,
@@ -128,8 +131,8 @@ export function CompareWorkspace({
           const snapshotLoad = builderData.snapshot();
           try {
             const [right, snapshot] = await Promise.all([loadBuild(fetch, rightId), snapshotLoad]);
-            // Resolved against the game data like every other way a build is loaded.
-            if (right.version === 6) draft.setSide("right", withKnownSide(right, snapshot));
+            // Through the same load path as /builder/$id: any version, read against the game data.
+            draft.setSide("right", loadSavedBuild(right, snapshot));
           } catch {
             // A game-data failure is shown: it needs a reload, not another paste. A build
             // that failed to load leaves the right side empty, and can be pasted again.
@@ -217,7 +220,14 @@ export function CompareWorkspace({
     presets.data,
   ]);
 
+  // A saved side may carry at most ORPHANED_CAP orphans; the user dismisses them, nothing drops.
+  const saveBlocked =
+    [draft.state.left, draft.state.right]
+      .map((side) => (side === null ? null : shareBlockedReason(side)))
+      .find((reason) => reason !== null) ?? null;
+
   const handleSave = useCallback(() => {
+    if (saveBlocked !== null) return;
     const pair: BuildPair = {
       v: CURRENT_PAIR_VERSION,
       createdAt: new Date().toISOString(),
@@ -241,7 +251,7 @@ export function CompareWorkspace({
       // toolbar renders. Swallowing it here — or leaving it unread, as this did — is what
       // made a failed save produce no toast, no message and no state change at all.
     });
-  }, [draft, save, navigate]);
+  }, [draft, save, navigate, saveBlocked]);
 
   const handleSaveAsNew = useCallback(() => {
     if (initialPairId) {
@@ -272,6 +282,7 @@ export function CompareWorkspace({
         canClone={canClone}
         isSaving={save.isPending || fork.isPending}
         saveError={save.error ?? fork.error}
+        saveBlocked={saveBlocked}
         onSave={handleSave}
         onSaveAsNew={handleSaveAsNew}
         onSwap={draft.swap}

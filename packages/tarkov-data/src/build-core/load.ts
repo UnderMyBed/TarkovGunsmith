@@ -22,15 +22,16 @@ import { applyBuildAction } from "./reducer.js";
  * - Every attachment not on the weapon then moves to `orphaned` (`applyBuildAction`'s `load`):
  *   a part beneath an empty parent, one its slot no longer takes, or one the game data no
  *   longer holds. Nothing is dropped, and nothing is capped here.
- * - A build whose weapon the game data no longer holds keeps its attachments as saved; a v1
- *   build's mod ids, which cannot be placed without the weapon, become its orphans.
+ * - A build whose weapon the game data no longer holds has no slots to check against: it keeps
+ *   every attachment the game data still holds, where it was saved, and orphans the rest. A v1
+ *   build's mod ids, which cannot be placed without the weapon, all become orphans.
  */
 export function loadSavedBuild(build: Build, snapshot: BuilderSnapshot): BuildV6 {
   const tree = snapshot.weapons.some((w) => w.id === build.weaponId)
     ? snapshotWeaponTree(snapshot, build.weaponId)
     : null;
   const v6 = toV6(build, tree === null ? null : legacyV1MigrationSlots(tree));
-  if (tree === null) return v6;
+  if (tree === null) return orphanUnknown(v6, snapshotPartsById(snapshot));
   const state = applyBuildAction(
     { weaponId: v6.weaponId, attachments: {}, orphaned: [] },
     { type: "load", build: { ...v6, attachments: v6.attachments, orphaned: v6.orphaned } },
@@ -60,4 +61,14 @@ function toV6(build: Build, legacy: ReturnType<typeof legacyV1MigrationSlots> | 
 
 function fromV2(v2: BuildV2): BuildV6 {
   return migrateV5ToV6(migrateV4ToV5(migrateV3ToV4(migrateV2ToV3(v2))));
+}
+
+function orphanUnknown(build: BuildV6, parts: ReadonlyMap<string, unknown>): BuildV6 {
+  const attachments: Record<string, string> = {};
+  const orphaned = [...build.orphaned];
+  for (const [path, itemId] of Object.entries(build.attachments)) {
+    if (parts.has(itemId)) attachments[path] = itemId;
+    else if (!orphaned.includes(itemId)) orphaned.push(itemId);
+  }
+  return { ...build, attachments, orphaned };
 }

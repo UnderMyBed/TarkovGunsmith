@@ -11,6 +11,8 @@ interface CompareToolbarProps {
   isSaving: boolean;
   /** The last save/fork failure, or null. Cleared by the next attempt. */
   saveError: Error | null;
+  /** Why the comparison cannot be saved as it stands, or `null`. */
+  saveBlocked?: string | null;
   onSave: () => void;
   onSaveAsNew: () => void;
   onSwap: () => void;
@@ -49,6 +51,7 @@ export function CompareToolbar({
   canClone,
   isSaving,
   saveError,
+  saveBlocked = null,
   onSave,
   onSaveAsNew,
   onSwap,
@@ -58,13 +61,19 @@ export function CompareToolbar({
   const saveLabel = pairId ? "Save changes" : "Save comparison";
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] pb-3">
-      <Button onClick={onSave} disabled={isSaving || (!dirty && pairId !== undefined)}>
+      <Button
+        onClick={onSave}
+        disabled={isSaving || saveBlocked !== null || (!dirty && pairId !== undefined)}
+      >
         {isSaving ? "Saving…" : saveLabel}
       </Button>
       {pairId && (
         <Button variant="secondary" onClick={onSaveAsNew} disabled={isSaving}>
           Save as new
         </Button>
+      )}
+      {saveBlocked !== null && (
+        <span className="text-sm text-[var(--color-destructive)]">{saveBlocked}</span>
       )}
       {saveError && (
         <span role="alert" className="text-sm text-[var(--color-destructive)]">

@@ -4,15 +4,16 @@ import {
   useWeaponList,
   useWeaponPresets,
   useWeaponTree,
-  attachedParts,
+  applyBuildAction,
   itemAvailability,
-  mountedAttachments,
-  withAttachment,
   partsById,
+  resolveBuild,
   seedAttachments,
+  toBuildPayload,
   DEFAULT_PROFILE,
-  CURRENT_BUILD_VERSION,
   type AttachablePart,
+  type BuildAction,
+  type BuildContext,
   type BuildV6,
   type WeaponListItem,
   type PlayerProfile,
@@ -65,6 +66,10 @@ export function CompareSide({
   const tree = useWeaponTree(build?.weaponId ?? "");
   const byId = useMemo(() => partsById(mods.data ?? []), [mods.data]);
   const attachments = build?.attachments;
+  const ctx = useMemo<BuildContext | null>(
+    () => (tree.data && mods.data ? { tree: tree.data, parts: byId } : null),
+    [tree.data, mods.data, byId],
+  );
   const getConflict = useMemo(
     () => (tree.data && attachments ? conflictReasonFor(tree.data, attachments, byId) : undefined),
     [tree.data, attachments, byId],
@@ -91,6 +96,17 @@ export function CompareSide({
 
   const getAvailability = (id: string): ItemAvailability | null => availabilityById.get(id) ?? null;
 
+  /** The side after `action`, through the same reducer the Builder uses; metadata kept. */
+  function apply(current: BuildV6, action: BuildAction): BuildV6 {
+    const next = applyBuildAction(current, action, ctx);
+    return {
+      ...current,
+      weaponId: next.weaponId,
+      attachments: next.attachments,
+      orphaned: next.orphaned,
+    };
+  }
+
   function handleWeaponChange(newWeaponId: string) {
     if (newWeaponId === "") {
       onBuildChange(null);
@@ -99,32 +115,30 @@ export function CompareSide({
     // A new weapon starts from its default preset. Compare lists every weapon, which is the
     // Builder's show-all (theorycraft) mode, and theorycraft reads no profile. A loaded pair
     // never comes through here.
-    const attachments = seedAttachments(
+    const seed = seedAttachments(
       presets.data?.[newWeaponId] ?? [],
       "theorycraft",
       profile ?? DEFAULT_PROFILE,
     );
-    const base: BuildV6 = build
-      ? { ...build, weaponId: newWeaponId, attachments, orphaned: [] }
-      : {
-          version: CURRENT_BUILD_VERSION,
-          weaponId: newWeaponId,
-          attachments,
-          orphaned: [],
-          createdAt: new Date().toISOString(),
-        };
-    onBuildChange(base);
+    const action: BuildAction = { type: "changeWeapon", weaponId: newWeaponId, seed };
+    onBuildChange(
+      build
+        ? apply(build, action)
+        : toBuildPayload(
+            applyBuildAction({ weaponId: "", attachments: {}, orphaned: [] }, action, null),
+          ),
+    );
   }
 
-  // Replacing or clearing a part drops everything beneath it: those slots were the old part's.
+  // Replacing a part carries over what still fits on the new one; emptying drops its subtree.
   function handleAttach(slotPath: string, itemId: string | null) {
     if (!build) return;
-    onBuildChange({ ...build, attachments: withAttachment(build.attachments, slotPath, itemId) });
+    onBuildChange(apply(build, { type: "attach", path: slotPath, itemId }));
   }
 
   function handleDismissOrphans() {
     if (!build) return;
-    onBuildChange({ ...build, orphaned: [] });
+    onBuildChange(apply(build, { type: "dismissOrphaned" }));
   }
 
   const isLoading = weapons.isLoading || mods.isLoading || presets.isLoading;
@@ -234,8 +248,7 @@ function attachedMeta(
 ): string {
   if (!build) return "empty";
   if (Object.keys(build.attachments).length === 0) return "0 attached";
-  if (tree)
-    return `${Object.keys(mountedAttachments(tree, build.attachments, parts)).length} attached`;
+  if (tree) return `${resolveBuild(tree, build.attachments, parts).placed.length} attached`;
   return treeError ? "slot tree unavailable" : "loading";
 }
 
@@ -258,9 +271,9 @@ export function computeSideSpec(
   const weapon = weapons.find((w) => w.id === build.weaponId);
   if (!weapon) return null;
   // Only parts on the weapon, one entry per slot: a part fitted twice counts twice.
-  const { entries } = attachedParts(tree, build.attachments, partsById(parts));
+  const { placed } = resolveBuild(tree, build.attachments, partsById(parts));
   return weaponSpec(
     adaptWeapon(weapon),
-    entries.map((e) => adaptMod(e.part)),
+    placed.map((e) => adaptMod(e.part)),
   );
 }

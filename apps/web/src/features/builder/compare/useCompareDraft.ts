@@ -1,5 +1,6 @@
 import { useReducer } from "react";
-import type { BuildV6, BuildPair, PlayerProfile } from "@tarkov/data";
+import type { BuildV6, PlayerProfile } from "@tarkov/data";
+import type { LoadedPair } from "./known-parts.js";
 
 export type CompareSide = "left" | "right";
 
@@ -24,7 +25,8 @@ export type CompareDraftAction =
   | { type: "SET_PROFILE"; side: CompareSide; profile: PlayerProfile | undefined }
   | { type: "SWAP" }
   | { type: "CLONE"; from: CompareSide }
-  | { type: "LOAD_FROM_PAIR"; pair: BuildPair }
+  /** A saved comparison whose sides went through `loadPair`, so every side is kept. */
+  | { type: "LOAD_FROM_PAIR"; pair: LoadedPair }
   | { type: "SET_NAME"; name: string | undefined }
   | { type: "SET_DESCRIPTION"; description: string | undefined }
   | { type: "RESET" }
@@ -61,8 +63,8 @@ export function compareDraftReducer(state: CompareDraft, action: CompareDraftAct
     case "LOAD_FROM_PAIR":
       if (action.pair.v !== 1) return state;
       return {
-        left: action.pair.left?.version === 6 ? action.pair.left : null,
-        right: action.pair.right?.version === 6 ? action.pair.right : null,
+        left: action.pair.left,
+        right: action.pair.right,
         leftProfile: action.pair.leftProfile,
         rightProfile: action.pair.rightProfile,
         name: action.pair.name,
@@ -91,7 +93,7 @@ export function useCompareDraft(initial: CompareDraft = initialDraft) {
     swap: () => dispatch({ type: "SWAP" }),
     cloneLeftToRight: () => dispatch({ type: "CLONE", from: "left" }),
     cloneRightToLeft: () => dispatch({ type: "CLONE", from: "right" }),
-    loadFromPair: (pair: BuildPair) => dispatch({ type: "LOAD_FROM_PAIR", pair }),
+    loadFromPair: (pair: LoadedPair) => dispatch({ type: "LOAD_FROM_PAIR", pair }),
     setName: (name: string | undefined) => dispatch({ type: "SET_NAME", name }),
     setDescription: (description: string | undefined) =>
       dispatch({ type: "SET_DESCRIPTION", description }),
