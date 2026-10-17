@@ -53,6 +53,8 @@ export interface CompareSideProps {
    * seed: the owner of the side's state redoes a seed made before live prices arrived.
    */
   onWeaponSeeded: (weaponId: string) => void;
+  /** Whether live prices are in: only then does the side's inspector offer sorting by price. */
+  pricesReady: boolean;
 }
 
 /**
@@ -72,6 +74,7 @@ export function CompareSide({
   diff,
   onBuildChange,
   onWeaponSeeded,
+  pricesReady,
 }: CompareSideProps): ReactElement {
   const weapons = useWeaponList();
   const mods = usePartCatalog();
@@ -261,7 +264,7 @@ export function CompareSide({
                   getAvailability={getAvailability}
                   getConflict={getConflict}
                   mode={profile ? "progression" : "theorycraft"}
-                  pricesReady={false}
+                  pricesReady={pricesReady}
                   onEscape={selection.focusTreeRow}
                 />
               )}
