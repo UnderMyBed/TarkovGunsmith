@@ -38,6 +38,9 @@ describe("parseBuilderSnapshot", () => {
     expect(() => parseBuilderSnapshot({ ...snapshot, parts: {} })).toThrow(/no parts list/);
     expect(() => parseBuilderSnapshot({ ...snapshot, offers: null })).toThrow(/no offers map/);
     expect(() => parseBuilderSnapshot({ ...snapshot, slots: [] })).toThrow(/no slots map/);
+    expect(() => parseBuilderSnapshot({ ...snapshot, presets: undefined })).toThrow(
+      /no presets map/,
+    );
   });
 });
 

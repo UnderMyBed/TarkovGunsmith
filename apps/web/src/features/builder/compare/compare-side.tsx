@@ -2,12 +2,15 @@ import { useMemo, type ReactElement } from "react";
 import {
   usePartCatalog,
   useWeaponList,
+  useWeaponPresets,
   useWeaponTree,
   attachedParts,
   itemAvailability,
   mountedAttachments,
   withAttachment,
   partsById,
+  seedAttachments,
+  DEFAULT_PROFILE,
   CURRENT_BUILD_VERSION,
   type AttachablePart,
   type BuildV6,
@@ -58,6 +61,7 @@ export function CompareSide({
 }: CompareSideProps): ReactElement {
   const weapons = useWeaponList();
   const mods = usePartCatalog();
+  const presets = useWeaponPresets();
   const tree = useWeaponTree(build?.weaponId ?? "");
   const byId = useMemo(() => partsById(mods.data ?? []), [mods.data]);
   const attachments = build?.attachments;
@@ -92,12 +96,20 @@ export function CompareSide({
       onBuildChange(null);
       return;
     }
+    // A new weapon starts from its default preset. Compare lists every weapon, which is the
+    // Builder's show-all (theorycraft) mode, and theorycraft reads no profile. A loaded pair
+    // never comes through here.
+    const attachments = seedAttachments(
+      presets.data?.[newWeaponId] ?? [],
+      "theorycraft",
+      profile ?? DEFAULT_PROFILE,
+    );
     const base: BuildV6 = build
-      ? { ...build, weaponId: newWeaponId, attachments: {}, orphaned: [] }
+      ? { ...build, weaponId: newWeaponId, attachments, orphaned: [] }
       : {
           version: CURRENT_BUILD_VERSION,
           weaponId: newWeaponId,
-          attachments: {},
+          attachments,
           orphaned: [],
           createdAt: new Date().toISOString(),
         };
@@ -115,8 +127,8 @@ export function CompareSide({
     onBuildChange({ ...build, orphaned: [] });
   }
 
-  const isLoading = weapons.isLoading || mods.isLoading;
-  const loadError = weapons.error ?? mods.error;
+  const isLoading = weapons.isLoading || mods.isLoading || presets.isLoading;
+  const loadError = weapons.error ?? mods.error ?? presets.error;
 
   return (
     <Card variant="bracket" className="relative overflow-hidden">

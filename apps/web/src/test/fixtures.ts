@@ -182,6 +182,76 @@ export const ITEMS_DOCUMENT: {
         },
       ],
     },
+    // Two presets of the weapon, upstream-shaped: `containsItems` lists the base weapon with
+    // its parts, and the trader offers live on the preset item. The default fits both mods and
+    // Prapor sells it at LL1 (dearer than the bare weapon, so the weapon's own offer stays its
+    // cheapest); the other fits the stock alone and only Mechanic LL2 sells it. A build with the
+    // muzzle alone matches neither, so a loaded build can be told apart from a seeded one.
+    "p-m4a1-default": {
+      id: "p-m4a1-default",
+      updated: "2026-10-16T12:00:00.000Z",
+      name: "Colt M4A1 5.56x45 assault rifle Default",
+      shortName: "M4A1 Default",
+      normalizedName: "colt-m4a1-556x45-assault-rifle-default",
+      types: ["preset"],
+      minLevelForFlea: 0,
+      avg24hPrice: 60_000,
+      containsItems: [
+        { item: "w-m4a1", count: 1 },
+        { item: "mod-muzzle", count: 1 },
+        { item: "mod-stock", count: 1 },
+      ],
+      properties: {
+        propertiesType: "ItemPropertiesPreset",
+        baseItem: "w-m4a1",
+        default: true,
+        ergonomics: 54,
+        recoilVertical: 92,
+        recoilHorizontal: 252,
+        moa: 1.03,
+      },
+      buyFromTrader: [
+        {
+          trader: "t-prapor",
+          priceRUB: 50_000,
+          currency: "RUB",
+          minTraderLevel: 1,
+          taskUnlock: null,
+        },
+      ],
+    },
+    "p-m4a1-stock": {
+      id: "p-m4a1-stock",
+      updated: "2026-10-16T12:00:00.000Z",
+      name: "Colt M4A1 5.56x45 assault rifle Stock",
+      shortName: "M4A1 Stock",
+      normalizedName: "colt-m4a1-556x45-assault-rifle-stock",
+      types: ["preset"],
+      minLevelForFlea: 15,
+      avg24hPrice: 55_000,
+      containsItems: [
+        { item: "w-m4a1", count: 1 },
+        { item: "mod-stock", count: 1 },
+      ],
+      properties: {
+        propertiesType: "ItemPropertiesPreset",
+        baseItem: "w-m4a1",
+        default: false,
+        ergonomics: 55,
+        recoilVertical: 97,
+        recoilHorizontal: 266,
+        moa: 1.03,
+      },
+      buyFromTrader: [
+        {
+          trader: "t-mechanic",
+          priceRUB: 48_000,
+          currency: "RUB",
+          minTraderLevel: 2,
+          taskUnlock: null,
+        },
+      ],
+    },
     "ammo-m855": {
       id: "ammo-m855",
       name: "5.56x45mm M855",

@@ -21,6 +21,7 @@
  * what they deliberately include.
  */
 import { readFileSync } from "node:fs";
+import type { BuilderSnapshot } from "@tarkov/data";
 
 const FIXTURE_DIR = new URL("../../../packages/tarkov-data/src/__fixtures__/", import.meta.url);
 
@@ -101,4 +102,21 @@ export function fixtureBuildableWeaponCount(): number {
       item.properties?.propertiesType === "ItemPropertiesWeapon" &&
       !(item.types ?? []).includes("specialSlot"),
   ).length;
+}
+
+/**
+ * How many parts a captured weapon preset puts on the weapon: its placed attachments that sit
+ * in a slot the tree shows (`mountedAttachments`), read from the snapshot this run's build
+ * generated — the same file `wrangler pages dev` serves.
+ */
+export async function fixturePresetPartCount(weaponId: string, presetId: string): Promise<number> {
+  const { mountedAttachments, snapshotWeaponTree } = await import("@tarkov/data");
+  const snapshot = JSON.parse(
+    readFileSync(new URL("../dist/data/builder-snapshot.json", import.meta.url), "utf8"),
+  ) as BuilderSnapshot;
+  const preset = snapshot.presets[weaponId]?.find((p) => p.id === presetId);
+  if (preset === undefined) throw new Error(`the snapshot has no preset ${presetId}`);
+  const known = new Set(snapshot.parts.map((part) => part.id));
+  const tree = snapshotWeaponTree(snapshot, weaponId);
+  return Object.keys(mountedAttachments(tree, preset.attachments, known)).length;
 }

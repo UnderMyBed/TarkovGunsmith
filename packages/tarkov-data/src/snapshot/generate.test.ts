@@ -22,6 +22,8 @@ const GRENADE = "5448be9a4bdc2dfd2f8b456a";
 const SCREW_NUTS = "57347c77245977448d35f6e2"; // the PM preset barter's input
 
 const PM_DEFAULT = "58414967245977598f1ad391"; // the PM's default preset
+const M4A1_CARBINE = "5af08cf886f774223c269184"; // the M4A1's default preset
+const M4A1_SOPMOD = "5a8ae73886f7747b2e6e1416"; // lists the 10.3" barrel
 const docs = (): Promise<SnapshotDocuments> => fetchSnapshotDocuments(fixtureClient());
 const M855A1 = "54527ac44bdc2d36668b4567"; // a cartridge: part-typed, in no weapon slot
 const PRAPOR = "54cb50c76803fa8b248b4571";
@@ -63,8 +65,8 @@ describe("buildBuilderSnapshot over the captured documents", () => {
       .map((i) => i.updated ?? "")
       .sort()
       .at(-1);
-    expect(snapshot).toMatchObject({ schema: 1, source: "fixtures", dataAsOf: newest });
-    expect(prices).toMatchObject({ schema: 1, source: "fixtures", dataAsOf: newest });
+    expect(snapshot).toMatchObject({ schema: 2, source: "fixtures", dataAsOf: newest });
+    expect(prices).toMatchObject({ schema: 2, source: "fixtures", dataAsOf: newest });
   });
 
   it("keeps buildable weapons only, sorted by id", async () => {
@@ -175,6 +177,8 @@ describe("buildBuilderSnapshot on drift", () => {
     expect(problems).toEqual([
       `items/${PM} (ItemPropertiesWeapon): properties.fireRate: Invalid input: expected number, received string`,
       `items/${BARREL_10_3} (ItemPropertiesBarrel): conflictingSlotIds: Invalid input: expected array, received undefined`,
+      // A preset listing the broken part fails too, rather than seeding a build without it.
+      `presets/${M4A1_SOPMOD}: schema: ${BARREL_10_3}: conflictingSlotIds: Invalid input: expected array, received undefined`,
     ]);
   });
 
@@ -392,6 +396,10 @@ describe("buildBuilderSnapshot on drift", () => {
       `${at}[3].id is not a non-empty string`,
       `${at}[${m4Slots.length - 1}] is not an object`,
       `items/${PM}: properties.slots is not an array`,
+      // With those slots gone, the weapons' presets no longer place.
+      expect.stringMatching(new RegExp(`^presets/${PM_DEFAULT}: unreachable: `)),
+      expect.stringMatching(new RegExp(`^presets/${M4A1_SOPMOD}: unreachable: `)),
+      expect.stringMatching(new RegExp(`^presets/${M4A1_CARBINE}: unreachable: `)),
     ]);
   });
 
@@ -422,6 +430,18 @@ describe("buildBuilderSnapshot on drift", () => {
     expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
       `items/${PM_DEFAULT} (ItemPropertiesPreset): normalizedName is not a non-empty string`,
       "items/oddPreset (ItemPropertiesPreset): properties.baseItem is not a string",
+      "presets/oddPreset: schema: properties.baseItem: expected a string",
+    ]);
+  });
+
+  it("fails on a weapon preset whose names are still translation keys", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    items[PM_DEFAULT]!.name = `${PM_DEFAULT} Name`;
+    items[M4A1_SOPMOD]!.shortName = `${M4A1_SOPMOD} ShortName`;
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
+      `items/${PM_DEFAULT}: name is still its translation key; the _en document did not apply`,
+      `items/${M4A1_SOPMOD}: shortName is still its translation key; the _en document did not apply`,
     ]);
   });
 
@@ -470,6 +490,8 @@ describe("buildBuilderSnapshot from upstream", () => {
       `floors: barterOffers ${barterOffers}, below the floor of ${UPSTREAM_FLOORS.barterOffers}; ${note}`,
       `floors: parts ${snapshot.parts.length}, below the floor of ${UPSTREAM_FLOORS.parts}; ${note}`,
       `floors: presetOffers ${presetOffers}, below the floor of ${UPSTREAM_FLOORS.presetOffers}; ${note}`,
+      `floors: presetWeapons ${Object.keys(snapshot.presets).length}, below the floor of ${UPSTREAM_FLOORS.presetWeapons}; ${note}`,
+      `floors: presets ${Object.values(snapshot.presets).flat().length}, below the floor of ${UPSTREAM_FLOORS.presets}; ${note}`,
       `floors: weapons ${snapshot.weapons.length}, below the floor of ${UPSTREAM_FLOORS.weapons}; ${note}`,
     ]);
     expect(presetOffers).toBeGreaterThan(0);
@@ -478,7 +500,14 @@ describe("buildBuilderSnapshot from upstream", () => {
 });
 
 describe("floorProblems", () => {
-  const live = { weapons: 164, parts: 2335, presetOffers: 303, barterOffers: 304 };
+  const live = {
+    weapons: 164,
+    parts: 2335,
+    presetOffers: 303,
+    barterOffers: 304,
+    presets: 399,
+    presetWeapons: 164,
+  };
   it("passes live-sized counts, and counts exactly at a floor", () => {
     expect(floorProblems(live)).toEqual([]);
     expect(floorProblems(UPSTREAM_FLOORS)).toEqual([]);

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { renderRoute } from "../test/render-route.js";
 
 // `/builder/$id` (routes/builder.$id.tsx) reuses `BuilderPage` (routes/builder.tsx, the
@@ -16,6 +16,19 @@ afterEach(() => {
 });
 
 const VALID_ID = "abcdefgh"; // 8 chars from the builds-api id alphabet.
+
+/**
+ * A loaded build is the author's, never a preset: once the weapon's presets have loaded, the
+ * build still holds exactly its saved parts, so no preset chip is current.
+ */
+async function expectNotSeeded(savedCount: number): Promise<void> {
+  const group = await screen.findByRole("group", { name: "Presets" });
+  expect(screen.getByText(`${savedCount} attached`, { exact: true })).toBeInTheDocument();
+  const pressed = within(group)
+    .getAllByRole("button")
+    .filter((b) => b.getAttribute("aria-pressed") === "true");
+  expect(pressed).toEqual([]);
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -93,6 +106,7 @@ describe("/builder/$id", () => {
       await screen.findByText(/1 mod from the saved build couldn't be placed on this weapon\./),
     ).toBeInTheDocument();
     expect(screen.getByText("mod-vanished — not a part the Builder knows")).toBeInTheDocument();
+    await expectNotSeeded(1);
   });
 
   it("loads a v1 build and migrates its flat modIds into slot attachments once the tree resolves", async () => {
@@ -113,5 +127,6 @@ describe("/builder/$id", () => {
     // `migrateV1ToV2` walks the resolved slot tree and places "mod-muzzle" into the one slot
     // whose `allowedItemIds` contains it (`mod_muzzle`) — landing as a single v2 attachment.
     expect(await screen.findByText("1 attached")).toBeInTheDocument();
+    await expectNotSeeded(1);
   });
 });

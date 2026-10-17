@@ -1,7 +1,14 @@
 import type { AttachablePart } from "../queries/parts.js";
 import type { WeaponListItem } from "../queries/weaponList.js";
 import { expandSlots, type SlotGraph, type WeaponTree } from "../queries/slot-graph.js";
-import { offerPriceIds, priceOffers, type PriceTable } from "../queries/shared/buy-for.js";
+import {
+  fleaPriceFromTuple,
+  offerPriceIds,
+  priceOffers,
+  type BuyForEntry,
+  type PriceTable,
+} from "../queries/shared/buy-for.js";
+import type { WeaponPreset } from "../queries/presets.js";
 import type { BuilderSnapshot, SnapshotPart } from "./types.js";
 import { ORPHANED_CAP } from "../build-schema.js";
 
@@ -98,13 +105,55 @@ export function snapshotWeaponTree(snapshot: BuilderSnapshot, weaponId: string):
   return { weaponId, weaponName, slots: expandSlots(graph, weaponId, ""), graph };
 }
 
-/** Every item id whose price some snapshot offer depends on, sorted. */
+/**
+ * Every item id whose price some snapshot offer depends on, sorted: the offers' own, and each
+ * preset's flea listing.
+ */
 export function snapshotPriceIds(snapshot: BuilderSnapshot): string[] {
   const ids = new Set<string>();
   for (const [id, offers] of Object.entries(snapshot.offers)) {
     for (const priceId of offerPriceIds(id, offers)) ids.add(priceId);
   }
+  for (const list of Object.values(snapshot.presets)) {
+    for (const preset of list) if (preset.flea !== null) ids.add(preset.id);
+  }
   return [...ids].sort();
+}
+
+/** A weapon preset with what it costs: every offer that sells the preset as a whole, priced. */
+export interface PricedPreset extends WeaponPreset {
+  /**
+   * The weapon's trader offers and barters tagged with this preset, then the preset's own
+   * flea listing. Read it with `presetAvailability`.
+   */
+  readonly buyFor: readonly BuyForEntry[];
+}
+
+/** Weapon id → its presets (default first), each with its offers priced from `prices`. */
+export function snapshotWeaponPresets(
+  snapshot: BuilderSnapshot,
+  prices: PriceTable,
+): Record<string, PricedPreset[]> {
+  const out: Record<string, PricedPreset[]> = {};
+  for (const [weaponId, list] of Object.entries(snapshot.presets)) {
+    const weaponOffers = pricedOffers(snapshot, weaponId, prices);
+    out[weaponId] = list.map(({ flea, ...preset }) => {
+      const buyFor = weaponOffers.filter((entry) => entry.preset?.id === preset.id);
+      if (flea !== null) {
+        buyFor.push({
+          priceRUB: fleaPriceFromTuple(prices.items[preset.id]),
+          currency: "RUB",
+          vendor: {
+            __typename: "FleaMarket",
+            normalizedName: "flea-market",
+            minPlayerLevel: flea.minPlayerLevel,
+          },
+        });
+      }
+      return { ...preset, buyFor };
+    });
+  }
+  return out;
 }
 
 /**
