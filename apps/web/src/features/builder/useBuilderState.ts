@@ -3,6 +3,7 @@ import {
   useBuilderSnapshot,
   usePartCatalog,
   useWeaponList,
+  useWeaponPresets,
   useWeaponTree,
   attachedParts,
   fleaPriceRub,
@@ -11,6 +12,7 @@ import {
   itemAvailability,
   legacyV1MigrationSlots,
   partsById,
+  seedAttachments,
   type AttachablePart,
   type BuildV6,
   type PlayerProfile,
@@ -97,6 +99,7 @@ export function useBuilderState({
   const snapshot = useBuilderSnapshot();
   const weapons = useWeaponList();
   const catalog = usePartCatalog();
+  const presets = useWeaponPresets();
 
   const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
   const [attachments, setAttachments] = useState<Record<string, string>>(
@@ -218,9 +221,17 @@ export function useBuilderState({
     return attached.entries.reduce((total, e) => total + fleaPriceRub(e.part), 0);
   }, [catalog.data, attached]);
 
+  // A new build starts from the weapon's preset; loading a saved build never comes through
+  // here, so a shared build is never re-seeded. Show-all is theorycraft until #241.
   function handleWeaponChange(newWeaponId: string) {
     setWeaponId(newWeaponId);
-    setAttachments({});
+    setAttachments(
+      seedAttachments(
+        presets.data?.[newWeaponId] ?? [],
+        showAllWeapons ? "theorycraft" : "progression",
+        profile,
+      ),
+    );
     setOrphaned([]);
   }
 
@@ -244,8 +255,8 @@ export function useBuilderState({
   }
 
   return {
-    isLoading: snapshot.isLoading || weapons.isLoading || catalog.isLoading,
-    error: snapshot.error ?? weapons.error ?? catalog.error,
+    isLoading: snapshot.isLoading || weapons.isLoading || catalog.isLoading || presets.isLoading,
+    error: snapshot.error ?? weapons.error ?? catalog.error ?? presets.error,
 
     weaponOptions,
     weaponId,

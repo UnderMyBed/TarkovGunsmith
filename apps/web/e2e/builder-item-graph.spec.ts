@@ -15,6 +15,16 @@ async function pickM4A1(page: Page) {
     .first();
   await expect(picker).toBeVisible({ timeout: 15_000 });
   await picker.selectOption({ label: "Colt M4A1 5.56x45 assault rifle" });
+  await startEmpty(page);
+}
+
+/** New builds start from the weapon's default preset; these tests build from an empty weapon. */
+async function startEmpty(page: Page): Promise<void> {
+  await page
+    .getByRole("group", { name: "Presets" })
+    .getByRole("button", { name: /^Empty/ })
+    .click();
+  await expect(page.getByText("0 attached")).toBeVisible();
 }
 
 function slot(page: Page, path: string) {

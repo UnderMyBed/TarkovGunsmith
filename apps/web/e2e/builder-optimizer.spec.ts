@@ -26,7 +26,17 @@ async function pickFirstWeapon(page: Page): Promise<string | null> {
   const value = await picker.locator("option").nth(1).getAttribute("value");
   if (!value) return null;
   await picker.selectOption(value);
+  await startEmpty(page);
   return value;
+}
+
+/** New builds start from the weapon's default preset; these tests build from an empty weapon. */
+async function startEmpty(page: Page): Promise<void> {
+  await page
+    .getByRole("group", { name: "Presets" })
+    .getByRole("button", { name: /^Empty/ })
+    .click();
+  await expect(page.getByText("0 attached")).toBeVisible();
 }
 
 test.describe("builder optimizer diff view", () => {

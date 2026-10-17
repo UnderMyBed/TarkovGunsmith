@@ -56,7 +56,9 @@ those items' offers, and from the pre-split resolver, never from the code under 
 
 `preset-oracle-sample.json` holds six upstream weapon presets with their base weapons and every
 part they list, captured 2026-10-16, for `preset-oracle.test.ts`: the presets' own ergonomics and
-recoil are the oracle the Builder's stat path must reproduce.
+recoil are the oracle the Builder's stat path must reproduce. It also holds the AKS-74UN's
+default preset and its parts, from the same capture, because the snapshot generator requires
+exactly one default for every weapon with presets.
 
 **Refresh** by re-capturing from `json.tarkov.dev` when upstream shapes change, keeping the
 accept/reject mix above intact. `scripts/verify-upstream-contract.ts` checks these fixtures

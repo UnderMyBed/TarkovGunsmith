@@ -11,7 +11,8 @@
  * stop being recognised and the snapshot comes out valid but gutted.
  *
  * Each floor is roughly half of live on 2026-10-17 (164 weapons, 2335 parts, 303 offers that
- * sell a weapon or part through a preset, 304 barter offers): low enough that ordinary churn
+ * sell a weapon or part through a preset, 304 barter offers, 399 weapon presets on 164
+ * weapons): low enough that ordinary churn
  * upstream never trips them, high enough that losing a whole class of rows always does.
  * Parts sit closer to live because a slot-graph break loses nearly all of them at once.
  */
@@ -20,6 +21,8 @@ export const UPSTREAM_FLOORS = {
   parts: 2000,
   presetOffers: 150,
   barterOffers: 150,
+  presets: 200,
+  presetWeapons: 80,
 } as const;
 
 /**

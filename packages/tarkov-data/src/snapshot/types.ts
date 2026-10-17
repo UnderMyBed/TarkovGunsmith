@@ -5,19 +5,33 @@ import type { SlotOwner } from "../queries/slot-graph.js";
 import type { PriceTable, UnpricedOffer } from "../queries/shared/buy-for.js";
 import type { TaskListItem } from "../queries/tasks.js";
 import type { TraderListItem } from "../queries/traders.js";
+import type { WeaponPreset } from "../queries/presets.js";
 
 /**
  * Version of the snapshot file shape. Bump it with any change to {@link BuilderSnapshot} or
  * {@link BuilderPrices}: the snapshot ships in the same deploy as the code that reads it, so
  * the only reader that can ever see a different version is a tab opened before a deploy.
  */
-export const BUILDER_SNAPSHOT_SCHEMA = 1;
+export const BUILDER_SNAPSHOT_SCHEMA = 2;
 
 /** Where a snapshot's documents came from: live `json.tarkov.dev`, or the committed captures. */
 export type SnapshotSource = "upstream" | "fixtures";
 
 export type SnapshotWeapon = z.infer<typeof snapshotWeaponSchema>;
 export type SnapshotPart = z.infer<typeof snapshotPartSchema>;
+
+/**
+ * A weapon preset placed into the slot graph, as a new build of its weapon starts from.
+ *
+ * What the preset costs is split the way upstream splits it: its trader offers and barters
+ * are already among its weapon's offers, tagged with the preset, so they are not repeated
+ * here. Its own flea listing is not among them (a weapon's flea offer is the bare receiver's),
+ * so it is carried here: `flea` is the listing's player-level gate, or `null` when upstream
+ * flags the preset `noFlea`. The listing is priced from the preset's own id.
+ */
+export interface SnapshotPreset extends WeaponPreset {
+  readonly flea: { readonly minPlayerLevel: number | null } | null;
+}
 
 /**
  * The Builder's game data, generated at build time from the upstream documents.
@@ -44,6 +58,11 @@ export interface BuilderSnapshot {
   readonly slots: Readonly<Record<string, SlotOwner>>;
   /** Unpriced offers for every weapon and part, keyed by item id. */
   readonly offers: Readonly<Record<string, readonly UnpricedOffer[]>>;
+  /**
+   * Weapon id → its presets: exactly one default, listed first, then the rest in document
+   * order. A weapon upstream gives no preset is absent.
+   */
+  readonly presets: Readonly<Record<string, readonly SnapshotPreset[]>>;
   /** Names of barter ingredients that are neither weapons nor parts. */
   readonly ingredientNames: Readonly<Record<string, string>>;
   /** Every trader, including the ones the profile does not track. */

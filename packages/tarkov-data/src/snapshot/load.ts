@@ -36,7 +36,7 @@ export function parseBuilderSnapshot(json: unknown): BuilderSnapshot {
   for (const key of ["weapons", "parts", "traders", "tasks"]) {
     if (!Array.isArray(record[key])) throw new Error(`builder-snapshot.json has no ${key} list`);
   }
-  for (const key of ["slots", "offers", "ingredientNames"]) {
+  for (const key of ["slots", "offers", "presets", "ingredientNames"]) {
     const value = record[key];
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
       throw new Error(`builder-snapshot.json has no ${key} map`);

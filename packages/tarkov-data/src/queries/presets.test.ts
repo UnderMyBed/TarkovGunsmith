@@ -13,6 +13,7 @@ const PM_DEFAULT = "58414967245977598f1ad391";
 const M4A1_GRIP = "55d4b9964bdc2d1d4e8b456e";
 const PACA = "5648a7494bdc2d9d488b4583";
 const AKS74UN = "583990e32459771419544dd2";
+const AKS74UN_DEFAULT = "584147ed2459775a77263501";
 const TT_GOLDEN = "5b3b713c5acfc4330140bd8d";
 const TT_GOLDEN_DEFAULT = "5b44abe986f774283e2e3512";
 const SCREW_NUTS = "57347c77245977448d35f6e2"; // a barter item: `properties: null`
@@ -97,8 +98,10 @@ describe("selectWeaponPresets", () => {
   });
 
   it("reports, and leaves out, a weapon without exactly one default preset", async () => {
-    // The oracle capture carries the AKS-74UN's Zenit preset but not its default.
-    const { byWeapon, failures } = select(await itemsDoc(oracle));
+    // Without its default, the AKS-74UN keeps only its Zenit preset.
+    const doc = await itemsDoc(oracle);
+    delete doc.items[AKS74UN_DEFAULT];
+    const { byWeapon, failures } = select(doc);
     expect(byWeapon[AKS74UN]).toBeUndefined();
     expect(failures).toEqual([
       { id: AKS74UN, reason: "default-count", detail: "0 default presets" },
