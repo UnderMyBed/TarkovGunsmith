@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fixturePartCatalog, fixtureWeaponTree } from "./__test-utils__/fixture-snapshot.js";
-import {
-  attachedParts,
-  fleaPriceRub,
-  mountedAttachments,
-  withAttachment,
-} from "./attached-parts.js";
+import { attachedParts, mountedAttachments, withAttachment } from "./attached-parts.js";
 import { conflictsWith } from "./conflicts.js";
 import { partsById } from "./queries/parts.js";
 import { fixtureClient } from "./__fixtures__/client.js";
@@ -169,8 +164,9 @@ describe("attachedParts", () => {
     };
     const weight = (att: Record<string, string>) =>
       attachedParts(tree, att, parts).entries.reduce((t, e) => t + e.part.weight, 0);
-    const price = (att: Record<string, string>) =>
-      attachedParts(tree, att, parts).entries.reduce((t, e) => t + fleaPriceRub(e.part), 0);
+    // What price is summed over: the parts on the weapon.
+    const priced = (att: Record<string, string>) =>
+      attachedParts(tree, att, parts).entries.map((e) => e.part.id);
     const upperOnly = { mod_reciever: M4A1_UPPER };
 
     // A saved build that still carries the stale keys counts the same as the clean one.
@@ -180,7 +176,7 @@ describe("attachedParts", () => {
       "mod_reciever",
     ]);
     expect(weight(staleKeys)).toBe(weight(upperOnly));
-    expect(price(staleKeys)).toBe(price(upperOnly));
+    expect(priced(staleKeys)).toEqual(priced(upperOnly));
 
     // Removing the barrel through withAttachment drops the keys outright.
     expect(withAttachment(withBarrel, BARREL, null)).toEqual(upperOnly);
@@ -229,18 +225,5 @@ describe('replacing a barrel under an AX-15 4" handguard (PR #240 review repro)'
     expect(conflictsWith(ctx, { itemId: M4A1_FRONT_SIGHT_GAS_BLOCK, path: GAS_BLOCK })).toEqual([
       expect.objectContaining({ withItemId: AX15_4, atPath: HANDGUARD }),
     ]);
-  });
-});
-
-describe("fleaPriceRub", () => {
-  it("reads the flea offer, and 0 without one", async () => {
-    const parts = await fixturePartCatalog(fixtureClient());
-    const withFlea = parts.find((p) =>
-      (p.buyFor ?? []).some((b) => b.vendor.__typename === "FleaMarket" && b.priceRUB !== null),
-    )!;
-    const flea = withFlea.buyFor!.find((b) => b.vendor.__typename === "FleaMarket")!;
-    expect(fleaPriceRub(withFlea)).toBe(flea.priceRUB);
-    expect(fleaPriceRub({ ...withFlea, buyFor: [] })).toBe(0);
-    expect(fleaPriceRub({ ...withFlea, buyFor: null })).toBe(0);
   });
 });

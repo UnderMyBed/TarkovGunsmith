@@ -27,6 +27,7 @@ vi.mock("@tarkov/data", async () => {
     usePartCatalog: () => idleQuery,
     useWeaponTree: () => idleQuery,
     useWeaponPresets: () => presetsQuery,
+    useLivePrices: () => idleQuery,
   };
 });
 
@@ -123,6 +124,14 @@ describe("useBuilderState and presets", () => {
     act(() => result.current.handleWeaponChange(WEAPON));
     expect(result.current.weaponId).toBe(WEAPON);
     expect(result.current.attachments).toEqual(DEFAULT.attachments);
+  });
+
+  it("prices under the profile, and under no gate once every weapon is shown", () => {
+    const { result } = renderHook(() => useBuilderState(args()));
+    expect(result.current.gate).toBe(FLEA_PROFILE);
+    act(() => result.current.setShowAllWeapons(true));
+    expect(result.current.gate).toBeNull();
+    expect(result.current.prices).toEqual({ state: "loading" });
   });
 
   it("seeds the cheapest preset the profile can buy when the default is locked", () => {

@@ -4,7 +4,10 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   useWeaponList,
   usePartCatalog,
+  useWeaponPresets,
   useWeaponTree,
+  useLivePrices,
+  partsById,
   useSavePair,
   useForkPair,
   slotDiff,
@@ -20,6 +23,7 @@ import { CompareProgressionRow } from "./compare-progression-row.js";
 import { CompareSide, computeSideSpec } from "./compare-side.js";
 import { useCompareDraft } from "./useCompareDraft.js";
 import { withKnownSide } from "./known-parts.js";
+import { priceBuild } from "../build-price.js";
 
 export interface CompareWorkspaceProps {
   initialPair?: BuildPair;
@@ -50,6 +54,8 @@ export function CompareWorkspace({
   const mods = usePartCatalog();
   const leftTree = useWeaponTree(draft.state.left?.weaponId ?? "");
   const rightTree = useWeaponTree(draft.state.right?.weaponId ?? "");
+  const presets = useWeaponPresets();
+  const livePrices = useLivePrices();
 
   const save = useSavePair();
   const fork = useForkPair();
@@ -177,6 +183,40 @@ export function CompareWorkspace({
     [draft.state.right, rightTree.data, weapons.data, mods.data],
   );
 
+  // Each side is priced under its own profile, or with every gate open when it has none.
+  const byId = useMemo(() => partsById(mods.data ?? []), [mods.data]);
+  const leftPrice = useMemo(() => {
+    const build = draft.state.left;
+    if (!build) return null;
+    return priceBuild(
+      draft.state.leftProfile ?? null,
+      weapons.data?.find((w) => w.id === build.weaponId),
+      leftTree.data,
+      build.attachments,
+      byId,
+      presets.data?.[build.weaponId] ?? [],
+    );
+  }, [draft.state.left, draft.state.leftProfile, weapons.data, leftTree.data, byId, presets.data]);
+  const rightPrice = useMemo(() => {
+    const build = draft.state.right;
+    if (!build) return null;
+    return priceBuild(
+      draft.state.rightProfile ?? null,
+      weapons.data?.find((w) => w.id === build.weaponId),
+      rightTree.data,
+      build.attachments,
+      byId,
+      presets.data?.[build.weaponId] ?? [],
+    );
+  }, [
+    draft.state.right,
+    draft.state.rightProfile,
+    weapons.data,
+    rightTree.data,
+    byId,
+    presets.data,
+  ]);
+
   const handleSave = useCallback(() => {
     const pair: BuildPair = {
       v: CURRENT_PAIR_VERSION,
@@ -248,10 +288,9 @@ export function CompareWorkspace({
       <CompareStatDelta left={leftSpec} right={rightSpec} />
 
       <CompareProgressionRow
-        leftPriceRub={null}
-        rightPriceRub={null}
-        leftReachable={null}
-        rightReachable={null}
+        left={{ price: leftPrice, gated: draft.state.leftProfile !== undefined }}
+        right={{ price: rightPrice, gated: draft.state.rightProfile !== undefined }}
+        pricesReady={livePrices.data !== undefined}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

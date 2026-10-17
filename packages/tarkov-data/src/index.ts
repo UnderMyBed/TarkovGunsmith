@@ -43,12 +43,7 @@ export type { Barter, BarterItem } from "./queries/barters.js";
 export type { WeaponListItem } from "./queries/weaponList.js";
 export { partsById, isModLikePart } from "./queries/parts.js";
 export type { AttachablePart, AttachablePartType, ModLikePart } from "./queries/parts.js";
-export {
-  attachedParts,
-  fleaPriceRub,
-  mountedAttachments,
-  withAttachment,
-} from "./attached-parts.js";
+export { attachedParts, mountedAttachments, withAttachment } from "./attached-parts.js";
 export { conflictsWith } from "./conflicts.js";
 export type { Conflict, ConflictContext, ConflictFields } from "./conflicts.js";
 export type { AttachedParts, AttachedPartEntry, KnownItems } from "./attached-parts.js";

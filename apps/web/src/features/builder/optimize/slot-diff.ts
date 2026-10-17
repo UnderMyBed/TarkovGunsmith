@@ -1,9 +1,10 @@
 import {
   adaptMod,
-  fleaPriceRub,
   mountedAttachments,
+  priceUnder,
   visibleSlots,
   type AttachablePart,
+  type PriceGate,
   type SlotNode,
   type WeaponTree,
 } from "@tarkov/data";
@@ -15,10 +16,11 @@ export interface ChangedRow {
   readonly proposedName: string | null;
   readonly currentErgo: number;
   readonly currentRecoil: number;
-  readonly currentPrice: number;
+  /** `null` when the part's price under the gate is not known; `0` for an empty slot. */
+  readonly currentPrice: number | null;
   readonly proposedErgo: number;
   readonly proposedRecoil: number;
-  readonly proposedPrice: number;
+  readonly proposedPrice: number | null;
   readonly ergoDelta: number;
   /**
    * Difference of two `recoilModifier` values, so it carries upstream's
@@ -26,26 +28,31 @@ export interface ChangedRow {
    * scale by 100 — see mod-changes-table.tsx.
    */
   readonly recoilDelta: number;
-  readonly priceDelta: number;
+  /** `null` when either price is not known. */
+  readonly priceDelta: number | null;
 }
 
 interface ModStats {
   readonly name: string | null;
   readonly ergo: number;
   readonly recoil: number;
-  readonly price: number;
+  readonly price: number | null;
 }
 
-function lookupMod(id: string | undefined, parts: ReadonlyMap<string, AttachablePart>): ModStats {
+function lookupMod(
+  id: string | undefined,
+  parts: ReadonlyMap<string, AttachablePart>,
+  gate: PriceGate,
+): ModStats {
   if (id === undefined) return { name: null, ergo: 0, recoil: 0, price: 0 };
   const m = parts.get(id);
-  if (m === undefined) return { name: id, ergo: 0, recoil: 0, price: 0 };
+  if (m === undefined) return { name: id, ergo: 0, recoil: 0, price: null };
   const stats = adaptMod(m);
   return {
     name: m.name,
     ergo: stats.ergonomicsDelta,
     recoil: stats.recoilModifier,
-    price: fleaPriceRub(m),
+    price: priceUnder(gate, m),
   };
 }
 
@@ -71,6 +78,7 @@ export function slotDiff(
   proposed: Readonly<Record<string, string>>,
   slotTree: WeaponTree,
   parts: ReadonlyMap<string, AttachablePart>,
+  gate: PriceGate,
 ): readonly ChangedRow[] {
   const currentOn = mountedAttachments(slotTree, current, parts);
   const proposedOn = mountedAttachments(slotTree, proposed, parts);
@@ -81,8 +89,8 @@ export function slotDiff(
     const c = currentOn[slot.path];
     const p = proposedOn[slot.path];
     if (c === p) continue;
-    const cm = lookupMod(c, parts);
-    const pm = lookupMod(p, parts);
+    const cm = lookupMod(c, parts, gate);
+    const pm = lookupMod(p, parts, gate);
     rows.push({
       slotId: slot.path,
       slotLabel: slot.name || slot.nameId || slot.path,
@@ -96,7 +104,7 @@ export function slotDiff(
       proposedPrice: pm.price,
       ergoDelta: pm.ergo - cm.ergo,
       recoilDelta: pm.recoil - cm.recoil,
-      priceDelta: pm.price - cm.price,
+      priceDelta: pm.price === null || cm.price === null ? null : pm.price - cm.price,
     });
   }
   return rows;

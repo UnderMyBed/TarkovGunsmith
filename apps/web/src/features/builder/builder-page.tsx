@@ -1,13 +1,7 @@
 // apps/web/src/features/builder/builder-page.tsx
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
-import {
-  presetAvailability,
-  useProfile,
-  useTasks,
-  useWeaponPresets,
-  type PlayerProfile,
-} from "@tarkov/data";
+import { presetAvailability, useProfile, useTasks, type PlayerProfile } from "@tarkov/data";
 import { useTarkovTrackerSync } from "./useTarkovTrackerSync.js";
 import { Button, Card, CardContent } from "@tarkov/ui";
 import { adaptWeapon } from "../data-adapters/adapters.js";
@@ -94,9 +88,16 @@ export function BuilderPage({
     embedProfileOnSave: saveMeta.embedProfileOnSave,
   });
 
-  // Loading and errors are joined in `useBuilderState`, which seeds new builds from these.
-  const presets = useWeaponPresets();
-  const weaponPresets = presets.data?.[builder.weaponId] ?? [];
+  const weaponPresets = builder.weaponPresets;
+  const nameOf = (id: string): string =>
+    id === builder.selectedWeapon?.id
+      ? builder.selectedWeapon.name
+      : (builder.modNamesById[id] ?? id);
+  const price = builder.buildPrice;
+  const boughtAs =
+    price !== null && price.status !== "unobtainable" && price.presetId !== null
+      ? (weaponPresets.find((p) => p.id === price.presetId)?.shortName ?? price.presetId)
+      : null;
 
   const shareBuild = useShareBuild({
     selectedWeaponId: builder.selectedWeapon?.id,
@@ -188,6 +189,10 @@ export function BuilderPage({
             embedProfileOnSave={saveMeta.embedProfileOnSave}
             onEmbedProfileOnSaveChange={saveMeta.setEmbedProfileOnSave}
             dataAsOf={builder.dataAsOf}
+            prices={builder.prices}
+            buildPrice={builder.buildPrice}
+            boughtAs={boughtAs}
+            nameOf={nameOf}
           />
 
           {builder.selectedWeapon && (
@@ -236,11 +241,14 @@ export function BuilderPage({
           slotTree={builder.tree.data}
           parts={builder.parts}
           profile={profile}
+          gate={builder.gate}
+          presets={weaponPresets}
+          pricesReady={builder.prices.state === "ready"}
           sync={sync}
           currentAttachments={builder.attachments}
           currentBuild={builder.currentBuild}
           currentStats={builder.spec}
-          currentPrice={builder.currentPrice}
+          currentPrice={builder.buildPrice}
           onAccept={(build) => {
             builder.acceptOptimized(build.attachments, build.orphaned);
             handleExitOptimizer();

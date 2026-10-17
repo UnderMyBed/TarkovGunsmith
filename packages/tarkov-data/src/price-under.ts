@@ -191,8 +191,9 @@ function totalFor(gate: PriceGate, path: WeaponPath, input: BuildPriceInput): Pa
  * barrel and stock may beat a cheaper bare receiver.
  *
  * A path that leaves some part unobtainable does not count. Among the rest, a fully priced
- * path beats one with an unknown price, as in {@link itemAvailability}; ties go to the lower
- * known sum, then the receiver, then preset id.
+ * path beats one with an unknown price, as in {@link itemAvailability}, and fewer unknown
+ * prices beat more: a path is not cheaper for leaving its own price out of the known sum. Ties
+ * go to the lower known sum, then the receiver, then preset id.
  */
 export function buildPriceUnder(gate: PriceGate, input: BuildPriceInput): BuildPrice {
   const paths = weaponPaths(gate, input.weapon, input.presets);
@@ -205,7 +206,7 @@ export function buildPriceUnder(gate: PriceGate, input: BuildPriceInput): BuildP
     return { status: "unobtainable", missing: fewest.missing };
   }
   const order = (a: PathTotal, b: PathTotal): number =>
-    Number(a.unpriced.length > 0) - Number(b.unpriced.length > 0) ||
+    a.unpriced.length - b.unpriced.length ||
     a.knownRUB - b.knownRUB ||
     Number(a.presetId !== null) - Number(b.presetId !== null) ||
     // Only one path is the receiver's, so both are presets here.

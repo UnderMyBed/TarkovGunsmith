@@ -28,7 +28,8 @@ function fmtSigned(value: number, decimals = 0): string {
   return `${sign}${Math.abs(value).toFixed(decimals)}`;
 }
 
-function fmtPrice(value: number): string {
+function fmtPrice(value: number | null): string {
+  if (value === null) return "—";
   if (Math.abs(value) < 1) return "0";
   const sign = value > 0 ? "+" : "−";
   return `${sign}${(Math.abs(value) / 1000).toFixed(1)}k`;
@@ -135,7 +136,9 @@ export function ModChangesTable({
               >
                 {fmtSigned(row.recoilDelta * 100, 1)}
               </span>
-              <span className={`text-right font-mono text-xs ${deltaClass(row.priceDelta, true)}`}>
+              <span
+                className={`text-right font-mono text-xs ${deltaClass(row.priceDelta ?? 0, true)}`}
+              >
                 {fmtPrice(row.priceDelta)}
               </span>
             </div>

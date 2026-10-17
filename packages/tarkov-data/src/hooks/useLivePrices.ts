@@ -9,7 +9,8 @@ import { useBuilderData } from "../provider.js";
  *
  * Nothing waits on this: the weapon list and part catalog render from the snapshot at once
  * and are priced when it resolves. A failure is retried once, then reported through `error`,
- * and every price stays unknown.
+ * and every price stays unknown. A component mounting later does not fetch again: the Builder
+ * mounts many readers of this query, and each one would otherwise ask upstream anew.
  */
 export function useLivePrices(): UseQueryResult<LivePrices, Error> {
   const source = useBuilderData();
@@ -18,6 +19,7 @@ export function useLivePrices(): UseQueryResult<LivePrices, Error> {
     queryFn: () => source.prices(),
     staleTime: 3_600_000,
     retry: 1,
+    retryOnMount: false,
     structuralSharing: false,
   });
 }

@@ -1,14 +1,16 @@
 import { useMemo, useReducer, useState, type ReactElement } from "react";
 import {
-  attachedParts,
-  fleaPriceRub,
   partsById,
   type AttachablePart,
+  type BuildPrice,
   type BuildV6,
   type PlayerProfile,
+  type PriceGate,
+  type PricedPreset,
   type WeaponListItem,
   type WeaponTree,
 } from "@tarkov/data";
+import type { OptimizationResult } from "@tarkov/optimizer";
 import type { BallisticWeapon, WeaponSpec } from "@tarkov/ballistics";
 import { Button, Card, Pill, focusRing } from "@tarkov/ui";
 import type { UseTarkovTrackerSyncResult } from "../useTarkovTrackerSync.js";
@@ -24,6 +26,7 @@ import { ModChangesTable, type TableMode } from "./mod-changes-table.js";
 import { ProfileReadout } from "./profile-readout.js";
 import { shownSlots, slotDiff, type ChangedRow } from "./slot-diff.js";
 import { buildFromSelection } from "./build-from-selection.js";
+import { priceBuild, totalOf } from "../build-price.js";
 
 export interface OptimizeViewProps {
   weapon: BallisticWeapon;
@@ -32,25 +35,33 @@ export interface OptimizeViewProps {
   slotTree: WeaponTree;
   parts: readonly AttachablePart[];
   profile: PlayerProfile;
+  /** Whose gates the search and prices read: the profile, or `null` in theorycraft. */
+  gate: PriceGate;
+  /** The weapon's presets, priced: a build bought as one does not pay for its parts twice. */
+  presets: readonly PricedPreset[];
+  /** Whether live prices have loaded; a budget waits for them. */
+  pricesReady: boolean;
   sync: UseTarkovTrackerSyncResult;
   currentAttachments: Readonly<Record<string, string>>;
   currentBuild: BuildV6;
   currentStats: WeaponSpec | null;
-  currentPrice: number | null;
+  currentPrice: BuildPrice | null;
   onAccept: (build: BuildV6) => void;
   onExit: () => void;
   onEditProfile: () => void;
 }
 
-function sumPrice(
-  tree: WeaponTree,
-  attachments: Readonly<Record<string, string>>,
-  byId: ReadonlyMap<string, AttachablePart>,
-): number {
-  return attachedParts(tree, attachments, byId).entries.reduce(
-    (t, e) => t + fleaPriceRub(e.part),
-    0,
-  );
+/** What to tell the user when the solver returns no build. */
+function failureMessage(result: Extract<OptimizationResult, { ok: false }>): string {
+  switch (result.reason) {
+    case "infeasible-budget":
+    case "pinned-unpriced":
+      return result.message;
+    case "timeout":
+      return "The solver ran out of time before finding a build. Pin more slots and run it again.";
+    case "no-valid-combinations":
+      return "No valid build under these constraints.";
+  }
 }
 
 function computeScoreDelta(objective: string, current: WeaponSpec, proposed: WeaponSpec): number {
@@ -74,6 +85,9 @@ export function OptimizeView({
   slotTree,
   parts,
   profile,
+  gate,
+  presets,
+  pricesReady,
   sync,
   currentAttachments,
   currentBuild,
@@ -111,8 +125,8 @@ export function OptimizeView({
 
   const rows: readonly ChangedRow[] = useMemo(() => {
     if (!proposed) return [];
-    return slotDiff(currentAttachments, proposed.build.attachments, slotTree, byId);
-  }, [proposed, currentAttachments, slotTree, byId]);
+    return slotDiff(currentAttachments, proposed.build.attachments, slotTree, byId, gate);
+  }, [proposed, currentAttachments, slotTree, byId, gate]);
 
   // Default selection = all changed slots, refreshed whenever a new result arrives. Same
   // "adjust state during render" pattern as above: `setSelected` used to run in a
@@ -125,8 +139,11 @@ export function OptimizeView({
   }
 
   const optimizedPrice = useMemo(
-    () => (proposed ? sumPrice(slotTree, proposed.build.attachments, byId) : null),
-    [proposed, slotTree, byId],
+    () =>
+      proposed
+        ? priceBuild(gate, weaponItem, slotTree, proposed.build.attachments, byId, presets)
+        : null,
+    [proposed, gate, weaponItem, slotTree, byId, presets],
   );
   // Over every slot either build shows, at any depth: rows include deep slots too.
   const unchangedCount = useMemo(
@@ -144,7 +161,9 @@ export function OptimizeView({
       : null;
 
   function handleRun(): void {
-    optimizer.run(toOptimizerInput(state, { weapon, weaponItem, slotTree, parts, profile }));
+    optimizer.run(
+      toOptimizerInput(state, { weapon, weaponItem, slotTree, parts, gate, presets, pricesReady }),
+    );
   }
 
   function handleToggle(slotId: string): void {
@@ -214,7 +233,12 @@ export function OptimizeView({
             <span className="font-display text-base tracking-wide">SOLVER</span>
             <Pill tone="reliable">BRANCH-AND-BOUND</Pill>
           </div>
-          <OptimizeConstraintsForm state={state} dispatch={dispatch} slotTree={slotTree} />
+          <OptimizeConstraintsForm
+            state={state}
+            dispatch={dispatch}
+            slotTree={slotTree}
+            pricesReady={pricesReady}
+          />
           <ProfileReadout profile={profile} sync={sync} onEditProfile={onEditProfile} />
           <Button onClick={handleRun} disabled={optimizer.state === "running"}>
             RE-RUN OPTIMIZATION
@@ -226,7 +250,10 @@ export function OptimizeView({
             <Card variant="bracket" className="p-5">
               <div className="font-display text-base">OPTIMIZER ERROR</div>
               <p className="mt-2 text-sm text-[var(--color-destructive)]">
-                {optimizer.error?.message ?? "No valid build under these constraints."}
+                {optimizer.error?.message ??
+                  (optimizer.result && !optimizer.result.ok
+                    ? failureMessage(optimizer.result)
+                    : "No valid build under these constraints.")}
               </p>
               <Button className="mt-3" variant="secondary" onClick={() => optimizer.reset()}>
                 BACK TO CONSTRAINTS
@@ -236,8 +263,8 @@ export function OptimizeView({
             <OptimizeTriptych
               current={currentStats}
               optimized={proposed?.stats ?? null}
-              priceCurrent={currentPrice}
-              priceOptimized={optimizedPrice}
+              priceCurrent={totalOf(currentPrice)}
+              priceOptimized={totalOf(optimizedPrice)}
               running={optimizer.state === "running"}
             />
           )}

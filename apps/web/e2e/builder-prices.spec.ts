@@ -9,6 +9,7 @@ import { upstreamFixtureBody } from "./upstream-fixtures.js";
  */
 
 const ITEMS = "https://json.tarkov.dev/regular/items";
+const M4A1 = "5447a9cd4bdc2dbd208b4567";
 
 function weaponPicker(page: Page) {
   return page
@@ -49,19 +50,58 @@ test.describe("Builder prices", () => {
 
     await page.goto("/builder");
     await pickM4A1(page);
-    expect(asked).toBe(true);
+    // The worker asks once the snapshot is in; its answer is held until released below.
+    await expect.poll(() => asked).toBe(true);
+
+    // Until prices arrive the build has no cost, and a budget cannot be checked.
+    await expect(page.getByText("Prices loading…", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("build-cost")).toHaveCount(0);
+    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    const budget = page.getByLabel("Budget");
+    await expect(budget).toBeDisabled();
+    await expect(budget).toHaveAttribute("placeholder", "Budget needs prices");
 
     release();
-    await page.waitForLoadState("networkidle");
-    await expect(page.locator('details[data-slot-path="mod_reciever"]')).toBeVisible();
+    await expect(budget).toBeEnabled({ timeout: 15_000 });
+    await expect(budget).toHaveAttribute("placeholder", "No cap");
+  });
+
+  test("price the whole build, weapon included, and say how old they are", async ({ page }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    await pickM4A1(page);
+    await expect(page.getByText(/^Prices as of /)).toBeVisible({ timeout: 15_000 });
+    // The seeded build is exactly the M4A1 Carbine preset, so it costs the preset's own flea
+    // price and nothing more: its parts come with it.
+    await expect(page.getByTestId("build-cost")).toHaveText(
+      "Build cost₽26,666bought as M4A1 Carbine",
+    );
   });
 
   test("that fail to load leave the Builder working, every price unknown", async ({ page }) => {
-    await page.route(ITEMS, (route: Route) =>
-      route.fulfill({ status: 503, statusText: "Service Unavailable", body: "" }),
-    );
-    await page.goto("/builder", { waitUntil: "networkidle" });
+    let asked = 0;
+    await page.route(ITEMS, (route: Route) => {
+      asked += 1;
+      return route.fulfill({ status: 503, statusText: "Service Unavailable", body: "" });
+    });
+    await page.goto("/builder");
     await pickM4A1(page);
     await expect(page.getByText(/Failed to load/)).toHaveCount(0);
+    await expect(
+      page.getByText("Prices unavailable: json.tarkov.dev answered 503 Service Unavailable", {
+        exact: true,
+      }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("build-cost")).toHaveCount(0);
+    // Asked once and retried once; the components mounted since do not ask again.
+    expect(asked).toBe(2);
+  });
+
+  test("price each Compare side", async ({ page }) => {
+    await page.goto("/builder/compare", { waitUntil: "networkidle" });
+    const left = page.locator("#compare-weapon-A");
+    await expect(left.locator(`option[value="${M4A1}"]`)).toHaveCount(1, { timeout: 15_000 });
+    await left.selectOption(M4A1);
+    // Side A, with no profile, is priced with every gate open; side B is empty.
+    await expect(page.getByTestId("compare-price-row")).toHaveText("₽26,666—", { timeout: 15_000 });
   });
 });

@@ -13,8 +13,12 @@ empty or contain conflicting parts (#225).
 - `optimize(input)` → `OptimizationResult` — top-level entry point.
 - `objective.ts` — `score(objective, stats)` numeric scorer (smaller = better uniformly).
 - `bounds.ts` — lower-bound heuristic for remaining slots (enables B&B pruning).
-- `feasibility.ts` — availability + budget + pinned-slot checks.
-- `branch-and-bound.ts` — recursive DFS core.
+- `feasibility.ts` — availability + pinned-slot checks.
+- `branch-and-bound.ts` — recursive DFS core. It prunes on the budget, which covers the whole
+  build: the weapon by its cheapest path (the receiver, or a preset that comes with some of the
+  parts) plus every part that path does not supply, priced by `@tarkov/data`'s `priceUnder`.
+  An unknown price never fits a budget. `optimize` refuses a budget the cheapest weapon path
+  is already over, or one a pinned part with no known price makes uncheckable, with a message.
 
 ## Conventions
 

@@ -1,21 +1,26 @@
 import { useMemo, useState } from "react";
 import {
   useBuilderSnapshot,
+  useLivePrices,
   usePartCatalog,
   useWeaponList,
   useWeaponPresets,
   useWeaponTree,
   attachedParts,
-  fleaPriceRub,
+  builderMode,
   mountedAttachments,
   withAttachment,
   itemAvailability,
   legacyV1MigrationSlots,
   partsById,
+  priceGate,
   seedAttachments,
   type AttachablePart,
+  type BuildPrice,
   type BuildV6,
   type PlayerProfile,
+  type PriceGate,
+  type PricedPreset,
   type WeaponListItem,
 } from "@tarkov/data";
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
@@ -23,8 +28,10 @@ import { adaptMod, adaptWeapon } from "../data-adapters/adapters.js";
 import { useV1Migration } from "./useV1Migration.js";
 import { useSnapshotOrphans } from "./useSnapshotOrphans.js";
 import { conflictReasonFor } from "./conflict-reason.js";
+import { priceBuild, pricesStatus, type PricesStatus } from "./build-price.js";
 
 const EMPTY_PARTS: AttachablePart[] = [];
+const NO_PRESETS: PricedPreset[] = [];
 
 export interface UseBuilderStateArgs {
   initialWeaponId: string;
@@ -48,7 +55,11 @@ export interface UseBuilderStateResult {
   handleWeaponChange: (weaponId: string) => void;
   showAllWeapons: boolean;
   setShowAllWeapons: (show: boolean) => void;
+  /** Whose gates price the build: the profile, or `null` in theorycraft (show all). */
+  gate: PriceGate;
   selectedWeapon: WeaponListItem | undefined;
+  /** The selected weapon's presets, priced, default first. */
+  weaponPresets: readonly PricedPreset[];
 
   tree: ReturnType<typeof useWeaponTree>;
   /** Every slot-attachable part: mods, barrels, scopes, magazines, cylinder ammo. */
@@ -71,7 +82,9 @@ export interface UseBuilderStateResult {
   spec: WeaponSpec | null;
   stockSpec: WeaponSpec | null;
   currentBuild: BuildV6;
-  currentPrice: number | null;
+  /** What the build costs under {@link gate}; `null` until the weapon and its parts load. */
+  buildPrice: BuildPrice | null;
+  prices: PricesStatus;
 
   /** Set when a loaded build's weapon is no longer in the game data. */
   upstreamDriftInfo: { missingWeapon: true } | null;
@@ -100,6 +113,7 @@ export function useBuilderState({
   const weapons = useWeaponList();
   const catalog = usePartCatalog();
   const presets = useWeaponPresets();
+  const livePrices = useLivePrices();
 
   const [weaponId, setWeaponId] = useState<string>(initialWeaponId);
   const [attachments, setAttachments] = useState<Record<string, string>>(
@@ -107,6 +121,8 @@ export function useBuilderState({
   );
   const [orphaned, setOrphaned] = useState<string[]>(() => initialOrphaned ?? []);
   const [showAllWeapons, setShowAllWeapons] = useState(false);
+  const mode = builderMode(showAllWeapons);
+  const gate = priceGate(mode, profile);
 
   const tree = useWeaponTree(weaponId);
 
@@ -216,22 +232,20 @@ export function useBuilderState({
     [tree.data, attachments, byId],
   );
 
-  const currentPrice = useMemo(() => {
-    if (!catalog.data) return null;
-    return attached.entries.reduce((total, e) => total + fleaPriceRub(e.part), 0);
-  }, [catalog.data, attached]);
+  const weaponPresets = presets.data?.[weaponId] ?? NO_PRESETS;
+  const buildPrice = useMemo(
+    () =>
+      catalog.data
+        ? priceBuild(gate, selectedWeapon, treeData, attachments, byId, weaponPresets)
+        : null,
+    [catalog.data, gate, selectedWeapon, treeData, attachments, byId, weaponPresets],
+  );
 
   // A new build starts from the weapon's preset; loading a saved build never comes through
   // here, so a shared build is never re-seeded. Show-all is theorycraft until #241.
   function handleWeaponChange(newWeaponId: string) {
     setWeaponId(newWeaponId);
-    setAttachments(
-      seedAttachments(
-        presets.data?.[newWeaponId] ?? [],
-        showAllWeapons ? "theorycraft" : "progression",
-        profile,
-      ),
-    );
+    setAttachments(seedAttachments(presets.data?.[newWeaponId] ?? [], mode, profile));
     setOrphaned([]);
   }
 
@@ -263,7 +277,9 @@ export function useBuilderState({
     handleWeaponChange,
     showAllWeapons,
     setShowAllWeapons,
+    gate,
     selectedWeapon,
+    weaponPresets,
 
     tree,
     parts: catalog.data ?? EMPTY_PARTS,
@@ -283,7 +299,8 @@ export function useBuilderState({
     spec,
     stockSpec,
     currentBuild,
-    currentPrice,
+    buildPrice,
+    prices: pricesStatus(livePrices),
 
     upstreamDriftInfo,
     dataAsOf: snapshot.data?.dataAsOf ?? null,

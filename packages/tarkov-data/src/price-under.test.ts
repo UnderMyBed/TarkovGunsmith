@@ -195,6 +195,20 @@ describe("buildPriceUnder", () => {
     });
   });
 
+  it("prefers fewer unknown prices to a smaller known sum", () => {
+    // Both paths leave the grip unpriced; the preset's own price is unknown too, which makes
+    // its known sum smaller (0) without making it cheaper.
+    const unpricedGrip = part("grip", cash("prapor", 1, null));
+    const gun = {
+      ...weapon,
+      buyFor: [cash("mechanic", 1, 50_000), cash("prapor", 1, null, DEFAULT)],
+    };
+    const stockOnly = [{ id: DEFAULT.id, attachments: { s: "stock" } }];
+    expect(
+      buildPriceUnder(LL4, { weapon: gun, parts: [stock, unpricedGrip], presets: stockOnly }),
+    ).toEqual({ status: "unknown", knownRUB: 58_000, unpriced: ["grip"], presetId: null });
+  });
+
   it("is unobtainable when no path buys the weapon", () => {
     const locked = { ...weapon, buyFor: [cash("mechanic", 4, 1)] };
     expect(buildPriceUnder(DEFAULT_PROFILE, { weapon: locked, parts: [] })).toEqual({

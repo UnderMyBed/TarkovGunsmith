@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { shownSlots, slotDiff, type ChangedRow } from "./slot-diff.js";
-import { partsById, type AttachablePart } from "@tarkov/data";
+import { DEFAULT_PROFILE, partsById, type AttachablePart } from "@tarkov/data";
 import { tinyTree } from "../../../test/tiny-tree.js";
 
 const slotTree = tinyTree("w1", [
@@ -93,6 +93,7 @@ describe("slotDiff", () => {
       { muzzle: "m-new", handguard: "h-new", stock: "s-keep" },
       slotTree,
       parts,
+      null,
     );
     expect(rows.map((r) => r.slotId)).toEqual(["muzzle", "handguard"]);
   });
@@ -103,6 +104,7 @@ describe("slotDiff", () => {
       { muzzle: "m-old", handguard: "h-new" },
       slotTree,
       parts,
+      null,
     );
     expect(hg).toMatchObject({
       slotId: "handguard",
@@ -117,6 +119,7 @@ describe("slotDiff", () => {
       { muzzle: "m-old" },
       slotTree,
       parts,
+      null,
     );
     expect(row).toMatchObject({
       slotId: "handguard",
@@ -131,22 +134,36 @@ describe("slotDiff", () => {
       { muzzle: "m-old", handguard: "h-new" },
       slotTree,
       parts,
+      null,
     );
     expect(rows).toEqual([]);
   });
 
   it("falls back to the mod id when the mod is missing from the catalog", () => {
-    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-missing" }, slotTree, parts);
+    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-missing" }, slotTree, parts, null);
     expect(row).toMatchObject({
       proposedName: "m-missing",
       proposedErgo: 0,
       proposedRecoil: 0,
-      proposedPrice: 0,
+      // Not in the catalog, so its price is not known: never 0.
+      proposedPrice: null,
+      priceDelta: null,
     });
   });
 
+  it("prices under the gate: a part the profile cannot buy has no price, and no delta", () => {
+    const noFlea = { ...DEFAULT_PROFILE, flea: false };
+    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-new" }, slotTree, parts, noFlea);
+    expect(row).toMatchObject({ currentPrice: null, proposedPrice: null, priceDelta: null });
+  });
+
+  it("prices an empty slot at 0", () => {
+    const [row] = slotDiff({}, { muzzle: "m-new" }, slotTree, parts, null);
+    expect(row).toMatchObject({ currentPrice: 0, proposedPrice: 22_000, priceDelta: 22_000 });
+  });
+
   it("computes per-row deltas (proposed minus current)", () => {
-    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-new" }, slotTree, parts);
+    const [row] = slotDiff({ muzzle: "m-old" }, { muzzle: "m-new" }, slotTree, parts, null);
     expect(row).toMatchObject<Partial<ChangedRow>>({
       ergoDelta: 1, // 3 - 2
       priceDelta: 12_000, // 22_000 - 10_000
@@ -163,6 +180,7 @@ describe("slotDiff", () => {
       { muzzle: "m-new", handguard: "h-new", "tac-device": "t-new" },
       slotTree,
       parts,
+      null,
     );
     expect(rows.map((r) => r.slotId)).toEqual(["muzzle", "handguard"]);
   });
