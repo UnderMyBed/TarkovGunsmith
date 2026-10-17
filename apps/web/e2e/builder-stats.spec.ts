@@ -112,13 +112,14 @@ test.describe("Builder stats", () => {
     await expect(spec).toHaveText("0.0");
     await expect(spec).toHaveAttribute("title", note);
 
-    // The header row: label, stock 48, delta −48 against the floored 0, current 0. The spec
-    // panel's tile carries the same label, so the row is the one without a <dd>.
+    // The header row: label, stock 48, delta −48 (named "worse") against the floored 0,
+    // current 0. The spec panel's tile carries the same label, so the row is the one without
+    // a <dd>.
     const header = page
       .getByText("Ergonomics", { exact: true })
       .locator("..")
       .filter({ hasNot: page.locator("dd") });
-    await expect(header).toHaveText(/^Ergonomics48-480$/);
+    await expect(header).toHaveText(/^Ergonomics48-48 worse0$/);
     await expect(header).toHaveAttribute("title", note);
   });
 });
