@@ -1,5 +1,10 @@
 import type { Page } from "@playwright/test";
-import { test, expect, OPTIMIZER_CHANGED_SLOTS } from "./upstream.js";
+import {
+  test,
+  expect,
+  OPTIMIZER_ACCURACY_CHANGED_SLOTS,
+  OPTIMIZER_CHANGED_SLOTS,
+} from "./upstream.js";
 
 /**
  * End-to-end coverage for the optimizer-first view.
@@ -71,6 +76,38 @@ test.describe("builder optimizer diff view", () => {
     await acceptSelected.click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
   });
+
+  for (const [objective, label, changed] of [
+    ["min-recoil", "Min recoil", OPTIMIZER_CHANGED_SLOTS],
+    ["max-accuracy", "Max accuracy", OPTIMIZER_ACCURACY_CHANGED_SLOTS],
+  ] as const) {
+    test(`${objective}: accepting every change gives a complete build with no conflict`, async ({
+      page,
+    }) => {
+      await page.goto("/builder", { waitUntil: "networkidle" });
+      const picked = await pickFirstWeapon(page);
+      expect(
+        picked,
+        "the captured document must offer a weapon on the seeded profile",
+      ).toBeTruthy();
+
+      await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+      await page.getByRole("radio", { name: label }).check();
+      await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+      await expect
+        .poll(async () => await page.locator('[aria-label^="Accept "]').count(), {
+          timeout: 15_000,
+        })
+        .toBe(changed);
+
+      await page.getByRole("button", { name: /ACCEPT ALL/ }).click();
+      await expect(page).not.toHaveURL(/\?view=optimize/);
+      await expect(page.getByText(`${changed} attached`, { exact: true })).toBeVisible();
+      // The Builder flags a build with an empty required slot or two parts that clash.
+      await expect(page.getByText(/^Incomplete · /)).toHaveCount(0);
+      await expect(page.getByText(/^Conflict · /)).toHaveCount(0);
+    });
+  }
 
   test("← EDITOR discards and returns to editor without merging", async ({ page }) => {
     await page.goto("/builder", { waitUntil: "networkidle" });

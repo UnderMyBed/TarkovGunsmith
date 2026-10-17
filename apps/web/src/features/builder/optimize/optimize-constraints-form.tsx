@@ -4,15 +4,11 @@ import type { WeaponTree } from "@tarkov/data";
 import { Input, SectionTitle } from "@tarkov/ui";
 import type { ConstraintsAction, ConstraintsState } from "./optimize-constraints-reducer.js";
 
-/**
- * The objectives the Builder offers. `max-accuracy` is left out: the solver does not yet fill
- * required slots (#225), so it returns a bare receiver with no barrel — the lowest MOA on
- * paper and not a buildable weapon.
- */
 const OBJECTIVES: readonly { value: Objective; label: string }[] = [
   { value: "min-recoil", label: "Min recoil" },
   { value: "max-ergonomics", label: "Max ergonomics" },
   { value: "min-weight", label: "Min weight" },
+  { value: "max-accuracy", label: "Max accuracy" },
 ];
 
 interface Props {

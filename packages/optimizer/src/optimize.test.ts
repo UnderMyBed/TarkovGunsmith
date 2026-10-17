@@ -1,4 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import {
+  adaptMod,
+  resolveBuild,
+  partsById,
+  type AttachablePart,
+  type PlayerProfile,
+  type WeaponTree,
+} from "@tarkov/data";
+import { weaponSpec, type BallisticWeapon } from "@tarkov/ballistics";
 import { optimize } from "./optimize.js";
 import {
   SMALL_WEAPON,
@@ -9,69 +18,57 @@ import {
 } from "./__fixtures__/small-weapon.js";
 import { tinyTree, type SlotSpec } from "./__fixtures__/tree.js";
 import { M4A1_WEAPON, M4A1_MODS, M4A1_TREE } from "./__fixtures__/m4a1-like.js";
-import type { AttachablePart, PlayerProfile, WeaponTree } from "@tarkov/data";
+import type { OptimizationInput, Objective } from "./types.js";
 
-function makeTieMod(
-  id: string,
-  name: string,
-  recoilModifier: number,
-  ergonomics: number,
-  weight: number,
-  priceRub: number,
-): AttachablePart {
-  return {
-    id,
-    name,
-    shortName: name,
-    iconLink: `https://example.com/${id}.png`,
-    weight,
-    types: ["mods"],
-    minLevelForFlea: null,
-    properties: {
-      propertiesType: "ItemPropertiesWeaponMod",
-      ergonomics,
-      recoilModifier,
-      accuracyModifier: 0,
-    },
-    conflictingItems: [],
-    conflictingSlotIds: [],
-    buyFor: [
-      {
-        priceRUB: priceRub,
-        currency: "RUB",
-        vendor: {
-          __typename: "FleaMarket",
-          normalizedName: "flea-market",
-          minPlayerLevel: 15,
-        },
-      },
-    ],
-  };
+interface PartSpec {
+  name?: string;
+  recoil?: number;
+  ergonomics?: number;
+  weight?: number;
+  accuracy?: number;
+  /** Roubles on the flea; `null` is a listing with no known price; `"unsold"` is no offer. */
+  price?: number | null | "unsold";
+  barrel?: { centerOfImpact: number; deviationMax: number };
+  conflicts?: string[];
+  blocks?: string[];
 }
 
-/**
- * Wide fixture: N sequential slots, each with a single pinned-required
- * candidate. The DFS visits all N slots before reaching a leaf, so with
- * N > 1000 the periodic `visits.count % 1000 === 0` check fires inside
- * `branchAndBound` and exercises the onNodeVisit callback path.
- */
-function makeVeryWideFixture(numSlots: number): {
-  weapon: typeof SMALL_WEAPON;
-  tree: WeaponTree;
-  mods: readonly AttachablePart[];
-} {
-  const mods: AttachablePart[] = [];
-  const slots: SlotSpec[] = [];
-  for (let s = 0; s < numSlots; s++) {
-    const id = `slot${s}_item`;
-    mods.push(makeTieMod(id, id, 0, 0, 0, 1000));
-    slots.push({ nameId: `slot${s}`, items: [id] });
-  }
+function part(id: string, spec: PartSpec = {}): AttachablePart {
+  const modifiers = {
+    ergonomics: spec.ergonomics ?? 0,
+    recoilModifier: spec.recoil ?? 0,
+    accuracyModifier: spec.accuracy ?? 0,
+    velocity: 0,
+  };
+  const price = spec.price === undefined ? 1000 : spec.price;
   return {
-    weapon: SMALL_WEAPON,
-    weaponItem: SMALL_WEAPON_ITEM,
-    tree: { ...tinyTree(SMALL_WEAPON.id, slots), weaponName: SMALL_WEAPON.name },
-    mods,
+    id,
+    name: spec.name ?? id,
+    shortName: spec.name ?? id,
+    iconLink: `https://example.com/${id}.png`,
+    weight: spec.weight ?? 0.1,
+    types: ["mods"],
+    minLevelForFlea: null,
+    properties:
+      spec.barrel === undefined
+        ? { propertiesType: "ItemPropertiesWeaponMod", ...modifiers }
+        : { propertiesType: "ItemPropertiesBarrel", ...modifiers, ...spec.barrel },
+    conflictingItems: spec.conflicts ?? [],
+    conflictingSlotIds: spec.blocks ?? [],
+    buyFor:
+      price === "unsold"
+        ? []
+        : [
+            {
+              priceRUB: price,
+              currency: "RUB",
+              vendor: {
+                __typename: "FleaMarket",
+                normalizedName: "flea-market",
+                minPlayerLevel: 15,
+              },
+            },
+          ],
   };
 }
 
@@ -79,399 +76,782 @@ const flea: PlayerProfile = {
   mode: "basic",
   traders: { prapor: 1, therapist: 1, skier: 1, peacekeeper: 1, mechanic: 1, ragman: 1, jaeger: 1 },
   flea: true,
-  // The shared fixtures' flea offers carry minPlayerLevel: 15, inert until
-  // itemAvailability started enforcing it. 15 keeps these tests on their original subject.
+  // The fixtures' flea offers carry minPlayerLevel: 15.
   level: 15,
 };
-
 const fleaOff: PlayerProfile = { ...flea, flea: false };
 
-describe("optimize — small weapon", () => {
-  it("returns ok:true with the computable optimum for min-recoil", () => {
-    const result = optimize({
-      weapon: SMALL_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: SMALL_TREE,
-      parts: SMALL_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "min-recoil",
+const tree = (slots: readonly SlotSpec[]): WeaponTree => ({
+  ...tinyTree(SMALL_WEAPON.id, slots),
+  weaponName: SMALL_WEAPON.name,
+});
+
+function run(
+  overrides: Partial<Omit<OptimizationInput, "constraints">> & {
+    budgetRub?: number;
+    pins?: Record<string, string | null>;
+    profile?: PlayerProfile | null;
+    objective?: Objective;
+  } = {},
+) {
+  const { budgetRub, pins, profile, ...rest } = overrides;
+  return optimize({
+    weapon: SMALL_WEAPON,
+    weaponItem: SMALL_WEAPON_ITEM,
+    slotTree: SMALL_TREE,
+    parts: SMALL_MODS,
+    objective: "min-recoil",
+    ...rest,
+    constraints: {
+      profile: profile === undefined ? flea : profile,
+      pinnedSlots: new Map(Object.entries(pins ?? {})),
+      ...(budgetRub === undefined ? {} : { budgetRub }),
+    },
+  });
+}
+
+function ok(result: ReturnType<typeof optimize>) {
+  if (!result.ok) throw new Error(`expected a build, got ${result.reason}`);
+  return result;
+}
+
+afterEach(() => vi.restoreAllMocks());
+
+describe("optimize — the best build", () => {
+  it("finds the min-recoil optimum, with its stats and an empty pin report", () => {
+    const result = ok(run());
+    expect(result.build).toEqual({
+      version: 6,
+      weaponId: "weap1",
+      attachments: { muzzle: "muzzle_brake", grip: "grip_vertical", stock: "stock_standard" },
+      orphaned: [],
+      createdAt: "1970-01-01T00:00:00.000Z",
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) throw new Error("unreachable");
-    expect(result.build.version).toBe(6);
+    const placed = SMALL_MODS.filter((m) => m.id !== "muzzle_silencer").map(adaptMod);
+    expect(result.stats).toEqual(weaponSpec(SMALL_WEAPON, placed));
+    expect(result.pins).toEqual({ honoured: [], dropped: [] });
+  });
+
+  it("optimizes each objective", () => {
+    expect(ok(run({ objective: "max-ergonomics" })).build.attachments).toEqual({
+      muzzle: "muzzle_silencer",
+      grip: "grip_vertical",
+      stock: "stock_standard",
+    });
+    // Every part adds weight, and no slot is required.
+    expect(ok(run({ objective: "min-weight" })).build.attachments).toEqual({});
+  });
+
+  it("fills a required slot even when the part makes the build worse", () => {
+    const slotTree = tree([
+      { nameId: "muzzle", items: ["muzzle_brake"] },
+      { nameId: "stock", required: true, items: ["stock_standard"] },
+    ]);
+    expect(ok(run({ slotTree, objective: "min-weight" })).build.attachments).toEqual({
+      stock: "stock_standard",
+    });
+  });
+
+  it("never returns parts that clash, by item or by blocked slot", () => {
+    // Recorded on one side only, as upstream does: the grip lists the brake.
+    const clash = SMALL_MODS.map((m) =>
+      m.id === "grip_vertical" ? { ...m, conflictingItems: ["muzzle_brake"] } : m,
+    );
+    // brake + stock and silencer + grip + stock both reach −0.18; brake + stock is cheaper.
+    expect(ok(run({ parts: clash })).build.attachments).toEqual({
+      muzzle: "muzzle_brake",
+      stock: "stock_standard",
+    });
+    const blocking = SMALL_MODS.map((m) =>
+      m.id === "muzzle_silencer" ? { ...m, conflictingSlotIds: ["weap1:grip"] } : m,
+    );
+    const result = ok(run({ parts: blocking, objective: "max-ergonomics" }));
     expect(result.build.attachments).toEqual({
       muzzle: "muzzle_brake",
       grip: "grip_vertical",
       stock: "stock_standard",
     });
+    expect(
+      resolveBuild(SMALL_TREE, result.build.attachments, partsById(blocking)).conflicts,
+    ).toEqual([]);
   });
 
-  it("returns ok:true with empty build when profile excludes all items", () => {
-    const result = optimize({
-      weapon: SMALL_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: SMALL_TREE,
-      parts: SMALL_MODS,
-      constraints: { profile: fleaOff, pinnedSlots: new Map() },
-      objective: "min-recoil",
-    });
-    expect(result.ok).toBe(true);
-    if (!result.ok) throw new Error("unreachable");
-    expect(result.build.attachments).toEqual({});
+  it("returns the bare gun when it has no slots", () => {
+    expect(ok(run({ slotTree: tree([]) })).build.attachments).toEqual({});
   });
 
-  it("returns ok:false reason=no-valid-combinations when a pinned item isn't in the catalog", () => {
-    const result = optimize({
-      weapon: SMALL_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: SMALL_TREE,
-      parts: SMALL_MODS,
-      constraints: {
-        profile: flea,
-        pinnedSlots: new Map([["muzzle", "nonexistent"]]),
-      },
-      objective: "min-recoil",
-    });
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("unreachable");
-    expect(result.reason).toBe("no-valid-combinations");
+  it("solves a part that more than one slot takes once, and may use it in each", () => {
+    const shared = tree([
+      { nameId: "top", items: ["rail"] },
+      { nameId: "side", items: ["rail"] },
+    ]);
+    expect(
+      ok(run({ slotTree: shared, parts: [part("rail", { recoil: -0.01 })] })).build.attachments,
+    ).toEqual({ top: "rail", side: "rail" });
   });
 
-  it("returns ok:true when budget is tight but some combinations fit", () => {
-    const result = optimize({
-      weapon: SMALL_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: SMALL_TREE,
-      parts: SMALL_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: SMALL_WEAPON_PRICE + 2000 },
-      objective: "min-recoil",
-    });
-    expect(result.ok).toBe(true);
-  });
-
-  it("is deterministic — same input, same output across 10 runs", () => {
-    const input = {
-      weapon: SMALL_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: SMALL_TREE,
-      parts: SMALL_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "min-recoil" as const,
-    };
-    const first = optimize(input);
-    for (let i = 0; i < 9; i++) {
-      const r = optimize(input);
-      expect(r).toEqual(first);
-    }
-  });
-});
-
-describe("optimize — m4a1-like weapon", () => {
-  it("returns ok:true for min-recoil within 2s (performance check)", () => {
-    const start = Date.now();
-    const result = optimize({
-      weapon: M4A1_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: M4A1_TREE,
-      parts: M4A1_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "min-recoil",
-    });
-    const elapsed = Date.now() - start;
-    expect(result.ok).toBe(true);
-    expect(elapsed).toBeLessThan(2000);
-  });
-
-  it("returns ok:true for max-ergonomics", () => {
-    const result = optimize({
-      weapon: M4A1_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: M4A1_TREE,
-      parts: M4A1_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "max-ergonomics",
-    });
-    expect(result.ok).toBe(true);
-  });
-
-  it("returns ok:true for min-weight", () => {
-    const result = optimize({
-      weapon: M4A1_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: M4A1_TREE,
-      parts: M4A1_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "min-weight",
-    });
-    expect(result.ok).toBe(true);
-  });
-
-  it("returns ok:true for max-accuracy", () => {
-    const result = optimize({
-      weapon: M4A1_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: M4A1_TREE,
-      parts: M4A1_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "max-accuracy",
-    });
-    expect(result.ok).toBe(true);
-  });
-
-  it("respects budget — resulting build costs at most budget", () => {
-    const budget = SMALL_WEAPON_PRICE + 20000;
-    const result = optimize({
-      weapon: M4A1_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: M4A1_TREE,
-      parts: M4A1_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: budget },
-      objective: "min-recoil",
-    });
-    expect(result.ok).toBe(true);
-    // (Can't easily assert exact cost without duplicating price logic, but
-    //  the DFS rejects any branch where runningPrice > budget.)
-  });
-});
-
-describe("optimize — tiebreak", () => {
-  it("deterministically picks the cheaper build when two builds score equal", () => {
-    // Two muzzles with identical recoil/ergo/weight stats but different prices.
-    // The optimizer should pick the cheaper one by tie-breaking.
-    const partsForTie = [
-      ...SMALL_MODS.filter((m) => !m.id.startsWith("muzzle")),
-      makeTieMod("muzzle_a", "A", -12, 2, 0.3, 1000),
-      makeTieMod("muzzle_b", "B", -12, 2, 0.3, 2000),
+  it("breaks a tie by price, then by fewer parts", () => {
+    const parts = [
+      part("a", { recoil: -0.12, price: 2000 }),
+      part("b", { recoil: -0.12, price: 1000 }),
+      part("cap", { recoil: 0, price: 0 }),
     ];
-    const treeForTie = {
-      ...SMALL_TREE,
-      slots: SMALL_TREE.slots.map((s) =>
-        s.nameId === "muzzle"
-          ? {
-              ...s,
-              allowedItemIds: new Set(["muzzle_a", "muzzle_b"]),
-              allowedItems: [
-                { id: "muzzle_a", name: "A", children: [] as never[] },
-                { id: "muzzle_b", name: "B", children: [] as never[] },
-              ],
-            }
-          : s,
+    const slotTree = tree([
+      { nameId: "muzzle", items: ["a", "b"] },
+      { nameId: "cap", items: ["cap"] },
+    ]);
+    expect(ok(run({ parts, slotTree })).build.attachments).toEqual({ muzzle: "b" });
+  });
+
+  it("stays inside the budget, which covers the gun and every part", () => {
+    expect(ok(run({ budgetRub: SMALL_WEAPON_PRICE + 2000 })).build.attachments).toEqual({
+      muzzle: "muzzle_brake",
+    });
+    expect(ok(run({ budgetRub: SMALL_WEAPON_PRICE + 2400 })).build.attachments).toEqual({
+      muzzle: "muzzle_brake",
+      grip: "grip_vertical",
+    });
+  });
+
+  it("is deterministic", () => {
+    const input = { weapon: M4A1_WEAPON, slotTree: M4A1_TREE, parts: M4A1_MODS };
+    const first = run(input);
+    for (let i = 0; i < 5; i++) expect(run(input)).toEqual(first);
+  });
+});
+
+describe("optimize — max-accuracy", () => {
+  const parts = [
+    part("b1", { barrel: { centerOfImpact: 0.05, deviationMax: 50 } }),
+    part("b2", { barrel: { centerOfImpact: 0.02, deviationMax: 0 }, accuracy: -0.1 }),
+    part("b3", { barrel: { centerOfImpact: 0.03, deviationMax: 120 } }),
+    part("m1", { accuracy: 0.1 }),
+    part("m2", { accuracy: -0.05 }),
+    part("m3", { accuracy: 0.2, conflicts: ["b3"] }),
+  ];
+  const slotTree = tree([
+    { nameId: "barrel", required: true, items: ["b1", "b2", "b3"] },
+    { nameId: "muzzle", items: ["m1", "m2", "m3"] },
+  ]);
+
+  it("returns the build with the lowest MOA of every build there is", () => {
+    const byId = partsById(parts);
+    let best = Number.POSITIVE_INFINITY;
+    for (const barrel of ["b1", "b2", "b3"]) {
+      for (const muzzle of [null, "m1", "m2", "m3"]) {
+        if (barrel === "b3" && muzzle === "m3") continue;
+        const ids = muzzle === null ? [barrel] : [barrel, muzzle];
+        const spec = weaponSpec(
+          SMALL_WEAPON,
+          ids.map((id) => adaptMod(byId.get(id)!)),
+        );
+        best = Math.min(best, spec.accuracy);
+      }
+    }
+    const result = ok(run({ parts, slotTree, objective: "max-accuracy" }));
+    expect(result.stats.accuracy).toBeCloseTo(best, 12);
+  });
+
+  it("takes the cheapest build whose MOA is 0 whatever its modifiers", () => {
+    const weapon: BallisticWeapon = { ...SMALL_WEAPON, centerOfImpact: 0 };
+    const zeroParts = [
+      part("z1", { barrel: { centerOfImpact: 0, deviationMax: 50 }, price: 5000 }),
+      part("z2", { barrel: { centerOfImpact: 0, deviationMax: 60 }, price: 3000 }),
+      part("b", { barrel: { centerOfImpact: 0.02, deviationMax: 50 }, price: 100 }),
+      part("m1", { accuracy: 0.5, price: 100 }),
+    ];
+    const zeroTree = tree([
+      { nameId: "barrel", required: true, items: ["z1", "z2", "b"] },
+      { nameId: "muzzle", items: ["m1"] },
+    ]);
+    const result = ok(
+      run({ weapon, parts: zeroParts, slotTree: zeroTree, objective: "max-accuracy" }),
+    );
+    expect(result.build.attachments).toEqual({ barrel: "z2" });
+    expect(result.stats.accuracy).toBe(0);
+  });
+
+  it("throws when a build could hold two parts that set the dispersion", () => {
+    const twoBarrels = tree([
+      { nameId: "barrel", required: true, items: ["b1"] },
+      { nameId: "handguard", items: [["hg", [{ nameId: "barrel", items: ["b2"] }]]] },
+    ]);
+    expect(() =>
+      run({ parts: [...parts, part("hg")], slotTree: twoBarrels, objective: "max-accuracy" }),
+    ).toThrow("two parts set the dispersion of one build: b1 and b2");
+  });
+});
+
+describe("optimize — what it refuses", () => {
+  it("refuses a gun the profile can't get, naming why", () => {
+    const refusal = { ok: false, reason: "weapon-unavailable" };
+    // Prapor sells it at LL4; the profile is LL1.
+    const highLevel = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: SMALL_WEAPON_ITEM.buyFor!.map((e) =>
+        e.vendor.__typename === "TraderOffer"
+          ? { ...e, vendor: { ...e.vendor, minTraderLevel: 4 } }
+          : e,
       ),
     };
-    const result = optimize({
-      weapon: SMALL_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: treeForTie,
-      parts: partsForTie,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "min-recoil",
+    const gated = { ...refusal, message: "You can't get the TR on this profile." };
+    expect(run({ weaponItem: highLevel })).toEqual(gated);
+    expect(run({ weaponItem: highLevel, budgetRub: 50_000 })).toEqual(gated);
+    // Nothing sells it: no profile, nor theorycraft, reaches it.
+    const unsold = { ...SMALL_WEAPON_ITEM, buyFor: [] };
+    const nobody = { ...refusal, message: "No trader or flea listing sells the TR." };
+    expect(run({ weaponItem: unsold })).toEqual(nobody);
+    expect(run({ weaponItem: unsold, profile: null })).toEqual(nobody);
+    // A record with no offers field at all, and a preset with none.
+    const { buyFor: _none, ...bare } = SMALL_WEAPON_ITEM;
+    expect(run({ weaponItem: bare, presets: [{ id: "pa", attachments: {} }] })).toEqual(nobody);
+    // Only Ref sells it, by barter: no trader level a profile holds reaches him.
+    const refOnly = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: [
+        {
+          priceRUB: 50_000,
+          currency: "RUB",
+          vendor: {
+            __typename: "TraderBarter" as const,
+            normalizedName: "ref",
+            minTraderLevel: 1,
+            taskUnlock: null,
+            trader: { normalizedName: "ref" },
+            barterId: "b1",
+            offeredCount: 1,
+            requiredItems: [],
+            costUnavailableReason: null,
+          },
+        },
+      ],
+    };
+    expect(run({ weaponItem: refOnly })).toEqual({
+      ...refusal,
+      message: "Only Ref sells the TR, by barter, and no trader level you can set reaches Ref.",
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) throw new Error("unreachable");
-    expect(result.build.attachments.muzzle).toBe("muzzle_a");
-  });
-});
-
-describe("optimize — timeout", () => {
-  it("continues when onNodeVisit fires and deadline has not elapsed", () => {
-    // 1100-slot wide fixture forces the visit%1000 check to fire, covering the
-    // no-abort branch inside the onNodeVisit callback.
-    //
-    // Date.now is frozen rather than given "a generous 60s timeout". The old version
-    // asserted `partial` was undefined, which only held if the machine finished the
-    // search inside 60 real seconds — so the test was really measuring the hardware.
-    // It began failing in CI the moment coverage instrumentation landed, which roughly
-    // doubles the runtime of this fixture (3.7s -> 7.6s measured locally). Freezing the
-    // clock tests what the name claims — that an unelapsed deadline does not abort —
-    // instead of how fast the runner is.
-    const frozen = Date.now();
-    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(frozen);
-    try {
-      const wide = makeVeryWideFixture(1100);
-      const result = optimize({
-        weapon: wide.weapon,
-        weaponItem: SMALL_WEAPON_ITEM,
-        slotTree: wide.tree,
-        parts: wide.mods,
-        constraints: { profile: flea, pinnedSlots: new Map() },
-        objective: "min-recoil",
-        timeoutMs: 60_000,
-      });
-      expect(result.ok).toBe(true);
-      if (!result.ok) throw new Error("unreachable");
-      expect(result.partial).toBeUndefined();
-    } finally {
-      nowSpy.mockRestore();
-    }
-    // The wall-clock budget below is headroom for the search itself, not a deadline the
-    // assertions depend on. Coverage instrumentation makes this the slowest test here.
-  }, 120_000);
-
-  it("aborts mid-search via onNodeVisit when the deadline elapses mid-flight", () => {
-    // 1100-slot wide fixture — each slot has 1 candidate, so the first
-    // (only) leaf requires > 1000 dfs() calls. That guarantees the
-    // `visits.count % 1000 === 0` check in branchAndBound fires, which
-    // invokes the onNodeVisit callback in optimize.ts. With timeoutMs:0
-    // the callback observes `Date.now() >= deadline` and returns false,
-    // covering both the optimize.ts abort branch and the branch-and-bound
-    // periodic-check path.
-    const wide = makeVeryWideFixture(1100);
-    const result = optimize({
-      weapon: wide.weapon,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: wide.tree,
-      parts: wide.mods,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "min-recoil",
-      timeoutMs: 0,
+    expect(run({ weaponItem: refOnly, profile: null }).ok).toBe(true);
+    const refCash = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: SMALL_WEAPON_ITEM.buyFor!.map((e) => ({
+        ...e,
+        vendor: { ...e.vendor, normalizedName: "ref", trader: { normalizedName: "ref" } },
+      })),
+    };
+    expect(run({ weaponItem: refCash })).toMatchObject({
+      message: "Only Ref sells the TR, and no trader level you can set reaches Ref.",
     });
-    if (result.ok) {
-      expect(result.partial).toBe(true);
-    } else {
-      expect(result.reason).toBe("timeout");
-    }
-  });
-
-  it("returns ok:false reason=timeout when the deadline is already in the past", () => {
-    // Use timeoutMs: 0 so onNodeVisit (via `Date.now() >= deadline`) aborts
-    // on the very first check before any leaf is scored.
-    const result = optimize({
-      weapon: M4A1_WEAPON,
-      weaponItem: SMALL_WEAPON_ITEM,
-      slotTree: M4A1_TREE,
-      parts: M4A1_MODS,
-      constraints: { profile: flea, pinnedSlots: new Map() },
-      objective: "min-recoil",
-      timeoutMs: 0,
+    // Ref sells it for cash as well as by barter, and Fence sells it too.
+    const refBarter = refOnly.buyFor[0]!;
+    expect(
+      run({ weaponItem: { ...SMALL_WEAPON_ITEM, buyFor: [refBarter, ...refCash.buyFor] } }),
+    ).toMatchObject({
+      message: "Only Ref sells the TR, and no trader level you can set reaches Ref.",
     });
-    if (result.ok) {
-      expect(result.partial).toBe(true);
-    } else {
-      expect(result.reason).toBe("timeout");
-    }
+    const fence = {
+      ...refBarter,
+      vendor: {
+        ...refBarter.vendor,
+        normalizedName: "fence",
+        trader: { normalizedName: "fence" },
+        barterId: "b2",
+      },
+    };
+    expect(run({ weaponItem: { ...SMALL_WEAPON_ITEM, buyFor: [refBarter, fence] } })).toMatchObject(
+      {
+        message:
+          "Only Ref and Fence sell the TR, by barter, and no trader level you can set reaches them.",
+      },
+    );
+    // Only a preset sells it, at a level the profile lacks: the preset's offer is the cause.
+    expect(
+      run({
+        weaponItem: unsold,
+        presets: [{ id: "pa", attachments: {}, buyFor: highLevel.buyFor }],
+      }),
+    ).toEqual(gated);
+    // The flea is the only way, and nobody is listing it.
+    const unlisted = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: [
+        {
+          priceRUB: null,
+          currency: "RUB",
+          unlisted: true as const,
+          vendor: {
+            __typename: "FleaMarket" as const,
+            normalizedName: "flea-market",
+            minPlayerLevel: 1,
+          },
+        },
+      ],
+    };
+    expect(run({ weaponItem: unlisted })).toEqual({
+      ...refusal,
+      message: "Nobody is listing the TR on the flea, and no trader you can reach sells it.",
+    });
+    // Theorycraft: a flea-only gun the flea may not trade.
+    const noFlea = {
+      ...SMALL_WEAPON_ITEM,
+      types: [...SMALL_WEAPON_ITEM.types, "noFlea"],
+      buyFor: [{ ...unlisted.buyFor[0]!, priceRUB: 1000, unlisted: undefined }],
+    };
+    expect(run({ weaponItem: noFlea, profile: null })).toEqual({
+      ...refusal,
+      message: "You can't get the TR.",
+    });
   });
-});
-
-describe("optimize — the budget covers the whole build", () => {
-  const base = {
-    weapon: SMALL_WEAPON,
-    weaponItem: SMALL_WEAPON_ITEM,
-    slotTree: SMALL_TREE,
-    parts: SMALL_MODS,
-    objective: "min-recoil" as const,
-  };
 
   it("refuses a budget below the cheapest gun, naming its price", () => {
-    const result = optimize({
-      ...base,
-      constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: 9_999 },
-    });
-    expect(result).toEqual({
+    expect(run({ budgetRub: 9_999 })).toEqual({
       ok: false,
       reason: "infeasible-budget",
       message: "The cheapest TR you can get costs ₽10,000, over the ₽9,999 budget.",
     });
   });
 
-  it("refuses when the profile cannot buy the gun at all, or only at an unknown price", () => {
-    const locked = { ...SMALL_WEAPON_ITEM, buyFor: [] };
-    expect(
-      optimize({
-        ...base,
-        weaponItem: locked,
-        constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: 50_000 },
-      }),
-    ).toEqual({
-      ok: false,
-      reason: "infeasible-budget",
-      message: "You can't get the TR on this profile.",
-    });
+  it("refuses a budget when no gun has a known price", () => {
     const unpriced = {
       ...SMALL_WEAPON_ITEM,
       buyFor: SMALL_WEAPON_ITEM.buyFor!.map((e) => ({ ...e, priceRUB: null })),
     };
-    expect(
-      optimize({
-        ...base,
-        weaponItem: unpriced,
-        constraints: { profile: flea, pinnedSlots: new Map(), budgetRub: 50_000 },
-      }),
-    ).toMatchObject({ ok: false, reason: "infeasible-budget", message: /no build can be shown/ });
-  });
-
-  it("still optimizes a gun the profile cannot buy when there is no budget", () => {
-    const locked = { ...SMALL_WEAPON_ITEM, buyFor: [] };
-    const result = optimize({
-      ...base,
-      weaponItem: locked,
-      constraints: { profile: flea, pinnedSlots: new Map() },
+    expect(run({ weaponItem: unpriced, budgetRub: 50_000 })).toEqual({
+      ok: false,
+      reason: "infeasible-budget",
+      message: "No TR you can get has a known price, so no build can be shown to fit a budget.",
     });
-    expect(result.ok).toBe(true);
   });
 
   it("refuses pinned parts with no price the profile can pay, naming them", () => {
-    const fleaOffProfile: PlayerProfile = { ...flea, flea: false };
-    const result = optimize({
-      ...base,
-      constraints: {
-        profile: fleaOffProfile,
+    expect(
+      run({
+        profile: fleaOff,
         budgetRub: 50_000,
-        pinnedSlots: new Map<string, string | null>([
-          ["muzzle", "muzzle_brake"],
-          ["grip", "grip_vertical"],
-          ["stock", null],
-          ["other", "not-in-catalog"],
-        ]),
-      },
-    });
-    expect(result).toEqual({
+        pins: { muzzle: "muzzle_brake", grip: "grip_vertical", stock: null, other: "ghost" },
+      }),
+    ).toEqual({
       ok: false,
       reason: "pinned-unpriced",
       itemIds: ["muzzle_brake", "grip_vertical"],
       message:
         "No price you can pay is known for Brake, Vertical grip. Unpin them or clear the budget.",
     });
-    const one = optimize({
-      ...base,
-      constraints: {
-        profile: fleaOffProfile,
-        budgetRub: 50_000,
-        pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
-      },
-    });
-    expect(one).toMatchObject({ message: /Unpin it or clear the budget/ });
+    expect(
+      run({ profile: fleaOff, budgetRub: 50_000, pins: { muzzle: "muzzle_brake" } }),
+    ).toMatchObject({ message: /Unpin it or clear the budget/ });
   });
 
-  it("runs with a pinned part it can price", () => {
-    const result = optimize({
-      ...base,
-      constraints: {
-        profile: flea,
-        budgetRub: 50_000,
-        pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
-      },
+  it("lets the search keep a pin with no payable price that a build can leave off", () => {
+    // The pin holds only where handguard/foregrip exists: hg2 has no foregrip slot.
+    const parts = [
+      part("hg1", { recoil: -0.05 }),
+      part("hg2", { recoil: -0.04 }),
+      part("fg", { recoil: -0.01, price: null }),
+    ];
+    const slotTree = tree([
+      { nameId: "handguard", items: [["hg1", [{ nameId: "foregrip", items: ["fg"] }]], "hg2"] },
+    ]);
+    const pins = { "handguard/foregrip": "fg" };
+    expect(ok(run({ parts, slotTree, pins, budgetRub: 50_000 })).build.attachments).toEqual({
+      handguard: "hg2",
     });
-    expect(result.ok).toBe(true);
+    expect(ok(run({ parts, slotTree, pins })).build.attachments).toEqual({
+      handguard: "hg1",
+      "handguard/foregrip": "fg",
+    });
+    // A pin the slot cannot take is dropped, not refused.
+    expect(
+      ok(run({ profile: fleaOff, budgetRub: 50_000, pins: { grip: "muzzle_brake" } })).pins.dropped,
+    ).toEqual([{ path: "grip", itemId: "muzzle_brake", reason: "not-allowed" }]);
   });
 
-  it("does not refuse a pin a bought preset supplies", () => {
-    const fleaOffProfile: PlayerProfile = { ...flea, flea: false };
+  it("runs a budget with a pinned part it can price, or one a bought preset supplies", () => {
+    expect(
+      ok(run({ budgetRub: 50_000, pins: { muzzle: "muzzle_brake" } })).build.attachments,
+    ).toMatchObject({ muzzle: "muzzle_brake" });
     const preset = { id: "p", normalizedName: "tr-default" };
-    const result = optimize({
-      ...base,
-      weaponItem: {
-        ...SMALL_WEAPON_ITEM,
-        buyFor: [{ ...SMALL_WEAPON_ITEM.buyFor![0]!, priceRUB: 12_000, preset }],
-      },
-      presets: [{ id: "p", attachments: { muzzle: "muzzle_brake" } }],
-      constraints: {
-        profile: fleaOffProfile,
+    const result = ok(
+      run({
+        profile: fleaOff,
+        weaponItem: {
+          ...SMALL_WEAPON_ITEM,
+          buyFor: [{ ...SMALL_WEAPON_ITEM.buyFor![0]!, priceRUB: 12_000, preset }],
+        },
+        presets: [{ id: "p", attachments: { muzzle: "muzzle_brake" } }],
         budgetRub: 12_000,
-        pinnedSlots: new Map([["muzzle", "muzzle_brake"]]),
-      },
+        pins: { muzzle: "muzzle_brake" },
+      }),
+    );
+    expect(result.build.attachments).toEqual({ muzzle: "muzzle_brake" });
+  });
+
+  it("returns timeout when the safety net elapses", () => {
+    vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValue(10_000);
+    expect(run()).toEqual({ ok: false, reason: "timeout" });
+  });
+
+  it("throws on a slot graph with a cycle", () => {
+    const loop = tree([
+      { nameId: "rail", items: [["loop", [{ nameId: "rail", items: ["loop"] }]]] },
+    ]);
+    expect(() => run({ parts: [part("loop")], slotTree: loop })).toThrow(
+      "the slot graph has a cycle through loop",
+    );
+  });
+});
+
+describe("optimize — why no build exists", () => {
+  const stockRequired = tree([
+    { nameId: "muzzle", items: ["muzzle_brake", "muzzle_silencer"] },
+    { nameId: "grip", items: ["grip_vertical"] },
+    { nameId: "stock", required: true, items: ["stock_standard"] },
+  ]);
+
+  it("names the cheapest complete build when it is over budget", () => {
+    expect(run({ slotTree: stockRequired, budgetRub: 11_000 })).toEqual({
+      ok: false,
+      reason: "infeasible-budget",
+      message: "The cheapest complete build costs ₽12,200, over the ₽11,000 budget.",
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) throw new Error("unreachable");
-    expect(result.build.attachments.muzzle).toBe("muzzle_brake");
+    const unpricedStock = [...SMALL_MODS.slice(0, 3), part("stock_standard", { price: null })];
+    expect(run({ slotTree: stockRequired, parts: unpricedStock, budgetRub: 50_000 })).toEqual({
+      ok: false,
+      reason: "infeasible-budget",
+      message:
+        "No complete build has a known price on this profile, so none can be shown to fit a budget.",
+    });
+  });
+
+  it("names the pins that clash", () => {
+    const parts = SMALL_MODS.map((m) =>
+      m.id === "grip_vertical" ? { ...m, conflictingItems: ["muzzle_brake"] } : m,
+    );
+    const pins = { muzzle: "muzzle_brake", grip: "grip_vertical", stock: "stock_standard" };
+    const clash = {
+      ok: false,
+      reason: "pin-conflict",
+      paths: ["grip", "muzzle"],
+      message:
+        "No complete build keeps every pin. The pins that clash: Vertical grip, Brake. Unpin one and run it again.",
+    };
+    expect(run({ parts, pins })).toEqual(clash);
+    // Upstream records a conflict on either part.
+    const listedOnBrake = SMALL_MODS.map((m) =>
+      m.id === "muzzle_brake" ? { ...m, conflictingItems: ["grip_vertical"] } : m,
+    );
+    expect(run({ parts: listedOnBrake, pins })).toEqual(clash);
+  });
+
+  it("names every pin when no two clash with each other directly", () => {
+    const gripRequired = tree([
+      { nameId: "muzzle", items: ["muzzle_brake", "muzzle_silencer"] },
+      { nameId: "grip", required: true, items: ["grip_vertical"] },
+      { nameId: "stock", items: ["stock_standard"] },
+    ]);
+    const parts = SMALL_MODS.map((m) =>
+      m.id === "muzzle_silencer" ? { ...m, conflictingSlotIds: ["weap1:grip"] } : m,
+    );
+    expect(
+      run({
+        parts,
+        slotTree: gripRequired,
+        pins: { muzzle: "muzzle_silencer", stock: null, "stock/x": "ghost" },
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "pin-conflict",
+      paths: ["muzzle", "stock", "stock/x"],
+      message:
+        "No complete build keeps every pin. The pins that clash: Silencer, empty stock, ghost. Unpin one and run it again.",
+    });
+  });
+
+  it("names a required slot nothing obtainable fills", () => {
+    const unsoldStock = [...SMALL_MODS.slice(0, 3), part("stock_standard", { price: "unsold" })];
+    const gap = {
+      ok: false,
+      reason: "required-slot",
+      slotPath: "stock",
+      message: "Nothing you can get fits the stock slot, and the Test Rifle needs one.",
+    };
+    expect(run({ slotTree: stockRequired, parts: unsoldStock })).toEqual(gap);
+    // Neither the budget nor a pin is to blame when no build exists without them either.
+    expect(
+      run({
+        slotTree: stockRequired,
+        parts: unsoldStock,
+        budgetRub: 50_000,
+        pins: { muzzle: "muzzle_brake" },
+      }),
+    ).toEqual(gap);
+  });
+
+  it("follows a chain of single candidates to the slot that is really empty", () => {
+    const chain = tree([
+      {
+        nameId: "receiver",
+        required: true,
+        items: [["upper", [{ nameId: "barrel", required: true, items: ["bar"] }]]],
+      },
+    ]);
+    expect(
+      run({
+        slotTree: chain,
+        parts: [part("upper", { name: "Upper" }), part("bar", { price: "unsold" })],
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "required-slot",
+      slotPath: "receiver/barrel",
+      message: "Nothing you can get fits the barrel slot, and the Upper needs one.",
+    });
+  });
+
+  it("names the first path's empty slot when each way to buy the gun fails at a different one", () => {
+    const twoRequired = tree([
+      { nameId: "front", required: true, items: ["a"] },
+      { nameId: "back", required: true, items: ["b"] },
+    ]);
+    const offer = SMALL_WEAPON_ITEM.buyFor![0]!;
+    const weaponItem = {
+      ...SMALL_WEAPON_ITEM,
+      buyFor: [
+        offer,
+        { ...offer, preset: { id: "pa", normalizedName: "with-a" } },
+        { ...offer, preset: { id: "pb", normalizedName: "with-b" } },
+      ],
+    };
+    expect(
+      run({
+        slotTree: twoRequired,
+        weaponItem,
+        presets: [
+          { id: "pa", attachments: { front: "a" } },
+          { id: "pb", attachments: { back: "b" } },
+        ],
+        parts: [part("a", { price: "unsold" }), part("b", { price: "unsold" })],
+      }),
+    ).toMatchObject({ ok: false, reason: "required-slot", slotPath: "front" });
+  });
+
+  it("names a pinned part below the weapon that every build must carry and nobody prices", () => {
+    // The receiver is required and takes only the upper, so the pinned foregrip is on every build.
+    const slotTree = tree([
+      {
+        nameId: "receiver",
+        required: true,
+        items: [["upper", [{ nameId: "foregrip", items: ["fg", "fg2"] }]]],
+      },
+    ]);
+    const parts = [part("upper"), part("fg", { price: null }), part("fg2", { price: 500 })];
+    expect(
+      run({ slotTree, parts, pins: { "receiver/foregrip": "fg" }, budgetRub: 50_000 }),
+    ).toEqual({
+      ok: false,
+      reason: "pinned-unpriced",
+      itemIds: ["fg"],
+      message: "No price you can pay is known for fg. Unpin it or clear the budget.",
+    });
+  });
+
+  it("keeps a budget refusal when asking whether any build exists runs out of time", () => {
+    vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValue(10_000);
+    expect(run({ budgetRub: 9_999 })).toMatchObject({ reason: "infeasible-budget" });
+  });
+
+  it("names a required slot before the budget when no build exists at any budget", () => {
+    const unsoldStock = [...SMALL_MODS.slice(0, 3), part("stock_standard", { price: "unsold" })];
+    const gap = {
+      ok: false,
+      reason: "required-slot",
+      slotPath: "stock",
+      message: "Nothing you can get fits the stock slot, and the Test Rifle needs one.",
+    };
+    expect(run({ slotTree: stockRequired, parts: unsoldStock, budgetRub: 9_999 })).toEqual(gap);
+    expect(
+      run({
+        slotTree: stockRequired,
+        parts: unsoldStock,
+        profile: fleaOff,
+        budgetRub: 50_000,
+        pins: { muzzle: "muzzle_brake" },
+      }),
+    ).toEqual(gap);
+  });
+
+  it("names a part needed more often than the presets that supply it", () => {
+    const offer = SMALL_WEAPON_ITEM.buyFor![0]!;
+    const withPresets = (ids: string[]) => ({
+      ...SMALL_WEAPON_ITEM,
+      buyFor: [offer, ...ids.map((id) => ({ ...offer, preset: { id, normalizedName: id } }))],
+    });
+    const one = tree([
+      { nameId: "front", required: true, items: ["p4"] },
+      { nameId: "back", required: true, items: ["p4"] },
+    ]);
+    expect(
+      run({
+        slotTree: one,
+        parts: [part("p4", { price: "unsold" })],
+        weaponItem: withPresets(["pa", "pb"]),
+        presets: [
+          { id: "pa", attachments: { front: "p4" } },
+          { id: "pb", attachments: { back: "p4" } },
+        ],
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "required-slot",
+      slotPath: "front",
+      message:
+        "You can get the p4 only with the gun, and no way to buy it comes with as many as a complete build needs.",
+    });
+    // Deeper down: the first slot every build fills that takes it is named, not one under a
+    // slot a build may leave empty, though the search reaches that first.
+    const nested = tree([
+      {
+        nameId: "optional",
+        items: [["rail", [{ nameId: "front", required: true, items: ["p4"] }]]],
+      },
+      {
+        nameId: "receiver",
+        required: true,
+        items: [
+          "uncatalogued",
+          [
+            "upper",
+            [
+              { nameId: "front", required: true, items: ["p4"] },
+              { nameId: "back", required: true, items: ["p4"] },
+            ],
+          ],
+        ],
+      },
+      { nameId: "side", required: true, items: ["upper"] },
+    ]);
+    expect(
+      run({
+        slotTree: nested,
+        parts: [part("rail"), part("upper"), part("p4", { price: "unsold" })],
+        weaponItem: withPresets(["pa", "pb"]),
+        presets: [
+          { id: "pa", attachments: { receiver: "upper", "receiver/front": "p4" } },
+          { id: "pb", attachments: { receiver: "upper", "receiver/back": "p4" } },
+        ],
+      }),
+    ).toMatchObject({ reason: "required-slot", slotPath: "receiver/front" });
+    const two = tree([
+      { nameId: "a", required: true, items: ["p"] },
+      { nameId: "b", required: true, items: ["p"] },
+      { nameId: "c", required: true, items: ["q"] },
+      { nameId: "d", required: true, items: ["q"] },
+    ]);
+    expect(
+      run({
+        slotTree: two,
+        parts: [part("p", { price: "unsold" }), part("q", { price: "unsold" })],
+        weaponItem: withPresets(["pa"]),
+        presets: [{ id: "pa", attachments: { a: "p", c: "q" } }],
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "required-slot",
+      slotPath: "a",
+      message:
+        "You can get the p, q only with the gun, and no way to buy it comes with as many of each as a complete build needs.",
+    });
+    // Each preset has enough of one and too few of the other: neither is short alone.
+    const offer2 = withPresets(["pa", "pb"]);
+    expect(
+      run({
+        slotTree: two,
+        parts: [part("p", { price: "unsold" }), part("q", { price: "unsold" })],
+        weaponItem: offer2,
+        presets: [
+          { id: "pa", attachments: { a: "p", b: "p", c: "q" } },
+          { id: "pb", attachments: { a: "p", c: "q", d: "q" } },
+        ],
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "required-slot",
+      slotPath: "a",
+      message:
+        "You can get the p, q only with the gun, and no way to buy it comes with enough of them together for a complete build.",
+    });
+  });
+
+  it("says the parts clash when every complete build has a conflict", () => {
+    const bothRequired = tree([
+      { nameId: "grip", required: true, items: ["grip_vertical"] },
+      { nameId: "stock", required: true, items: ["stock_standard"] },
+    ]);
+    const parts = SMALL_MODS.map((m) =>
+      m.id === "stock_standard" ? { ...m, conflictingItems: ["grip_vertical"] } : m,
+    );
+    expect(run({ slotTree: bothRequired, parts })).toEqual({
+      ok: false,
+      reason: "no-valid-combinations",
+      message: "Every complete build has parts that can't be fitted together.",
+    });
+  });
+});
+
+describe("optimize — pins", () => {
+  it("keeps every pin it can, and says why it drops the rest", () => {
+    const stockRequired = tree([
+      { nameId: "muzzle", items: ["muzzle_brake", "muzzle_silencer"] },
+      { nameId: "grip", items: ["grip_vertical"] },
+      { nameId: "stock", required: true, items: ["stock_standard"] },
+    ]);
+    const result = ok(
+      run({
+        slotTree: stockRequired,
+        pins: {
+          muzzle: "muzzle_silencer",
+          grip: "muzzle_brake",
+          stock: null,
+          "muzzle/thread": "grip_vertical",
+          "grip/rail": "ghost",
+        },
+      }),
+    );
+    expect(result.build.attachments).toEqual({
+      muzzle: "muzzle_silencer",
+      grip: "grip_vertical",
+      stock: "stock_standard",
+    });
+    expect(result.pins).toEqual({
+      honoured: ["muzzle"],
+      dropped: [
+        { path: "grip", itemId: "muzzle_brake", reason: "not-allowed" },
+        { path: "grip/rail", itemId: "ghost", reason: "unknown-item" },
+        { path: "muzzle/thread", itemId: "grip_vertical", reason: "absent" },
+        { path: "stock", itemId: null, reason: "required" },
+      ],
+    });
+  });
+
+  it("places a pinned part the profile can't get, and leaves a slot pinned empty empty", () => {
+    expect(
+      ok(run({ profile: fleaOff, pins: { muzzle: "muzzle_brake" } })).build.attachments,
+    ).toEqual({ muzzle: "muzzle_brake" });
+    const result = ok(run({ pins: { grip: null } }));
+    expect(result.build.attachments).toEqual({ muzzle: "muzzle_brake", stock: "stock_standard" });
+    expect(result.pins.honoured).toEqual(["grip"]);
+  });
+
+  it("pins nested paths wherever the build has them", () => {
+    const nested = tree([
+      { nameId: "handguard", items: [["hg", [{ nameId: "rail", items: ["r1", "r2"] }]]] },
+    ]);
+    const parts = [
+      part("hg", { recoil: 0.01 }),
+      part("r1", { recoil: -0.05 }),
+      part("r2", { recoil: -0.02 }),
+    ];
+    const result = ok(run({ slotTree: nested, parts, pins: { "handguard/rail": "r2" } }));
+    expect(result.build.attachments).toEqual({ handguard: "hg", "handguard/rail": "r2" });
+    expect(result.pins).toEqual({ honoured: ["handguard/rail"], dropped: [] });
   });
 });

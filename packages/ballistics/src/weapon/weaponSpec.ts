@@ -1,31 +1,6 @@
 import type { BallisticWeapon, BallisticMod, WeaponSpec } from "../types.js";
 import { barrelDeviation } from "./barrelDeviation.js";
 
-/**
- * Floor for the recoil multiplier, so a deep build can never report zero or
- * negative recoil.
- *
- * This is a guard, not a model, and upstream's own preset recoil applies no
- * floor. Measured against the live snapshot of 2026-10-17 (164 weapons) with
- * the optimizer's min-recoil search, which respects every part conflict:
- *
- * - every part made available, the deepest multiplier is 0.022 (AK-74N and
- *   AKMN, searches complete; 7 of the 164 searches hit their 15 s limit);
- * - with LL4 traders and the flea market at level 99, it is 0.198 (the M4A1
- *   family).
- *
- * Summing each slot's best part while ignoring conflicts reaches -0.107 on the
- * M4A1, so conflicts are what keep real builds above zero; slot-wise reasoning
- * alone cannot show this floor is inert. On the measured builds 0.01 never
- * binds.
- *
- * A higher, "game-plausible" floor (~0.25) was deliberately rejected: upstream
- * carries no ground truth for a fully-built weapon below its presets, so that
- * number would be an unevidenced modelling claim — the class of error
- * docs/operations/data-api-audit.md exists to correct.
- */
-const MIN_RECOIL_MULTIPLIER = 0.01;
-
 /** Centimetres of dispersion at 100 m per minute of angle: `centerOfImpact` → MOA. */
 export const CM_PER_MOA_AT_100M = 2.9089;
 
@@ -35,7 +10,9 @@ export const CM_PER_MOA_AT_100M = 2.9089;
  * Ergonomics and weight are additive. Recoil is a fractional modifier summed across mods and
  * applied multiplicatively, in upstream's own unit — `recoilModifier: -0.21` is -21%, so the
  * multiplier is `1 + sum` with no /100 anywhere. Getting that conversion wrong understated
- * every recoil reduction by 100x; see docs/operations/data-api-audit.md §B.
+ * every recoil reduction by 100x; see docs/operations/data-api-audit.md §B. The multiplier is not
+ * floored: `pnpm verify:upstream` runs the exact min-recoil optimizer over every live weapon and
+ * fails if any valid build takes it to 0 or below.
  *
  * Accuracy is MOA, lower is better, in two factors:
  *
@@ -76,7 +53,7 @@ export function weaponSpec(weapon: BallisticWeapon, mods: readonly BallisticMod[
     (range, m) => Math.max(range, m.sightingRange ?? 0),
     weapon.sightingRange,
   );
-  const recoilMultiplier = Math.max(1 + recoilSum, MIN_RECOIL_MULTIPLIER);
+  const recoilMultiplier = 1 + recoilSum;
   const baseMoa =
     (centerOfImpact * barrelDeviation(weapon.deviationCurve, deviationMax) * 100) /
     CM_PER_MOA_AT_100M;

@@ -14,3 +14,6 @@ apps/web/src/route-tree.gen.ts
 
 # Cloudflare Pages header rules — extensionless by platform convention, no prettier parser
 apps/web/public/_headers
+
+# Written compact by scripts/optimizer-goldens.ts; formatted, it would be several times larger
+packages/optimizer/src/__fixtures__/goldens.json
