@@ -1,4 +1,4 @@
-import type { BallisticWeapon } from "@tarkov/ballistics";
+import { barrelDeviation, CM_PER_MOA_AT_100M, type BallisticWeapon } from "@tarkov/ballistics";
 import type { AttachablePart, PlayerProfile, SlotNode } from "@tarkov/data";
 import { adaptMod } from "@tarkov/data";
 import { slotCandidates } from "./feasibility.js";
@@ -90,13 +90,72 @@ export function lowerBoundForRemaining(
           Math.max,
         );
       }
-      // `weaponSpec` computes `accuracy = A * (1 - sum)`, so the lowest score
-      // reachable from here is `A * (1 - sum_running - sum_best)`, and the
-      // additive delta against the running score is `-A * sum_best`. Same
-      // lockstep requirement as min-recoil: this scale is set by weaponSpec.
-      return -weapon.baseAccuracy * sumAccuracy;
+      return accuracyBound(weapon, parts, sumAccuracy);
     }
   }
+}
+
+/** Per catalog: the largest barrel `centerOfImpact`, and the range of `deviationMax`. */
+interface BarrelExtremes {
+  readonly maxCenterOfImpact: number;
+  readonly minDeviationMax: number;
+  readonly maxDeviationMax: number;
+}
+
+const barrelExtremesCache = new WeakMap<ReadonlyMap<string, AttachablePart>, BarrelExtremes>();
+
+function barrelExtremes(parts: ReadonlyMap<string, AttachablePart>): BarrelExtremes {
+  const cached = barrelExtremesCache.get(parts);
+  if (cached !== undefined) return cached;
+  // 100 is `weaponSpec`'s deviationMax with no barrel mounted, so it is always in range.
+  let maxCenterOfImpact = 0;
+  let minDeviationMax = 100;
+  let maxDeviationMax = 100;
+  for (const part of parts.values()) {
+    const mod = adaptMod(part);
+    maxCenterOfImpact = Math.max(maxCenterOfImpact, mod.centerOfImpact);
+    if (mod.deviationMax !== null) {
+      minDeviationMax = Math.min(minDeviationMax, mod.deviationMax);
+      maxDeviationMax = Math.max(maxDeviationMax, mod.deviationMax);
+    }
+  }
+  const extremes = { maxCenterOfImpact, minDeviationMax, maxDeviationMax };
+  barrelExtremesCache.set(parts, extremes);
+  return extremes;
+}
+
+/**
+ * The max-accuracy bound: the most the remaining slots can lower the running MOA by.
+ *
+ * `weaponSpec` computes MOA = K·D·C·(1 − a): C the summed `centerOfImpact`, D the barrel
+ * deviation factor, a the summed `accuracyModifier`. That is a product, so no exact additive
+ * delta exists without the running C and a, which this function is not given. It returns a
+ * looser one that is still a lower bound. Over the remaining slots C can only grow (every
+ * `centerOfImpact` is ≥ 0) and a grows by at most A = `sumAccuracy`, so with C_r, a_r, D_r the
+ * running values:
+ *
+ *   final − running ≥ K·D_lo·C_r·(1 − a_r − A) − K·D_hi·C_r·(1 − a_r)
+ *                   = −K·C_r·((D_hi − D_lo)(1 − a_r) + D_lo·A)
+ *                   ≥ −K·C_hi·(2(D_hi − D_lo) + D_lo·A)
+ *
+ * where D_lo / D_hi are D at the smallest and largest `deviationMax` in reach (D grows with
+ * it), and C_hi = the weapon's `centerOfImpact` + the largest barrel's. That last step rests
+ * on three facts about the data, each measured on the live document: a build mounts at most
+ * one barrel (the only part type with a `centerOfImpact`; `pnpm verify:upstream` checks every
+ * weapon), and |a| stays below 1 (per part, live -0.05..0.1), so 1 − a_r ≤ 2 and
+ * 1 − a_r − A ≥ 0.
+ */
+function accuracyBound(
+  weapon: BallisticWeapon,
+  parts: ReadonlyMap<string, AttachablePart>,
+  sumAccuracy: number,
+): number {
+  const { maxCenterOfImpact, minDeviationMax, maxDeviationMax } = barrelExtremes(parts);
+  const moaPerCm = 100 / CM_PER_MOA_AT_100M;
+  const lo = barrelDeviation(weapon.deviationCurve, minDeviationMax);
+  const hi = barrelDeviation(weapon.deviationCurve, maxDeviationMax);
+  const maxCenter = weapon.centerOfImpact + maxCenterOfImpact;
+  return -moaPerCm * maxCenter * (2 * (hi - lo) + lo * sumAccuracy);
 }
 
 function bestContribution(

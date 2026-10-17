@@ -158,12 +158,12 @@ export function BuildHeader({
                 barTone={currentSpec.weight > stockSpec.weight ? "destructive" : "primary"}
               />
               <StatRow
-                label="ACCURACY"
-                stock={stockSpec.accuracy.toFixed(1)}
+                label="MOA"
+                stock={stockSpec.accuracy.toFixed(2)}
                 delta={formatDelta(currentSpec.accuracy - stockSpec.accuracy, true)}
                 deltaDirection={deltaDirection(currentSpec.accuracy - stockSpec.accuracy, true)}
-                value={currentSpec.accuracy.toFixed(1)}
-                percent={100 - clampPercent(currentSpec.accuracy * 20)}
+                value={currentSpec.accuracy.toFixed(2)}
+                percent={clampInverse(currentSpec.accuracy, stockSpec.accuracy)}
                 barTone="primary"
               />
             </div>

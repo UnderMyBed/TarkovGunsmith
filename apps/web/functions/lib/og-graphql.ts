@@ -128,6 +128,16 @@ export function fetchOgRowsForBuild(
       ergonomics: found.properties.ergonomics,
       recoilVertical: found.properties.recoilVertical,
       recoilHorizontal: found.properties.recoilHorizontal,
+      centerOfImpact: found.properties.centerOfImpact,
+      deviationCurve: found.properties.deviationCurve,
+      velocity: found.velocity,
+      fireRate: found.properties.fireRate,
+      effectiveDistance: found.properties.effectiveDistance,
+      sightingRange: found.properties.sightingRange,
+      defaultAmmo:
+        found.defaultAmmo === null
+          ? null
+          : { name: found.defaultAmmo.shortName, initialSpeed: found.defaultAmmo.initialSpeed },
     },
   };
 
@@ -156,6 +166,10 @@ export function fetchOgRowsForBuild(
         recoilModifier: stats.recoilModifier,
         accuracyModifier: stats.accuracyModifier,
       },
+      centerOfImpact: stats.centerOfImpact,
+      deviationMax: stats.deviationMax,
+      velocity: stats.velocity,
+      sightingRange: stats.sightingRange,
       buyFor: cardPrices(part.buyFor ?? []),
       offers: availabilityOffers(part.buyFor ?? []),
     });

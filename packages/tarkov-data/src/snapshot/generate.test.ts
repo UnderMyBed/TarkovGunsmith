@@ -17,6 +17,7 @@ import type { ItemsDocument } from "../queries/documents.js";
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
 const PM = "5448bd6b4bdc2dfc2f8b4569";
 const SP81 = "620109578d82e67e7911abf2";
+const TT_GOLD = "5b3b713c5acfc4330140bd8d";
 const BARREL_10_3 = "55d35ee94bdc2d61338b4568";
 const GRENADE = "5448be9a4bdc2dfd2f8b456a";
 const SCREW_NUTS = "57347c77245977448d35f6e2"; // the PM preset barter's input
@@ -65,8 +66,8 @@ describe("buildBuilderSnapshot over the captured documents", () => {
       .map((i) => i.updated ?? "")
       .sort()
       .at(-1);
-    expect(snapshot).toMatchObject({ schema: 2, source: "fixtures", dataAsOf: newest });
-    expect(prices).toMatchObject({ schema: 2, source: "fixtures", dataAsOf: newest });
+    expect(snapshot).toMatchObject({ schema: 3, source: "fixtures", dataAsOf: newest });
+    expect(prices).toMatchObject({ schema: 3, source: "fixtures", dataAsOf: newest });
   });
 
   it("keeps buildable weapons only, sorted by id", async () => {
@@ -121,6 +122,33 @@ describe("buildBuilderSnapshot over the captured documents", () => {
     expect(snapshot.traders.map((t) => t.normalizedName)).toEqual(
       expect.arrayContaining(["prapor", "ref", "fence"]),
     );
+  });
+
+  it("resolves each weapon's default ammo and keeps every stat the Builder shows", async () => {
+    const { snapshot } = buildBuilderSnapshot(await docs(), "fixtures");
+    const m4 = snapshot.weapons.find((w) => w.id === M4A1)!;
+    expect(m4.velocity).toBe(0);
+    expect(m4.properties).toMatchObject({
+      centerOfImpact: 0.01,
+      deviationCurve: 1.35,
+      effectiveDistance: 500,
+      sightingRange: 100,
+      fireRate: 800,
+    });
+    expect(m4.defaultAmmo).toEqual({
+      id: "54527a984bdc2d4e668b4567",
+      shortName: "M855",
+      initialSpeed: 922,
+    });
+    expect(m4.properties).not.toHaveProperty("defaultAmmo");
+    // A part's top-level velocity, a percent, sits with its other modifiers.
+    const barrel = snapshot.parts.find((p) => p.id === BARREL_10_3)!;
+    expect(barrel.properties).toMatchObject({
+      velocity: -11,
+      centerOfImpact: 0.07,
+      deviationMax: 22,
+    });
+    expect(barrel).not.toHaveProperty("velocity");
   });
 
   it("is byte-identical across runs", async () => {
@@ -303,6 +331,61 @@ describe("buildBuilderSnapshot on drift", () => {
     expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
       `items/${BARREL_10_3}: no valid \`updated\` timestamp`,
     ]);
+  });
+
+  it("fails on a weapon or part missing a stat the Builder shows, naming each", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    delete (items[TT_GOLD]!.properties as Record<string, unknown>).centerOfImpact;
+    delete items[PM]!.velocity;
+    delete items[BARREL_10_3]!.velocity;
+    const problems = driftOf(() => buildBuilderSnapshot(input, "fixtures"));
+    expect(problems).toContain(
+      `items/${TT_GOLD} (ItemPropertiesWeapon): properties.centerOfImpact: Invalid input: expected number, received undefined`,
+    );
+    expect(problems).toContain(
+      `items/${PM} (ItemPropertiesWeapon): velocity: Invalid input: expected number, received undefined`,
+    );
+    expect(problems).toContain(
+      `items/${BARREL_10_3} (ItemPropertiesBarrel): properties.velocity: Invalid input: expected number, received undefined`,
+    );
+  });
+
+  it("fails on a default ammo it cannot resolve to a cartridge with a speed", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    const m4Ammo = (items[M4A1]!.properties as { defaultAmmo: string }).defaultAmmo;
+    const pmAmmo = (items[PM]!.properties as { defaultAmmo: string }).defaultAmmo;
+    (items[M4A1]!.properties as Record<string, unknown>).defaultAmmo = "gone";
+    (items[PM]!.properties as Record<string, unknown>).defaultAmmo = GRENADE;
+    (items[TT_GOLD]!.properties as Record<string, unknown>).defaultAmmo = m4Ammo;
+    (items[m4Ammo]!.properties as Record<string, unknown>).initialSpeed = 0;
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
+      `items/${M4A1} (ItemPropertiesWeapon): defaultAmmo gone is not in the items document`,
+      `items/${PM} (ItemPropertiesWeapon): defaultAmmo ${GRENADE} is ItemPropertiesGrenade, not ammo`,
+      `items/${TT_GOLD} (ItemPropertiesWeapon): defaultAmmo ${m4Ammo}: initialSpeed: Too small: expected number to be >0`,
+    ]);
+    expect(pmAmmo).not.toBe(GRENADE);
+  });
+
+  it("fails on a default ammo whose name is still its translation key", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    const ammo = (items[M4A1]!.properties as { defaultAmmo: string }).defaultAmmo;
+    items[ammo]!.shortName = `${ammo} ShortName`;
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
+      `items/${M4A1} (ItemPropertiesWeapon): defaultAmmo ${ammo}: shortName is still its translation key; the _en document did not apply`,
+    ]);
+  });
+
+  it("gives a weapon no default ammo when upstream publishes it with no properties", async () => {
+    // The RShG-2's rocket: `types` ammo, `properties: null`, so no speed to show.
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    const ammo = (items[M4A1]!.properties as { defaultAmmo: string }).defaultAmmo;
+    items[ammo]!.properties = null;
+    const { snapshot } = buildBuilderSnapshot(input, "fixtures");
+    expect(snapshot.weapons.find((w) => w.id === M4A1)!.defaultAmmo).toBeNull();
   });
 
   it("fails on names that are still translation keys", async () => {

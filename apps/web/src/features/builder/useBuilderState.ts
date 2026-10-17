@@ -18,8 +18,9 @@ import {
   type PlayerProfile,
   type WeaponListItem,
 } from "@tarkov/data";
+import type { MountedMagazine } from "@tarkov/data";
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
-import { adaptMod, adaptWeapon } from "../data-adapters/adapters.js";
+import { adaptMod, adaptWeapon, mountedMagazine } from "../data-adapters/adapters.js";
 import { useV1Migration } from "./useV1Migration.js";
 import { useSnapshotOrphans } from "./useSnapshotOrphans.js";
 import { conflictReasonFor } from "./conflict-reason.js";
@@ -69,6 +70,8 @@ export interface UseBuilderStateResult {
   availabilityById: Map<string, ReturnType<typeof itemAvailability>>;
 
   spec: WeaponSpec | null;
+  /** The magazine in the weapon's magazine slot, or `null` with none fitted. */
+  magazine: MountedMagazine | null;
   stockSpec: WeaponSpec | null;
   currentBuild: BuildV6;
   currentPrice: number | null;
@@ -182,6 +185,8 @@ export function useBuilderState({
     );
   }, [selectedWeapon, attached]);
 
+  const magazine = useMemo(() => mountedMagazine(attached.entries), [attached]);
+
   const stockSpec = useMemo(() => {
     if (!selectedWeapon) return null;
     return weaponSpec(adaptWeapon(selectedWeapon), []);
@@ -281,6 +286,7 @@ export function useBuilderState({
     availabilityById,
 
     spec,
+    magazine,
     stockSpec,
     currentBuild,
     currentPrice,

@@ -15197,6 +15197,284 @@
               "currencyItem": "5449016a4bdc2d6f028b456f"
             }
           ]
+        },
+        "573719762459775a626ccbc1": {
+          "id": "573719762459775a626ccbc1",
+          "name": "573719762459775a626ccbc1 Name",
+          "shortName": "573719762459775a626ccbc1 ShortName",
+          "normalizedName": "9x18mm-pm-p-gzh",
+          "description": "573719762459775a626ccbc1 Description",
+          "updated": "2025-12-25T02:48:00.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.011,
+          "lastOfferCount": 1,
+          "types": ["ammo", "noFlea"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/9x18mm_PM_P_gzh",
+          "link": "https://tarkov.dev/item/9x18mm-pm-p-gzh",
+          "iconLink": "https://assets.tarkov.dev/573719762459775a626ccbc1-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/573719762459775a626ccbc1-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/573719762459775a626ccbc1-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/573719762459775a626ccbc1-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/573719762459775a626ccbc1-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/573719762459775a626ccbc1-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 12,
+          "categories": [
+            "5485a8684bdc2da71d8b4567",
+            "5661632d4bdc2d903d8b456b",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": ["5b47574386f77428ca22b33b", "5b47574386f77428ca22b346"],
+          "lastLowPrice": null,
+          "avg24hPrice": null,
+          "high24hPrice": null,
+          "changeLast48h": null,
+          "changeLast48hPercent": null,
+          "lastScan": "2025-12-25T02:33:19.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesAmmo",
+            "ballisticCoeficient": 0.101,
+            "bulletDiameterMilimeters": 9.27,
+            "bulletMassGrams": 6.1,
+            "caliber": "Caliber9x18PM",
+            "stackMaxSize": 100,
+            "tracer": false,
+            "tracerColor": "red",
+            "ammoType": "bullet",
+            "projectileCount": 1,
+            "damage": 50,
+            "armorDamage": 16,
+            "fragmentationChance": 0.25,
+            "ricochetChance": 0.065,
+            "penetrationChance": 0.085,
+            "penetrationPower": 5,
+            "penetrationPowerDeviation": 0,
+            "accuracyModifier": 0,
+            "recoilModifier": 0,
+            "initialSpeed": 302,
+            "heavyBleedModifier": 0,
+            "lightBleedModifier": 0.1,
+            "durabilityBurnFactor": 1,
+            "heatFactor": 0.9291,
+            "staminaBurnPerDamage": 0.1152,
+            "misfireChance": 0.175,
+            "failureToFeedChance": 0.02
+          },
+          "minLevelForFlea": 0,
+          "stackMaxSize": 100,
+          "tracer": false,
+          "tracerColor": "red",
+          "ammoType": "bullet",
+          "projectileCount": 1,
+          "damage": 50,
+          "armorDamage": 16,
+          "fragmentationChance": 0.25,
+          "ricochetChance": 0.065,
+          "penetrationPower": 5,
+          "recoil": 0,
+          "hasGrid": false,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 17,
+              "priceRUB": 17,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 20000,
+              "buyLimit": 1000
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 4,
+              "priceRUB": 4,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 2,
+              "priceRUB": 2,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 4,
+              "priceRUB": 4,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 0,
+              "priceRUB": 4,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 5,
+              "priceRUB": 5,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 4,
+              "priceRUB": 4,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5736026a245977644601dc61": {
+          "id": "5736026a245977644601dc61",
+          "name": "5736026a245977644601dc61 Name",
+          "shortName": "5736026a245977644601dc61 ShortName",
+          "normalizedName": "762x25mm-tt-p-gl",
+          "description": "5736026a245977644601dc61 Description",
+          "updated": "2025-12-25T02:38:00.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.01,
+          "lastOfferCount": 1,
+          "types": ["ammo", "noFlea"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/7.62x25mm_TT_P_gl",
+          "link": "https://tarkov.dev/item/762x25mm-tt-p-gl",
+          "iconLink": "https://assets.tarkov.dev/5736026a245977644601dc61-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5736026a245977644601dc61-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5736026a245977644601dc61-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5736026a245977644601dc61-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5736026a245977644601dc61-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5736026a245977644601dc61-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 52,
+          "categories": [
+            "5485a8684bdc2da71d8b4567",
+            "5661632d4bdc2d903d8b456b",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": ["5b47574386f77428ca22b33b", "5b47574386f77428ca22b346"],
+          "lastLowPrice": null,
+          "avg24hPrice": null,
+          "high24hPrice": null,
+          "changeLast48h": null,
+          "changeLast48hPercent": null,
+          "lastScan": "2025-12-25T02:31:06.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesAmmo",
+            "ballisticCoeficient": 0.127,
+            "bulletDiameterMilimeters": 7.85,
+            "bulletMassGrams": 5.5,
+            "caliber": "Caliber762x25TT",
+            "stackMaxSize": 100,
+            "tracer": false,
+            "tracerColor": "red",
+            "ammoType": "bullet",
+            "projectileCount": 1,
+            "damage": 58,
+            "armorDamage": 32,
+            "fragmentationChance": 0.25,
+            "ricochetChance": 0.065,
+            "penetrationChance": 0.17,
+            "penetrationPower": 14,
+            "penetrationPowerDeviation": 0.07,
+            "accuracyModifier": 0,
+            "recoilModifier": 0,
+            "initialSpeed": 430,
+            "heavyBleedModifier": 0,
+            "lightBleedModifier": 0,
+            "durabilityBurnFactor": 1,
+            "heatFactor": 0.9558,
+            "staminaBurnPerDamage": 0.144,
+            "misfireChance": 0.175,
+            "failureToFeedChance": 0.02
+          },
+          "minLevelForFlea": 0,
+          "stackMaxSize": 100,
+          "tracer": false,
+          "tracerColor": "red",
+          "ammoType": "bullet",
+          "projectileCount": 1,
+          "damage": 58,
+          "armorDamage": 32,
+          "fragmentationChance": 0.25,
+          "ricochetChance": 0.065,
+          "penetrationPower": 14,
+          "recoil": 0,
+          "hasGrid": false,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 71,
+              "priceRUB": 71,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f",
+              "minTraderLevel": 2,
+              "taskUnlock": null,
+              "restockAmount": 20000,
+              "buyLimit": 1000
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 20,
+              "priceRUB": 20,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 12,
+              "priceRUB": 12,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 20,
+              "priceRUB": 20,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 0,
+              "priceRUB": 18,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 23,
+              "priceRUB": 23,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 20,
+              "priceRUB": 20,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
         }
       },
       "armorMaterials": {
@@ -16652,6 +16930,12 @@
     "571a29dc2459771fb2755a6a ShortName": "tt-105",
     "571a29dc2459771fb2755a6a Description": "A standard late-issue 8-round magazine for the TT pistol. It comes without a lanyard ring.",
     "5c11046cd174af02a012e42b Name": "PVS-7 Wilcox Adapter",
-    "5c11046cd174af02a012e42b ShortName": "W-PVS7"
+    "5c11046cd174af02a012e42b ShortName": "W-PVS7",
+    "573719762459775a626ccbc1 Name": "9x18mm PM P gzh",
+    "573719762459775a626ccbc1 ShortName": "P",
+    "573719762459775a626ccbc1 Description": "A 9x18mm Makarov P gzh (GAU Index - 57-N-181-01) cartridge with a 6.1 gram lead core bullet with a bimetallic jacket in a bimetallic case. This is a rudimentary cartridge that was released alongside the adoption of the PM pistol in the USSR.",
+    "5736026a245977644601dc61 Name": "7.62x25mm TT P gl",
+    "5736026a245977644601dc61 ShortName": "P",
+    "5736026a245977644601dc61 Description": "A 7.62x25mm Tokarev P gl (GAU Index - 57-N-132) cartridge with a 5.5 gram lead core bullet with a bimetallic jacket in a brass case. This is a rudimentary cartridge that was released alongside the adoption of the TT pistol in the USSR."
   }
 }

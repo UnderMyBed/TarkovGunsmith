@@ -362,12 +362,13 @@ describe("upgradeLoadedBuild", () => {
  * Every fixture item the old tree cannot place is an orphan, up to the cap of 64, so the counts
  * track the fixture: when it grows, re-derive them by running the pre-#214 implementation over it
  * (last done when the preset parts and the golden TT landed, by running the pre-#214 `weaponTree.ts` and
- * `migrateV1ToV2` from 4b9dd32 over the fixture).
+ * `migrateV1ToV2` from 4b9dd32 over the fixture). The PM and TT default cartridges added since
+ * appear in no slot's `allowedItems`, so no tree can place them: each adds one orphan.
  */
 const LEGACY_V1_PLACEMENTS = [
   {
     weaponId: "5447a9cd4bdc2dbd208b4567",
-    orphanedCount: 46,
+    orphanedCount: 48,
     attachments: {
       "mod_reciever/mod_handguard/mod_tactical001": "5a7b483fe899ef0016170d15",
       "mod_reciever/mod_scope": "58d39d3d86f77445bb794ae7",

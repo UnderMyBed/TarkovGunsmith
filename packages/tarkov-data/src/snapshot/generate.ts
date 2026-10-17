@@ -2,7 +2,7 @@ import type { z } from "zod";
 import type { TarkovJsonClient } from "../client.js";
 import type { BartersDocument, ItemsDocument, TasksDocument } from "../queries/documents.js";
 import { barterSchema, type Barter } from "../queries/barters.js";
-import { PART_TYPES, snapshotPartSchema } from "../queries/parts.js";
+import { PART_TYPES, partRecord, snapshotPartSchema } from "../queries/parts.js";
 import { buildSlotGraph, type SlotOwner } from "../queries/slot-graph.js";
 import { taskListItemSchema, type TaskListItem } from "../queries/tasks.js";
 import {
@@ -10,7 +10,12 @@ import {
   type TraderListItem,
   type TradersDocument,
 } from "../queries/traders.js";
-import { isBuildableWeapon, snapshotWeaponSchema } from "../queries/weaponList.js";
+import {
+  defaultAmmoSchema,
+  isBuildableWeapon,
+  weaponRecordSchema,
+  type SnapshotDefaultAmmo,
+} from "../queries/weaponList.js";
 import { selectWeaponPresets } from "../queries/presets.js";
 import {
   createOfferCollector,
@@ -105,6 +110,35 @@ const untranslated = (at: string, field: string): string =>
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
+
+/**
+ * A weapon's `defaultAmmo`, resolved to what the Builder shows: its short name and speed.
+ * `null` when upstream publishes the item with no `properties` at all (the RShG-2's rocket),
+ * since there is then no speed to show. Anything else that is not a cartridge with a
+ * positive `initialSpeed` is drift, returned as the problem to report.
+ */
+function resolveDefaultAmmo(
+  items: Readonly<Record<string, unknown>>,
+  ammoId: string,
+): SnapshotDefaultAmmo | null | string {
+  const raw = items[ammoId] as
+    { shortName?: unknown; properties?: { initialSpeed?: unknown } | null } | undefined;
+  if (raw === undefined) return `defaultAmmo ${ammoId} is not in the items document`;
+  if (raw.properties === null) return null;
+  if (propertiesTypeOf(raw) !== "ItemPropertiesAmmo") {
+    return `defaultAmmo ${ammoId} is ${String(propertiesTypeOf(raw))}, not ammo`;
+  }
+  const parsed = defaultAmmoSchema.safeParse({
+    id: ammoId,
+    shortName: raw.shortName,
+    initialSpeed: raw.properties?.initialSpeed,
+  });
+  if (!parsed.success) return `defaultAmmo ${ammoId}: ${describeIssues(parsed.error)}`;
+  if (parsed.data.shortName === translationKey(ammoId, "ShortName")) {
+    return untranslated(`defaultAmmo ${ammoId}`, "shortName");
+  }
+  return parsed.data;
+}
 
 /** The counts an upstream snapshot is held to, by {@link UPSTREAM_FLOORS} key. */
 export type FloorCounts = Readonly<Record<keyof typeof UPSTREAM_FLOORS, number>>;
@@ -241,11 +275,17 @@ export function buildBuilderSnapshot(
     if (type === "ItemPropertiesWeapon") {
       const types = (raw as { types?: unknown }).types;
       if (Array.isArray(types) && !isBuildableWeapon({ types: types as string[] })) continue;
-      const parsed = snapshotWeaponSchema.safeParse(raw);
-      if (parsed.success) weapons.push(parsed.data);
-      else fail(`items/${key} (${type}): ${describeIssues(parsed.error)}`);
+      const parsed = weaponRecordSchema.safeParse(raw);
+      if (!parsed.success) {
+        fail(`items/${key} (${type}): ${describeIssues(parsed.error)}`);
+        continue;
+      }
+      const { defaultAmmo: ammoId, ...properties } = parsed.data.properties;
+      const ammo = resolveDefaultAmmo(items, ammoId);
+      if (typeof ammo === "string") fail(`items/${key} (${type}): ${ammo}`);
+      else weapons.push({ ...parsed.data, properties, defaultAmmo: ammo });
     } else if (type !== undefined && PART_TYPES.has(type)) {
-      const parsed = snapshotPartSchema.safeParse(raw);
+      const parsed = snapshotPartSchema.safeParse(partRecord(raw));
       if (parsed.success) allParts.set(parsed.data.id, parsed.data);
       else brokenParts.set(key, `items/${key} (${type}): ${describeIssues(parsed.error)}`);
     } else if (type === "ItemPropertiesPreset") {

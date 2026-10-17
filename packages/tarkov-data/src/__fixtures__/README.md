@@ -49,6 +49,11 @@ which captured offers are locked behind; and the PVS-7 Wilcox adapter (`5c11046c
 helmet mount — part-typed, flea-priced, and reached by no weapon slot — for the barter-ingredient
 tests.
 
+Every captured weapon's default ammo is in the capture, because the snapshot generator resolves
+each weapon's `defaultAmmo` to that cartridge's `shortName` and `initialSpeed` and treats a
+missing one as drift: the PM's 9x18mm PM P gzh (`573719762459775a626ccbc1`) and the TT's 7.62x25mm
+TT P gl (`5736026a245977644601dc61`), captured 2026-10-17.
+
 `legacy-buy-for.json` pins what the offer resolver returned for every fixture weapon and part
 before offers were split from prices (main at `2b8c53b`, over these same captures).
 `generate.test.ts` checks the snapshot against it. Regenerate it only when a capture changes
@@ -59,6 +64,11 @@ part they list, captured 2026-10-16, for `preset-oracle.test.ts`: the presets' o
 recoil are the oracle the Builder's stat path must reproduce. It also holds the AKS-74UN's
 default preset and its parts, from the same capture, because the snapshot generator requires
 exactly one default for every weapon with presets.
+
+Captured 2026-10-17 and added to it for the MOA oracle: the MP-133's Default and Tactical
+presets, the Mossberg 590A1 Default and the MP7A1's Default and Wedge presets, with every part
+they list, because their parts carry non-zero `accuracyModifier`s and upstream's `moa` leaves
+those out. Every weapon in the file has its default ammo alongside it.
 
 **Refresh** by re-capturing from `json.tarkov.dev` when upstream shapes change, keeping the
 accept/reject mix above intact. `scripts/verify-upstream-contract.ts` checks these fixtures

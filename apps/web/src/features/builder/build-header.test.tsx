@@ -16,8 +16,17 @@ const m4a1: BallisticWeapon = {
   baseVerticalRecoil: 119,
   baseHorizontalRecoil: 342,
   baseWeight: 0.75,
-  baseAccuracy: 3.5,
+  centerOfImpact: 0.01,
+  deviationCurve: 1.35,
+  velocity: 0,
+  fireRate: 800,
+  effectiveDistance: 500,
+  sightingRange: 100,
+  defaultAmmo: { name: "M855", initialSpeed: 922 },
 };
+
+/** What every mod that is neither a barrel nor a sight carries for these fields. */
+const PLAIN = { centerOfImpact: 0, deviationMax: null, velocity: 0, sightingRange: null } as const;
 
 // Hera Arms CQR + Magpul UBR GEN2 + Vltor MUR-1S: sum -0.495, a -49.5% build.
 const realMods: BallisticMod[] = [
@@ -28,6 +37,7 @@ const realMods: BallisticMod[] = [
     recoilModifier: -0.23,
     weight: 0.499,
     accuracyModifier: 0,
+    ...PLAIN,
   },
   {
     id: "5947e98b86f774778f1448bc",
@@ -36,6 +46,7 @@ const realMods: BallisticMod[] = [
     recoilModifier: -0.225,
     weight: 0.61,
     accuracyModifier: 0,
+    ...PLAIN,
   },
   {
     id: "59bfe68886f7746004266202",
@@ -44,6 +55,7 @@ const realMods: BallisticMod[] = [
     recoilModifier: -0.04,
     weight: 0.246,
     accuracyModifier: 0,
+    ...PLAIN,
   },
 ];
 
@@ -85,5 +97,15 @@ describe("BuildHeader recoil delta", () => {
   it("leaves the delta blank when no mods are attached", () => {
     renderHeader([]);
     expect(screen.queryByText(/^[−+]\d+%$/)).not.toBeInTheDocument();
+  });
+});
+
+describe("BuildHeader accuracy", () => {
+  it("labels accuracy in MOA to two decimals", () => {
+    // Bare M4A1: 0.01 cm centerOfImpact × 100 / 2.9089 = 0.34 MOA. The mods carry no
+    // accuracy modifier, so stock and current agree.
+    renderHeader(realMods);
+    expect(screen.getByText("MOA")).toBeInTheDocument();
+    expect(screen.getAllByText("0.34")).toHaveLength(2);
   });
 });

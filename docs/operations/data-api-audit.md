@@ -101,25 +101,36 @@ It is not a one-character change. Multiplying by 100 at the adapter is correct i
 
 ---
 
-## C. Secondary defect: `accuracyModifier` is also a fraction
+## C. Weapon stats — units, ranges and how they combine
 
-Live range `-0.05 … 0.06` (i.e. ±3–6%), but `adaptMod` adds it directly to a **MOA** baseline:
+Measured on the live document (2026-10-17). Units differ by field, and two of the fields that look alike are on different scales: `velocity` is top-level and a **percent**, while every modifier under `properties` is a **fraction**.
 
-```ts
-accuracyDelta: item.properties.accuracyModifier,   // 0.05  -> "+0.05 MOA"
-```
+| Field                  | Where                       | Unit                  | Live range                                           |
+| ---------------------- | --------------------------- | --------------------- | ---------------------------------------------------- |
+| `centerOfImpact`       | weapon, barrel              | cm of spread at 100 m | weapon 0–0.7, barrel 0.011–0.75                      |
+| `deviationCurve`       | weapon                      | dimensionless         | 1–3.5                                                |
+| `deviationMax`         | barrel (weapon too, unused) | dimensionless         | 7.5–33                                               |
+| `accuracyModifier`     | every mod                   | fraction, + is better | −0.05–0.06                                           |
+| `velocity` (top-level) | weapon, every mod           | percent               | weapon −17.9–20, barrel −54–18.9, other mods −33–1.5 |
+| `initialSpeed`         | ammo                        | m/s                   |                                                      |
+| `defaultAmmo`          | weapon                      | an ammo item id       |                                                      |
+| `fireRate`             | weapon only                 | rounds per minute     | 10–1200                                              |
+| `effectiveDistance`    | weapon only                 | m                     | 50–1000                                              |
+| `sightingRange`        | weapon, sight               | m                     | weapon 100, sight 0–2000                             |
+| `capacity`             | magazine                    | rounds                |                                                      |
+| `loadModifier`         | magazine                    | fraction              | −0.35–0.25                                           |
+| `malfunctionChance`    | magazine                    | fraction              | 0–0.5                                                |
 
-Dimensionally wrong — a 5% accuracy change is applied as 0.05 MOA.
+How `weaponSpec` combines them:
 
-### The sign is also inverted, and it has a live consequence
+- **MOA** = Σ`centerOfImpact` × `barrelDeviation(deviationCurve, deviationMax)` × 100 / 2.9089 × (1 − Σ`accuracyModifier`). The sum is the weapon's own `centerOfImpact` plus its barrel's (no other part type carries one, and no weapon can mount two barrels). `deviationMax` is the barrel's, or 100 with none fitted. Everything before the `(1 − Σ)` factor is upstream's own preset formula, `getBarrelDeviation` and the `moa` stat in the-hideout/tarkov-data-manager `src/tarkov-data-manager/modules/preset-data.mjs` (lines 99–127 at `d1c7a3e`), ported verbatim, and it reproduces the `moa` of all 399 live weapon presets. Upstream's `moa` leaves accuracy modifiers out; the Builder applies them as `(1 − Σ)`, so a positive modifier tightens MOA. **That factor has no oracle**: nothing upstream publishes a figure that includes it.
+- **The sign of `accuracyModifier`**: the positive end is precision hardware (SV-98 SRVV muzzle brake +0.06, M700 AI AT AICS chassis +0.06, Magpul PRS GEN2/GEN3 stocks +0.05) and the negative end is suppressors (Mosin Bramit −0.05, Norinco VQX-191 −0.05, PBS-1 −0.03). Positive means better accuracy, a smaller MOA.
+- **Muzzle velocity** = the default ammo's `initialSpeed` × (1 + (weapon `velocity` + Σ mod `velocity`) / 100). The original WishGranter summed the same percents; how it applied them to a cartridge is not verified. The Builder names that ammo beside the figure. No upstream figure checks it.
+- **Sighting range** = the longest of the weapon's own and its fitted sights'. Some reflex sights report 0, so it is never shorter than the weapon's 100. No upstream figure checks it.
+- **Fire rate and effective distance** come from the weapon alone; no part carries either field.
+- **Magazine** stats are those of the part in the weapon's own `mod_magazine` slot. Upstream reports `capacity` 0 for the M32A1's cylinder. `loadModifier` is shown signed, as upstream reports it. **Which direction is faster loading is not verified.**
 
-Checked against the live document, the positive end of the range is precision hardware — SV-98 SRVV muzzle brake `+0.06`, M700 AI AT AICS chassis `+0.06`, Magpul PRS GEN2/GEN3 stocks `+0.05` — and the negative end is suppressors: Mosin Bramit `-0.05`, Norinco VQX-191 `-0.05`, PBS-1 `-0.03`.
-
-So **positive `accuracyModifier` means better accuracy, i.e. smaller MOA.** `weaponSpec` adds it to a lower-is-better MOA figure, which reverses it.
-
-That is not cosmetic. The optimizer's `max-accuracy` objective minimises `stats.accuracy` and picks the **smallest** `accuracyModifier` per slot — so **"maximise accuracy" selects suppressors and rejects precision stocks.** The objective does the opposite of its name.
-
-The correct model is `baseAccuracy × (1 − Σaccuracy)`, with the optimizer's bound and per-item score flipped to match. Note that `baseAccuracy` remains the fabricated constant `DEFAULT_BASE_ACCURACY = 3.5` rather than real data, so fixing the unit and sign makes the stat _coherent_, not _sourced_ — whether it should ship at all is still open.
+`pnpm verify:upstream` checks each scale and scope above, the at-most-one-barrel property over every weapon's slot graph, and every preset's MOA against upstream's `moa` × (1 − Σ`accuracyModifier`) to within 0.006.
 
 ---
 
@@ -136,8 +147,8 @@ The correct model is `baseAccuracy × (1 − Σaccuracy)`, with the optimizer's 
 The JSON API exposes considerably more than the GraphQL selections did. None of this is a defect; it is the option list for future work.
 
 - **Weapon presets are read but not yet shown.** Upstream ships **497 `ItemPropertiesPreset` items** (2026-10-16): 399 on the 164 buildable weapons, every one of which has exactly one default, and the rest on armor, rigs, helmets and a dogtag. A preset is `properties.baseItem` plus a flat `containsItems` list with no slot positions; `selectWeaponPresets` places all 399 into the slot graph (`preset-placement.ts`). Two upstream conventions matter: a part listed with `count: 2` or `3` is that many physical parts (rails, mostly; 35 entries on 26 presets), and the preset's own `ergonomics` / `recoilVertical` / `recoilHorizontal` count each distinct part **once**, so those 26 presets read differently from a per-part sum. Loaded rounds (24 entries, all in the weapon's `allowedAmmo`) are listed too and sit in no slot; the RShG-2's rocket is one, with `properties: null`, so cartridges are recognised by `types` containing `"ammo"`.
-- **Ammo fields we ignore:** `penetrationChance`, `fragmentationChance`, `ricochetChance`, `durabilityBurnFactor`, `lightBleedModifier`, `heavyBleedModifier`, `initialSpeed`, `ballisticCoeficient`, `bulletMassGrams`, plus ammo's own `recoilModifier` and `accuracyModifier`. Several deferred M2 items (bleed, probabilistic mode) have upstream data waiting. Note upstream ships its own `penetrationChance` (live range 0–0.92) where we compute our own from a wiki-derived formula.
-- **Weapon fields we ignore:** `fireModes`, `effectiveDistance`, `sightingRange`, `recoilAngle`, `recoilDispersion`, `cameraSnap`, `centerOfImpact`, `deviationCurve`, `deviationMax`, `allowedAmmo`, `defaultAmmo`. (`fireRate` is fetched but only displayed on `/data` — it feeds no calculation.)
+- **Ammo fields we ignore:** `penetrationChance`, `fragmentationChance`, `ricochetChance`, `durabilityBurnFactor`, `lightBleedModifier`, `heavyBleedModifier`, `ballisticCoeficient`, `bulletMassGrams`, plus ammo's own `recoilModifier` and `accuracyModifier`. `initialSpeed` is read only for each weapon's default ammo (§C). Several deferred M2 items (bleed, probabilistic mode) have upstream data waiting. Note upstream ships its own `penetrationChance` (live range 0–0.92) where we compute our own from a wiki-derived formula.
+- **Weapon fields we ignore:** `fireModes`, `recoilAngle`, `recoilDispersion`, `cameraSnap`, `allowedAmmo`, and the weapon's own `deviationMax` (upstream's MOA reads the barrel's).
 - **83 `ItemPropertiesArmorAttachment` items** — armor plates and face shields, classes 1–6 — are absent from `/calc`'s armor list, which only reads the 47 `ItemPropertiesArmor` vests. 109 helmets are also excluded (a known deferred item).
 
 ---
@@ -293,10 +304,13 @@ live document and asserts:
 
 - the document shape (`data.items` / `data.armorMaterials` / `data.itemCategories`);
 - the unit scales this audit recorded — `recoilModifier` a fraction, `accuracyModifier` a
-  fraction with at least one positive value, `armorDamage` a percentage;
+  fraction with at least one positive value, `armorDamage` a percentage, and the weapon-stat
+  scales and scopes of §C;
 - the bounds the durability port's clamp analysis depends on (armor class ≤ 6,
   destructibility ≤ 1);
-- every fixture field in `ballistics`, against the live item of the same id.
+- every fixture field in `ballistics`, against the live item of the same id;
+- every weapon preset's ergonomics, recoil and MOA against upstream's own preset stats, and
+  that no weapon can mount two barrels.
 
 It is deliberately **not** in `pnpm test`: a network call in the pre-merge gate would fail PRs
 on upstream's availability rather than on our code. Failures alert through the existing

@@ -16,7 +16,12 @@ import type { ItemsDocument } from "./queries/documents.js";
 /**
  * Upstream's own presets are the ground truth this guards: placed by the real placer
  * (`selectWeaponPreset`), every part of a real preset must reproduce the preset's
- * ergonomics and recoil through the Builder's stat path.
+ * ergonomics, recoil and MOA through the Builder's stat path.
+ *
+ * MOA needs care too. Upstream computes a preset's `moa` without accuracy modifiers
+ * (tarkov-data-manager `preset-data.mjs`), and rounds it to 0.01. The Builder's MOA is that
+ * base × (1 − Σ`accuracyModifier`): the base is checked against `moa` to its rounding, and the
+ * whole figure against `moa × (1 − Σ)`. The accuracy factor itself has no oracle.
  *
  * One upstream convention needs care. A preset lists a repeated part once with a `count`
  * (the M700 MRS: 3× KeyMod rail), and upstream's preset stats count each DISTINCT part once.
@@ -31,7 +36,14 @@ const PRESETS = [
   "59e8d2ab86f77407f03fc9c2", // Kalashnikov AKM default
   "624d7a3691f0160c7324c3f4", // Chiappa Rhino 50DS default: a cylinder magazine with slots
   "5a43a85186f7746c914b947a", // AKS-74UN "Zenit": 30 loaded rounds, an ambiguous placement
+  "584148f2245977598f1ad387", // MP-133 default
+  "5a8ae54786f7743b5e013ba0", // MP-133 Tactical: RTC muzzle +0.05 accuracy on a 37.84 MOA base
+  "5f06d6bb4010601e3232cd22", // Mossberg 590A1 default: a +0.05 accuracy barrel
+  "5bd056fa86f7743aba7658cd", // MP7A1 default: no barrel slot, the receiver's own dispersion
+  "69eb793db978f26a9304e78c", // MP7A1 "Wedge": +0.06 accuracy across two parts
 ];
+/** Upstream rounds a preset's `moa` to 0.01. */
+const MOA_ROUNDING = 0.005 + 1e-9;
 const M700_MRS = "5d38517786f7742a1468cf6a";
 const KEYMOD_RAIL = "5a9d6d00a2750c5c985b5305";
 
@@ -75,6 +87,10 @@ describe("weaponSpec over every part of a real preset", () => {
     expect(
       Math.abs(distinct.horizontalRecoil - record.properties.recoilHorizontal),
     ).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(distinct.baseMoa - record.properties.moa)).toBeLessThanOrEqual(MOA_ROUNDING);
+    expect(
+      Math.abs(distinct.accuracy - record.properties.moa * (1 - distinct.accuracyModifier)),
+    ).toBeLessThanOrEqual(MOA_ROUNDING * (1 - distinct.accuracyModifier));
   });
 
   it.each(PRESETS.filter((id) => id !== M700_MRS))(
@@ -126,5 +142,25 @@ describe("cartridge recoil in an upstream preset", () => {
     expect(withRound.verticalRecoil).toBeCloseTo(74.5, 0);
     // adaptMod applies the preset's rule: the round adds weight, not recoil.
     expect(adaptMod(round).recoilModifier).toBe(0);
+  });
+});
+
+/**
+ * The evidence that upstream's preset `moa` leaves accuracy modifiers out: the MP-133 Tactical
+ * reads exactly what the plain MP-133 does, though its Remington tactical choke carries +0.05.
+ */
+describe("accuracy modifiers in an upstream preset's MOA", () => {
+  const MP133_DEFAULT = "584148f2245977598f1ad387";
+  const MP133_TACTICAL = "5a8ae54786f7743b5e013ba0";
+
+  it("are left out: both MP-133 presets read 37.84, and the Builder's tactical reads 5% lower", async () => {
+    const plain = await statsOf(MP133_DEFAULT);
+    const tactical = await statsOf(MP133_TACTICAL);
+    expect(plain.record.properties.moa).toBe(37.84);
+    expect(tactical.record.properties.moa).toBe(37.84);
+    expect(plain.distinct.accuracyModifier).toBe(0);
+    expect(tactical.distinct.accuracyModifier).toBeCloseTo(0.05, 12);
+    expect(tactical.distinct.baseMoa).toBeCloseTo(plain.distinct.baseMoa, 12);
+    expect(tactical.distinct.accuracy).toBeCloseTo(tactical.distinct.baseMoa * 0.95, 12);
   });
 });
