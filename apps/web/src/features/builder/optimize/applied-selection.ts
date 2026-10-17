@@ -298,10 +298,11 @@ export function appliedSelection(
  *   every change below each change it ticks: a new part comes with what the proposal fits to it.
  *
  * Then no tick may leave the build with a conflict it did not have (`resolveBuild`'s, the same
- * the Builder flags). Ticking keeps ticking: for each new conflict, the change nearest above
- * either part that does not land and is not ticked, with what it needs and brings, until
- * none is left. Unticking keeps unticking: for each new conflict, the ticked change nearest
- * above a part the proposal brought, until none is left. A change the new parent part requires
+ * the Builder flags). Each new conflict is settled from the change that put one of its parts
+ * there: the change at that part's slot or nearest above it. Only when neither part's own change
+ * can clear it is a change further up taken. Ticking keeps ticking such a change that does not
+ * land, with what it needs and brings, until no new conflict is left; unticking keeps unticking
+ * such a change that landed, until none is left. A change the new parent part requires
  * goes only with that parent, so the parent is unticked in its place. Each step only adds (or
  * only removes), so chains and cycles settle: a barrel and a handguard that each clash with the
  * other's old part are ticked and unticked together.
