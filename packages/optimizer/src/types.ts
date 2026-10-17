@@ -45,6 +45,18 @@ export interface OptimizationInput {
   readonly objective: Objective;
   /** Wall-clock safety net in milliseconds. Default 2000. */
   readonly timeoutMs?: number;
+  /**
+   * Called each time the search takes a candidate build to check against the conflict rules,
+   * with how many it has taken so far in this run, across every search the run makes. It only
+   * observes: the result is the same with or without it.
+   */
+  readonly onProgress?: (progress: OptimizationProgress) => void;
+}
+
+/** How far a run has got. */
+export interface OptimizationProgress {
+  /** Candidate builds checked so far. */
+  readonly nodes: number;
 }
 
 /** Why a pin is not in the result. */

@@ -67,6 +67,8 @@ export interface Problem {
   readonly rate: (key: string, stat: number) => number;
   /** Max-accuracy only: the MOA of a build with this key and no accuracy modifiers. */
   readonly multiplier?: (key: string) => number;
+  /** Told each time the search takes a candidate build. */
+  readonly tick?: () => void;
 }
 
 function partStat(objective: Objective, part: AttachablePart): number {
@@ -106,6 +108,12 @@ function moaMultiplier(weapon: BallisticWeapon, part: AttachablePart | undefined
     (centerOfImpact * barrelDeviation(weapon.deviationCurve, deviationMax) * 100) /
     CM_PER_MOA_AT_100M
   );
+}
+
+/** One counter for the whole run: every search a run makes reports into it. */
+function progressCounter(onProgress: NonNullable<OptimizationInput["onProgress"]>): () => void {
+  let nodes = 0;
+  return () => onProgress({ nodes: ++nodes });
 }
 
 /**
@@ -152,6 +160,7 @@ export function buildProblem(
     paths,
     pins: input.constraints.pinnedSlots,
     budget: input.constraints.budgetRub,
+    ...(input.onProgress === undefined ? {} : { tick: progressCounter(input.onProgress) }),
   };
   if (input.objective !== "max-accuracy") return { ...base, rate: (_key, stat) => stat };
   const multipliers = new Map<string, number>();

@@ -5,6 +5,7 @@ export type {
   Objective,
   OptimizationConstraints,
   OptimizationInput,
+  OptimizationProgress,
   OptimizationReason,
   OptimizationResult,
   PinReport,

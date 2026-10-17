@@ -3,6 +3,7 @@ import {
   compareJudged,
   judge,
   randomRecords,
+  unpricedPinPaths,
   weaponPrice,
   weaponUnobtainable,
   type Judged,
@@ -22,43 +23,38 @@ function buildsUnder(c: RecordsCase, relax: Relax): Judged[] {
 }
 
 /**
- * The reasons that are true of a case with no build:
+ * The one reason that is true of a case with no build:
  *
  * - the weapon, when no way to buy it is open;
- * - the budget, when a build exists without it. Its cause is the pins when the cheapest such
- *   builds (fewest parts of unknown price, then fewest roubles) all carry a pinned part nobody
- *   prices, and the budget itself when none does; either, when some do. A gun over the budget
- *   or of unknown price, or a build of known price, makes it the budget whatever the pins;
+ * - the budget, when a build exists without it. Its cause is the pins when no build without
+ *   it has a known price, but one does once the pinned parts nobody prices are unpinned; the
+ *   budget itself otherwise (a gun over the budget or of unknown price, a build of known
+ *   price, or a part nobody pinned that has no price on every build);
  * - else the pins, when a build exists without them;
  * - else a required slot, when none exists even with conflicts ignored;
  * - else conflicts.
  */
-function trueReasons(c: RecordsCase): readonly OptimizationReason[] {
-  if (weaponUnobtainable(c)) return ["weapon-unavailable"];
+function trueReason(c: RecordsCase): OptimizationReason {
+  if (weaponUnobtainable(c)) return "weapon-unavailable";
   const { budgetRub, pinnedSlots } = c.input.constraints;
   if (budgetRub !== undefined) {
     const free = buildsUnder(c, { budget: true });
     if (free.length > 0) {
       const gun = weaponPrice(c);
       if (gun === null || gun > budgetRub || free.some((j) => j.unknown === 0)) {
-        return ["infeasible-budget"];
+        return "infeasible-budget";
       }
-      const least = Math.min(...free.map((j) => j.unknown));
-      const fewest = free.filter((j) => j.unknown === least);
-      const rub = Math.min(...fewest.map((j) => j.known));
-      const cheapest = fewest.filter((j) => j.known === rub);
-      if (cheapest.every((j) => j.pinnedUnpriced)) return ["pinned-unpriced"];
-      if (cheapest.every((j) => !j.pinnedUnpriced)) return ["infeasible-budget"];
-      return ["pinned-unpriced", "infeasible-budget"];
+      const unpinned = buildsUnder(c, { budget: true, dropPins: unpricedPinPaths(c) });
+      return unpinned.some((j) => j.unknown === 0) ? "pinned-unpriced" : "infeasible-budget";
     }
   }
   if (pinnedSlots.size > 0 && buildsUnder(c, { budget: true, pins: true }).length > 0) {
-    return ["pin-conflict"];
+    return "pin-conflict";
   }
   if (buildsUnder(c, { budget: true, pins: true, conflicts: true }).length === 0) {
-    return ["required-slot"];
+    return "required-slot";
   }
-  return ["no-valid-combinations"];
+  return "no-valid-combinations";
 }
 
 describe("optimize — exact against brute force, from upstream-shaped records", () => {
@@ -92,7 +88,7 @@ describe("optimize — exact against brute force, from upstream-shaped records",
       if (best === null) {
         expect(result.ok, label).toBe(false);
         if (result.ok) continue;
-        expect(trueReasons(c), `${label}: ${result.reason}`).toContain(result.reason);
+        expect(result.reason, label).toBe(trueReason(c));
         reasons.set(result.reason, (reasons.get(result.reason) ?? 0) + 1);
         tally.infeasible++;
       } else {

@@ -306,8 +306,6 @@ export interface Judged {
   /** The roubles that are known. */
   readonly known: number;
   readonly count: number;
-  /** A part kept on a pin has no price the profile can pay, and no way to buy the gun supplies it. */
-  readonly pinnedUnpriced: boolean;
 }
 
 /** Best rating (MOA within a float tolerance), then fewest unknown prices, then roubles, then parts. */
@@ -321,6 +319,8 @@ export interface Relax {
   readonly budget?: boolean;
   readonly pins?: boolean;
   readonly conflicts?: boolean;
+  /** Pins, by path, to ignore. */
+  readonly dropPins?: ReadonlySet<string>;
 }
 
 /** A listing the profile can use, at no known price: how a pinned part is placed. */
@@ -354,6 +354,7 @@ export function judge(
   walk("w", "");
   const kept = new Set<string>();
   for (const [at, pin] of relax.pins ? [] : input.constraints.pinnedSlots) {
+    if (relax.dropPins?.has(at)) continue;
     const s = visible.get(at);
     if (s === undefined) continue;
     if (pin === null) {
@@ -379,13 +380,6 @@ export function judge(
   if (!relax.budget && budget !== undefined) {
     if (price.status !== "priced" || price.totalRUB > budget) return null;
   }
-  const paths = weaponPaths(gate, weapon, input.presets);
-  const pinnedUnpriced = resolved.placed.some(
-    (p) =>
-      kept.has(p.path) &&
-      priceUnder(gate, p.part) === null &&
-      paths.every((path) => (path.covers.get(p.itemId) ?? 0) === 0),
-  );
   const spec = weaponSpec(input.weapon, placed.map(adaptMod));
   const rating = {
     "min-recoil": spec.verticalRecoil,
@@ -398,8 +392,24 @@ export function judge(
     unknown: price.status === "priced" ? 0 : price.unpriced.length,
     known: price.status === "priced" ? price.totalRUB : price.knownRUB,
     count: placed.length,
-    pinnedUnpriced,
   };
+}
+
+/**
+ * The pinned paths whose part has no price the profile can pay and comes with no way to buy
+ * the gun: the pins that can leave a build's price unknown.
+ */
+export function unpricedPinPaths(c: RecordsCase): Set<string> {
+  const gate = c.input.constraints.profile;
+  const paths = weaponPaths(gate, c.input.weaponItem, c.input.presets);
+  const found = new Set<string>();
+  for (const [at, pin] of c.input.constraints.pinnedSlots) {
+    const part = pin === null ? undefined : c.catalog.get(pin);
+    if (part === undefined || priceUnder(gate, part) !== null) continue;
+    if (paths.some((path) => (path.covers.get(pin!) ?? 0) > 0)) continue;
+    found.add(at);
+  }
+  return found;
 }
 
 /** The cheapest way to buy the weapon alone, or `null` when its price is unknown or none is open. */
