@@ -1,55 +1,69 @@
-import type { PlayerProfile } from "@tarkov/data";
+import {
+  itemAvailability,
+  type AvailabilityInput,
+  type BuildPrice,
+  type BuilderMode,
+  type PriceGate,
+} from "@tarkov/data";
+// Pure and React-free: the Builder's own rule for what an item's pill shows.
+import { shownAvailability } from "../../src/features/builder/shown-availability.js";
 
-/** One way to obtain a mod. Priced or not: the pill asks who sells it, not for how much. */
-export interface AvailabilityOffer {
-  vendor: { normalizedName: string };
-  minTraderLevel?: number;
+/** What the card's availability pill is drawn from: the build as the card prices it. */
+export interface PillInput {
+  /** The build's weapon, as `snapshotWeaponList` gives it (the Builder's weapon picker). */
+  weapon: AvailabilityInput;
+  /** Each distinct part on the weapon, as `snapshotPart` gives it (the Builder's catalog). */
+  parts: readonly AvailabilityInput[];
 }
-
-export interface AvailabilityMod {
-  id: string;
-  /** Every offer, including those without a price (a barter whose inputs have none). */
-  offers: AvailabilityOffer[];
-}
-
-export type AvailabilityPill = "FLEA" | "LL2" | "LL3" | "LL4";
 
 /**
- * Summarize the lowest trader level that covers every mod in the build.
+ * The share card's availability pill, in the Builder's own words.
  *
- * If any mod is only purchasable on flea, returns "FLEA". Otherwise returns
- * the minimum "LL{n}" that still covers the highest `minTraderLevel` seen.
- * There is no LL1 pill in the spec — clamp up to "LL2".
+ * Each item's availability is the Builder's: `itemAvailability` under `gate`, through
+ * `shownAvailability` for the mode the gate implies (no gate is theorycraft). So a part
+ * nobody sells is not shown as gated in theorycraft.
+ *
+ * - `LOCKED` when `gate` is a profile and the build cannot be bought under it
+ *   (`price.status === "unobtainable"`, the same rule as Compare's LOCKED). A part the
+ *   bought preset supplies is not a lock.
+ * - Otherwise the obtainable items summed up in the tokens of the Builder's per-item pills
+ *   (`availabilityLabel`): `LL{n}` for the highest trader level any path needs, with
+ *   ` BARTER` when some path is a barter; `FLEA` when some path is the flea; `QUEST` when
+ *   some path assumes a quest is done. Joined with ` · `. For a build of one item this is
+ *   exactly that item's Builder pill.
+ * - `null` when no item has a path to show; the card then leaves the pill off.
+ *
+ * `price` is `buildPriceUnder(gate, …)` over the same weapon and parts.
  */
-export function availabilityPillText(
-  mods: readonly AvailabilityMod[],
-  // Deliberately unused, and deliberately left that way. This is a parallel, hand-rolled
-  // summariser that never calls `itemAvailability`, so OG cards do NOT do profile gating:
-  // the pill reports what the build needs, not what any given player can reach. A build
-  // whose mods are flea-only above the author's PMC level still prints "FLEA" here, where
-  // `itemAvailability` would return `flea-level-required`. The divergence is known and
-  // out of scope for the flea-level gate; unifying the two is its own piece of work.
-  _profile: PlayerProfile,
-): AvailabilityPill {
-  let needsFlea = false;
-  let maxLevel = 1;
+export function availabilityPill(
+  gate: PriceGate,
+  input: PillInput,
+  price: BuildPrice,
+): string | null {
+  if (gate !== null && price.status === "unobtainable") return "LOCKED";
+  const mode: BuilderMode = gate === null ? "theorycraft" : "progression";
 
-  for (const mod of mods) {
-    if (mod.offers.length === 0) {
-      needsFlea = true;
+  let level: number | null = null;
+  let barter = false;
+  let flea = false;
+  let quest = false;
+  for (const item of [input.weapon, ...input.parts]) {
+    const shown = shownAvailability(mode, itemAvailability(item, gate));
+    // Hidden (theorycraft, nobody sells it), or under a profile a part the bought preset
+    // supplies: the price above says the build can be had, so it is not a lock.
+    if (shown === null || !shown.available) continue;
+    if (shown.kind === "flea") {
+      flea = true;
       continue;
     }
-    const traderOffers = mod.offers.filter((o) => o.vendor.normalizedName !== "flea-market");
-    if (traderOffers.length === 0) {
-      needsFlea = true;
-      continue;
-    }
-    const modMin = Math.min(...traderOffers.map((o) => o.minTraderLevel ?? 1));
-    if (modMin > maxLevel) maxLevel = modMin;
+    level = Math.max(level ?? shown.minLevel, shown.minLevel);
+    if (shown.kind === "barter") barter = true;
+    if (shown.assumedQuest !== null) quest = true;
   }
 
-  if (needsFlea) return "FLEA";
-  if (maxLevel >= 4) return "LL4";
-  if (maxLevel >= 3) return "LL3";
-  return "LL2";
+  const tokens: string[] = [];
+  if (level !== null) tokens.push(barter ? `LL${level} BARTER` : `LL${level}`);
+  if (flea) tokens.push("FLEA");
+  if (quest) tokens.push("QUEST");
+  return tokens.length === 0 ? null : tokens.join(" · ");
 }

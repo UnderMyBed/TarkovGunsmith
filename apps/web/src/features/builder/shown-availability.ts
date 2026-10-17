@@ -1,3 +1,5 @@
+// No React and no DOM, here or in anything imported: the share card's Pages Function imports
+// this module (`functions/lib/og-availability.ts`) so the card says what the Builder says.
 import type { BuilderMode, ItemAvailability } from "@tarkov/data";
 
 /**
@@ -12,4 +14,17 @@ export function shownAvailability(
   availability: ItemAvailability | null,
 ): ItemAvailability | null {
   return mode === "theorycraft" && availability?.available === false ? null : availability;
+}
+
+/**
+ * The text of an item's availability pill: `LL2`, `LL3 BARTER` or `FLEA` for the path it is
+ * bought by, with ` · QUEST` when that path assumes a quest is done; `LOCKED` when no path is
+ * open.
+ */
+export function availabilityLabel(availability: ItemAvailability): string {
+  if (!availability.available) return "LOCKED";
+  if (availability.kind === "flea") return "FLEA";
+  const level = `LL${availability.minLevel}`;
+  const head = availability.kind === "barter" ? `${level} BARTER` : level;
+  return availability.assumedQuest === null ? head : `${head} · QUEST`;
 }

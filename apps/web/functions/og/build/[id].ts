@@ -10,8 +10,8 @@
  *   4. Load the build-time snapshot and prices from the deploy's own assets (once per
  *      isolate), bring the stored build of any version to the current one as the Builder
  *      does (`loadStoredBuild`), and draw the weapon + mounted parts from them.
- *   5. Hydrate the view model, overwrite `availability` with the
- *      trader-level summary computed from the actual `buyFor` offers.
+ *   5. Hydrate the view model: stats, price and availability pill all under the build's
+ *      embedded profile, or theorycraft (every gate open) when it carries none.
  *   6. Render JSX → SVG → PNG at 1200×630.
  *   7. Cache & return with `public, max-age=30d, immutable`.
  *
@@ -33,10 +33,8 @@ import {
   renderPng,
 } from "@tarkov/og";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
-import { DEFAULT_PROFILE } from "@tarkov/data";
 import { fetchOgRowsForBuild, loadOgData, loadStoredBuild } from "../../lib/og-graphql.js";
 import { ogCacheKey } from "../../lib/og-cache.js";
-import { availabilityPillText } from "../../lib/og-availability.js";
 import { isValidBuildId } from "../../lib/build-id.js";
 import { buildsApiBase } from "../../lib/builds-api.js";
 
@@ -105,11 +103,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
       weapon: rows.weapon,
       priceRub: rows.priceRub,
       mods: rows.mods,
+      availability: rows.availability,
     });
-    vm.availability = availabilityPillText(
-      rows.availability,
-      build.profileSnapshot ?? DEFAULT_PROFILE,
-    );
 
     const png = await renderPng(buildCard(vm), embeddedFonts(), { width: 1200, height: 630 });
     const body = new Uint8Array(png);

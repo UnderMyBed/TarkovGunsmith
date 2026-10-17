@@ -127,7 +127,9 @@ function Side({
           letterSpacing: "0.05em",
         }}
       >
-        {side.modCount} MODS · {side.availability}
+        {side.availability === null
+          ? `${side.modCount} MODS`
+          : `${side.modCount} MODS · ${side.availability}`}
       </div>
       <div
         style={{

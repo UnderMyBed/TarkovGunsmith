@@ -1,6 +1,6 @@
 import type { BallisticMod } from "@tarkov/ballistics";
 import type { HydrateWeapon } from "@tarkov/og";
-import type { AvailabilityMod, AvailabilityOffer } from "./og-availability.js";
+import { availabilityPill } from "./og-availability.js";
 import {
   adaptMod,
   adaptWeapon,
@@ -20,7 +20,6 @@ import {
   type BuilderPrices,
   type BuilderSnapshot,
   type BuildV6,
-  type BuyForEntry,
   type PlayerProfile,
   type PriceGate,
 } from "@tarkov/data";
@@ -128,21 +127,6 @@ interface Args {
 }
 
 /**
- * Every offer on one part, for the availability pill. Unpriced ones count: a Ref barter whose
- * GP-coin cost has no flea price still says which trader, at which level, sells the part.
- */
-function availabilityOffers(buyFor: readonly BuyForEntry[]): AvailabilityOffer[] {
-  return buyFor.map(({ vendor }) => ({
-    vendor: { normalizedName: vendor.normalizedName },
-    // Flattened up from the vendor, where availabilityPillText expects it.
-    minTraderLevel:
-      vendor.__typename === "TraderOffer" || vendor.__typename === "TraderBarter"
-        ? (vendor.minTraderLevel ?? undefined)
-        : undefined,
-  }));
-}
-
-/**
  * The weapon and mounted parts of a saved build, as the card draws them.
  *
  * @throws When the build's weapon is not in the snapshot.
@@ -157,8 +141,11 @@ export function fetchOgRowsForBuild(
    * `resolveBuild(...).placed`, one entry per filled slot, so a part fitted twice counts twice.
    */
   mods: BallisticMod[];
-  /** Each distinct part on the weapon with every offer on it, for the availability pill. */
-  availability: AvailabilityMod[];
+  /**
+   * The availability pill under `args.gate` (`availabilityPill`), from the same weapon, parts
+   * and price; `null` when there is nothing to show.
+   */
+  availability: string | null;
   /**
    * The build's price under `args.gate` by the Builder's own rule (`buildPriceUnder`): weapon
    * or preset plus parts, at the release's prices. `null` unless every price is known.
@@ -183,7 +170,6 @@ export function fetchOgRowsForBuild(
 
   // Each distinct part, priced once from the release's table; `placed` repeats it per slot.
   const priced = new Map<string, AttachablePart>();
-  const availability: AvailabilityMod[] = [];
   for (const { itemId } of placed) {
     if (priced.has(itemId)) continue;
     const part = snapshotPart(snapshot, table, itemId);
@@ -191,7 +177,6 @@ export function fetchOgRowsForBuild(
     // card fails rather than drawing a build short a part.
     if (part === undefined) throw new Error(`og: placed part ${itemId} not in the snapshot`);
     priced.set(itemId, part);
-    availability.push({ id: itemId, offers: availabilityOffers(part.buyFor ?? []) });
   }
 
   // One entry per filled slot, so a part fitted twice counts and is paid for twice, as in the
@@ -205,7 +190,11 @@ export function fetchOgRowsForBuild(
   return {
     weapon,
     mods: parts.map(adaptMod),
-    availability,
+    availability: availabilityPill(
+      args.gate,
+      { weapon: found, parts: [...priced.values()] },
+      price,
+    ),
     priceRub: price.status === "priced" ? price.totalRUB : null,
   };
 }
