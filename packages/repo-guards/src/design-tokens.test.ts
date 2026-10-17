@@ -9,25 +9,35 @@ import { REPO_ROOT } from "./repo.js";
  * `bg-black/70`) in a component renders perfectly well, so nothing else catches it — it just
  * stops moving when the palette does.
  *
- * Scanned: the TypeScript sources of the SPA, its Pages Functions and the UI primitives,
- * test files excluded (they may name a colour to assert on). `packages/og` is deliberately
- * out of scope: satori cannot read CSS variables, so `packages/og/src/colors.ts` is the one
- * sanctioned hex mirror of the palette.
+ * Scanned: the TypeScript and CSS sources of the SPA, its Pages Functions and the UI
+ * primitives, test files excluded (they may name a colour to assert on). Exempt: the token
+ * file itself, and `packages/og`, because satori cannot read CSS variables and
+ * `packages/og/src/colors.ts` is the one sanctioned hex mirror of the palette.
  */
 const SCANNED_DIRS = ["apps/web/src", "apps/web/functions", "packages/ui/src"];
+const TOKEN_FILE = "packages/ui/src/styles/index.css";
 
 const PALETTE_HUES =
   "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black";
 const COLOUR_UTILITIES =
   "bg|text|border|ring|fill|stroke|from|to|via|outline|decoration|divide|placeholder|accent|caret|shadow";
 
+/**
+ * A hex colour ends at anything that cannot continue it. `_` is not one of those: Tailwind
+ * writes spaces in arbitrary values as `_`, so `color-mix(in_srgb,#f59e0b_10%,transparent)`
+ * must still match.
+ */
+const HEX_END = "(?![0-9a-zA-Z-])";
+
+/** The characters a colour value follows: a bracket, quote, `:`, `,`, `(`, `_` or a space. */
+const COLOUR_CONTEXT = "(?<=[\\[\"'`:,(_\\s])";
+
 /** Each rule names what it found, so a failure reads as the fix. */
 const RULES: ReadonlyArray<readonly [name: string, pattern: RegExp]> = [
-  // Six or eight hex digits; or three or four with at least one letter, so an issue
-  // reference like `#162` in a comment is not mistaken for a colour.
+  // Six or eight hex digits, or three or four with at least one letter, anywhere.
   [
     "hex colour",
-    /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|(?=[0-9]*[a-fA-F])[0-9a-fA-F]{3,4})(?![0-9a-zA-Z_-])/,
+    new RegExp(`#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|(?=[0-9]*[a-fA-F])[0-9a-fA-F]{3,4})${HEX_END}`),
   ],
   ["functional colour", /\b(?:rgba?|hsla?)\(/],
   [
@@ -36,6 +46,18 @@ const RULES: ReadonlyArray<readonly [name: string, pattern: RegExp]> = [
   ],
 ];
 
+/**
+ * An all-digit short hex (`#000`, `#333`) reads exactly like an issue reference (`#162`), so
+ * it only counts in code, where it follows a colour context — never in a comment.
+ */
+const DIGIT_HEX = new RegExp(`${COLOUR_CONTEXT}#[0-9]{3,4}${HEX_END}`);
+
+/** The code on a line: nothing for a comment line, and no trailing `// …` comment. */
+function codeOf(line: string): string {
+  if (/^\s*(?:\/\/|\/\*|\*|\{\/\*)/.test(line)) return "";
+  return line.replace(/\s\/\/\s.*$/, "");
+}
+
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -43,7 +65,7 @@ function sourceFiles(dir: string): string[] {
     if (entry.isDirectory()) {
       if (entry.name !== "node_modules" && entry.name !== "__fixtures__")
         out.push(...sourceFiles(full));
-    } else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
+    } else if (/\.(?:tsx?|css)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
       out.push(full);
     }
   }
@@ -58,16 +80,19 @@ function rawColours(file: string, text: string): string[] {
       const m = pattern.exec(line);
       if (m) found.push(`${file}:${i + 1}: ${name} — ${m[0]}`);
     }
+    const digits = DIGIT_HEX.exec(codeOf(line));
+    if (digits) found.push(`${file}:${i + 1}: hex colour — ${digits[0]}`);
   });
   return found;
 }
 
 describe("colour comes from the design tokens", () => {
-  it("no raw colour in the SPA, its Pages Functions or the UI primitives", () => {
+  it("no raw colour in the SPA, its stylesheet, its Pages Functions or the UI primitives", () => {
     const violations = SCANNED_DIRS.flatMap((dir) =>
-      sourceFiles(join(REPO_ROOT, dir)).flatMap((file) =>
-        rawColours(relative(REPO_ROOT, file), readFileSync(file, "utf8")),
-      ),
+      sourceFiles(join(REPO_ROOT, dir))
+        .map((file) => relative(REPO_ROOT, file))
+        .filter((file) => file !== TOKEN_FILE)
+        .flatMap((file) => rawColours(file, readFileSync(join(REPO_ROOT, file), "utf8"))),
     );
     expect(
       violations,
@@ -85,5 +110,18 @@ describe("colour comes from the design tokens", () => {
     expect(rawColours("x.tsx", 'className="text-[var(--color-better)]"')).toEqual([]);
     expect(rawColours("x.tsx", "// See GitHub issue #162 and #1234.")).toEqual([]);
     expect(rawColours("x.tsx", 'className="bg-[var(--color-background)]/80"')).toEqual([]);
+    // A hex inside Tailwind's `_`-separated arbitrary value — the form a tint takes.
+    expect(
+      rawColours("x.tsx", 'className="bg-[color-mix(in_srgb,#f59e0b_10%,transparent)]"'),
+    ).toHaveLength(1);
+    // All-digit short hex in a colour context, in a class, a string and an attribute.
+    expect(rawColours("x.tsx", 'className="bg-[#000]"')).toHaveLength(1);
+    expect(rawColours("x.ts", 'const c = "#333";')).toHaveLength(1);
+    expect(rawColours("x.tsx", '<path fill="#000" />')).toHaveLength(1);
+    expect(rawColours("x.css", "  color: #000;")).toHaveLength(1);
+    // An issue reference in a comment, in every comment form, stays legal.
+    expect(rawColours("x.tsx", " * Regression guard for issue #162.")).toEqual([]);
+    expect(rawColours("x.tsx", "const x = 1; // see #265")).toEqual([]);
+    expect(rawColours("x.tsx", "{/* fixed by #163 */}")).toEqual([]);
   });
 });
