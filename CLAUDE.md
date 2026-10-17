@@ -32,7 +32,7 @@ A serverless, edge-hosted, free-to-host web app on the Cloudflare ecosystem. Bui
 
 - **Frontend:** Vite + React + TypeScript SPA → Cloudflare Pages
 - **Edge backend:** One Cloudflare Worker (`builds-api` for KV-backed share URLs)
-- **Data:** [`json.tarkov.dev`](https://json.tarkov.dev/endpoints) (community JSON API). The GraphQL API this project was built on went down in July 2026 ([the-hideout/tarkov-api#474](https://github.com/the-hideout/tarkov-api/issues/474)) and tarkov.dev itself now runs on the JSON API.
+- **Data:** [`json.tarkov.dev`](https://json.tarkov.dev/endpoints) (community JSON API). The GraphQL API this project was built on went down in July 2026 ([the-hideout/tarkov-api#474](https://github.com/the-hideout/tarkov-api/issues/474)) and tarkov.dev itself now runs on the JSON API. The Builder reads a snapshot of it generated at build time ([ADR-0004](docs/adr/0004-builder-snapshot.md)).
 - **Math:** Pure-TS ballistics package, runs client-side
 - **UI:** Tailwind v4 + shadcn/ui, dark-first
 

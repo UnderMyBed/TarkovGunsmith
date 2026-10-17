@@ -157,7 +157,19 @@ jobs:
         # (@tarkov/ballistics, @tarkov/data, @tarkov/og, @tarkov/optimizer,
         # @tarkov/ui). Without this, vite/tsc can't resolve the workspace
         # imports because their dist/ is missing.
+        #
+        # `upstream` makes the build generate the Builder snapshot from live
+        # json.tarkov.dev rather than the committed captures every other build uses.
+        # Generation is strict, so upstream drift fails this step, before anything deploys.
+        env:
+          TARKOV_SNAPSHOT_SOURCE: upstream
         run: pnpm --filter "@tarkov/web..." build
+
+      - name: Assert the snapshot is live data
+        # A fixture snapshot would deploy a Builder with two weapons in it.
+        run: |
+          jq -e '.source == "upstream"' apps/web/dist/data/builder-snapshot.json
+          jq -e '.source == "upstream"' apps/web/dist/data/builder-prices.json
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v4
@@ -298,6 +310,10 @@ jobs:
           echo "site:"
           probe "GET /"            200 "$SITE/"
           probe "GET /builder"     200 "$SITE/builder"
+          probe "GET /data/builder-snapshot.json" 200 "$SITE/data/builder-snapshot.json"
+          if ! jq -e '.source == "upstream"' /tmp/body >/dev/null 2>&1; then
+            echo "  FAIL /data/builder-snapshot.json is not live data (source != upstream)"; fail=1
+          fi
 
           echo "worker reachable on its own hostname:"
           probe "GET api /healthz" 200 "$API/healthz"

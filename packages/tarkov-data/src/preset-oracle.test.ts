@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import {
+  fixturePartCatalog,
+  fixtureWeaponList,
+  fixtureWeaponTree,
+} from "./__test-utils__/fixture-snapshot.js";
 import { weaponSpec } from "@tarkov/ballistics";
 import { fixtureClient } from "./__fixtures__/client.js";
 import oracle from "./__fixtures__/preset-oracle-sample.json" with { type: "json" };
-import { fetchPartCatalog, partsById } from "./queries/parts.js";
-import { fetchWeaponList } from "./queries/weaponList.js";
-import { fetchWeaponTree } from "./queries/weaponTree.js";
+import { partsById, snapshotPartSchema, type AttachablePart } from "./queries/parts.js";
 import { visibleSlots } from "./queries/slot-graph.js";
 import { attachedParts } from "./attached-parts.js";
 import { adaptMod, adaptWeapon } from "./ballistic-adapters.js";
@@ -46,12 +49,12 @@ const client = fixtureClient({ items: oracle });
 async function placePreset(presetId: string) {
   const [doc, weapons, parts] = await Promise.all([
     client.fetchResource<ItemsDocument>("items"),
-    fetchWeaponList(client),
-    fetchPartCatalog(client),
+    fixtureWeaponList(client),
+    fixturePartCatalog(client),
   ]);
   const preset = doc.items[presetId] as PresetRecord;
   const weaponId = preset.properties.baseItem;
-  const tree = await fetchWeaponTree(client, weaponId);
+  const tree = await fixtureWeaponTree(client, weaponId);
   const byId = partsById(parts);
 
   const pending = preset.containsItems.map((c) => c.item).filter((id) => id !== weaponId);
@@ -100,7 +103,7 @@ describe("cartridge recoil in an upstream preset", () => {
   const CARTRIDGE = "56dfef82d2720bbd668b4567"; // recoilModifier 0.07 upstream
 
   it("is excluded: 67 upstream, which counting the round once would make 74.5", async () => {
-    const { doc, preset, byId, pending, weapon, mods } = await placePreset(AKS74UN_PRESET);
+    const { doc, preset, pending, weapon, mods } = await placePreset(AKS74UN_PRESET);
     // The cartridges sit in the magazine, which no slot models; everything else is placed.
     expect(pending).toEqual([CARTRIDGE]);
     expect(preset.properties.recoilVertical).toBe(67);
@@ -109,12 +112,15 @@ describe("cartridge recoil in an upstream preset", () => {
 
     const raw = doc.items[CARTRIDGE] as { properties: { recoilModifier: number } };
     expect(raw.properties.recoilModifier).toBe(0.07);
+    // A magazine-loaded round is reachable through no slot, so the Builder catalog does not
+    // carry it; parse it through the same part schema to ask adaptMod about it.
+    const round: AttachablePart = { ...snapshotPartSchema.parse(raw), buyFor: [] };
     const withRound = weaponSpec(weapon, [
       ...mods,
-      { ...adaptMod(byId.get(CARTRIDGE)!), recoilModifier: raw.properties.recoilModifier },
+      { ...adaptMod(round), recoilModifier: raw.properties.recoilModifier },
     ]);
     expect(withRound.verticalRecoil).toBeCloseTo(74.5, 0);
     // adaptMod applies the preset's rule: the round adds weight, not recoil.
-    expect(adaptMod(byId.get(CARTRIDGE)!).recoilModifier).toBe(0);
+    expect(adaptMod(round).recoilModifier).toBe(0);
   });
 });

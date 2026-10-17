@@ -1,6 +1,6 @@
 // apps/web/src/routes/builder.compare.$pairId.tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useLoadPair, LoadPairError } from "@tarkov/data";
+import { useBuilderSnapshot, useLoadPair, LoadPairError } from "@tarkov/data";
 import {
   Button,
   Card,
@@ -11,6 +11,7 @@ import {
   Skeleton,
 } from "@tarkov/ui";
 import { CompareWorkspace } from "../features/builder/compare/compare-workspace.js";
+import { withKnownParts } from "../features/builder/compare/known-parts.js";
 
 export const Route = createFileRoute("/builder/compare/$pairId")({
   component: LoadedComparePage,
@@ -19,8 +20,11 @@ export const Route = createFileRoute("/builder/compare/$pairId")({
 function LoadedComparePage() {
   const { pairId } = Route.useParams();
   const query = useLoadPair(pairId);
+  // The pair's parts are resolved against the game data before the workspace takes them as
+  // its initial state, so a part that has left the game starts out orphaned.
+  const snapshot = useBuilderSnapshot();
 
-  if (query.isLoading) {
+  if (query.isLoading || snapshot.isLoading) {
     return (
       <div className="grid grid-cols-2 gap-4 p-4" role="status" aria-busy="true">
         <div className="flex flex-col gap-3">
@@ -49,7 +53,10 @@ function LoadedComparePage() {
     );
   }
 
-  return <CompareWorkspace initialPair={query.data} initialPairId={pairId} />;
+  // Without a snapshot the workspace's own data hooks fail and show it; the pair goes in as
+  // loaded.
+  const pair = snapshot.data ? withKnownParts(query.data, snapshot.data) : query.data;
+  return <CompareWorkspace initialPair={pair} initialPairId={pairId} />;
 }
 
 function LoadErrorCard({ error, id, onRetry }: { error: Error; id: string; onRetry: () => void }) {

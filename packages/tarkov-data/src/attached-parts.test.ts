@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { fixturePartCatalog, fixtureWeaponTree } from "./__test-utils__/fixture-snapshot.js";
 import {
   attachedParts,
   fleaPriceRub,
@@ -6,8 +7,7 @@ import {
   withAttachment,
 } from "./attached-parts.js";
 import { conflictsWith } from "./conflicts.js";
-import { fetchPartCatalog, partsById } from "./queries/parts.js";
-import { fetchWeaponTree } from "./queries/weaponTree.js";
+import { partsById } from "./queries/parts.js";
 import { fixtureClient } from "./__fixtures__/client.js";
 import { tinyTree } from "./__test-utils__/tiny-tree.js";
 
@@ -30,8 +30,8 @@ const HANDGUARD = "mod_reciever/mod_handguard";
 async function m4a1() {
   const client = fixtureClient();
   const [tree, parts] = await Promise.all([
-    fetchWeaponTree(client, M4A1),
-    fetchPartCatalog(client),
+    fixtureWeaponTree(client, M4A1),
+    fixturePartCatalog(client),
   ]);
   return { tree, parts: partsById(parts) };
 }
@@ -88,7 +88,7 @@ describe("attachedParts", () => {
       { nameId: "mod_x", items: [["holder", [{ nameId: "mod_magazine", items: [STANAG_MAG] }]]] },
       { nameId: "mod_barrel", items: [BARREL_10_3] },
     ]);
-    const byId = partsById(await fetchPartCatalog(fixtureClient()));
+    const byId = partsById(await fixturePartCatalog(fixtureClient()));
     const { entries, missing } = attachedParts(
       tree,
       {
@@ -113,7 +113,7 @@ describe("attachedParts", () => {
       { nameId: "b", items: ["x"] },
       { nameId: "c", items: [STANAG_MAG] },
     ]);
-    const byId = partsById(await fetchPartCatalog(fixtureClient()));
+    const byId = partsById(await fixturePartCatalog(fixtureClient()));
     const { entries, missing } = attachedParts(
       tree,
       { a: "gone", b: "gone", c: STANAG_MAG, "a/deep": "gone" },
@@ -201,7 +201,7 @@ describe('replacing a barrel under an AX-15 4" handguard (PR #240 review repro)'
 
 describe("fleaPriceRub", () => {
   it("reads the flea offer, and 0 without one", async () => {
-    const parts = await fetchPartCatalog(fixtureClient());
+    const parts = await fixturePartCatalog(fixtureClient());
     const withFlea = parts.find((p) =>
       (p.buyFor ?? []).some((b) => b.vendor.__typename === "FleaMarket" && b.priceRUB !== null),
     )!;

@@ -5,7 +5,14 @@ import { renderHook, cleanup, fireEvent, render, screen } from "@testing-library
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { DEFAULT_PROFILE, MARQUEE_QUEST_NORMALIZED_NAMES, TarkovDataProvider } from "@tarkov/data";
+import {
+  buildBuilderSnapshot,
+  DEFAULT_PROFILE,
+  MARQUEE_QUEST_NORMALIZED_NAMES,
+  staticBuilderDataSource,
+  TarkovDataProvider,
+  type BuilderDataSource,
+} from "@tarkov/data";
 import type { PlayerProfile, TarkovJsonClient, TaskListItem } from "@tarkov/data";
 import { ProfileEditor, useCompletedQuestSet, useTaskList } from "./profile-editor.js";
 import type { UseTarkovTrackerSyncResult } from "./useTarkovTrackerSync.js";
@@ -77,7 +84,7 @@ describe("useTaskList", () => {
  *
  * Driven through the component's real props (a PlayerProfile, an onChange the harness
  * actually applies, and a UseTarkovTrackerSyncResult double) over a real QueryClient and a
- * real TarkovJsonClient double, so the actual `useTasks` fetcher and its Zod schema run.
+ * Builder snapshot the real generator builds, so `useTasks` and the task schema run.
  *
  * Assertions are on labels, visible copy and the profiles the editor emits — never on
  * classes, styles or internal state — so a Builder restyle that keeps the behaviour keeps
@@ -117,19 +124,35 @@ const TASKS_DOC = {
   },
 };
 
-function createTasksClient(mode?: "error" | "pending"): TarkovJsonClient {
-  return {
-    fetchResource<T>(resource: string): Promise<T> {
-      if (resource === "traders") return Promise.resolve(structuredClone(TRADERS_DOC) as T);
-      if (resource === "tasks") {
-        if (mode === "error") return Promise.reject(new Error("tasks unavailable"));
-        if (mode === "pending") return new Promise<T>(() => undefined);
-        return Promise.resolve(structuredClone(TASKS_DOC) as T);
-      }
-      return Promise.reject(new Error(`no fixture for resource "${resource}"`));
+/**
+ * The Builder data source the editor's `useTasks` reads: a snapshot the real generator builds
+ * from these task and trader documents, or one that fails or never loads.
+ */
+function createTasksData(mode?: "error" | "pending"): BuilderDataSource {
+  if (mode === "error") {
+    const fail = () => Promise.reject(new Error("tasks unavailable"));
+    return { snapshot: fail, prices: fail };
+  }
+  if (mode === "pending") {
+    const never = () => new Promise<never>(() => undefined);
+    return { snapshot: never, prices: never };
+  }
+  const { snapshot, prices } = buildBuilderSnapshot(
+    {
+      items: { items: { stamp: { id: "stamp", updated: "2026-10-16T00:00:00.000Z" } } },
+      tasks: structuredClone(TASKS_DOC),
+      traders: structuredClone(TRADERS_DOC),
+      barters: [],
     },
-  };
+    "fixtures",
+  );
+  return staticBuilderDataSource(snapshot, prices.prices);
 }
+
+/** The editor reads no upstream resource itself; every request is a test bug. */
+const NO_CLIENT: TarkovJsonClient = {
+  fetchResource: (resource) => Promise.reject(new Error(`unexpected fetch of "${resource}"`)),
+};
 
 function makeSync(overrides?: Partial<UseTarkovTrackerSyncResult>): UseTarkovTrackerSyncResult {
   return {
@@ -145,7 +168,7 @@ function makeSync(overrides?: Partial<UseTarkovTrackerSyncResult>): UseTarkovTra
 function renderEditor(options?: {
   profile?: Partial<PlayerProfile>;
   sync?: UseTarkovTrackerSyncResult;
-  client?: TarkovJsonClient;
+  builderData?: BuilderDataSource;
 }) {
   const onChange = vi.fn();
   const sync = options?.sync ?? makeSync();
@@ -168,7 +191,10 @@ function renderEditor(options?: {
 
   const utils = render(
     <QueryClientProvider client={queryClient}>
-      <TarkovDataProvider client={options?.client ?? createTasksClient()}>
+      <TarkovDataProvider
+        client={NO_CLIENT}
+        builderData={options?.builderData ?? createTasksData()}
+      >
         <Harness />
       </TarkovDataProvider>
     </QueryClientProvider>,
@@ -429,12 +455,12 @@ describe("ProfileEditor — quests", () => {
   });
 
   it("says the quest list is still loading while it is in flight", async () => {
-    await renderQuests({ client: createTasksClient("pending") });
+    await renderQuests({ builderData: createTasksData("pending") });
     expect(await screen.findByText("Loading quest list…")).toBeInTheDocument();
   });
 
   it("keeps the filters usable and says so when the quest list fails to load", async () => {
-    await renderQuests({ client: createTasksClient("error") });
+    await renderQuests({ builderData: createTasksData("error") });
 
     expect(
       await screen.findByText(

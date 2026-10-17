@@ -25,17 +25,16 @@ import { fetchAmmoList } from "../queries/ammoList.js";
 import { useArmorList } from "./useArmorList.js";
 import { fetchArmorList } from "../queries/armorList.js";
 import { usePartCatalog } from "./usePartCatalog.js";
-import { fetchPartCatalog } from "../queries/parts.js";
 import { useTasks } from "./useTasks.js";
-import { fetchTasks } from "../queries/tasks.js";
 import { useTraders } from "./useTraders.js";
-import { fetchTraders } from "../queries/traders.js";
 import { useWeaponList } from "./useWeaponList.js";
-import { fetchWeaponList } from "../queries/weaponList.js";
+import { useBuilderSnapshot } from "./useBuilderSnapshot.js";
+import { fixtureBuilderData, fixtureSnapshot } from "../__test-utils__/fixture-snapshot.js";
+import type { BuilderDataSource } from "../snapshot/source.js";
+import { snapshotPartCatalog, snapshotWeaponList, snapshotWeaponTree } from "../snapshot/views.js";
 import { useWeapon } from "./useWeapon.js";
 import { fetchWeapon } from "../queries/weapon.js";
 import { useWeaponTree } from "./useWeaponTree.js";
-import { fetchWeaponTree } from "../queries/weaponTree.js";
 import { useLoadBuild } from "./useLoadBuild.js";
 import { useSaveBuild } from "./useSaveBuild.js";
 import { useLoadPair } from "./useLoadPair.js";
@@ -77,78 +76,6 @@ describe("useArmorList", () => {
 
   it("surfaces a rejected fetch as an Error on .error", async () => {
     const { result } = renderHook(() => useArmorList(), {
-      wrapper: withTarkovProvider(failingClient),
-    });
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe("upstream down");
-  });
-});
-
-describe("usePartCatalog", () => {
-  it("resolves with the same data fetchPartCatalog returns, under the ['partCatalog'] key", async () => {
-    const client = fixtureClient();
-    const { result } = renderHook(() => usePartCatalog(), { wrapper: withTarkovProvider(client) });
-    expect(result.current.isPending).toBe(true);
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(await fetchPartCatalog(client));
-  });
-
-  it("surfaces a rejected fetch as an Error on .error", async () => {
-    const { result } = renderHook(() => usePartCatalog(), {
-      wrapper: withTarkovProvider(failingClient),
-    });
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe("upstream down");
-  });
-});
-
-describe("useTasks", () => {
-  it("resolves with the same data fetchTasks returns, under the ['tasks'] key", async () => {
-    const client = fixtureClient();
-    const { result } = renderHook(() => useTasks(), { wrapper: withTarkovProvider(client) });
-    expect(result.current.isPending).toBe(true);
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(await fetchTasks(client));
-  });
-
-  it("surfaces a rejected fetch as an Error on .error", async () => {
-    const { result } = renderHook(() => useTasks(), {
-      wrapper: withTarkovProvider(failingClient),
-    });
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe("upstream down");
-  });
-});
-
-describe("useTraders", () => {
-  it("resolves with the same data fetchTraders returns, under the ['traders'] key", async () => {
-    const client = fixtureClient();
-    const { result } = renderHook(() => useTraders(), { wrapper: withTarkovProvider(client) });
-    expect(result.current.isPending).toBe(true);
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(await fetchTraders(client));
-  });
-
-  it("surfaces a rejected fetch as an Error on .error", async () => {
-    const { result } = renderHook(() => useTraders(), {
-      wrapper: withTarkovProvider(failingClient),
-    });
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe("upstream down");
-  });
-});
-
-describe("useWeaponList", () => {
-  it("resolves with the same data fetchWeaponList returns, under the ['weaponList'] key", async () => {
-    const client = fixtureClient();
-    const { result } = renderHook(() => useWeaponList(), { wrapper: withTarkovProvider(client) });
-    expect(result.current.isPending).toBe(true);
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(await fetchWeaponList(client));
-  });
-
-  it("surfaces a rejected fetch as an Error on .error", async () => {
-    const { result } = renderHook(() => useWeaponList(), {
       wrapper: withTarkovProvider(failingClient),
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -209,34 +136,109 @@ describe("useWeapon", () => {
   });
 });
 
-describe("useWeaponTree", () => {
-  it("resolves with the same data fetchWeaponTree returns, under ['weapon-tree', id]", async () => {
-    const client = fixtureClient();
-    const { result } = renderHook(() => useWeaponTree(M4A1_ID), {
-      wrapper: withTarkovProvider(client),
-    });
-    expect(result.current.isPending).toBe(true);
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(await fetchWeaponTree(client, M4A1_ID));
+// ---------------------------------------------------------------------------
+// Builder hooks — `useBuilderData()`, read from the build-time snapshot.
+// ---------------------------------------------------------------------------
+
+const failingData: BuilderDataSource = {
+  snapshot: () => Promise.reject(new Error("game data down")),
+  prices: () => Promise.reject(new Error("prices down")),
+};
+
+/** Render a Builder hook over the fixture snapshot and wait for it to resolve. */
+async function resolveBuilderHook<T>(hook: () => { data?: T; isSuccess: boolean }) {
+  const { result } = renderHook(hook, {
+    wrapper: withTarkovProvider(fixtureClient(), await fixtureBuilderData()),
+  });
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  return result.current.data;
+}
+
+async function rejectBuilderHook(hook: () => { error: Error | null; isError: boolean }) {
+  const { result } = renderHook(hook, {
+    wrapper: withTarkovProvider(fixtureClient(), failingData),
+  });
+  await waitFor(() => expect(result.current.isError).toBe(true));
+  return result.current.error?.message;
+}
+
+describe("Builder hooks", () => {
+  it("usePartCatalog prices the snapshot's parts", async () => {
+    const { snapshot, prices } = await fixtureSnapshot();
+    expect(await resolveBuilderHook(() => usePartCatalog())).toEqual(
+      snapshotPartCatalog(snapshot, prices.prices),
+    );
+    expect(await rejectBuilderHook(() => usePartCatalog())).toBe("game data down");
   });
 
-  it("stays disabled (never fetches) when weaponId is empty", async () => {
-    const counting = countingClient();
+  it("useWeaponList prices the snapshot's weapons", async () => {
+    const { snapshot, prices } = await fixtureSnapshot();
+    expect(await resolveBuilderHook(() => useWeaponList())).toEqual(
+      snapshotWeaponList(snapshot, prices.prices),
+    );
+    expect(await rejectBuilderHook(() => useWeaponList())).toBe("game data down");
+  });
+
+  it("useTasks returns the snapshot's tasks", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    expect(await resolveBuilderHook(() => useTasks())).toEqual(snapshot.tasks);
+    expect(await rejectBuilderHook(() => useTasks())).toBe("game data down");
+  });
+
+  it("useTraders returns the profile traders only", async () => {
+    const traders = await resolveBuilderHook(() => useTraders());
+    expect(traders?.map((t) => t.normalizedName).sort()).toEqual([
+      "jaeger",
+      "mechanic",
+      "peacekeeper",
+      "prapor",
+      "ragman",
+      "skier",
+      "therapist",
+    ]);
+    expect(await rejectBuilderHook(() => useTraders())).toBe("game data down");
+  });
+
+  it("useBuilderSnapshot returns the snapshot itself", async () => {
+    const snapshot = await resolveBuilderHook(() => useBuilderSnapshot());
+    expect(snapshot?.source).toBe("fixtures");
+    expect(await rejectBuilderHook(() => useBuilderSnapshot())).toBe("game data down");
+  });
+
+  it("throws without a builderData source in the provider", () => {
+    expect(() =>
+      renderHook(() => useTasks(), { wrapper: withTarkovProvider(fixtureClient()) }),
+    ).toThrow(/useBuilderData needs/);
+  });
+});
+
+describe("useWeaponTree", () => {
+  it("builds the weapon's tree from the snapshot, under ['weapon-tree', id]", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    const tree = await resolveBuilderHook(() => useWeaponTree(M4A1_ID));
+    expect(tree?.weaponId).toBe(M4A1_ID);
+    expect(tree?.slots).toEqual(snapshotWeaponTree(snapshot, M4A1_ID).slots);
+  });
+
+  it("stays disabled (never loads) when weaponId is empty", async () => {
+    let calls = 0;
+    const counting: BuilderDataSource = {
+      snapshot: () => {
+        calls += 1;
+        return failingData.snapshot();
+      },
+      prices: () => failingData.prices(),
+    };
     const { result } = renderHook(() => useWeaponTree(""), {
-      wrapper: withTarkovProvider(counting.client),
+      wrapper: withTarkovProvider(fixtureClient(), counting),
     });
     expect(result.current.fetchStatus).toBe("idle");
-    expect(result.current.isPending).toBe(true);
     await new Promise((r) => setTimeout(r, 10));
-    expect(counting.calls()).toBe(0);
+    expect(calls).toBe(0);
   });
 
-  it("surfaces a rejected fetch as an Error on .error", async () => {
-    const { result } = renderHook(() => useWeaponTree(M4A1_ID), {
-      wrapper: withTarkovProvider(failingClient),
-    });
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe("upstream down");
+  it("surfaces a load failure as an Error on .error", async () => {
+    expect(await rejectBuilderHook(() => useWeaponTree(M4A1_ID))).toBe("game data down");
   });
 });
 

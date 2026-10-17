@@ -177,6 +177,7 @@ export function BuilderPage({
             saveFailed={shareBuild.saveFailed}
             embedProfileOnSave={saveMeta.embedProfileOnSave}
             onEmbedProfileOnSaveChange={saveMeta.setEmbedProfileOnSave}
+            dataAsOf={builder.dataAsOf}
           />
 
           {builder.selectedWeapon && (

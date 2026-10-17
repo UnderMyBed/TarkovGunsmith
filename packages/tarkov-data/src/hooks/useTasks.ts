@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { fetchTasks, type TaskListItem } from "../queries/tasks.js";
-import { useTarkovClient } from "../provider.js";
+import type { TaskListItem } from "../queries/tasks.js";
+import { useBuilderData } from "../provider.js";
 
+/** Every task, from the Builder snapshot. Cached under `["tasks"]`. */
 export function useTasks(): UseQueryResult<TaskListItem[], Error> {
-  const client = useTarkovClient();
+  const source = useBuilderData();
   return useQuery({
     queryKey: ["tasks"],
-    queryFn: () => fetchTasks(client),
+    queryFn: async () => [...(await source.snapshot()).tasks],
   });
 }

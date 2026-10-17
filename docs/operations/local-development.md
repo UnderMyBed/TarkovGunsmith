@@ -121,24 +121,23 @@ The build is not optional: Playwright serves `dist/` through `wrangler pages dev
 unbuilt tree has nothing to serve. The config checks for `apps/web/dist/index.html` before
 starting anything and stops with that command if it's missing.
 
-Playwright starts three servers of its own, on ports separate from `pnpm dev`:
+Playwright starts two servers of its own, on ports separate from `pnpm dev`:
 
-| Port   | Process                          | Serves                                                                |
-| ------ | -------------------------------- | --------------------------------------------------------------------- |
-| `4173` | `wrangler pages dev dist`        | The built SPA + Pages Functions.                                      |
-| `8787` | `wrangler dev` (builds-api)      | Save/load + the seeded OG fixture build and pair.                     |
-| `8790` | `e2e/upstream-fixture-server.ts` | The captured `json.tarkov.dev` documents, for the OG Pages Functions. |
+| Port   | Process                     | Serves                                            |
+| ------ | --------------------------- | ------------------------------------------------- |
+| `4173` | `wrangler pages dev dist`   | The built SPA + Pages Functions.                  |
+| `8787` | `wrangler dev` (builds-api) | Save/load + the seeded OG fixture build and pair. |
 
 **The suite does not call live `json.tarkov.dev`.** Game data comes from the captures in
-`packages/tarkov-data/src/__fixtures__/`: the browser's own requests are intercepted in
-`apps/web/e2e/upstream.ts`, and the OG Pages Functions — which fetch server-side, out of that
-interception's reach — are pointed at the fixture server above via the `TARKOV_JSON_API_BASE`
-binding. Any other live host the page reaches is blocked and fails the test by name. Google
-Fonts is the one deliberate exception, because three smoke tests assert that the real font
-`<link>` resolves.
+`packages/tarkov-data/src/__fixtures__/`: the build generates the Builder snapshot from them
+(see [`builder-snapshot.md`](./builder-snapshot.md)), which the SPA and the OG Pages Functions
+both read, and the browser's remaining requests are intercepted in `apps/web/e2e/upstream.ts`.
+Any other live host the page reaches is blocked and fails the test by name. Google Fonts is
+the one deliberate exception, because three smoke tests assert that the real font `<link>`
+resolves.
 
 Before the first spec runs, a preflight launches Chromium once so a browser that cannot start
-reports itself in one message instead of once per test. It runs after the three servers boot,
+reports itself in one message instead of once per test. It runs after the two servers boot,
 so give it a few seconds.
 
 ## Troubleshooting

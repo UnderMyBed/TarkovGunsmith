@@ -1,16 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { fetchWeaponList } from "../queries/weaponList.js";
 import type { WeaponListItem } from "../queries/weaponList.js";
-import { useTarkovClient } from "../provider.js";
+import { snapshotWeaponList } from "../snapshot/views.js";
+import { useBuilderData } from "../provider.js";
 
-/**
- * Reactive weapon list. Cached by TanStack Query under the key `["weaponList"]`.
- */
+/** The buildable weapons from the Builder snapshot, offers priced. Cached under `["weaponList"]`. */
 export function useWeaponList(): UseQueryResult<WeaponListItem[], Error> {
-  const client = useTarkovClient();
+  const source = useBuilderData();
   return useQuery({
     queryKey: ["weaponList"],
-    queryFn: () => fetchWeaponList(client),
+    queryFn: async () => {
+      const [snapshot, prices] = await Promise.all([source.snapshot(), source.prices()]);
+      return snapshotWeaponList(snapshot, prices);
+    },
   });
 }

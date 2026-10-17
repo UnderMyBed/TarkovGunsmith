@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { fixturePartCatalog, fixtureWeaponTree } from "./__test-utils__/fixture-snapshot.js";
 import { conflictsWith } from "./conflicts.js";
-import { fetchPartCatalog, partsById, type AttachablePart } from "./queries/parts.js";
-import { fetchWeaponTree } from "./queries/weaponTree.js";
+import { partsById, type AttachablePart } from "./queries/parts.js";
 import { fixtureClient } from "./__fixtures__/client.js";
 import { tinyTree } from "./__test-utils__/tiny-tree.js";
 
@@ -20,8 +20,8 @@ const MUZZLE = "mod_reciever/mod_barrel/mod_muzzle";
 async function ctx(attachments: Record<string, string>) {
   const client = fixtureClient();
   const [tree, parts] = await Promise.all([
-    fetchWeaponTree(client, M4A1),
-    fetchPartCatalog(client),
+    fixtureWeaponTree(client, M4A1),
+    fixturePartCatalog(client),
   ]);
   return { tree, attachments, parts: partsById(parts) };
 }

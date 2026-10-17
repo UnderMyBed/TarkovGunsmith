@@ -1,51 +1,75 @@
 import type { HydrateMod, HydrateWeapon } from "@tarkov/og";
-import type { AvailabilityMod } from "./og-availability.js";
+import type { AvailabilityMod, AvailabilityOffer } from "./og-availability.js";
 import {
   adaptMod,
-  createTarkovClient,
   mountedAttachments,
-  parseAttachablePart,
-  resolveBuyFor,
-  selectWeaponTree,
-  slotGraphFor,
-  fetchTraders,
-  fetchTasks,
-  type TarkovJsonClient,
+  parseBuilderPrices,
+  parseBuilderSnapshot,
+  snapshotPart,
+  snapshotWeaponTree,
+  type BuilderPrices,
+  type BuilderSnapshot,
+  type BuyForEntry,
 } from "@tarkov/data";
 
 /**
- * The mods returned by this fetcher serve two consumers: `hydrateBuildCard`
- * (reads `buyFor[].priceRUB`) and `availabilityPillText` (reads
- * `buyFor[].vendor.normalizedName` + `minTraderLevel`). This intersection type
- * lets TypeScript see that one row satisfies both contracts.
+ * The mods returned here serve two consumers: `hydrateBuildCard` (reads `buyFor[].priceRUB`)
+ * and `availabilityPillText` (reads `buyFor[].vendor.normalizedName` + `minTraderLevel`). This
+ * intersection type lets TypeScript see that one row satisfies both contracts.
  */
 export type OgMod = HydrateMod & AvailabilityMod;
 
-/**
- * Base URL for the tarkov.dev JSON API.
- *
- * This module used to POST GraphQL to api.tarkov.dev, which has been unavailable since
- * ~2026-07-21 (the-hideout/tarkov-api#474) — OG cards silently rendered without stats.
- */
-export const OG_JSON_API_BASE = "https://json.tarkov.dev/regular/";
+/** The build-time game data a card is drawn from. */
+export interface OgData {
+  snapshot: BuilderSnapshot;
+  prices: BuilderPrices;
+}
+
+/** Where the deploy serves the two files, relative to the site root. */
+export const OG_SNAPSHOT_PATH = "/data/builder-snapshot.json";
+export const OG_PRICES_PATH = "/data/builder-prices.json";
 
 /**
- * Clients keyed by base URL, at module scope so the items document is fetched once per
- * isolate rather than once per card render. The client's own TTL cache does the work; OG
- * rendering is per-request and the document is 1.36 MB gzipped, so an uncached fetch per card
- * would be untenable.
- *
- * Keyed rather than singular because the base is configurable (see `fetchOgRowsForBuild`),
- * and a client built for one base must never answer a request meant for another.
+ * The parsed files, at module scope so an isolate reads them once rather than once per card.
+ * They ship with the deploy that runs this code, so they cannot change under it. A failed load
+ * is not kept: the next card tries again.
  */
-const clientsByBase = new Map<string, TarkovJsonClient>();
+let loaded: Promise<OgData> | null = null;
 
-function clientFor(baseUrl: string): TarkovJsonClient {
-  const existing = clientsByBase.get(baseUrl);
-  if (existing !== undefined) return existing;
-  const created = createTarkovClient(baseUrl);
-  clientsByBase.set(baseUrl, created);
-  return created;
+async function readAsset<T>(
+  assets: Fetcher,
+  origin: string,
+  path: string,
+  parse: (json: unknown) => T,
+): Promise<T> {
+  const response = await assets.fetch(new URL(path, origin).href);
+  if (!response.ok) throw new Error(`${path}: ${response.status} ${response.statusText}`);
+  return parse(await response.json());
+}
+
+/**
+ * Load the snapshot and its release-time prices from the deploy's own static assets.
+ *
+ * @param assets - The Pages `ASSETS` binding.
+ * @param requestUrl - The request being answered; only its origin is used.
+ */
+export function loadOgData(assets: Fetcher, requestUrl: string): Promise<OgData> {
+  if (loaded !== null) return loaded;
+  const { origin } = new URL(requestUrl);
+  const pending = Promise.all([
+    readAsset(assets, origin, OG_SNAPSHOT_PATH, parseBuilderSnapshot),
+    readAsset(assets, origin, OG_PRICES_PATH, parseBuilderPrices),
+  ]).then(([snapshot, prices]) => ({ snapshot, prices }));
+  loaded = pending;
+  pending.catch(() => {
+    if (loaded === pending) loaded = null;
+  });
+  return pending;
+}
+
+/** Drop the isolate's loaded data. For tests. */
+export function resetOgData(): void {
+  loaded = null;
 }
 
 interface Args {
@@ -54,76 +78,72 @@ interface Args {
   attachments: Readonly<Record<string, string>>;
 }
 
-interface ItemsDoc {
-  items: Record<string, unknown>;
-}
-
-function readNumber(source: unknown, key: string): number {
-  if (source === null || typeof source !== "object") return 0;
-  const value = (source as Record<string, unknown>)[key];
-  return typeof value === "number" ? value : 0;
+/**
+ * The card's offers for one part: only the priced ones. A part with none prices the card at
+ * nothing rather than at 0 — `hydrateBuildCard` leaves the total out when any mod has no offer.
+ */
+function cardOffers(buyFor: readonly BuyForEntry[]): AvailabilityOffer[] {
+  const offers: AvailabilityOffer[] = [];
+  for (const entry of buyFor) {
+    if (entry.priceRUB === null) continue;
+    const { vendor } = entry;
+    offers.push({
+      vendor: { normalizedName: vendor.normalizedName },
+      priceRUB: entry.priceRUB,
+      // Flattened up from the vendor, where availabilityPillText expects it.
+      minTraderLevel:
+        vendor.__typename === "TraderOffer" || vendor.__typename === "TraderBarter"
+          ? (vendor.minTraderLevel ?? undefined)
+          : undefined,
+    });
+  }
+  return offers;
 }
 
 /**
- * @param baseUrl - Where to read the items/traders/tasks documents from. Defaults to
- *   {@link OG_JSON_API_BASE}, which is what production runs on. The override exists for the
- *   e2e suite: these Functions execute server-side inside `wrangler pages dev`, so their
- *   upstream call is out of reach of the browser-side interception in
- *   `apps/web/e2e/upstream.ts`, and Playwright points them at a local fixture server through
- *   the `TARKOV_JSON_API_BASE` binding instead. An empty or absent value falls back to
- *   production rather than producing a request to `undefined/items`.
+ * The weapon and mounted parts of a saved build, as the card draws them.
+ *
+ * @throws When the build's weapon is not in the snapshot.
  */
-export async function fetchOgRowsForBuild(
+export function fetchOgRowsForBuild(
   args: Args,
-  baseUrl?: string,
-): Promise<{
+  data: OgData,
+): {
   weapon: HydrateWeapon;
   mods: OgMod[];
   /** The attachments actually on the weapon (`mountedAttachments`); the card counts these. */
   attachments: Record<string, string>;
-}> {
-  const client = clientFor(baseUrl !== undefined && baseUrl !== "" ? baseUrl : OG_JSON_API_BASE);
-
-  const [doc, traders, tasks] = await Promise.all([
-    client.fetchResource<ItemsDoc>("items"),
-    fetchTraders(client),
-    fetchTasks(client),
-  ]);
-
-  const rawWeapon = doc.items[args.weaponId];
-  if (rawWeapon === null || rawWeapon === undefined || typeof rawWeapon !== "object") {
-    throw new Error(`og-graphql: weapon ${args.weaponId} not found`);
-  }
-  const weaponRecord = rawWeapon as Record<string, unknown>;
-  const weaponProps = weaponRecord.properties;
+} {
+  const { snapshot } = data;
+  const table = data.prices.prices;
+  const found = snapshot.weapons.find((w) => w.id === args.weaponId);
+  if (found === undefined) throw new Error(`og: weapon ${args.weaponId} not found`);
 
   const weapon: HydrateWeapon = {
-    id: args.weaponId,
-    shortName: typeof weaponRecord.shortName === "string" ? weaponRecord.shortName : args.weaponId,
+    id: found.id,
+    shortName: found.shortName,
     properties: {
-      ergonomics: readNumber(weaponProps, "ergonomics"),
-      recoilVertical: readNumber(weaponProps, "recoilVertical"),
-      recoilHorizontal: readNumber(weaponProps, "recoilHorizontal"),
+      ergonomics: found.properties.ergonomics,
+      recoilVertical: found.properties.recoilVertical,
+      recoilHorizontal: found.properties.recoilHorizontal,
     },
   };
 
   // Only parts on the weapon reach the card, exactly as the Builder counts them: a key left
   // beneath a removed or replaced part is not on the gun.
   const attachments = mountedAttachments(
-    selectWeaponTree(doc, args.weaponId, slotGraphFor(doc)),
+    snapshotWeaponTree(snapshot, args.weaponId),
     args.attachments,
   );
 
-  const resolveOffers = (item: unknown) => resolveBuyFor(item, traders, tasks);
   const mods: OgMod[] = [];
   for (const id of new Set(Object.values(attachments))) {
-    // Parsed through the same part schema and adapter the Builder uses, so a barrel, scope or
-    // magazine counts here exactly as it does on the page, and cylinder ammo adds weight but
-    // no stat modifiers. An id that is not a part (gone upstream) is left off the card.
-    const part = parseAttachablePart(doc.items[id], resolveOffers);
-    if (part === null) continue;
+    // The same part record and adapter the Builder uses, so a barrel, scope or magazine counts
+    // here exactly as it does on the page, and cylinder ammo adds weight but no stat modifiers.
+    // An id the snapshot does not hold (gone upstream) is left off the card.
+    const part = snapshotPart(snapshot, table, id);
+    if (part === undefined) continue;
     const stats = adaptMod(part);
-
     mods.push({
       id,
       shortName: part.shortName,
@@ -133,15 +153,7 @@ export async function fetchOgRowsForBuild(
         recoilModifier: stats.recoilModifier,
         accuracyModifier: stats.accuracyModifier,
       },
-      // Flatten minTraderLevel up from the vendor, where availabilityPillText expects it.
-      buyFor: (part.buyFor ?? []).map((entry) => ({
-        vendor: { normalizedName: entry.vendor.normalizedName },
-        priceRUB: entry.priceRUB ?? 0,
-        minTraderLevel:
-          entry.vendor.__typename === "TraderOffer"
-            ? (entry.vendor.minTraderLevel ?? undefined)
-            : undefined,
-      })),
+      buyFor: cardOffers(part.buyFor ?? []),
     });
   }
 

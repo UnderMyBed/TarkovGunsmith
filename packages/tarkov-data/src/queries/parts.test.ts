@@ -1,14 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
-import {
-  fetchPartCatalog,
-  isModLikePart,
-  parseAttachablePart,
-  partsById,
-  selectPartCatalog,
-} from "./parts.js";
+import { describe, expect, it } from "vitest";
+import { isModLikePart, partsById, snapshotPartSchema, type AttachablePart } from "./parts.js";
 import { adaptMod } from "../ballistic-adapters.js";
 import { buildSlotGraph } from "./slot-graph.js";
 import { fixtureClient } from "../__fixtures__/client.js";
+import { fixturePartCatalog } from "../__test-utils__/fixture-snapshot.js";
 import type { ItemsDocument } from "./documents.js";
 
 const BARREL_10_3 = "55d35ee94bdc2d61338b4568";
@@ -20,24 +15,25 @@ async function itemsDoc(): Promise<ItemsDocument> {
   return fixtureClient().fetchResource<ItemsDocument>("items");
 }
 
-describe("selectPartCatalog", () => {
-  it("covers every slot-attachable type: mods, barrels, scopes, magazines, ammo", async () => {
-    const parts = await fetchPartCatalog(fixtureClient());
+describe("the Builder part catalog", () => {
+  it("covers the slot-attachable types the captured weapons reach", async () => {
+    // The captures hold no revolver, so no cylinder slot reaches a cartridge: ammo is a part
+    // type (see the next test) but not a reachable one here.
+    const parts = await fixturePartCatalog();
     const types = new Set(parts.map((p) => p.properties.propertiesType));
     expect([...types].sort()).toEqual([
-      "ItemPropertiesAmmo",
       "ItemPropertiesBarrel",
       "ItemPropertiesMagazine",
       "ItemPropertiesScope",
       "ItemPropertiesWeaponMod",
     ]);
     const byId = partsById(parts);
-    for (const id of [BARREL_10_3, HAMR_SCOPE, STANAG_MAG, M855A1]) expect(byId.has(id)).toBe(true);
+    for (const id of [BARREL_10_3, HAMR_SCOPE, STANAG_MAG]) expect(byId.has(id)).toBe(true);
   });
 
   it("rejects weapons, armor, helmets and grenades", async () => {
     const doc = await itemsDoc();
-    const ids = new Set(selectPartCatalog(doc, () => []).map((p) => p.id));
+    const ids = new Set((await fixturePartCatalog()).map((p) => p.id));
     const rejected = Object.values(doc.items).filter((i) =>
       [
         "ItemPropertiesWeapon",
@@ -57,7 +53,7 @@ describe("selectPartCatalog", () => {
     // stats or price and reads as "missing" on a shared build. Walked from the weapons, since
     // gear has slots too (a helmet's face-shield mount) and those are not weapon parts.
     const doc = await itemsDoc();
-    const byId = partsById(selectPartCatalog(doc, () => []));
+    const byId = partsById(await fixturePartCatalog());
     const graph = buildSlotGraph(doc);
     const stack = Object.keys(doc.items).filter(
       (id) =>
@@ -81,7 +77,7 @@ describe("selectPartCatalog", () => {
   });
 
   it("carries the real modifiers of a barrel, a scope and a magazine", async () => {
-    const byId = partsById(await fetchPartCatalog(fixtureClient()));
+    const byId = partsById(await fixturePartCatalog());
     expect(adaptMod(byId.get(BARREL_10_3)!)).toMatchObject({
       ergonomicsDelta: -2,
       recoilModifier: -0.052000000000000005,
@@ -95,7 +91,7 @@ describe("selectPartCatalog", () => {
     const doc = await itemsDoc();
     const raw = doc.items[M855A1] as { properties: { recoilModifier: number } };
     expect(raw.properties.recoilModifier).toBe(0.05);
-    const part = partsById(selectPartCatalog(doc, () => [])).get(M855A1)!;
+    const part: AttachablePart = { ...snapshotPartSchema.parse(raw), buyFor: [] };
     expect(isModLikePart(part)).toBe(false);
     expect(adaptMod(part)).toEqual({
       id: M855A1,
@@ -108,7 +104,7 @@ describe("selectPartCatalog", () => {
   });
 
   it("carries conflict lists and resolved offers", async () => {
-    const parts = await fetchPartCatalog(fixtureClient());
+    const parts = await fixturePartCatalog();
     const barrel = partsById(parts).get(BARREL_10_3)!;
     expect(barrel.conflictingItems.length).toBe(3);
     expect(barrel.conflictingSlotIds).toEqual([]);
@@ -124,9 +120,7 @@ describe("selectPartCatalog", () => {
 
   it("resolves barters through the offer resolver, for a barter-only scope too", async () => {
     // ELCAN SpecterDR (FDE): no cash offer anywhere, bartered by Mechanic and Peacekeeper.
-    const elcan = partsById(await fetchPartCatalog(fixtureClient())).get(
-      "57aca93d2459771f2c7e26db",
-    )!;
+    const elcan = partsById(await fixturePartCatalog()).get("57aca93d2459771f2c7e26db")!;
     expect(elcan.properties.propertiesType).toBe("ItemPropertiesScope");
     expect(elcan.buyFor?.some((b) => b.vendor.__typename === "TraderBarter")).toBe(true);
     expect(elcan.buyFor?.some((b) => b.vendor.__typename === "TraderOffer")).toBe(false);
@@ -136,29 +130,9 @@ describe("selectPartCatalog", () => {
     // Barters arrive inside `buyFor` as `TraderBarter` entries; crafting lives in the upstream
     // `/crafts` resource, which nothing here fetches. A part carries no separate field for
     // either, and Zod strips them if upstream starts sending them.
-    for (const part of await fetchPartCatalog(fixtureClient())) {
+    for (const part of await fixturePartCatalog()) {
       expect(part).not.toHaveProperty("craftsFor");
       expect(part).not.toHaveProperty("bartersFor");
     }
-  });
-});
-
-describe("parseAttachablePart", () => {
-  it("parses one part and refuses anything else", async () => {
-    const doc = await itemsDoc();
-    expect(parseAttachablePart(doc.items[BARREL_10_3], () => [])?.properties.propertiesType).toBe(
-      "ItemPropertiesBarrel",
-    );
-    expect(parseAttachablePart(doc.items["5447a9cd4bdc2dbd208b4567"], () => [])).toBeNull();
-    expect(parseAttachablePart(undefined, () => [])).toBeNull();
-  });
-
-  it("drops a part that fails its schema, naming it", async () => {
-    const doc = await itemsDoc();
-    const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
-    const broken = { ...(doc.items[BARREL_10_3] as object), conflictingSlotIds: undefined };
-    expect(parseAttachablePart(broken, () => [])).toBeNull();
-    expect(debug).toHaveBeenCalledWith(`[parseAttachablePart] dropped ${BARREL_10_3}`);
-    debug.mockRestore();
   });
 });

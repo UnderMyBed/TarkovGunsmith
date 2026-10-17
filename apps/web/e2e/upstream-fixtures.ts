@@ -4,13 +4,12 @@
  * Two producers ask this module for bodies:
  *
  *   - `upstream.ts`, which fulfils the browser's own `fetch` — the shipped bundle really does
- *     request `https://json.tarkov.dev/regular/items` (`apps/web/src/tarkov-client.ts:12`), so
- *     the request is intercepted rather than reconfigured, and the artifact under test stays
+ *     request `https://json.tarkov.dev/regular/...` (`apps/web/src/tarkov-client.ts`), so the
+ *     request is intercepted rather than reconfigured, and the artifact under test stays
  *     byte-identical to the one that deploys.
- *   - `upstream-fixture-server.ts`, which serves the same bodies over HTTP for the OG Pages
- *     Functions. Those run server-side inside `wrangler pages dev` and fetch upstream
- *     themselves (`apps/web/functions/lib/og-graphql.ts:19`), where `page.route` cannot reach
- *     them; they get the fixture host through the `TARKOV_JSON_API_BASE` binding instead.
+ *   - `scripts/builder-snapshot.ts`, which generates the Builder snapshot from these bodies on
+ *     every build that is not the release deploy. The OG card Functions read that snapshot
+ *     from the deploy's own assets, so they make no upstream request of their own.
  *
  * The bodies are the RAW upstream envelopes, not pre-merged documents: `items` returns
  * `{ data, translations }` and `items_en` returns `{ data: <key -> text> }`, exactly as
@@ -74,7 +73,7 @@ export function upstreamFixtureBody(segment: string): string | null {
  *
  * Lets a spec state the row count it expects from the fixture instead of a magic number, and
  * without re-deriving it through the selector under test — the count comes from the raw
- * capture, the rows come from `fetchPartCatalog` + Zod + React.
+ * capture, the rows come from the snapshot generator + Zod + React.
  */
 export function fixtureItemCount(propertiesType: string): number {
   return capturedItems().filter((item) => item.properties?.propertiesType === propertiesType)

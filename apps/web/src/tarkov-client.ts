@@ -1,5 +1,5 @@
-import { createTarkovClient } from "@tarkov/data";
-import type { TarkovJsonClient } from "@tarkov/data";
+import { createBuilderDataSource, createTarkovClient } from "@tarkov/data";
+import type { BuilderDataSource, TarkovJsonClient } from "@tarkov/data";
 
 /**
  * Base URL for the tarkov.dev JSON API, including game mode.
@@ -10,4 +10,13 @@ import type { TarkovJsonClient } from "@tarkov/data";
  */
 export const TARKOV_JSON_API_BASE = "https://json.tarkov.dev/regular/";
 
+/** Where the build-time Builder snapshot is served (`apps/web/scripts/builder-snapshot.ts`). */
+export const BUILDER_SNAPSHOT_URL = "/data/builder-snapshot.json";
+
 export const tarkovClient: TarkovJsonClient = createTarkovClient(TARKOV_JSON_API_BASE);
+
+/** The Builder's game data from the snapshot, priced from upstream's live items document. */
+export const builderData: BuilderDataSource = createBuilderDataSource({
+  snapshotUrl: BUILDER_SNAPSHOT_URL,
+  itemsUrl: `${TARKOV_JSON_API_BASE}items`,
+});

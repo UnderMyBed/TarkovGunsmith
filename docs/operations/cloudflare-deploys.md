@@ -17,7 +17,13 @@ How CI auto-deploys the Workers and the SPA, what the API token needs to be allo
 Its load-bearing probe is `POST /api/builds` with an invalid body, which must return **400**:
 that proves the request reached the Worker and was rejected by it. A **500** means the edge
 could not reach the Worker at all — the failure that left build sharing dead in production for
-months while every gate stayed green.
+months while every gate stayed green. It also fetches `/data/builder-snapshot.json` and
+requires `"source": "upstream"`.
+
+The `pages` job builds with `TARKOV_SNAPSHOT_SOURCE=upstream`, so the Builder snapshot is
+generated from live `json.tarkov.dev` at release time, and asserts the result before deploying.
+Upstream drift fails that build step, and nothing deploys. See
+[`builder-snapshot.md`](./builder-snapshot.md).
 
 ## Hostnames
 

@@ -36,14 +36,15 @@ import {
   UBR_GEN2_STOCK,
   VP09_MUZZLE_BRAKE,
 } from "../packages/ballistics/src/__fixtures__/weapons.js";
+import { brotliCompressSync } from "node:zlib";
 import { createTarkovClient } from "../packages/tarkov-data/src/client.js";
 import { fetchAmmoList } from "../packages/tarkov-data/src/queries/ammoList.js";
 import { fetchArmorList } from "../packages/tarkov-data/src/queries/armorList.js";
-import { fetchPartCatalog } from "../packages/tarkov-data/src/queries/parts.js";
-import type { ItemsDocument } from "../packages/tarkov-data/src/queries/documents.js";
-import { buildSlotGraph } from "../packages/tarkov-data/src/queries/slot-graph.js";
-import { fetchWeaponList } from "../packages/tarkov-data/src/queries/weaponList.js";
-import { fetchBarters } from "../packages/tarkov-data/src/queries/barters.js";
+import {
+  buildBuilderSnapshot,
+  fetchSnapshotDocuments,
+  SnapshotDriftError,
+} from "../packages/tarkov-data/src/snapshot/generate.js";
 
 const API_BASE = "https://json.tarkov.dev/regular/";
 const ITEMS_URL = `${API_BASE}items`;
@@ -247,47 +248,25 @@ async function main(): Promise<void> {
   }
 
   await checkSelectorsAcceptLiveDocument();
+  await checkBuilderSnapshot();
 
   report();
 }
 
 /**
- * Every list selector still finds its items in the live document.
+ * The ammo and armor pickers still find their items in the live document.
  *
  * The checks above compare individual FIELDS against upstream. This runs the real fetchers,
  * which means the real Zod schemas: each drops any item that fails a strict per-item parse and
  * keeps going, so a renamed or retyped field doesn't error — it silently empties a picker.
- *
- * This lived, incidentally, in the e2e suite until issue #175: a schema break emptied the
- * Builder's weapon `<select>` and the smoke tests noticed. Those specs now run on committed
- * captures so the pre-merge gate can't fail on upstream's availability, which means this is
- * the only place left that puts our schemas in front of the real document. The thresholds are
- * deliberately far below today's counts — this is a "the selector still works at all" check,
- * not a census.
+ * The thresholds are deliberately far below today's counts — this is a "the selector still
+ * works at all" check, not a census.
  */
 async function checkSelectorsAcceptLiveDocument(): Promise<void> {
   const client = createTarkovClient(API_BASE);
-  const minimums = { weapons: 50, parts: 2000, ammo: 50, armor: 20, barters: 300 } as const;
-
-  const [weapons, parts, ammo, armor, barters, doc] = await Promise.all([
-    fetchWeaponList(client),
-    fetchPartCatalog(client),
-    fetchAmmoList(client),
-    fetchArmorList(client),
-    // Barters are offers, not a picker: a schema break here silently turns every barter-only
-    // mod and every preset-barter weapon back into "unobtainable".
-    fetchBarters(client),
-    client.fetchResource<ItemsDocument>("items"),
-  ]);
-
-  const counts = {
-    weapons: weapons.length,
-    parts: parts.length,
-    ammo: ammo.length,
-    armor: armor.length,
-    barters: barters.length,
-  };
-
+  const minimums = { ammo: 50, armor: 20 } as const;
+  const [ammo, armor] = await Promise.all([fetchAmmoList(client), fetchArmorList(client)]);
+  const counts = { ammo: ammo.length, armor: armor.length };
   for (const [name, minimum] of Object.entries(minimums)) {
     const actual = counts[name as keyof typeof counts];
     check(
@@ -297,39 +276,65 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
         `renamed or retyped makes safeParse drop rows silently, which reaches users as an empty picker`,
     );
   }
-  // Every item reachable through slots from a weapon must resolve to a catalog part, or it
-  // contributes nothing to stats or price and reads as "missing" on shared builds (#213). A new
-  // ItemPropertiesX type appearing in a weapon's slot graph is exactly how that would start.
-  // Walked from the weapons rather than over every slot owner: gear has slots too (helmet NVG
-  // mounts hold goggles), and those are not weapon parts.
-  const partIds = new Set(parts.map((p) => p.id));
-  const graph = buildSlotGraph(doc);
-  const unresolved = new Set<string>();
-  const visited = new Set<string>();
-  const stack = weapons.map((w) => w.id);
-  for (let owner = stack.pop(); owner !== undefined; owner = stack.pop()) {
-    if (visited.has(owner)) continue;
-    visited.add(owner);
-    for (const slot of graph.owners[owner]?.slots ?? []) {
-      for (const id of slot.allowedItemIds) {
-        if (!partIds.has(id)) unresolved.add(id);
-        stack.push(id);
-      }
-    }
-  }
-  check(
-    "selector/parts-cover-slots",
-    unresolved.size === 0,
-    `${unresolved.size} weapon-reachable slot item(s) are not in the part catalog, e.g. ${[
-      ...unresolved,
-    ]
-      .slice(0, 5)
-      .join(", ")} — a new item type in weapon slots, or a part schema that rejects real rows`,
-  );
+  notes.push(`selectors parsed: ${counts.ammo} ammo, ${counts.armor} armor`);
+}
 
-  notes.push(`${visited.size - weapons.length} items reachable through weapon slots`);
+/** Size budget for `/data/builder-snapshot.json`, which every Builder visit downloads. */
+const SNAPSHOT_BUDGET = { brotliBytes: 250 * 1024, rawBytes: 4.5 * 1024 * 1024 } as const;
+
+/**
+ * The Builder snapshot still generates from the live documents, and still fits its budget.
+ *
+ * This is the same strict generator the release deploy runs (`apps/web/scripts/
+ * builder-snapshot.ts`): any weapon, part, barter, trader or task that no longer matches its
+ * schema, any weapon-reachable slot item that is not a part, and any two copies of one trader
+ * offer that disagree on price is a problem here — and would fail that deploy. Checking on a
+ * schedule finds it before a release does.
+ */
+async function checkBuilderSnapshot(): Promise<void> {
+  const client = createTarkovClient(API_BASE);
+  let generated: ReturnType<typeof buildBuilderSnapshot>;
+  try {
+    generated = buildBuilderSnapshot(await fetchSnapshotDocuments(client), "upstream");
+  } catch (error) {
+    if (!(error instanceof SnapshotDriftError)) throw error;
+    for (const problem of error.problems) check("snapshot", false, problem);
+    return;
+  }
+  const { snapshot, prices } = generated;
+  // Strictness catches a record that changed shape; it cannot catch records that vanished.
+  check(
+    "snapshot/weapons",
+    snapshot.weapons.length >= 50,
+    `only ${snapshot.weapons.length} buildable weapons (expected at least 50)`,
+  );
+  check(
+    "snapshot/parts",
+    snapshot.parts.length >= 2000,
+    `only ${snapshot.parts.length} weapon-reachable parts (expected at least 2000)`,
+  );
+  const text = JSON.stringify(snapshot);
+  const raw = Buffer.byteLength(text);
+  const brotli = brotliCompressSync(text).length;
+  const kb = (bytes: number) => `${(bytes / 1024).toFixed(0)} KB`;
+  check(
+    "snapshot/size",
+    brotli <= SNAPSHOT_BUDGET.brotliBytes && raw <= SNAPSHOT_BUDGET.rawBytes,
+    `builder-snapshot.json is ${kb(raw)} raw / ${kb(brotli)} brotli, over the budget of ` +
+      `${kb(SNAPSHOT_BUDGET.rawBytes)} raw / ${kb(SNAPSHOT_BUDGET.brotliBytes)} brotli`,
+  );
+  const startedAt = performance.now();
+  JSON.parse(text);
+  const parseMs = performance.now() - startedAt;
+  const pricesText = JSON.stringify(prices);
   notes.push(
-    `selectors parsed: ${counts.weapons} weapons, ${counts.parts} parts, ${counts.ammo} ammo, ${counts.armor} armor, ${counts.barters} barters`,
+    `builder snapshot: ${snapshot.weapons.length} weapons, ${snapshot.parts.length} parts, ` +
+      `${kb(raw)} raw, ${kb(brotli)} brotli, JSON.parse ${parseMs.toFixed(1)} ms ` +
+      `(budget ${kb(SNAPSHOT_BUDGET.rawBytes)} raw / ${kb(SNAPSHOT_BUDGET.brotliBytes)} brotli)`,
+  );
+  notes.push(
+    `builder prices: ${kb(Buffer.byteLength(pricesText))} raw, ` +
+      `${kb(brotliCompressSync(pricesText).length)} brotli; data as of ${snapshot.dataAsOf}`,
   );
 }
 

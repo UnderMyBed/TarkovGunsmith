@@ -9,10 +9,13 @@ They exist so the suite does not depend on upstream being reachable. The GraphQL
 used to call went down for over a month; tests that need a live API stop being tests the moment
 that happens.
 
-Two consumers read them: this package's unit tests via `client.ts`, and the Playwright suite via
-`apps/web/e2e/upstream-fixtures.ts`, which serves the raw envelopes back to the browser and to the
-OG Pages Functions. Trimming an item out of `items-sample.json` can therefore empty a picker in an
-e2e spec — `apps/web/e2e/upstream.ts` documents which content the specs depend on.
+Three consumers read them: this package's unit tests via `client.ts`; every `apps/web` build
+other than the release deploy, which generates the Builder snapshot from them
+(`apps/web/scripts/builder-snapshot.ts`); and the Playwright suite via
+`apps/web/e2e/upstream-fixtures.ts`, which serves the raw envelopes to the browser. Trimming an
+item out of `items-sample.json` can therefore empty a picker in an e2e spec —
+`apps/web/e2e/upstream.ts` documents which content the specs depend on. Snapshot generation is
+strict, so an item the captures add must match its schema in full or every build fails.
 
 `items-sample.json` deliberately includes item types the selectors must _reject_ as well as ones
 they must accept — a grenade, a helmet and an armor attachment alongside ammo, armor, weapons and

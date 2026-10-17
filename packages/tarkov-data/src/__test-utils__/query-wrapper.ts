@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TarkovDataProvider } from "../provider.js";
 import type { TarkovJsonClient } from "../client.js";
+import type { BuilderDataSource } from "../snapshot/source.js";
 
 /**
  * A fresh `QueryClient` per test, retries disabled.
@@ -31,13 +32,13 @@ export function testQueryClient(): QueryClient {
  * / `.tsx`-aware ESLint project entry — see the root `eslint.config.js` gotcha documented in
  * the repo's top-level CLAUDE.md. Not worth it for one file's worth of JSX.
  */
-export function withTarkovProvider(client: TarkovJsonClient) {
+export function withTarkovProvider(client: TarkovJsonClient, builderData?: BuilderDataSource) {
   const queryClient = testQueryClient();
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(
       QueryClientProvider,
       { client: queryClient },
-      createElement(TarkovDataProvider, { client, children }),
+      createElement(TarkovDataProvider, { client, builderData, children }),
     );
   };
 }

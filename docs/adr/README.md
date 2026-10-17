@@ -9,3 +9,4 @@ Start at [`0001-stack-and-hosting.md`](./0001-stack-and-hosting.md) for why this
 | [0001](./0001-stack-and-hosting.md)  | Cloudflare stack, pnpm + Turborepo monorepo                      |
 | [0002](./0002-json-api-migration.md) | Move off the tarkov.dev GraphQL API onto the JSON API            |
 | [0003](./0003-model-armor-plates.md) | Model armor as plates plus soft panels, not one monolithic layer |
+| [0004](./0004-builder-snapshot.md)   | Generate the Builder's game data at build time                   |

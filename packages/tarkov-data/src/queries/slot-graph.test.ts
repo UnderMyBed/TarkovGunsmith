@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { fetchWeaponTree } from "./weaponTree.js";
-import { buildSlotGraph, expandSlots, slotAtPath, visibleSlots } from "./slot-graph.js";
+import {
+  buildSlotGraph,
+  expandSlots,
+  selectWeaponTree,
+  slotAtPath,
+  visibleSlots,
+} from "./slot-graph.js";
 import { fixtureClient } from "../__fixtures__/client.js";
 import { tinyTree } from "../__test-utils__/tiny-tree.js";
-import type { TarkovJsonClient } from "../client.js";
+import { fixtureSnapshot, fixtureWeaponTree } from "../__test-utils__/fixture-snapshot.js";
+import { snapshotWeaponTree } from "../snapshot/views.js";
 import type { ItemsDocument } from "./documents.js";
 
 const M4A1 = "5447a9cd4bdc2dbd208b4567";
@@ -28,9 +34,9 @@ const M4A1_BUILD = {
   mod_charge: "55d44fd14bdc2d962f8b456e",
 } as const;
 
-describe("fetchWeaponTree", () => {
+describe("snapshotWeaponTree", () => {
   it("returns the weapon's own slots, with ids, paths and named options", async () => {
-    const tree = await fetchWeaponTree(fixtureClient(), M4A1);
+    const tree = await fixtureWeaponTree(fixtureClient(), M4A1);
     expect(tree.weaponId).toBe(M4A1);
     expect(tree.weaponName).toMatch(/M4A1/);
     expect(tree.slots.map((s) => s.nameId)).toEqual([
@@ -51,28 +57,31 @@ describe("fetchWeaponTree", () => {
     }
   });
 
-  it("shares one graph across trees from the same document", async () => {
-    const client = fixtureClient();
-    const doc = await client.fetchResource<ItemsDocument>("items");
-    const cached: TarkovJsonClient = { fetchResource: <T>() => Promise.resolve(doc as T) };
-    const a = await fetchWeaponTree(cached, M4A1);
-    const b = await fetchWeaponTree(cached, "5448bd6b4bdc2dfc2f8b4569");
+  it("shares one graph across trees from the same snapshot", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    const a = snapshotWeaponTree(snapshot, M4A1);
+    const b = snapshotWeaponTree(snapshot, "5448bd6b4bdc2dfc2f8b4569");
     expect(a.graph).toBe(b.graph);
   });
 
+  it("throws for an id that is not a buildable weapon in the snapshot", async () => {
+    const { snapshot } = await fixtureSnapshot();
+    expect(() => snapshotWeaponTree(snapshot, AMMO)).toThrow(/not in the game data/);
+  });
+});
+
+describe("selectWeaponTree", () => {
   it("throws for a missing id and for a non-weapon", async () => {
-    await expect(fetchWeaponTree(fixtureClient(), "no-such-id")).rejects.toThrow(/not found/);
-    await expect(fetchWeaponTree(fixtureClient(), AMMO)).rejects.toThrow(/not a weapon/);
+    const doc = await fixtureClient().fetchResource<ItemsDocument>("items");
+    expect(() => selectWeaponTree(doc, "no-such-id")).toThrow(/not found/);
+    expect(() => selectWeaponTree(doc, AMMO)).toThrow(/not a weapon/);
   });
 
-  it("falls back to the lookup key, and an empty tree, for a bare weapon record", async () => {
-    const client: TarkovJsonClient = {
-      fetchResource: <T>(): Promise<T> =>
-        Promise.resolve({
-          items: { "bare-weapon-id": { properties: { propertiesType: "ItemPropertiesWeapon" } } },
-        } as T),
-    };
-    const tree = await fetchWeaponTree(client, "bare-weapon-id");
+  it("falls back to the lookup key, and an empty tree, for a bare weapon record", () => {
+    const tree = selectWeaponTree(
+      { items: { "bare-weapon-id": { properties: { propertiesType: "ItemPropertiesWeapon" } } } },
+      "bare-weapon-id",
+    );
     expect(tree.weaponId).toBe("bare-weapon-id");
     expect(tree.weaponName).toBe("bare-weapon-id");
     expect(tree.slots).toEqual([]);
@@ -160,7 +169,7 @@ describe("buildSlotGraph", () => {
 
 describe("expanding from attached items", () => {
   it("reaches a barrel's required gas block, which the old tree never showed", async () => {
-    const tree = await fetchWeaponTree(fixtureClient(), M4A1);
+    const tree = await fixtureWeaponTree(fixtureClient(), M4A1);
     const gasBlock = slotAtPath(tree, M4A1_BUILD, "mod_reciever/mod_barrel/mod_gas_block");
     expect(gasBlock).not.toBeNull();
     expect(gasBlock!.required).toBe(true);
@@ -170,20 +179,20 @@ describe("expanding from attached items", () => {
   });
 
   it("goes past the old depth cap of three", async () => {
-    const tree = await fetchWeaponTree(fixtureClient(), M4A1);
+    const tree = await fixtureWeaponTree(fixtureClient(), M4A1);
     const paths = visibleSlots(tree, M4A1_BUILD).map((s) => s.path);
     expect(paths).toContain("mod_reciever/mod_barrel/mod_muzzle/mod_muzzle");
     expect(paths).toContain("mod_reciever/mod_scope/mod_scope");
   });
 
   it("only expands what is attached", async () => {
-    const tree = await fetchWeaponTree(fixtureClient(), M4A1);
+    const tree = await fixtureWeaponTree(fixtureClient(), M4A1);
     const paths = visibleSlots(tree, {}).map((s) => s.path);
     expect(paths).toEqual(tree.slots.map((s) => s.path));
   });
 
   it("does not expand an attachment its slot does not allow", async () => {
-    const tree = await fetchWeaponTree(fixtureClient(), M4A1);
+    const tree = await fixtureWeaponTree(fixtureClient(), M4A1);
     const paths = visibleSlots(tree, { mod_stock: M4A1_UPPER }).map((s) => s.path);
     expect(paths.some((p) => p.startsWith("mod_stock/"))).toBe(false);
   });
@@ -197,7 +206,7 @@ describe("expanding from attached items", () => {
   it("resolves every key of a saved depth-1..3 build, unchanged", async () => {
     // Saved v6 builds key attachments by `/`-joined nameId paths. Expanding lazily from the
     // attached item must produce exactly those paths, or old share links would lose parts.
-    const tree = await fetchWeaponTree(fixtureClient(), M4A1);
+    const tree = await fixtureWeaponTree(fixtureClient(), M4A1);
     for (const [path, itemId] of Object.entries(M4A1_BUILD)) {
       const slot = slotAtPath(tree, M4A1_BUILD, path);
       expect(slot?.path, path).toBe(path);
@@ -206,7 +215,7 @@ describe("expanding from attached items", () => {
   });
 
   it("returns null for a path whose parent slot is empty or unknown", async () => {
-    const tree = await fetchWeaponTree(fixtureClient(), M4A1);
+    const tree = await fixtureWeaponTree(fixtureClient(), M4A1);
     expect(slotAtPath(tree, {}, "mod_reciever/mod_barrel")).toBeNull();
     expect(slotAtPath(tree, M4A1_BUILD, "mod_nope")).toBeNull();
     expect(slotAtPath(tree, M4A1_BUILD, "mod_reciever/mod_nope")).toBeNull();

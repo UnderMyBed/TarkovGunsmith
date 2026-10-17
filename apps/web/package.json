@@ -6,7 +6,7 @@
   "description": "TarkovGunsmith — Vite + React SPA. Cloudflare Pages.",
   "license": "MIT",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "build": "tsc -p tsconfig.json --noEmit && pnpm snapshot && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
-    "dev": "vite",
+    "dev": "pnpm snapshot && vite",
+    "snapshot": "tsx scripts/builder-snapshot.ts",
     "preview": "vite preview",
     "pages:dev": "wrangler pages dev",
     "pages:deploy": "wrangler pages deploy"

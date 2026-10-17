@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
+import {
+  fixtureOfferResolver,
+  fixturePartCatalog,
+  fixtureWeaponList,
+} from "./__test-utils__/fixture-snapshot.js";
 import { itemAvailability } from "./item-availability.js";
 import type { AttachablePart } from "./queries/parts.js";
 import type { PlayerProfile } from "./build-schema.js";
 import type { BuyForEntry } from "./queries/shared/buy-for.js";
-import { fetchPartCatalog } from "./queries/parts.js";
 import { fixtureClient } from "./__fixtures__/client.js";
-import { fetchWeaponList } from "./queries/weaponList.js";
-import { fetchOfferResolver } from "./queries/barters.js";
 import type { ItemsDocument } from "./queries/documents.js";
 
 const baseProfile: PlayerProfile = {
@@ -425,7 +427,7 @@ describe("itemAvailability — weapon shape", () => {
  */
 describe("flea level gate, composed over the real document shape", () => {
   it("carries upstream minLevelForFlea through to the vendor", async () => {
-    const mods = await fetchPartCatalog(fixtureClient());
+    const mods = await fixturePartCatalog(fixtureClient());
     const gatedFleaLevels = mods
       .flatMap((m) => m.buyFor ?? [])
       .filter((b) => b.vendor.__typename === "FleaMarket")
@@ -439,7 +441,7 @@ describe("flea level gate, composed over the real document shape", () => {
   });
 
   it("gates a real gated mod below its level and releases it at the level", async () => {
-    const mods = await fetchPartCatalog(fixtureClient());
+    const mods = await fixturePartCatalog(fixtureClient());
     const gated = mods.find((m) =>
       (m.buyFor ?? []).some(
         (b) => b.vendor.__typename === "FleaMarket" && (b.vendor.minPlayerLevel ?? 0) >= 20,
@@ -745,14 +747,14 @@ describe("itemAvailability — captured documents", () => {
     const client = fixtureClient();
     const [doc, resolve] = await Promise.all([
       client.fetchResource<ItemsDocument>("items"),
-      fetchOfferResolver(client),
+      fixtureOfferResolver(client),
     ]);
     const raw = doc.items[id] as { types: string[] };
     return itemAvailability({ types: raw.types, buyFor: resolve(raw) }, profile);
   }
 
   it("makes the PM reachable at LL1 through its default preset", async () => {
-    const weapons = await fetchWeaponList(fixtureClient());
+    const weapons = await fixtureWeaponList(fixtureClient());
     const pm = weapons.find((w) => w.id === "5448bd6b4bdc2dfc2f8b4569")!;
     expect(itemAvailability(pm, ll(1))).toEqual({
       available: true,
@@ -768,7 +770,7 @@ describe("itemAvailability — captured documents", () => {
   });
 
   it("makes the M4A1 reachable at LL2 through the cheapest preset barter", async () => {
-    const weapons = await fetchWeaponList(fixtureClient());
+    const weapons = await fixtureWeaponList(fixtureClient());
     const m4 = weapons.find((w) => w.id === "5447a9cd4bdc2dbd208b4567")!;
     expect(itemAvailability(m4, ll(2))).toEqual({
       available: true,
@@ -796,7 +798,7 @@ describe("itemAvailability — captured documents", () => {
   });
 
   it("makes a mod reachable at LL1 through a barter when its cash offer needs LL2", async () => {
-    const mods = await fetchPartCatalog(fixtureClient());
+    const mods = await fixturePartCatalog(fixtureClient());
     const latch = mods.find((m) => m.id === "56ea7165d2720b6e518b4583")!;
     expect(itemAvailability(latch, ll(1))).toMatchObject({
       available: true,
@@ -824,7 +826,7 @@ describe("itemAvailability — captured documents", () => {
   });
 
   it("reports a Ref-only mod as untracked instead of no-sources", async () => {
-    const mods = await fetchPartCatalog(fixtureClient());
+    const mods = await fixturePartCatalog(fixtureClient());
     const ravage = mods.find((m) => m.id === "6984b82c5aab442620032fe8")!;
     expect(itemAvailability(ravage, ll(4))).toEqual({
       available: false,

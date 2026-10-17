@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  useBuilderSnapshot,
   usePartCatalog,
   useWeaponList,
   useWeaponTree,
@@ -18,6 +19,7 @@ import {
 import { weaponSpec, type WeaponSpec } from "@tarkov/ballistics";
 import { adaptMod, adaptWeapon } from "../data-adapters/adapters.js";
 import { useV1Migration } from "./useV1Migration.js";
+import { useSnapshotOrphans } from "./useSnapshotOrphans.js";
 import { conflictReasonFor } from "./conflict-reason.js";
 
 const EMPTY_PARTS: AttachablePart[] = [];
@@ -69,7 +71,10 @@ export interface UseBuilderStateResult {
   currentBuild: BuildV6;
   currentPrice: number | null;
 
-  upstreamDriftInfo: { missingWeapon: boolean; missingModCount: number } | null;
+  /** Set when a loaded build's weapon is no longer in the game data. */
+  upstreamDriftInfo: { missingWeapon: true } | null;
+  /** When the game data was last updated upstream (ISO 8601), once the snapshot has loaded. */
+  dataAsOf: string | null;
 }
 
 /**
@@ -89,6 +94,7 @@ export function useBuilderState({
   buildDescription,
   embedProfileOnSave,
 }: UseBuilderStateArgs): UseBuilderStateResult {
+  const snapshot = useBuilderSnapshot();
   const weapons = useWeaponList();
   const catalog = usePartCatalog();
 
@@ -107,6 +113,15 @@ export function useBuilderState({
     [initialModIds, tree.data],
   );
   useV1Migration(initialWeaponId, initialModIds, legacyV1Slots, setAttachments, setOrphaned);
+  // Parts a shared build names that the game data no longer holds become orphans. (v1 links
+  // carry no attachments; their migration orphans whatever it cannot place.)
+  useSnapshotOrphans(
+    snapshot.data,
+    initialAttachments,
+    initialOrphaned,
+    setAttachments,
+    setOrphaned,
+  );
 
   const weaponAvailabilityById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof itemAvailability>>();
@@ -169,36 +184,15 @@ export function useBuilderState({
     return weaponSpec(adaptWeapon(selectedWeapon), []);
   }, [selectedWeapon]);
 
+  // Only meaningful for loaded builds; a fresh build is made from the data on hand. Parts that
+  // have gone are not counted here: `useSnapshotOrphans` moves them to `orphaned`, and the
+  // orphan banner names them.
   const upstreamDriftInfo = useMemo(() => {
-    // Only meaningful for loaded builds; fresh builds can't drift because they're built from current data.
-    if (!initialWeaponId) return null;
-    if (!weapons.data || !catalog.data) return null;
-
-    const missingWeapon = !weapons.data.some((w) => w.id === initialWeaponId);
-    const v1Missing = (initialModIds ?? []).filter((id) => !byId.has(id));
-    // Gone parts count only where they sit on the weapon. Without the weapon there is no tree
-    // to place them in, so every saved id the catalog lacks counts.
-    let v2Missing: number;
-    if (missingWeapon) {
-      v2Missing = Object.values(initialAttachments ?? {}).filter((id) => !byId.has(id)).length;
-    } else if (treeData?.weaponId === initialWeaponId) {
-      v2Missing = attachedParts(treeData, initialAttachments ?? {}, byId).missing.length;
-    } else {
-      return null;
-    }
-    const missingModCount = v1Missing.length + v2Missing;
-
-    if (!missingWeapon && missingModCount === 0) return null;
-    return { missingWeapon, missingModCount };
-  }, [
-    initialWeaponId,
-    initialModIds,
-    initialAttachments,
-    weapons.data,
-    catalog.data,
-    byId,
-    treeData,
-  ]);
+    if (!initialWeaponId || !weapons.data) return null;
+    return weapons.data.some((w) => w.id === initialWeaponId)
+      ? null
+      : ({ missingWeapon: true } as const);
+  }, [initialWeaponId, weapons.data]);
 
   const currentBuild = useMemo<BuildV6>(
     () => ({
@@ -250,8 +244,8 @@ export function useBuilderState({
   }
 
   return {
-    isLoading: weapons.isLoading || catalog.isLoading,
-    error: weapons.error ?? catalog.error,
+    isLoading: snapshot.isLoading || weapons.isLoading || catalog.isLoading,
+    error: snapshot.error ?? weapons.error ?? catalog.error,
 
     weaponOptions,
     weaponId,
@@ -281,5 +275,6 @@ export function useBuilderState({
     currentPrice,
 
     upstreamDriftInfo,
+    dataAsOf: snapshot.data?.dataAsOf ?? null,
   };
 }

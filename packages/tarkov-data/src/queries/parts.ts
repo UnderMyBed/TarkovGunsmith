@@ -1,8 +1,5 @@
 import { z } from "zod";
-import type { TarkovJsonClient } from "../client.js";
-import type { ItemsDocument } from "./documents.js";
-import { buyForEntrySchema, type OfferResolver } from "./shared/buy-for.js";
-import { fetchOfferResolver } from "./barters.js";
+import { buyForEntrySchema } from "./shared/buy-for.js";
 
 /**
  * Stat modifiers every mod-like part carries. Fractions, not percents — see the units warning
@@ -27,7 +24,8 @@ const partPropertiesSchema = z.discriminatedUnion("propertiesType", [
   z.object({ propertiesType: z.literal("ItemPropertiesAmmo") }),
 ]);
 
-const attachablePartSchema = z.object({
+/** A slot-attachable part as the snapshot stores it: every field but its offers. */
+export const snapshotPartSchema = z.object({
   id: z.string(),
   name: z.string(),
   shortName: z.string(),
@@ -36,11 +34,15 @@ const attachablePartSchema = z.object({
   types: z.array(z.string()),
   minLevelForFlea: z.number().int().nullable(),
   properties: partPropertiesSchema,
-  buyFor: z.array(buyForEntrySchema).nullable(),
   /** Item ids this part cannot be installed alongside. Recorded one-directionally upstream. */
   conflictingItems: z.array(z.string()),
   /** Slot ids (upstream `slot.id`) this part blocks while installed. */
   conflictingSlotIds: z.array(z.string()),
+});
+
+/** A part with its offers: what the Builder catalog holds. */
+export const attachablePartSchema = snapshotPartSchema.extend({
+  buyFor: z.array(buyForEntrySchema).nullable(),
 });
 
 /**
@@ -58,52 +60,8 @@ export function isModLikePart(part: AttachablePart): part is ModLikePart {
   return part.properties.propertiesType !== "ItemPropertiesAmmo";
 }
 
-/**
- * Parse one raw upstream item as an attachable part, or `null` when it is not one (another item
- * type, or a part whose record no longer matches the schema). For callers that hold a handful of
- * ids and should not parse the whole document, such as the Open Graph card function.
- */
-export function parseAttachablePart(
-  item: unknown,
-  resolveOffers: OfferResolver,
-): AttachablePart | null {
-  const type = (item as { properties?: { propertiesType?: unknown } | null } | null)?.properties
-    ?.propertiesType;
-  if (typeof type !== "string" || !PART_TYPES.has(type)) return null;
-  // `buyFor` carries cash, barter and flea offers (`createOfferResolver`). Crafting lives in the
-  // upstream `/crafts` resource, which nothing in this package fetches, so a part carries no
-  // craft field at all rather than an always-empty one.
-  const parsed = attachablePartSchema.safeParse({
-    ...(item as object),
-    buyFor: resolveOffers(item),
-  });
-  if (parsed.success) return parsed.data;
-  // A slot-attachable item failing its schema means a picker silently loses an option; say
-  // which one, so `verify:upstream` and the browser console both name it.
-  console.debug(`[parseAttachablePart] dropped ${String((item as { id?: unknown }).id)}`);
-  return null;
-}
-
-/**
- * Pure core: select every attachable part from a translated items document.
- *
- * Items are safe-parsed one at a time and dropped on mismatch, so one odd upstream record
- * never fails the whole catalog. The returned list is plain data — no Maps, Sets or class
- * instances — so a build step can serialize it unchanged.
- */
-export function selectPartCatalog(
-  doc: ItemsDocument,
-  resolveOffers: OfferResolver,
-): AttachablePart[] {
-  const out: AttachablePart[] = [];
-  for (const item of Object.values(doc.items)) {
-    const part = parseAttachablePart(item, resolveOffers);
-    if (part !== null) out.push(part);
-  }
-  return out;
-}
-
-const PART_TYPES: ReadonlySet<string> = new Set([
+/** The `properties.propertiesType` values a weapon slot can hold. */
+export const PART_TYPES: ReadonlySet<string> = new Set([
   "ItemPropertiesWeaponMod",
   "ItemPropertiesBarrel",
   "ItemPropertiesScope",
@@ -114,14 +72,4 @@ const PART_TYPES: ReadonlySet<string> = new Set([
 /** Index a catalog by id. */
 export function partsById(parts: readonly AttachablePart[]): ReadonlyMap<string, AttachablePart> {
   return new Map(parts.map((p) => [p.id, p]));
-}
-
-/** Fetch the catalog through a client. A thin wrapper over {@link selectPartCatalog}. */
-export async function fetchPartCatalog(client: TarkovJsonClient): Promise<AttachablePart[]> {
-  // Both come from the client cache, so this is one network round trip in practice.
-  const [doc, resolveOffers] = await Promise.all([
-    client.fetchResource<ItemsDocument>("items"),
-    fetchOfferResolver(client),
-  ]);
-  return selectPartCatalog(doc, resolveOffers);
 }
