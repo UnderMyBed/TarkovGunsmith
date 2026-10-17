@@ -167,6 +167,17 @@ describe("placePreset failures", () => {
     ).toMatchObject({ placed: true });
   });
 
+  it("places a preset with nothing to slot, whatever the node limit", async () => {
+    const { place } = await load(oracle);
+    expect(place("583990e32459771419544dd2", [{ itemId: CARTRIDGE_545_BP, count: 30 }], 0)).toEqual(
+      {
+        placed: true,
+        attachments: {},
+        cartridges: [{ itemId: CARTRIDGE_545_BP, count: 30 }],
+      },
+    );
+  });
+
   it("gives up at the node limit", async () => {
     const { place, presetParts } = await load();
     const { weaponId, parts } = presetParts(M4A1_CARBINE);

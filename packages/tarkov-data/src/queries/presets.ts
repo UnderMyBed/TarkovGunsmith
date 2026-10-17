@@ -55,7 +55,7 @@ export interface PresetFailure {
 }
 
 export interface WeaponPresets {
-  /** Weapon id → its presets, the default first, then by short name. */
+  /** Weapon id → its presets: exactly one default, listed first, then the rest in document order. */
   readonly byWeapon: Readonly<Record<string, readonly WeaponPreset[]>>;
   readonly failures: readonly PresetFailure[];
 }
@@ -76,84 +76,99 @@ function describeIssues(error: z.ZodError): string {
   return error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
 }
 
-/** Code-unit order: the same on every runtime, unlike `localeCompare`. */
-const compareText = (a: string, b: string): number => Number(a > b) - Number(a < b);
+/**
+ * Place one upstream preset, by id.
+ *
+ * Returns `null` for an item that is not a weapon preset the Builder holds: not a preset at
+ * all, or a preset on gear (body armour, rigs, helmets) or on a special-slot item. A preset
+ * whose `baseItem` is missing, not a string, or names an item the document lacks is a
+ * failure, not a skip: that is what an upstream rename looks like, and skipping it would empty
+ * every weapon's presets without a word.
+ */
+export function selectWeaponPreset(
+  doc: ItemsDocument,
+  graph: SlotGraph,
+  presetId: string,
+): WeaponPreset | PresetFailure | null {
+  const item = doc.items[presetId];
+  const candidate = item as RawItem | undefined;
+  if (candidate?.properties?.propertiesType !== "ItemPropertiesPreset") return null;
+  const baseItem = candidate.properties.baseItem;
+  if (typeof baseItem !== "string") {
+    return { id: presetId, reason: "schema", detail: "properties.baseItem: expected a string" };
+  }
+  const base = doc.items[baseItem] as RawItem | undefined;
+  if (base === undefined) return { id: presetId, reason: "unknown-items", detail: baseItem };
+  if (base.properties?.propertiesType !== "ItemPropertiesWeapon") return null;
+  // Every upstream weapon carries `types` (the weapon list's schema requires it).
+  if (!isBuildableWeapon({ types: base.types as readonly string[] })) return null;
+
+  const parsed = presetRecordSchema.safeParse(item);
+  if (!parsed.success) {
+    return { id: presetId, reason: "schema", detail: describeIssues(parsed.error) };
+  }
+  const preset = parsed.data;
+  const parts = preset.containsItems
+    .filter((entry) => entry.item !== baseItem)
+    .map((entry) => ({ itemId: entry.item, count: entry.count }));
+
+  const unknown = parts.filter((p) => doc.items[p.itemId] === undefined).map((p) => p.itemId);
+  if (unknown.length > 0) {
+    return { id: presetId, reason: "unknown-items", detail: unknown.join(", ") };
+  }
+
+  const fields = new Map<string, z.infer<typeof presetPartSchema>>();
+  const partProblems: string[] = [];
+  for (const { itemId } of parts) {
+    const part = presetPartSchema.safeParse(doc.items[itemId]);
+    if (part.success) fields.set(itemId, part.data);
+    else partProblems.push(`${itemId}: ${describeIssues(part.error)}`);
+  }
+  if (partProblems.length > 0) {
+    return { id: presetId, reason: "schema", detail: partProblems.join("; ") };
+  }
+
+  const placement = placePreset({
+    tree: selectWeaponTree(doc, baseItem, graph),
+    parts,
+    isCartridge: (id) => (fields.get(id) as { types: string[] }).types.includes("ammo"),
+    conflicts: fields,
+  });
+  if (!placement.placed) {
+    return { id: presetId, reason: placement.reason, detail: placement.itemIds.join(", ") };
+  }
+  return {
+    id: preset.id,
+    name: preset.name,
+    shortName: preset.shortName,
+    weaponId: baseItem,
+    isDefault: preset.properties.default,
+    attachments: placement.attachments,
+  };
+}
 
 /**
  * Pure core: every buildable weapon's upstream presets, placed into the slot graph.
  *
- * Candidates are the `ItemPropertiesPreset` items whose `baseItem` is a buildable weapon. The
- * other upstream presets are body armour, rigs and helmets, which the Builder does not hold.
- * Nothing is dropped quietly: a candidate that fails its schema, names an item the document
- * lacks, or cannot be placed is reported in `failures`, and so is a weapon whose presets do not
- * include exactly one default.
+ * Every weapon in `byWeapon` has exactly one default preset, listed first. Anything that
+ * breaks that is reported in `failures` rather than returned: a preset that fails its schema,
+ * names an item the document lacks or cannot be placed (see {@link selectWeaponPreset}), and a
+ * weapon whose placed presets do not include exactly one default, which is left out of
+ * `byWeapon` altogether.
  */
 export function selectWeaponPresets(doc: ItemsDocument, graph: SlotGraph): WeaponPresets {
-  const byWeapon: Record<string, WeaponPreset[]> = {};
+  const placed: Record<string, WeaponPreset[]> = {};
   const failures: PresetFailure[] = [];
 
-  for (const [key, item] of Object.entries(doc.items)) {
-    const candidate = item as RawItem | null;
-    if (candidate?.properties?.propertiesType !== "ItemPropertiesPreset") continue;
-    const base = doc.items[String(candidate.properties.baseItem)] as RawItem | undefined;
-    if (base?.properties?.propertiesType !== "ItemPropertiesWeapon") continue;
-    // Every upstream weapon carries `types` (the weapon list's schema requires it).
-    if (!isBuildableWeapon({ types: base.types as readonly string[] })) continue;
-
-    const parsed = presetRecordSchema.safeParse(item);
-    if (!parsed.success) {
-      failures.push({ id: key, reason: "schema", detail: describeIssues(parsed.error) });
-      continue;
-    }
-    const preset = parsed.data;
-    const weaponId = preset.properties.baseItem;
-    const parts = preset.containsItems
-      .filter((entry) => entry.item !== weaponId)
-      .map((entry) => ({ itemId: entry.item, count: entry.count }));
-
-    const unknown = parts.filter((p) => doc.items[p.itemId] === undefined).map((p) => p.itemId);
-    if (unknown.length > 0) {
-      failures.push({ id: preset.id, reason: "unknown-items", detail: unknown.join(", ") });
-      continue;
-    }
-
-    const fields = new Map<string, z.infer<typeof presetPartSchema>>();
-    const partProblems: string[] = [];
-    for (const { itemId } of parts) {
-      const part = presetPartSchema.safeParse(doc.items[itemId]);
-      if (part.success) fields.set(itemId, part.data);
-      else partProblems.push(`${itemId}: ${describeIssues(part.error)}`);
-    }
-    if (partProblems.length > 0) {
-      failures.push({ id: preset.id, reason: "schema", detail: partProblems.join("; ") });
-      continue;
-    }
-
-    const placement = placePreset({
-      tree: selectWeaponTree(doc, weaponId, graph),
-      parts,
-      isCartridge: (id) => (fields.get(id) as { types: string[] }).types.includes("ammo"),
-      conflicts: fields,
-    });
-    if (!placement.placed) {
-      failures.push({
-        id: preset.id,
-        reason: placement.reason,
-        detail: placement.itemIds.join(", "),
-      });
-      continue;
-    }
-    (byWeapon[weaponId] ??= []).push({
-      id: preset.id,
-      name: preset.name,
-      shortName: preset.shortName,
-      weaponId,
-      isDefault: preset.properties.default,
-      attachments: placement.attachments,
-    });
+  for (const presetId of Object.keys(doc.items)) {
+    const result = selectWeaponPreset(doc, graph, presetId);
+    if (result === null) continue;
+    if ("reason" in result) failures.push(result);
+    else (placed[result.weaponId] ??= []).push(result);
   }
 
-  for (const [weaponId, presets] of Object.entries(byWeapon)) {
+  const byWeapon: Record<string, WeaponPreset[]> = {};
+  for (const [weaponId, presets] of Object.entries(placed)) {
     const defaults = presets.filter((p) => p.isDefault).length;
     if (defaults !== 1) {
       failures.push({
@@ -161,10 +176,12 @@ export function selectWeaponPresets(doc: ItemsDocument, graph: SlotGraph): Weapo
         reason: "default-count",
         detail: `${defaults} default presets`,
       });
+      continue;
     }
-    presets.sort(
-      (a, b) => Number(b.isDefault) - Number(a.isDefault) || compareText(a.shortName, b.shortName),
-    );
+    byWeapon[weaponId] = [
+      ...presets.filter((p) => p.isDefault),
+      ...presets.filter((p) => !p.isDefault),
+    ];
   }
   return { byWeapon, failures };
 }

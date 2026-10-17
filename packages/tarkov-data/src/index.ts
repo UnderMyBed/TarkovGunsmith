@@ -147,7 +147,7 @@ export { useTasks } from "./hooks/useTasks.js";
 export { useProfile } from "./hooks/useProfile.js";
 
 // Presets
-export { presetRecordSchema, selectWeaponPresets } from "./queries/presets.js";
+export { presetRecordSchema, selectWeaponPreset, selectWeaponPresets } from "./queries/presets.js";
 export type {
   PresetFailure,
   PresetRecord,

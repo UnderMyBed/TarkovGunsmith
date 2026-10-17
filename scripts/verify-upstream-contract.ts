@@ -415,6 +415,22 @@ function checkPresets(
         perPartMatches += 1;
     }
   }
+  // Floors far below today's 399 presets on 164 weapons: a renamed field upstream reaches the
+  // selector as failures, but a field the selector no longer recognises as a preset at all
+  // would read as "0 placed", and that must not pass.
+  const minimums = { placed: 300, weaponsWithDefault: 150 } as const;
+  check(
+    "presets/placed",
+    placed >= minimums.placed,
+    `only ${placed} weapon presets placed (expected at least ${minimums.placed}) — a preset ` +
+      `field upstream renamed can make every preset fail or vanish`,
+  );
+  check(
+    "presets/weapons-with-default",
+    Object.keys(byWeapon).length >= minimums.weaponsWithDefault,
+    `only ${Object.keys(byWeapon).length} weapons have exactly one default preset (expected at ` +
+      `least ${minimums.weaponsWithDefault})`,
+  );
   check(
     "presets/oracle",
     misses.length === 0,

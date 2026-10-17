@@ -14358,6 +14358,706 @@
               "currencyItem": "5449016a4bdc2d6f028b456f"
             }
           ]
+        },
+        "5b3b713c5acfc4330140bd8d": {
+          "id": "5b3b713c5acfc4330140bd8d",
+          "name": "5b3b713c5acfc4330140bd8d Name",
+          "shortName": "5b3b713c5acfc4330140bd8d ShortName",
+          "normalizedName": "tokarev-tt-33-762x25-tt-pistol-golden",
+          "description": "5b3b713c5acfc4330140bd8d Description",
+          "updated": "2026-10-16T21:38:07.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.664,
+          "lastOfferCount": 14,
+          "types": ["gun", "wearable"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Tokarev_TT-33_7.62x25_TT_pistol_(Golden)",
+          "link": "https://tarkov.dev/item/tokarev-tt-33-762x25-tt-pistol-golden",
+          "iconLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5b3b713c5acfc4330140bd8d-8x.webp",
+          "containsItems": [
+            {
+              "item": "5b3baf8f5acfc40dc5296692",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "5b3cadf35acfc400194776a0",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "571a29dc2459771fb2755a6a",
+              "count": 1,
+              "attributes": {}
+            }
+          ],
+          "discardLimit": -1,
+          "basePrice": 23185,
+          "categories": [
+            "5447b5cf4bdc2d65278b4567",
+            "5422acb9af1c889c16000029",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": ["5b5f792486f77447ed5636b3", "5b5f78dc86f77409407a7f8e"],
+          "lastLowPrice": 31109,
+          "avg24hPrice": 37045,
+          "low24hPrice": 30000,
+          "high24hPrice": 55000,
+          "changeLast48h": -18176,
+          "changeLast48hPercent": -32.91,
+          "lastScan": "2026-10-16T21:28:05.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeapon",
+            "caliber": "Caliber762x25TT",
+            "ergonomics": 70,
+            "recoilVertical": 553,
+            "recoilHorizontal": 325,
+            "repairCost": 93,
+            "fireRate": 30,
+            "effectiveDistance": 50,
+            "sightingRange": 100,
+            "maxDurability": 100,
+            "centerOfImpact": 0,
+            "deviationCurve": 2.25,
+            "deviationMax": 11,
+            "recoilDispersion": 10,
+            "recoilAngle": 90,
+            "cameraSnap": 5,
+            "allowedAmmo": [
+              "5735ff5c245977640e39ba7e",
+              "573601b42459776410737435",
+              "573602322459776445391df1",
+              "5736026a245977644601dc61",
+              "573603562459776430731618",
+              "573603c924597764442bd9cb",
+              "5735fdcd2459776445391d61",
+              "68c15f77ed3d7df9220debd6",
+              "68c15a033173b556890b5959",
+              "68c15b4bb30038a118088bd6"
+            ],
+            "slots": [
+              {
+                "id": "5b3b713c5acfc4330140bd8f",
+                "nameId": "mod_barrel",
+                "required": true,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "571a26d524597720680fbe8a",
+                    "571a279b24597720b4066566",
+                    "5b3baf8f5acfc40dc5296692"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_BARREL"
+              },
+              {
+                "id": "5b3b713c5acfc4330140bd90",
+                "nameId": "mod_pistol_grip",
+                "required": true,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": [
+                    "5c0684e50db834002a12585a",
+                    "5bffcf7a0db83400232fea79",
+                    "5c079ec50db834001966a706",
+                    "5b3cadf35acfc400194776a0",
+                    "571a282c2459771fb2755a69"
+                  ],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_PISTOL_GRIP"
+              },
+              {
+                "id": "5b3b713c5acfc4330140bd91",
+                "nameId": "mod_magazine",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["571a29dc2459771fb2755a6a"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_MAGAZINE"
+              },
+              {
+                "id": "5bffd90b0db83400232feb13",
+                "nameId": "mod_muzzle",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["5bffd7ed0db834001d23ebf9"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_MUZZLE"
+              },
+              {
+                "id": "5c07a00c0db834001966a79e",
+                "nameId": "mod_tactical",
+                "required": false,
+                "filters": {
+                  "allowedCategories": [],
+                  "allowedItems": ["5c079ed60db834001a66b372"],
+                  "excludedCategories": [],
+                  "excludedItems": []
+                },
+                "name": "MOD_TACTICAL"
+              }
+            ],
+            "defaultPreset": "5b44abe986f774283e2e3512",
+            "fireModes": ["single"],
+            "presets": ["5b44abe986f774283e2e3512"],
+            "defaultWidth": 2,
+            "defaultHeight": 1,
+            "defaultErgonomics": null,
+            "defaultRecoilVertical": null,
+            "defaultRecoilHorizontal": null,
+            "defaultWeight": null,
+            "defaultAmmo": "5736026a245977644601dc61"
+          },
+          "minLevelForFlea": 0,
+          "maxDurability": 100,
+          "ergonomicsModifier": 70,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "hasGrid": false,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 9274,
+              "priceRUB": 9274,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 5564,
+              "priceRUB": 5564,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 9042,
+              "priceRUB": 9042,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 68,
+              "priceRUB": 8346,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 10433,
+              "priceRUB": 10433,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 9274,
+              "priceRUB": 9274,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5b44abe986f774283e2e3512": {
+          "id": "5b44abe986f774283e2e3512",
+          "name": "5b44abe986f774283e2e3512 Name",
+          "shortName": "5b44abe986f774283e2e3512 ShortName",
+          "normalizedName": "tokarev-tt-33-762x25-tt-pistol-golden-default",
+          "updated": "2026-10-16T21:38:07.000Z",
+          "width": 2,
+          "height": 1,
+          "weight": 0.874,
+          "lastOfferCount": 14,
+          "types": ["preset"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Tokarev_TT-33_7.62x25_TT_pistol_(Golden)",
+          "link": "https://tarkov.dev/item/tokarev-tt-33-762x25-tt-pistol-golden-default",
+          "iconLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5b44abe986f774283e2e3512-8x.webp",
+          "containsItems": [
+            {
+              "item": "5b3b713c5acfc4330140bd8d",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "5b3baf8f5acfc40dc5296692",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "5b3cadf35acfc400194776a0",
+              "count": 1,
+              "attributes": {}
+            },
+            {
+              "item": "571a29dc2459771fb2755a6a",
+              "count": 1,
+              "attributes": {}
+            }
+          ],
+          "discardLimit": -1,
+          "basePrice": 47887,
+          "categories": [
+            "5447b5cf4bdc2d65278b4567",
+            "5422acb9af1c889c16000029",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": ["5b5f792486f77447ed5636b3", "5b5f78dc86f77409407a7f8e"],
+          "lastLowPrice": 31109,
+          "avg24hPrice": 37045,
+          "low24hPrice": 30000,
+          "high24hPrice": 55000,
+          "changeLast48h": -18176,
+          "changeLast48hPercent": -32.91,
+          "lastScan": "2026-10-16T21:28:05.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesPreset",
+            "ergonomics": 68,
+            "recoilVertical": 536,
+            "recoilHorizontal": 315,
+            "moa": 12.04,
+            "default": true,
+            "baseItem": "5b3b713c5acfc4330140bd8d"
+          },
+          "minLevelForFlea": 0,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 19153,
+              "priceRUB": 19153,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 11491,
+              "priceRUB": 11491,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 18675,
+              "priceRUB": 18675,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 139,
+              "priceRUB": 17237,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 21547,
+              "priceRUB": 21547,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 19153,
+              "priceRUB": 19153,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 4505,
+              "priceRUB": 4505,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5b3baf8f5acfc40dc5296692": {
+          "id": "5b3baf8f5acfc40dc5296692",
+          "name": "5b3baf8f5acfc40dc5296692 Name",
+          "shortName": "5b3baf8f5acfc40dc5296692 ShortName",
+          "normalizedName": "tt-762x25-116mm-gilded-barrel",
+          "description": "5b3baf8f5acfc40dc5296692 Description",
+          "updated": "2026-10-16T21:18:05.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.06,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/TT_7.62x25_116mm_gilded_barrel",
+          "link": "https://tarkov.dev/item/tt-762x25-116mm-gilded-barrel",
+          "iconLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5b3baf8f5acfc40dc5296692-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 9386,
+          "categories": [
+            "555ef6e44bdc2de9068b457e",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f75c686f774094242f19f",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 300000,
+          "avg24hPrice": 300000,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-02T05:58:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesBarrel",
+            "ergonomics": -4,
+            "recoilModifier": -0.03,
+            "accuracyModifier": 0,
+            "slots": [],
+            "centerOfImpact": 0.35,
+            "deviationCurve": 2.25,
+            "deviationMax": 11,
+            "heatFactor": 1.12,
+            "coolingFactor": 1.18
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": -3,
+          "ergonomicsModifier": -4,
+          "stackMaxSize": 1,
+          "velocity": -2.32,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 3754,
+              "priceRUB": 3754,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 2252,
+              "priceRUB": 2252,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 3660,
+              "priceRUB": 3660,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 27,
+              "priceRUB": 3378,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 4223,
+              "priceRUB": 4223,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5c0647fdd443bc2504c2d371",
+              "price": 4505,
+              "priceRUB": 4505,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 3754,
+              "priceRUB": 3754,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "5b3cadf35acfc400194776a0": {
+          "id": "5b3cadf35acfc400194776a0",
+          "name": "5b3cadf35acfc400194776a0 Name",
+          "shortName": "5b3cadf35acfc400194776a0 ShortName",
+          "normalizedName": "tt-ornated-side-grips",
+          "description": "5b3cadf35acfc400194776a0 Description",
+          "updated": "2026-10-16T21:28:10.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.07,
+          "lastOfferCount": 1,
+          "types": ["mods", "pistolGrip"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/TT_ornated_side_grips",
+          "link": "https://tarkov.dev/item/tt-ornated-side-grips",
+          "iconLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/5b3cadf35acfc400194776a0-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 14159,
+          "categories": [
+            "55818a684bdc2ddd698b456d",
+            "55802f4a4bdc2ddb688b4569",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f761f86f774094242f1a1",
+            "5b5f75b986f77447ec5d7710",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": null,
+          "avg24hPrice": null,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-16T21:08:37.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesWeaponMod",
+            "ergonomics": 3,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": []
+          },
+          "minLevelForFlea": 0,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": 3,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "blue",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 5663,
+              "priceRUB": 5663,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 3398,
+              "priceRUB": 3398,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 5522,
+              "priceRUB": 5522,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 41,
+              "priceRUB": 5097,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 6371,
+              "priceRUB": 6371,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 5663,
+              "priceRUB": 5663,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
+        },
+        "571a29dc2459771fb2755a6a": {
+          "id": "571a29dc2459771fb2755a6a",
+          "name": "571a29dc2459771fb2755a6a Name",
+          "shortName": "571a29dc2459771fb2755a6a ShortName",
+          "normalizedName": "tt-762x25-tt-105-8-round-magazine",
+          "description": "571a29dc2459771fb2755a6a Description",
+          "updated": "2026-10-16T20:48:04.000Z",
+          "width": 1,
+          "height": 1,
+          "weight": 0.08,
+          "lastOfferCount": 1,
+          "types": ["mods"],
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/TT_7.62x25_tt-105_8-round_magazine",
+          "link": "https://tarkov.dev/item/tt-762x25-tt-105-8-round-magazine",
+          "iconLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-icon.webp",
+          "gridImageLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-grid-image.webp",
+          "baseImageLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-base-image.webp",
+          "inspectImageLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-image.webp",
+          "image512pxLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-512.webp",
+          "image8xLink": "https://assets.tarkov.dev/571a29dc2459771fb2755a6a-8x.webp",
+          "containsItems": [],
+          "discardLimit": -1,
+          "basePrice": 1157,
+          "categories": [
+            "5448bc234bdc2d3c308b4569",
+            "55802f3e4bdc2de7118b4584",
+            "5448fe124bdc2da5018b4567",
+            "566162e44bdc2d3f298b4573",
+            "54009119af1c881c07000029"
+          ],
+          "handbookCategories": [
+            "5b5f754a86f774094242f19b",
+            "5b5f750686f774093e6cb503",
+            "5b5f71a686f77447ed5636ab"
+          ],
+          "lastLowPrice": 2222,
+          "avg24hPrice": 2222,
+          "changeLast48h": 0,
+          "changeLast48hPercent": 0,
+          "lastScan": "2026-10-11T08:38:01.000Z",
+          "properties": {
+            "propertiesType": "ItemPropertiesMagazine",
+            "ergonomics": -1,
+            "recoilModifier": 0,
+            "accuracyModifier": 0,
+            "slots": [],
+            "capacity": 8,
+            "loadModifier": 0,
+            "ammoCheckModifier": 0,
+            "malfunctionChance": 0.03,
+            "allowedAmmo": [
+              "5735ff5c245977640e39ba7e",
+              "573601b42459776410737435",
+              "573602322459776445391df1",
+              "5736026a245977644601dc61",
+              "573603562459776430731618",
+              "573603c924597764442bd9cb",
+              "5735fdcd2459776445391d61",
+              "68c15a033173b556890b5959",
+              "68c15b4bb30038a118088bd6",
+              "68c15f77ed3d7df9220debd6"
+            ]
+          },
+          "minLevelForFlea": 25,
+          "accuracyModifier": 0,
+          "recoilModifier": 0,
+          "ergonomicsModifier": -1,
+          "stackMaxSize": 1,
+          "velocity": 0,
+          "loudness": 0,
+          "hasGrid": false,
+          "backgroundColor": "yellow",
+          "conflictingItems": [],
+          "conflictingSlotIds": [],
+          "conflictingCategories": [],
+          "buyFromTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 1574,
+              "priceRUB": 1574,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f",
+              "minTraderLevel": 1,
+              "taskUnlock": null,
+              "restockAmount": 40000,
+              "buyLimit": 10
+            }
+          ],
+          "sellToTrader": [
+            {
+              "trader": "54cb50c76803fa8b248b4571",
+              "price": 462,
+              "priceRUB": 462,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "579dc571d53a0658a154fbec",
+              "price": 277,
+              "priceRUB": 277,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "58330581ace78e27b8b10cee",
+              "price": 451,
+              "priceRUB": 451,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "5935c25fb3acc3127c3d8cd9",
+              "price": 3,
+              "priceRUB": 416,
+              "currency": "USD",
+              "currencyItem": "5696686a4bdc2da3298b456a"
+            },
+            {
+              "trader": "5a7c2eca46aef81a7ca2145d",
+              "price": 520,
+              "priceRUB": 520,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            },
+            {
+              "trader": "6617beeaa9cfa777ca915b7c",
+              "price": 462,
+              "priceRUB": 462,
+              "currency": "RUB",
+              "currencyItem": "5449016a4bdc2d6f028b456f"
+            }
+          ]
         }
       },
       "armorMaterials": {
@@ -15793,6 +16493,24 @@
     "58d2946386f774496974c37e Description": "A drop-in replacement buttstock for AR-15/M16 carbines by Magpul Original Equipment. Uses mil-spec sized receiver extension tubes. Frame profile avoids snagging and shields the release latch to prevent accidental activation, includes a standard 0.30\" thick rubber butt-pad to prevent slippage even with body armor or modular gear. Flat Dark Earth version.",
     "58d2912286f7744e27117493 Name": "Magpul MOE Carbine rubber buttpad",
     "58d2912286f7744e27117493 ShortName": "MOE RBP",
-    "58d2912286f7744e27117493 Description": "A standard rubber butt-pad for the Magpul MOE Carbine stock series. However, it can also be installed on other models of the series."
+    "58d2912286f7744e27117493 Description": "A standard rubber butt-pad for the Magpul MOE Carbine stock series. However, it can also be installed on other models of the series.",
+    "5b3b713c5acfc4330140bd8d Name": "Tokarev TT-33 7.62x25 TT pistol (Golden)",
+    "5b3b713c5acfc4330140bd8d ShortName": "TT Gold",
+    "5b3b713c5acfc4330140bd8d Description": "A legendary pistol that has seen numerous military conflicts throughout the years and is still in service in certain regions of the world, in one variation or another. This one is a classic TT-33, the most mass-produced version. It features a Browning short-recoil tilting-barrel system, but other than that, the construction design is very unique - it is purposefully simple, single-action, and no safety measures except half-cock notch, which makes it be able to withstand horrible operating abuse. Thanks to the powerful 7.62x25 cartridge and relatively long barrel, the TT boasts high muzzle velocity, penetration, and impressive accuracy, even over long distances. A special gold edition.",
+    "5b5f792486f77447ed5636b3": "Pistols",
+    "5b5f78dc86f77409407a7f8e": "Weapons",
+    "single": "Single fire",
+    "5b44abe986f774283e2e3512 Name": "Tokarev TT-33 7.62x25 TT pistol (Golden) Default",
+    "5b44abe986f774283e2e3512 ShortName": "TT Gold Default",
+    "5b3baf8f5acfc40dc5296692 Name": "TT 7.62x25 116mm gilded barrel",
+    "5b3baf8f5acfc40dc5296692 ShortName": "TT gilded",
+    "5b3baf8f5acfc40dc5296692 Description": "A 116mm barrel for the TT pistol, gilded by an unknown gunsmith.",
+    "5b5f75c686f774094242f19f": "Barrels",
+    "5b3cadf35acfc400194776a0 Name": "TT ornated side grips",
+    "5b3cadf35acfc400194776a0 ShortName": "TT swag",
+    "5b3cadf35acfc400194776a0 Description": "Ornated side grips for the TT pistol. So fancy and swaggy.",
+    "571a29dc2459771fb2755a6a Name": "TT 7.62x25 tt-105 8-round magazine",
+    "571a29dc2459771fb2755a6a ShortName": "tt-105",
+    "571a29dc2459771fb2755a6a Description": "A standard late-issue 8-round magazine for the TT pistol. It comes without a lanyard ring."
   }
 }

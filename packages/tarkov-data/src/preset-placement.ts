@@ -135,9 +135,9 @@ export function placePreset(input: PlacePresetInput): PresetPlacement {
 
   // "done": every part placed. "dead": this branch cannot place them all. "limit": out of nodes.
   const search = (): "done" | "dead" | "limit" => {
+    if (unplaced().length === 0) return "done";
     nodes += 1;
     if (nodes > maxNodes) return "limit";
-    if (unplaced().length === 0) return "done";
     const frontier = visibleSlots(tree, attachments).filter((s) => !decided.has(s.path));
     if (unreachable(frontier).length > 0) return "dead";
     // A part remains and is reachable, so some undecided slot exists.

@@ -1,11 +1,21 @@
 import { useState } from "react";
-import type { ItemAvailability, WeaponPreset } from "@tarkov/data";
+import {
+  mountedAttachments,
+  type ItemAvailability,
+  type KnownItems,
+  type WeaponPreset,
+  type WeaponTree,
+} from "@tarkov/data";
 import { Button, Card, CardContent, Pill } from "@tarkov/ui";
 import { AvailabilityPill, formatRequirement } from "./slot-tree.js";
 
 export interface PresetPickerProps {
   /** One weapon's presets, the default first (`selectWeaponPresets` order). */
   presets: readonly WeaponPreset[];
+  /** The weapon's slot tree, to compare builds by the parts actually on the weapon. */
+  tree: WeaponTree;
+  /** The ids that exist upstream (the part catalog by id). */
+  known: KnownItems;
   /** The build's current attachments. */
   attachments: Readonly<Record<string, string>>;
   /** Whether the profile can buy each preset. Omitted in theorycraft mode. */
@@ -34,12 +44,16 @@ function sameAttachments(
 /**
  * The weapon's upstream presets, plus an empty build, as one-click starting points.
  *
- * The chip whose parts match the build is marked current. Applying replaces every part, so
+ * The chip whose parts match the build is marked current, comparing only the parts actually on
+ * the weapon (`mountedAttachments`), so a stale key under a removed part changes nothing.
+ * Applying replaces every part, so
  * when the build holds parts that match no preset (the player's own work) the picker asks
  * before replacing them.
  */
 export function PresetPicker({
   presets,
+  tree,
+  known,
   attachments,
   getAvailability,
   onApply,
@@ -56,7 +70,10 @@ export function PresetPicker({
     })),
     EMPTY_OPTION,
   ];
-  const current = options.find((o) => sameAttachments(o.attachments, attachments));
+  const mounted = mountedAttachments(tree, attachments, known);
+  const current = options.find((o) =>
+    sameAttachments(mountedAttachments(tree, o.attachments, known), mounted),
+  );
   const pending = options.find((o) => o.id === pendingId);
 
   function choose(option: Option) {
@@ -105,7 +122,7 @@ export function PresetPicker({
         {pending !== undefined && (
           <div role="alert" className="flex flex-wrap items-center gap-2 text-sm">
             <span>Replace your current parts with {pending.label}?</span>
-            <Button size="sm" onClick={() => confirm(pending)}>
+            <Button size="sm" variant="destructive" onClick={() => confirm(pending)}>
               Replace
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setPendingId(null)}>

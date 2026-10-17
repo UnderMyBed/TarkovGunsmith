@@ -5,14 +5,14 @@ import oracle from "./__fixtures__/preset-oracle-sample.json" with { type: "json
 import { fetchPartCatalog, partsById } from "./queries/parts.js";
 import { fetchWeaponList } from "./queries/weaponList.js";
 import { fetchWeaponTree } from "./queries/weaponTree.js";
-import { presetRecordSchema, selectWeaponPresets } from "./queries/presets.js";
+import { presetRecordSchema, selectWeaponPreset } from "./queries/presets.js";
 import { attachedParts } from "./attached-parts.js";
 import { adaptMod, adaptWeapon } from "./ballistic-adapters.js";
 import type { ItemsDocument } from "./queries/documents.js";
 
 /**
  * Upstream's own presets are the ground truth this guards: placed by the real placer
- * (`selectWeaponPresets`), every part of a real preset must reproduce the preset's
+ * (`selectWeaponPreset`), every part of a real preset must reproduce the preset's
  * ergonomics and recoil through the Builder's stat path.
  *
  * One upstream convention needs care. A preset lists a repeated part once with a `count`
@@ -43,10 +43,10 @@ async function statsOf(presetId: string) {
   const record = presetRecordSchema.parse(doc.items[presetId]);
   const weaponId = record.properties.baseItem;
   const tree = await fetchWeaponTree(client, weaponId);
-  const preset = selectWeaponPresets(doc, tree.graph).byWeapon[weaponId]?.find(
-    (p) => p.id === presetId,
-  );
-  if (preset === undefined) throw new Error(`preset ${presetId} was not placed`);
+  // One preset at a time: the oracle capture carries the AKS-74UN's Zenit without its default,
+  // so `selectWeaponPresets` leaves that weapon out.
+  const preset = selectWeaponPreset(doc, tree.graph, presetId);
+  if (preset === null || "reason" in preset) throw new Error(`preset ${presetId} was not placed`);
 
   const byId = partsById(parts);
   const { entries, missing } = attachedParts(tree, preset.attachments, byId);
