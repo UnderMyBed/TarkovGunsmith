@@ -151,6 +151,18 @@ describe("the progression controls on a first visit", () => {
     expect(importButton).toHaveFocus();
   });
 
+  it("does not keep a token typed into an import dialog that was closed", () => {
+    render(<Harness />);
+    openPanel();
+    const importButton = within(panel()).getByRole("button", { name: /Import from TarkovTracker/ });
+    fireEvent.click(importButton);
+    fireEvent.change(screen.getByPlaceholderText(/token/i), { target: { value: "abandoned" } });
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+
+    fireEvent.click(importButton);
+    expect(screen.getByPlaceholderText(/token/i)).toHaveValue("");
+  });
+
   it("applies a TarkovTracker import only once it succeeds, in advanced mode", async () => {
     vi.stubGlobal(
       "fetch",

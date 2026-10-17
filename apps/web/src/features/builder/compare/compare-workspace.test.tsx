@@ -200,6 +200,37 @@ describe("CompareWorkspace sessionStorage prefill", () => {
   });
 });
 
+describe("CompareWorkspace one-side slot names", () => {
+  it("names a slot filled only on A as filled on A and empty on B", () => {
+    trees = { "w-diff": tinyTree("w-diff", [{ nameId: "mod_muzzle", items: ["mod-muzzle"] }]) };
+    const side = (attachments: Record<string, string>): BuildV6 => ({
+      version: 6,
+      weaponId: "w-diff",
+      attachments,
+      orphaned: [],
+      createdAt: "2026-04-22T00:00:00Z",
+    });
+    const { container } = render(
+      <CompareWorkspace
+        initialPair={{
+          v: 1,
+          createdAt: "2026-04-22T00:00:00Z",
+          left: side({ mod_muzzle: "mod-muzzle" }),
+          right: side({}),
+        }}
+        initialPairId="abc12345"
+      />,
+    );
+
+    // Side A renders first; slotDiff calls this slot left-only.
+    const [a, b] = container.querySelectorAll<HTMLElement>(
+      '[role="treeitem"][data-slot-path="mod_muzzle"]',
+    );
+    expect(a).toHaveAccessibleName(/, filled only in this build$/);
+    expect(b).toHaveAccessibleName(/: empty, filled in the other build$/);
+  });
+});
+
 // Before live prices arrive the flea preset counts as buyable at an unknown price and sorts
 // ahead of the Prapor one by short name; once they arrive the Prapor preset is the cheaper.
 // (The same fixture `useBuilderState.test.tsx` seeds the Builder with.)

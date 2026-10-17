@@ -16,6 +16,13 @@ export function TarkovTrackerConnectPopover({
   const [show, setShow] = useState(false);
   const titleId = useId();
 
+  // A token typed and then abandoned is not kept for the next open.
+  const close = (): void => {
+    setToken("");
+    setShow(false);
+    onClose();
+  };
+
   const submit = (): void => {
     const trimmed = token.trim();
     if (trimmed.length === 0) return;
@@ -27,7 +34,7 @@ export function TarkovTrackerConnectPopover({
   // dialog stack hands Escape and focus containment to the topmost one, so Escape here closes
   // this and leaves the panel open, with focus back on the button that opened it.
   return (
-    <Dialog open={open} onClose={onClose} labelledBy={titleId}>
+    <Dialog open={open} onClose={close} labelledBy={titleId}>
       <DialogPanel className="max-w-sm">
         <DialogTitle id={titleId}>Connect TarkovTracker</DialogTitle>
         <DialogBody>
@@ -72,7 +79,7 @@ export function TarkovTrackerConnectPopover({
             Stored in your browser only. We never send it to the TarkovGunsmith servers.
           </p>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="ghost" size="sm" onClick={close}>
               Cancel
             </Button>
             <Button size="sm" onClick={submit} disabled={token.trim().length === 0}>

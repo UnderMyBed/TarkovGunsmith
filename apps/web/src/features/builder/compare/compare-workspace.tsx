@@ -326,14 +326,16 @@ export function CompareWorkspace({
 
   // A fork copies the stored pair as it is, so only a draft with nothing unsaved is forked.
   // Any edit, the opt-in included, is saved as a new pair through the same path as Save.
+  // The stored pair is the one the toolbar calls saved: the route's, or the one just saved
+  // before the route remounts on it.
   const handleSaveAsNew = useCallback(() => {
-    if (initialPairId !== undefined && !draft.state.dirty) {
+    if (pairId !== undefined && !draft.state.dirty) {
       clearSeeds();
-      fork.mutate(initialPairId, { onSuccess: (res) => saved(res.id) });
+      fork.mutate(pairId, { onSuccess: (res) => saved(res.id) });
     } else {
       handleSave();
     }
-  }, [initialPairId, fork, draft.state.dirty, handleSave, saved, clearSeeds]);
+  }, [pairId, fork, draft.state.dirty, handleSave, saved, clearSeeds]);
 
   const canSwap = draft.state.left !== null || draft.state.right !== null;
   const hasProfile =
