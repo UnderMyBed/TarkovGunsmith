@@ -226,6 +226,7 @@ describe("Builder hooks", () => {
     expect(await resolveBuilderHook(() => useLivePrices())).toEqual({
       table: prices.prices,
       asOf: prices.dataAsOf,
+      fetchedAt: Date.parse(prices.dataAsOf),
     });
   });
 

@@ -49,7 +49,8 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   2335, 303, 304, 399 and 164 on 2026-10-17).
 - **Prices stay live in the SPA.** Offers are stored without prices. The SPA prices them from
   the raw `items` document — no translation sibling, price fields only — parsed in a Web
-  Worker and refetched past the HTTP cache once the cached copy is more than an hour old.
+  Worker. Prices more than an hour old are fetched again on the next focus or page mount,
+  past the HTTP cache when the last upstream fetch was more than an hour ago; nothing polls.
 - **OG cards price from the release.** A separate `/data/builder-prices.json`, generated with
   the snapshot, prices the share cards. Only the OG Functions read it; the SPA never downloads
   it. A card is cached for 30 days, so its price is a point-in-time figure regardless.

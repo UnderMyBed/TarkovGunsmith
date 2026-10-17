@@ -5,6 +5,8 @@ export interface LivePrices {
   readonly table: PriceTable;
   /** The newest `updated` timestamp in the items document (ISO 8601). */
   readonly asOf: string;
+  /** When the document was last fetched from upstream rather than the HTTP cache (ms). */
+  readonly fetchedAt: number;
 }
 
 /** What the main thread asks the price worker for. */
@@ -13,6 +15,12 @@ export interface PriceRequest {
   readonly itemsUrl: string;
   /** Every id the snapshot's offers depend on (`snapshotPriceIds`). */
   readonly ids: readonly string[];
+  /**
+   * When the document was last fetched from upstream (`LivePrices.fetchedAt`), or `null` when
+   * unknown. A cross-origin page cannot read the cached response's `Date` or `Age` (upstream
+   * exposes neither), so the caller keeps this.
+   */
+  readonly lastFetchedAt: number | null;
 }
 
 /** What the price worker posts back: the prices, or why there are none. */
@@ -23,7 +31,7 @@ export type PriceReply =
 /** How long one request for the items document may take, body included. */
 export const PRICE_TIMEOUT_MS = 60_000;
 
-/** A cached items document older than this is fetched again. */
+/** A copy of the items document fetched longer ago than this is fetched again. */
 export const PRICE_MAX_AGE_MS = 3_600_000;
 
 /** Thrown when live prices cannot be read; the message says why. */
@@ -44,7 +52,7 @@ async function load(
   cache: RequestCache,
   doFetch: typeof fetch,
   timeoutMs: number,
-): Promise<LivePrices> {
+): Promise<Omit<LivePrices, "fetchedAt">> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -78,18 +86,20 @@ async function load(
 }
 
 /**
- * Fetch the raw items document and read the prices of `request.ids` out of it.
+ * Fetch the raw items document and read the prices of `request.ids` out of it, in one request.
  *
- * The first request lets the browser's HTTP cache answer. Upstream serves the document with
- * `cache-control: max-age=691200`, so a cached copy can be up to 8 days old: when its `asOf`
- * is older than `maxAgeMs`, the document is fetched again with `cache: "no-cache"`. A
- * conditional request rarely saves anything, because upstream regenerates `items` about
- * every 10 minutes (`Last-Modified` 01:40:30 then 01:50:29 on 2026-10-17, and the earlier
- * ETag drew a 200), so a cached copy younger than an hour is used as it is.
+ * Upstream serves the document with `cache-control: max-age=691200`, so the browser's HTTP
+ * cache would answer with a copy up to 8 days old. When the copy was fetched within `maxAgeMs`
+ * (`request.lastFetchedAt`), the cache is allowed to answer; otherwise the request goes out with
+ * `cache: "no-cache"`. The decision rests on when the copy was fetched, not on the document's
+ * own timestamps: a document upstream has stopped updating is fetched once an hour, not on
+ * every load. A conditional request rarely saves anything either way, because upstream
+ * regenerates `items` about every 10 minutes (`Last-Modified` 01:40:30 then 01:50:29 on
+ * 2026-10-17, and the earlier ETag drew a 200).
  *
- * If the fresh fetch fails, the cached copy is returned: its `asOf` is shown with the prices,
- * so their age stays visible. Any other failure rejects with a {@link PriceFetchError} or the
- * network error, and the caller treats every price as unknown.
+ * If the `no-cache` request fails, whatever copy the cache holds is used: its `asOf` is shown
+ * with the prices, so their age stays visible. Any other failure rejects with a
+ * {@link PriceFetchError} or the network error, and the caller treats every price as unknown.
  */
 export async function fetchPriceTable(
   request: PriceRequest,
@@ -103,12 +113,20 @@ export async function fetchPriceTable(
   } = options;
   const doFetch: typeof fetch = (input, init) =>
     fetchImpl !== undefined ? fetchImpl(input, init) : fetch(input, init);
-  const cached = await load(request, "default", doFetch, timeoutMs);
-  if (now() - Date.parse(cached.asOf) <= maxAgeMs) return cached;
+  const { lastFetchedAt } = request;
+  if (lastFetchedAt !== null && now() - lastFetchedAt <= maxAgeMs) {
+    return { ...(await load(request, "default", doFetch, timeoutMs)), fetchedAt: lastFetchedAt };
+  }
+  const fetchedAt = now();
   try {
-    return await load(request, "no-cache", doFetch, timeoutMs);
-  } catch {
-    return cached;
+    return { ...(await load(request, "no-cache", doFetch, timeoutMs)), fetchedAt };
+  } catch (error) {
+    if (lastFetchedAt === null) throw error;
+    // Upstream is unreachable: the copy fetched at `lastFetchedAt`, if the cache still holds it.
+    return {
+      ...(await load(request, "force-cache", doFetch, timeoutMs)),
+      fetchedAt: lastFetchedAt,
+    };
   }
 }
 

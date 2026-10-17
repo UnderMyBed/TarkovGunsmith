@@ -4,6 +4,7 @@ import itemsCapture from "../__fixtures__/items-sample.json" with { type: "json"
 import { PriceFetchError, type PriceReply, type PriceRequest } from "../prices/fetch.js";
 import {
   createBuilderDataSource,
+  memoryFetchedAtStore,
   requestPricesFromWorker,
   staticBuilderDataSource,
   type PriceWorker,
@@ -56,9 +57,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// Fetched now, which the fake clock holds at the capture's own `asOf`.
 const live = (prices: { prices: unknown; dataAsOf: string }) => ({
   table: prices.prices,
   asOf: prices.dataAsOf,
+  fetchedAt: Date.parse(prices.dataAsOf),
 });
 
 describe("createBuilderDataSource", () => {
@@ -89,6 +92,34 @@ describe("createBuilderDataSource", () => {
     await source.prices();
     await source.prices();
     expect(up.calls.filter((u) => u === ITEMS_URL)).toHaveLength(2);
+  });
+
+  it("keeps the time of the last fetch, so the next load within the hour may use the cache", async () => {
+    const up = await fakeUpstream();
+    const caches: (RequestCache | undefined)[] = [];
+    const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) => {
+      if (urlOf(input) === ITEMS_URL) caches.push(init?.cache);
+      return up.fetchImpl(input, init);
+    }) as typeof fetch;
+    const stored: number[] = [];
+    const store = memoryFetchedAtStore();
+    const source = createBuilderDataSource({
+      snapshotUrl: SNAPSHOT_URL,
+      itemsUrl: ITEMS_URL,
+      fetchImpl,
+      priceTtlMs: 0,
+      fetchedAtStore: {
+        get: () => store.get(),
+        set: (at) => {
+          stored.push(at);
+          store.set(at);
+        },
+      },
+    });
+    await source.prices();
+    await source.prices();
+    expect(caches).toEqual(["no-cache", "default"]);
+    expect(stored).toEqual([Date.now(), Date.now()]);
   });
 
   it("fails a snapshot load loudly and retries it next time", async () => {
@@ -144,7 +175,9 @@ describe("createBuilderDataSource", () => {
     const newer = source.prices();
     rejectFirst(new Error("slow and failed"));
     await expect(older).rejects.toThrow("slow and failed");
-    expect(await newer).toEqual(live(up.prices));
+    // `vi.waitFor` moves the clock on, so only the table and its age are compared.
+    const { table, asOf } = live(up.prices);
+    expect(await newer).toMatchObject({ table, asOf });
   });
 
   it("uses the global fetch when given none", async () => {
@@ -160,7 +193,11 @@ describe("staticBuilderDataSource", () => {
     const { snapshot, prices } = await fixtureSnapshot();
     const source = staticBuilderDataSource(snapshot, prices);
     expect(await source.snapshot()).toBe(snapshot);
-    expect(await source.prices()).toEqual({ table: prices.prices, asOf: prices.dataAsOf });
+    expect(await source.prices()).toEqual({
+      table: prices.prices,
+      asOf: prices.dataAsOf,
+      fetchedAt: Date.parse(prices.dataAsOf),
+    });
   });
 });
 
@@ -192,10 +229,11 @@ function fakeWorker() {
 }
 
 describe("requestPricesFromWorker", () => {
-  const request: PriceRequest = { itemsUrl: ITEMS_URL, ids: ["a"] };
+  const request: PriceRequest = { itemsUrl: ITEMS_URL, ids: ["a"], lastFetchedAt: null };
   const prices = {
     table: { items: { a: [1, 2, 3] as const }, trader: {} },
     asOf: "2026-10-17T00:00:00.000Z",
+    fetchedAt: Date.parse("2026-10-17T00:05:00.000Z"),
   };
 
   it("posts the request, resolves the reply, and terminates the worker", async () => {

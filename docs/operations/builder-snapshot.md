@@ -11,9 +11,12 @@ from `json.tarkov.dev` at runtime. The decision and its reasons are in
 
 The SPA prices offers from live data: a Web Worker fetches the raw `items` document (no
 translations) and posts back only the price fields of the snapshot's ids, so the parse never
-runs on the main thread. It reads the browser's HTTP cache first and refetches with `no-cache`
-when the cached document is more than an hour old. A share card is cached for 30 days, so it
-prices from the release-time file.
+runs on the main thread. Prices load when a Builder page first needs them. They are fetched
+again only once they are more than an hour old and the window regains focus or a page that
+reads them mounts; nothing polls. Each fetch is one request: the browser's HTTP cache answers
+when the last fetch from upstream was within the hour (the SPA keeps that time in
+`localStorage`), and otherwise the request goes out with `no-cache`. A share card is cached for
+30 days, so it prices from the release-time file.
 
 `dataAsOf` is the newest `updated` timestamp in the items document. Upstream refreshes some item
 every few minutes, so in practice it is when the snapshot was taken, not when the game last

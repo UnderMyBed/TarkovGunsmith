@@ -19,7 +19,9 @@ describe("prices.worker", () => {
       vi.fn(() => Promise.resolve(new Response("{}", { status: 503, statusText: "Down" }))),
     );
     await import("./prices.worker.js");
-    scope.onmessage?.({ data: { itemsUrl: "https://json.tarkov.dev/regular/items", ids: [] } });
+    scope.onmessage?.({
+      data: { itemsUrl: "https://json.tarkov.dev/regular/items", ids: [], lastFetchedAt: null },
+    });
     await vi.waitFor(() => expect(posted).toHaveLength(1));
     expect(posted[0]).toEqual({ ok: false, message: "json.tarkov.dev answered 503 Down" });
   });

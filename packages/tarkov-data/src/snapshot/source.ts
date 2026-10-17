@@ -23,6 +23,23 @@ export type PriceWorker = Pick<
   "postMessage" | "terminate" | "onmessage" | "onerror" | "onmessageerror"
 >;
 
+/** Keeps one timestamp (ms). Reading or writing may fail, as storage may be unavailable. */
+export interface FetchedAtStore {
+  get(): number | null;
+  set(fetchedAt: number): void;
+}
+
+/** A {@link FetchedAtStore} that lasts as long as the page. */
+export function memoryFetchedAtStore(): FetchedAtStore {
+  let value: number | null = null;
+  return {
+    get: () => value,
+    set: (fetchedAt) => {
+      value = fetchedAt;
+    },
+  };
+}
+
 export interface BuilderDataSourceOptions {
   /** Where the snapshot is served, e.g. `/data/builder-snapshot.json`. */
   readonly snapshotUrl: string;
@@ -31,6 +48,12 @@ export interface BuilderDataSourceOptions {
   readonly fetchImpl?: typeof fetch;
   /** How long a price table is reused before it is fetched again. */
   readonly priceTtlMs?: number;
+  /**
+   * Where the time of the last fetch from upstream (`LivePrices.fetchedAt`) is kept between
+   * page loads, so a fresh page knows whether the HTTP cache's copy is recent. Kept in memory
+   * when left out.
+   */
+  readonly fetchedAtStore?: FetchedAtStore;
   /**
    * Starts the price Web Worker (`apps/web/src/prices.worker.ts`). Left out where `Worker`
    * does not exist — tests, Node — and the prices are then fetched on the calling thread.
@@ -83,7 +106,14 @@ export function requestPricesFromWorker(
  * sticking for the life of the page.
  */
 export function createBuilderDataSource(options: BuilderDataSourceOptions): BuilderDataSource {
-  const { snapshotUrl, itemsUrl, fetchImpl, priceTtlMs = 3_600_000, createPriceWorker } = options;
+  const {
+    snapshotUrl,
+    itemsUrl,
+    fetchImpl,
+    priceTtlMs = 3_600_000,
+    createPriceWorker,
+    fetchedAtStore = memoryFetchedAtStore(),
+  } = options;
   const doFetch: typeof fetch = (input, init) =>
     fetchImpl !== undefined ? fetchImpl(input, init) : fetch(input, init);
 
@@ -110,10 +140,17 @@ export function createBuilderDataSource(options: BuilderDataSourceOptions): Buil
     const now = Date.now();
     if (priceEntry !== undefined && now - priceEntry.at < priceTtlMs) return priceEntry.promise;
     const promise = (async () => {
-      const request: PriceRequest = { itemsUrl, ids: snapshotPriceIds(await snapshot()) };
-      return createPriceWorker !== undefined
-        ? requestPricesFromWorker(createPriceWorker, request)
-        : fetchPriceTable(request, { fetchImpl: doFetch });
+      const request: PriceRequest = {
+        itemsUrl,
+        ids: snapshotPriceIds(await snapshot()),
+        lastFetchedAt: fetchedAtStore.get(),
+      };
+      const live =
+        createPriceWorker !== undefined
+          ? await requestPricesFromWorker(createPriceWorker, request)
+          : await fetchPriceTable(request, { fetchImpl: doFetch });
+      fetchedAtStore.set(live.fetchedAt);
+      return live;
     })();
     const entry = { at: now, promise };
     promise.catch(() => {
@@ -131,6 +168,10 @@ export function staticBuilderDataSource(
   snapshot: BuilderSnapshot,
   prices: BuilderPrices,
 ): BuilderDataSource {
-  const live: LivePrices = { table: prices.prices, asOf: prices.dataAsOf };
+  const live: LivePrices = {
+    table: prices.prices,
+    asOf: prices.dataAsOf,
+    fetchedAt: Date.parse(prices.dataAsOf),
+  };
   return { snapshot: () => Promise.resolve(snapshot), prices: () => Promise.resolve(live) };
 }

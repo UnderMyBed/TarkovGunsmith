@@ -9,7 +9,8 @@ import {
 
 const ITEMS_URL = "https://json.tarkov.dev/regular/items";
 const AS_OF = "2026-10-17T01:38:06.000Z";
-const request: PriceRequest = { itemsUrl: ITEMS_URL, ids: ["a"] };
+const request: PriceRequest = { itemsUrl: ITEMS_URL, ids: ["a"], lastFetchedAt: null };
+const NOW = Date.parse("2026-10-17T03:00:00.000Z");
 
 /** A producer-shaped document: the raw envelope, every price field upstream sends. */
 const doc = (updated = AS_OF, lastLowPrice: number | null = 900) => ({
@@ -47,38 +48,53 @@ function sequence(...answers: (() => Promise<Response>)[]) {
 const at = (iso: string) => () => Date.parse(iso);
 
 describe("fetchPriceTable", () => {
-  it("reads the asked ids' prices and the document's age, from the HTTP cache when fresh", async () => {
+  it("fetches past the HTTP cache when it has never fetched, and says when", async () => {
     const { fetchImpl, caches } = sequence(() => Promise.resolve(respond(doc())));
-    const prices = await fetchPriceTable(request, { fetchImpl, now: at(AS_OF) });
+    const prices = await fetchPriceTable(request, { fetchImpl, now: () => NOW });
     expect(prices).toEqual({
       table: { items: { a: [900, 1200, 4] }, trader: { "a|t|1||RUB": 500 } },
       asOf: AS_OF,
+      fetchedAt: NOW,
     });
-    expect(caches).toEqual(["default"]);
+    expect(caches).toEqual(["no-cache"]);
   });
 
-  it("refetches with no-cache when the cached document is over an hour old", async () => {
-    const fresh = "2026-10-17T03:00:00.000Z";
-    const { fetchImpl, caches } = sequence(
-      () => Promise.resolve(respond(doc())),
-      () => Promise.resolve(respond(doc(fresh, 800))),
+  it("lets the HTTP cache answer within the hour of the last fetch", async () => {
+    const { fetchImpl, caches } = sequence(() => Promise.resolve(respond(doc())));
+    const lastFetchedAt = NOW - PRICE_MAX_AGE_MS;
+    const prices = await fetchPriceTable(
+      { ...request, lastFetchedAt },
+      { fetchImpl, now: () => NOW },
     );
-    const prices = await fetchPriceTable(request, {
-      fetchImpl,
-      now: () => Date.parse(AS_OF) + PRICE_MAX_AGE_MS + 1,
-    });
-    expect(caches).toEqual(["default", "no-cache"]);
-    expect(prices.asOf).toBe(fresh);
+    expect(caches).toEqual(["default"]);
+    expect(prices.fetchedAt).toBe(lastFetchedAt);
+  });
+
+  it("fetches once, past the cache, after the hour, however old upstream's document is", async () => {
+    // Upstream has not updated an item for two days: the decision rests on the fetch time.
+    const stale = "2026-10-15T03:00:00.000Z";
+    const { fetchImpl, caches } = sequence(() => Promise.resolve(respond(doc(stale, 800))));
+    const prices = await fetchPriceTable(
+      { ...request, lastFetchedAt: NOW - PRICE_MAX_AGE_MS - 1 },
+      { fetchImpl, now: () => NOW },
+    );
+    expect(caches).toEqual(["no-cache"]);
+    expect(prices).toMatchObject({ asOf: stale, fetchedAt: NOW });
     expect(prices.table.items.a).toEqual([800, 1200, 4]);
   });
 
-  it("keeps the cached document, with its own age, when the refetch fails", async () => {
-    const { fetchImpl } = sequence(
-      () => Promise.resolve(respond(doc())),
+  it("falls back to the cached copy, with its own fetch time, when upstream is unreachable", async () => {
+    const lastFetchedAt = NOW - 2 * PRICE_MAX_AGE_MS;
+    const { fetchImpl, caches } = sequence(
       () => Promise.reject(new TypeError("Failed to fetch")),
+      () => Promise.resolve(respond(doc())),
     );
-    const prices = await fetchPriceTable(request, { fetchImpl, now: at("2026-10-18T00:00:00Z") });
-    expect(prices.asOf).toBe(AS_OF);
+    const prices = await fetchPriceTable(
+      { ...request, lastFetchedAt },
+      { fetchImpl, now: () => NOW },
+    );
+    expect(caches).toEqual(["no-cache", "force-cache"]);
+    expect(prices).toMatchObject({ asOf: AS_OF, fetchedAt: lastFetchedAt });
   });
 
   it("names the status when upstream refuses", async () => {
@@ -119,7 +135,7 @@ describe("fetchPriceTable", () => {
   it("uses the global fetch and clock when given none", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(respond(doc(new Date().toISOString())))),
+      vi.fn(() => Promise.resolve(respond(doc()))),
     );
     try {
       expect((await fetchPriceTable(request)).table.items.a?.[0]).toBe(900);

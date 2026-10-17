@@ -133,11 +133,16 @@ export {
   snapshotWeaponTree,
 } from "./snapshot/views.js";
 export type { PricedPreset } from "./snapshot/views.js";
-export { createBuilderDataSource, staticBuilderDataSource } from "./snapshot/source.js";
+export {
+  createBuilderDataSource,
+  memoryFetchedAtStore,
+  staticBuilderDataSource,
+} from "./snapshot/source.js";
 export { requestPricesFromWorker } from "./snapshot/source.js";
 export type {
   BuilderDataSource,
   BuilderDataSourceOptions,
+  FetchedAtStore,
   PriceWorker,
 } from "./snapshot/source.js";
 export { buildPriceUnder, builderMode, priceGate, priceUnder, weaponPaths } from "./price-under.js";
