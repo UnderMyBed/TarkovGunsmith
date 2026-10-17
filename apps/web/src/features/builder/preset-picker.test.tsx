@@ -158,7 +158,7 @@ describe("PresetPicker", () => {
     expect(onApply).toHaveBeenCalledWith(CARBINE.attachments);
   });
 
-  it("in theorycraft, shows a preset nothing sells neither dimmed nor LOCKED", () => {
+  it("in theorycraft, shows a preset nothing sells neither dimmed nor Locked", () => {
     const noSources: ItemAvailability = { available: false, reason: "no-sources" };
     const { rerender } = render(
       <Picker

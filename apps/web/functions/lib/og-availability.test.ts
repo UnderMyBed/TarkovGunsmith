@@ -98,13 +98,13 @@ describe("availabilityPill", () => {
     expect(pill(null, item(cash("prapor", 1, 20_000)), item(cash("skier", 3, 4_000)))).toBe("LL3");
   });
 
-  it("says BARTER only when a barter is at the highest level", () => {
+  it("says barter only when a barter is at the highest level", () => {
     const gun = item(cash("mechanic", 3, 30_000));
     expect(pill(null, gun, item(barter("prapor", 2, 6_000)))).toBe("LL3");
     expect(pill(null, gun, item(barter("prapor", 3, 6_000)))).toBe("LL3 barter");
   });
 
-  it("says BARTER, FLEA and QUEST when a path is one, in the Builder's words", () => {
+  it("says barter, Flea and quest when a path is one, in the Builder's words", () => {
     const gun = item(cash("mechanic", 2, 30_000));
     expect(pill(null, gun, item(barter("prapor", 3, 6_000)))).toBe("LL3 barter");
     expect(pill(null, gun, item(flea(9_000)))).toBe("LL2 · Flea");
@@ -122,7 +122,7 @@ describe("availabilityPill", () => {
     expect(pill(LL4, stock)).toBe(availabilityLabel(builder));
   });
 
-  it("reads LOCKED when the profile cannot buy the build", () => {
+  it("reads Locked when the profile cannot buy the build", () => {
     const gun = item(cash("mechanic", 2, 30_000));
     expect(pill(DEFAULT_PROFILE, gun)).toBe("Locked");
     // A part with no offer at all, or only on a flea the profile has no access to.

@@ -69,7 +69,7 @@ function HomePage() {
           </dl>
           <div className="flex gap-3 items-center text-11">
             <Pill tone="accent">LL4</Pill>
-            <Pill tone="reliable">Flea unlocked</Pill>
+            <Pill tone="default">Flea unlocked</Pill>
             <Pill tone="muted">12 quests</Pill>
           </div>
         </div>

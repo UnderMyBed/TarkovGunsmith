@@ -26,7 +26,7 @@ const optimized: WeaponSpec = {
 } as WeaponSpec;
 
 describe("OptimizeTriptych", () => {
-  it("renders CURRENT numerics, OPTIMIZED numerics, and derived DELTA numerics", () => {
+  it("renders Current numerics, Optimized numerics, and derived Delta numerics", () => {
     const { getByTestId } = render(
       <OptimizeTriptych
         current={current}

@@ -41,7 +41,7 @@ function renderPanel(mode: BuilderMode, conflictWith: string | null = null) {
 const option = (name: RegExp) => screen.getByRole("button", { name });
 
 describe("ModsPanel", () => {
-  it("in theorycraft, shows a part nobody sells neither dimmed nor LOCKED", () => {
+  it("in theorycraft, shows a part nobody sells neither dimmed nor Locked", () => {
     renderPanel("theorycraft");
     const orphan = option(/Discontinued muzzle brake/);
     expect(within(orphan).queryByText("Locked")).not.toBeInTheDocument();
@@ -58,7 +58,7 @@ describe("ModsPanel", () => {
     expect(option(/Zenit DTK-1/)).toHaveClass("opacity-40");
   });
 
-  it("in progression, dims it and marks it LOCKED with why, unless Show all items is on", () => {
+  it("in progression, dims it and marks it Locked with why, unless Show all items is on", () => {
     renderPanel("progression");
     const orphan = option(/Discontinued muzzle brake/);
     expect(within(orphan).getByText("Locked")).toBeInTheDocument();

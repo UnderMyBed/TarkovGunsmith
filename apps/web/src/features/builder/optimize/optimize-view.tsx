@@ -256,7 +256,7 @@ export function OptimizeView({
         <Card className="flex flex-col gap-5 p-5">
           <div className="flex items-center justify-between">
             <span className="font-bold text-base">Solver</span>
-            <Pill tone="reliable">Exact</Pill>
+            <Pill tone="accent">Exact</Pill>
           </div>
           <OptimizeConstraintsForm
             state={state}

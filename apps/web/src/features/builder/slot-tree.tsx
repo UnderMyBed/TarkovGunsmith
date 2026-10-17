@@ -187,7 +187,7 @@ function SlotRow({
       <details
         data-slot-path={slot.path}
         {...diffDataAttr}
-        className="group border-b border-[var(--color-border)] data-[diff=differs]:data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-l-2 data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-l-2 data-[diff=right-only]:border-[var(--color-primary)]"
+        className="group border-b border-[var(--color-border)] data-[diff=differs]:border-[var(--color-primary)] data-[diff=left-only]:border-l-2 data-[diff=left-only]:border-[var(--color-primary)] data-[diff=right-only]:border-l-2 data-[diff=right-only]:border-[var(--color-primary)]"
       >
         <summary
           tabIndex={0}

@@ -193,7 +193,7 @@ const pinState = (slot: string) =>
 const lastWorker = () => workers.started[workers.started.length - 1] as FakeWorker;
 
 describe("OptimizeView", () => {
-  it("renders idle state with CURRENT filled and diff table idle message", () => {
+  it("renders idle state with Current filled and diff table idle message", () => {
     renderView();
     expect(screen.getByText(/Optimizer/)).toBeInTheDocument();
     expect(screen.getByText(/Run the solver/)).toBeInTheDocument();

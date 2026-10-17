@@ -39,19 +39,19 @@ function sync(state: "disconnected" | "syncing" | "synced" | "error"): UseTarkov
 }
 
 describe("ProfileReadout", () => {
-  it("shows MANUAL meta and disables RE-IMPORT when disconnected", () => {
+  it("shows Manual meta and disables Re-import when disconnected", () => {
     render(<ProfileReadout gate={profile} sync={sync("disconnected")} onEditProfile={vi.fn()} />);
     expect(screen.getByText(/Manual/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Re-import/ })).toBeDisabled();
   });
 
-  it("shows TARKOVTRACKER · Nh AGO and enables RE-IMPORT when synced", () => {
+  it("shows TarkovTracker · Nh ago and enables Re-import when synced", () => {
     render(<ProfileReadout gate={profile} sync={sync("synced")} onEditProfile={vi.fn()} />);
     expect(screen.getByText(/TarkovTracker · 2h ago/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Re-import/ })).toBeEnabled();
   });
 
-  it("calls sync.reSync when RE-IMPORT clicked", () => {
+  it("calls sync.reSync when Re-import clicked", () => {
     const reSyncMock = vi.fn();
     const s = sync("synced");
     s.reSync = reSyncMock;

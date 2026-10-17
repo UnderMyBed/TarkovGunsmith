@@ -32,7 +32,7 @@ describe("availabilityLabel", () => {
     expect(availabilityLabel(ON_FLEA)).toBe("Flea");
   });
 
-  it("says QUEST when the path assumes one is done", () => {
+  it("says quest when the path assumes one is done", () => {
     const assumed = { ...trader, assumedQuest: "i-need-more-power" };
     expect(availabilityLabel({ ...assumed, kind: "trader" })).toBe("LL3 · quest");
     expect(availabilityLabel({ ...assumed, kind: "barter", barterId: "b1" })).toBe(
@@ -40,7 +40,7 @@ describe("availabilityLabel", () => {
     );
   });
 
-  it("reads LOCKED for anything with no open path", () => {
+  it("reads Locked for anything with no open path", () => {
     expect(availabilityLabel(NO_SOURCES)).toBe("Locked");
     expect(availabilityLabel({ available: false, reason: "flea-locked" })).toBe("Locked");
   });

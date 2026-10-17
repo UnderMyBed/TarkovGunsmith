@@ -39,7 +39,7 @@ function SidePill({
       {/* Unlisted flea entries are only known once prices are in: before then a lock is a guess. */}
       {pricesReady && gated && price?.status === "unobtainable" && <Pill tone="muted">Locked</Pill>}
       {pricesReady && gated && price !== null && price.status !== "unobtainable" && (
-        <Pill tone="reliable">Reachable</Pill>
+        <Pill tone="accent">Reachable</Pill>
       )}
     </span>
   );

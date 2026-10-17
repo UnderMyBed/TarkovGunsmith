@@ -115,7 +115,7 @@ describe("/builder", () => {
     expect(stat("Weight")).toHaveTextContent("0.75 kg");
   });
 
-  it("attaching an available mod updates the mod count; a locked mod renders a LOCKED pill with its gate", async () => {
+  it("attaching an available mod updates the mod count; a locked mod renders a Locked pill with its gate", async () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
     await selectFixtureWeapon(user);

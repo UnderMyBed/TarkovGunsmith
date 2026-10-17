@@ -84,7 +84,7 @@ describe("OptimizePinTree", () => {
     }
   });
 
-  it("locks a nested slot to the build's part, and FREE removes the pin rather than emptying it", () => {
+  it("locks a nested slot to the build's part, and Free removes the pin rather than emptying it", () => {
     render(<Harness />);
     fireEvent.click(radio("Barrel", "Lock"));
     expect(pins()).toEqual([["receiver/barrel", "b1"]]);
@@ -103,7 +103,7 @@ describe("OptimizePinTree", () => {
     expect(radio("Stock", "Lock")).toBeEnabled();
   });
 
-  it("EMPTY on a slot clears the locks below it, and its nested rows leave the list", () => {
+  it("Empty on a slot clears the locks below it, and its nested rows leave the list", () => {
     render(<Harness />);
     fireEvent.click(radio("Barrel", "Lock"));
     fireEvent.click(radio("Mount", "Lock"));
@@ -124,7 +124,7 @@ describe("OptimizePinTree", () => {
     expect(radio("Mount", "Free")).toBeChecked();
   });
 
-  it("asks before EMPTY clears pins below, so an arrow key passing over it wipes nothing", () => {
+  it("asks before Empty clears pins below, so an arrow key passing over it wipes nothing", () => {
     render(<Harness />);
     fireEvent.click(radio("Barrel", "Lock"));
     fireEvent.click(radio("Mount", "Lock"));
@@ -183,7 +183,7 @@ describe("OptimizePinTree", () => {
     expect(pins()).toEqual([["stock", "s1"]]);
   });
 
-  it("shows a lock's own part, and CLEAR ALL frees every slot", () => {
+  it("shows a lock's own part, and Clear all frees every slot", () => {
     render(
       <Harness
         start={{

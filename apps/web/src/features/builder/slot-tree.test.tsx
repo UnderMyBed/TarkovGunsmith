@@ -319,7 +319,7 @@ describe("SlotTree — availability", () => {
     expect(within(option).getByText("LL1")).toBeInTheDocument();
   });
 
-  it("labels an option reachable by a trader barter with the level and BARTER", () => {
+  it("labels an option reachable by a trader barter with the level and barter", () => {
     renderTree({
       getAvailability: () => ({
         available: true,
@@ -336,7 +336,7 @@ describe("SlotTree — availability", () => {
     expect(within(option).getByText("LL1 barter")).toBeInTheDocument();
   });
 
-  it("labels an option reachable only on the flea market as FLEA", () => {
+  it("labels an option reachable only on the flea market as Flea", () => {
     renderTree({ getAvailability: () => AVAILABLE_FLEA });
     const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
     expect(within(option).getByText("Flea")).toBeInTheDocument();

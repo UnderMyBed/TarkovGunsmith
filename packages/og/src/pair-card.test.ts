@@ -14,7 +14,7 @@ describe("pairCard", () => {
     expect(text).toMatch(/Build B/);
     expect(text).toMatch(/M4A1/);
     expect(text).toMatch(/HK 416A5/);
-    expect(text).toMatch(/vs/);
+    expect(text).toMatch(/\bvs\b/);
     expect(text).toMatch(/Build comparison/);
     expect(text).toMatch(/Ergo/);
     expect(text).toMatch(/Recoil V/);
