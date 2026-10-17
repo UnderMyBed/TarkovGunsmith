@@ -10,8 +10,11 @@ export interface BuildCardViewModel {
   subtitle: string | null;
   /** Number of parts on the weapon, one per filled slot. */
   modCount: number;
-  /** `FLEA` | `LL2` | `LL3` | `LL4` — lowest trader level that covers every mod. */
-  availability: "FLEA" | "LL2" | "LL3" | "LL4";
+  /**
+   * The availability pill, in the Builder's words (e.g. `LL3`, `LL4 BARTER · FLEA`, `LOCKED`),
+   * or `null` to leave it off.
+   */
+  availability: string | null;
   /** Total price in RUB. `null` if any part is missing price data: the pill is left off. */
   priceRub: number | null;
   stats: {
@@ -29,7 +32,8 @@ export interface SideViewModel {
   /** Weapon short-name, e.g. "M4A1". */
   weapon: string;
   modCount: number;
-  availability: "FLEA" | "LL2" | "LL3" | "LL4";
+  /** As {@link BuildCardViewModel.availability}. */
+  availability: string | null;
   stats: {
     ergo: number;
     recoilV: number;

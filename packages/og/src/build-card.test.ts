@@ -38,6 +38,12 @@ describe("buildCard", () => {
     expect(text).toMatch(/187 240|187,240/);
   });
 
+  it("omits the availability pill when there is none", async () => {
+    const text = textContent(await render({ ...vm, availability: null }));
+    expect(text).not.toMatch(/LL3/);
+    expect(text).toMatch(/11 MODS/);
+  });
+
   it("omits the price pill when priceRub is null", async () => {
     const svg = await render({ ...vm, priceRub: null });
     expect(svg).not.toMatch(/₽/);
