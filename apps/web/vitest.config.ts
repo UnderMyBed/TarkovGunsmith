@@ -18,6 +18,10 @@ export default defineConfig({
       "scripts/**/*.test.ts",
     ],
     environment: "node",
+    // Route tests drive a real router through several user steps. They finish in about 1–2 s
+    // locally, but CI's coverage step runs every package's suite at once and has pushed one
+    // past vitest's 5 s default; 20 s still fails fast on a real hang.
+    testTimeout: 20_000,
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts", "src/**/*.tsx"],
