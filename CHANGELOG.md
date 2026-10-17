@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.24.0...v1.25.0) (2026-10-17)
+
+
+### Features
+
+* **builder:** slot inspector beside an always-expanded slot tree (redesign 3/5) ([#287](https://github.com/UnderMyBed/TarkovGunsmith/issues/287)) ([d553354](https://github.com/UnderMyBed/TarkovGunsmith/commit/d5533545a510dcca4cb0a7738e709d7132de4a5a))
+
 ## [1.24.0](https://github.com/UnderMyBed/TarkovGunsmith/compare/v1.23.0...v1.24.0) (2026-10-17)
 
 
