@@ -178,12 +178,18 @@ describe("/builder", () => {
 
     await user.click(screen.getByRole("button", { name: "Optimize" }));
 
-    // OptimizeView (a separate, already-tested feature component) mounted — its own heading
-    // proves BuilderPage's view="optimize" branch rendered it with a ready weapon/tree/spec.
-    expect(await screen.findByText(/Optimizer/)).toBeInTheDocument();
+    // The workbench switches into optimize mode: the side panel takes the inspector's place
+    // and the Build panel shows the slot tree with pins.
+    expect(await screen.findByRole("complementary", { name: "Optimizer" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Build with proposed changes" })).toBeInTheDocument();
+    expect(screen.getByRole("tree", { name: "Slots" })).toBeInTheDocument();
     // The editor's Build panel is gone while the optimizer is showing, and so is Optimize.
     expect(screen.queryByRole("region", { name: "Build" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Optimize" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close the optimizer" }));
+    expect(await screen.findByRole("region", { name: "Build" })).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "Optimizer" })).not.toBeInTheDocument();
   });
 
   it("opens the progression panel from the optimizer's profile, and stays in the optimizer", async () => {
@@ -192,11 +198,13 @@ describe("/builder", () => {
     await selectFixtureWeapon(user);
     await user.click(screen.getByRole("button", { name: "Optimize" }));
 
-    await user.click(await screen.findByRole("button", { name: /Edit profile/ }));
+    await user.click(
+      await screen.findByRole("button", { name: /^(Edit progression|Use my progression)$/ }),
+    );
     const panel = screen.getByRole("dialog", { name: "Your progression" });
     await user.click(within(panel).getByRole("button", { name: "Done" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByText(/Optimizer/)).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Optimizer" })).toBeInTheDocument();
   });
 
   it("falls back to a prompt when the optimizer is opened with no weapon selected, and returns to the editor", async () => {
