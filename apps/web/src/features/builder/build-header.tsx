@@ -172,7 +172,7 @@ export function BuildHeader({
                   currentSpec.ergonomics - stockSpec.ergonomics,
                   false,
                 )}
-                value={currentSpec.ergonomics}
+                value={oneDecimal(currentSpec.ergonomics)}
                 percent={clampPercent(currentSpec.ergonomics)}
                 barTone="primary"
               />
@@ -184,7 +184,7 @@ export function BuildHeader({
                   currentSpec.verticalRecoil - stockSpec.verticalRecoil,
                   true,
                 )}
-                value={currentSpec.verticalRecoil}
+                value={oneDecimal(currentSpec.verticalRecoil)}
                 percent={clampInverse(currentSpec.verticalRecoil, stockSpec.verticalRecoil)}
                 barTone="olive"
               />
@@ -196,7 +196,7 @@ export function BuildHeader({
                   currentSpec.horizontalRecoil - stockSpec.horizontalRecoil,
                   true,
                 )}
-                value={currentSpec.horizontalRecoil}
+                value={oneDecimal(currentSpec.horizontalRecoil)}
                 percent={clampInverse(currentSpec.horizontalRecoil, stockSpec.horizontalRecoil)}
                 barTone="olive"
               />
@@ -218,6 +218,11 @@ export function BuildHeader({
       </div>
     </Card>
   );
+}
+
+/** To one decimal, as the Spec panel shows it, dropping a trailing ".0" (119, not 119.0). */
+function oneDecimal(value: number): string {
+  return String(Number(value.toFixed(1)));
 }
 
 function formatDelta(delta: number, allowDecimals: boolean): string {
