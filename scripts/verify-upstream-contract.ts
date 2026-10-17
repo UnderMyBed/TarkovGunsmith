@@ -13,6 +13,7 @@
  * the pre-merge gate fail on upstream's availability rather than on our code.
  * It runs on a schedule instead — see .github/workflows/upstream-contract.yml.
  *
+ *   pnpm turbo run build --filter "@tarkov/optimizer..."   # the recoil-floor check runs it
  *   pnpm verify:upstream
  */
 import {
@@ -52,6 +53,8 @@ import { COMPLETED_QUESTS_CAP } from "../packages/tarkov-data/src/build-schema.j
 import {
   snapshotPartCatalog,
   snapshotWeaponList,
+  snapshotWeaponPresets,
+  snapshotWeaponTree,
 } from "../packages/tarkov-data/src/snapshot/views.js";
 import type { ItemsDocument } from "../packages/tarkov-data/src/queries/documents.js";
 import {
@@ -60,7 +63,9 @@ import {
 } from "../packages/tarkov-data/src/queries/slot-graph.js";
 import type { WeaponListItem } from "../packages/tarkov-data/src/queries/weaponList.js";
 import { presetRecordSchema } from "../packages/tarkov-data/src/queries/presets.js";
-import type { BuilderSnapshot } from "../packages/tarkov-data/src/snapshot/types.js";
+import type { BuilderPrices, BuilderSnapshot } from "../packages/tarkov-data/src/snapshot/types.js";
+import type { PlayerProfile } from "../packages/tarkov-data/src/build-schema.js";
+import { optimize } from "../packages/optimizer/src/optimize.js";
 import { partsById, type AttachablePart } from "../packages/tarkov-data/src/queries/parts.js";
 import { resolveBuild } from "../packages/tarkov-data/src/build-core/resolve.js";
 import { adaptMod, adaptWeapon } from "../packages/tarkov-data/src/ballistic-adapters.js";
@@ -203,7 +208,9 @@ async function main(): Promise<void> {
 
   // The #220 stats. `velocity` is top-level and a percent (-11 = -11%); the magazine figures
   // are fractions; `centerOfImpact` (cm at 100 m) sits only on weapons and barrels, never
-  // negative, which the optimizer's max-accuracy bound relies on (packages/optimizer bounds.ts).
+  // negative. The optimizer's max-accuracy search relies on that: it takes a higher summed
+  // accuracyModifier as a lower MOA for every barrel, true only while the barrel's and the
+  // weapon's centerOfImpact add up to 0 or more (packages/optimizer/src/problem.ts).
   const partVelocities = items
     .filter((i) => {
       const type = i.properties?.["propertiesType"];
@@ -268,7 +275,7 @@ async function main(): Promise<void> {
   check(
     "bounds/centerOfImpact",
     Math.min(...centers) >= 0,
-    `expected centerOfImpact >= 0, got ${Math.min(...centers)} — the optimizer's max-accuracy bound assumes it`,
+    `expected centerOfImpact >= 0, got ${Math.min(...centers)} — the optimizer's max-accuracy search assumes it`,
   );
   notes.push(
     `centerOfImpact [${Math.min(...centers)}, ${Math.max(...centers)}] cm on weapons and barrels only`,
@@ -467,6 +474,7 @@ async function checkBuilderSnapshot(): Promise<void> {
   const catalog = snapshotPartCatalog(snapshot, prices.prices);
   checkPresets(documents.items, snapshot.presets, weapons, catalog);
   checkSlotGraphBounds(documents.items, weapons, catalog);
+  checkRecoilFloor(snapshot, prices.prices, weapons, catalog);
 }
 
 /**
@@ -639,14 +647,15 @@ function slotGraphMaximum(
 }
 
 /**
- * The two facts the optimizer's max-accuracy bound (`packages/optimizer/src/bounds.ts`) rests on,
- * over every weapon's slot graph with conflicts ignored (so a weapon passes only if no chain of
- * allowed items breaks them):
+ * Two facts `weaponSpec`'s MOA and the optimizer's max-accuracy search rest on, over every
+ * weapon's slot graph with conflicts ignored (so a weapon passes only if no chain of allowed
+ * items breaks them):
  *
- * - no weapon can mount two barrels — the bound takes the build's `centerOfImpact` as the
- *   weapon's plus ONE barrel's;
- * - the summed `accuracyModifier` of any build lies in (-1, 1) — the bound needs 1 − a ≤ 2 and
- *   1 − a ≥ 0 for every running and final sum a.
+ * - no weapon can mount two barrels — a build's dispersion is the weapon's plus ONE barrel's,
+ *   and the optimizer throws on a slot graph where a build could hold two;
+ * - the summed `accuracyModifier` of any build lies in (-1, 1) — so no build's MOA is negative,
+ *   and a build whose MOA is 0 whatever its modifiers beats every other, which the optimizer
+ *   takes as given (`packages/optimizer/src/solve.ts`).
  */
 function checkSlotGraphBounds(
   doc: ItemsDocument,
@@ -684,10 +693,91 @@ function checkSlotGraphBounds(
     "bounds/accuracy-sum",
     sumMax < 1 && sumMin > -1,
     `a build's summed accuracyModifier can reach [${sumMin}, ${sumMax}], outside (-1, 1) — ` +
-      `the optimizer's max-accuracy bound assumes it stays inside`,
+      `a build's MOA could go negative, which the optimizer's max-accuracy search assumes it cannot`,
   );
   notes.push(
     `summed accuracyModifier per build within [${sumMin.toFixed(3)}, ${sumMax.toFixed(3)}] (conflicts ignored)`,
+  );
+}
+
+const LL4: PlayerProfile = {
+  mode: "basic",
+  traders: { prapor: 4, therapist: 4, skier: 4, peacekeeper: 4, mechanic: 4, ragman: 4, jaeger: 4 },
+  flea: true,
+  level: 79,
+};
+
+/**
+ * `weaponSpec` applies a build's recoil as `1 + Σ recoilModifier` with no floor. That is only
+ * sound while no valid build takes it to 0 or below, and only the exact min-recoil optimizer
+ * can say how low a valid build goes: summing each slot's best part reaches below 0, but
+ * conflicts keep every real build above it. So this runs the optimizer — the Builder's own,
+ * conflicts, required slots and all — for min recoil on every weapon, on an LL4 profile and in
+ * theorycraft, and fails if any build's multiplier is not above 0. A theorycraft run that
+ * finds no build fails too, unless nothing sells the weapon. Running every weapon also
+ * proves the slot graph acyclic, which the optimizer requires (it throws on a cycle).
+ */
+function checkRecoilFloor(
+  snapshot: BuilderSnapshot,
+  table: BuilderPrices["prices"],
+  weapons: readonly WeaponListItem[],
+  parts: readonly AttachablePart[],
+): void {
+  const byId = partsById(parts);
+  const presets = snapshotWeaponPresets(snapshot, table);
+  const started = performance.now();
+  let floor: { multiplier: number; at: string } | null = null;
+  let slowest = { ms: 0, at: "" };
+  const refused = new Map<string, number>();
+  for (const weapon of weapons) {
+    const tree = snapshotWeaponTree(snapshot, weapon.id);
+    for (const [gateName, gate] of [
+      ["LL4", LL4],
+      ["theorycraft", null],
+    ] as const) {
+      const at = `${weapon.shortName} (${gateName})`;
+      const t = performance.now();
+      const result = optimize({
+        weapon: adaptWeapon(weapon),
+        weaponItem: weapon,
+        presets: presets[weapon.id] ?? [],
+        slotTree: tree,
+        parts,
+        constraints: { profile: gate, pinnedSlots: new Map() },
+        objective: "min-recoil",
+        // Generous: this checks the floor, not the Builder's 2 s safety net.
+        timeoutMs: 30_000,
+      });
+      const ms = performance.now() - t;
+      if (ms > slowest.ms) slowest = { ms, at };
+      if (!result.ok) {
+        refused.set(result.reason, (refused.get(result.reason) ?? 0) + 1);
+        check(
+          "optimizer/min-recoil",
+          result.reason !== "timeout" && (gate !== null || result.reason === "weapon-unavailable"),
+          `${at}: no build (${result.reason}${"message" in result ? `: ${result.message}` : ""})`,
+        );
+        continue;
+      }
+      const placed = resolveBuild(tree, result.build.attachments, byId).placed;
+      const multiplier = 1 + placed.reduce((sum, p) => sum + adaptMod(p.part).recoilModifier, 0);
+      if (floor === null || multiplier < floor.multiplier) floor = { multiplier, at };
+    }
+  }
+  const seconds = ((performance.now() - started) / 1000).toFixed(1);
+  check(
+    "bounds/recoil-floor",
+    floor !== null && floor.multiplier > 0,
+    `the lowest recoil multiplier a valid build reaches is ${floor?.multiplier ?? "unknown"} ` +
+      `(${floor?.at ?? "no build"}), and weaponSpec applies it unfloored`,
+  );
+  notes.push(
+    `recoil multiplier floor ${floor?.multiplier.toFixed(3) ?? "none"} (${floor?.at ?? "no build"}), ` +
+      `exact min-recoil over ${weapons.length} weapons × LL4 and theorycraft in ${seconds} s, ` +
+      `slowest ${slowest.ms.toFixed(0)} ms (${slowest.at})` +
+      (refused.size > 0
+        ? `; no build: ${[...refused].map(([reason, n]) => `${n} ${reason}`).join(", ")}`
+        : ""),
   );
 }
 

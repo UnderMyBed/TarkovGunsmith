@@ -61,19 +61,16 @@ describe("weaponSpec", () => {
     expect(mods).toEqual(before);
   });
 
-  it("floors the recoil multiplier so recoil can never reach zero or go negative", () => {
-    // No measured build reaches this (the deepest is 0.022). Driven synthetically so the
-    // guard stays covered if upstream ever widens the mod pool.
-    const absurd: BallisticMod[] = Array.from({ length: 6 }, (_, i) => ({
-      ...grip,
-      id: `absurd-${i}`,
-      recoilModifier: -0.35,
-    }));
-    const spec = weaponSpec(m4, absurd);
-    // Raw sum is -2.1, so 1 + sum = -1.1 — negative recoil without the floor.
-    expect(spec.verticalRecoil).toBeCloseTo(119 * 0.01, 6);
-    expect(spec.horizontalRecoil).toBeCloseTo(342 * 0.01, 6);
-    expect(spec.verticalRecoil).toBeGreaterThan(0);
+  it("applies the summed recoil modifier as it is, with no floor", () => {
+    // -0.714 is the deepest any valid live build reaches (OP-SKS, measured by
+    // `pnpm verify:upstream`). A build holding clashing parts can go further.
+    const deep: BallisticMod[] = [
+      { ...grip, id: "deep-a", recoilModifier: -0.35 },
+      { ...grip, id: "deep-b", recoilModifier: -0.364 },
+    ];
+    const spec = weaponSpec(m4, deep);
+    expect(spec.verticalRecoil).toBeCloseTo(119 * 0.286, 9);
+    expect(spec.horizontalRecoil).toBeCloseTo(342 * 0.286, 9);
   });
 });
 
