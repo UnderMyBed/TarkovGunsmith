@@ -964,6 +964,390 @@
           "lightkeeperRequired": false,
           "taskImageLink": "https://assets.tarkov.dev/5a03296886f774569778596a.webp",
           "map": "5704e554d2720bac5b8b456e"
+        },
+        "60e71c11d54b755a3b53eb65": {
+          "id": "60e71c11d54b755a3b53eb65",
+          "name": "60e71c11d54b755a3b53eb65 name",
+          "trader": "58330581ace78e27b8b10cee",
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Night_Sweep",
+          "minPlayerLevel": 0,
+          "taskRequirements": [],
+          "traderRequirements": [],
+          "objectives": [
+            {
+              "id": "60e82c12fd1bf4491c4e4547",
+              "description": "60e82c12fd1bf4491c4e4547",
+              "type": "findItem",
+              "count": 12,
+              "optional": false,
+              "items": ["5fc64ea372b0dd78d51159dc"],
+              "dogTagLevel": 0,
+              "maxDurability": 100,
+              "minDurability": 0,
+              "foundInRaid": false,
+              "zones": [],
+              "maps": []
+            },
+            {
+              "id": "60e82c5926b88043510e0ad7",
+              "description": "60e82c5926b88043510e0ad7",
+              "type": "giveItem",
+              "count": 12,
+              "optional": false,
+              "items": ["5fc64ea372b0dd78d51159dc"],
+              "dogTagLevel": 0,
+              "maxDurability": 100,
+              "minDurability": 0,
+              "foundInRaid": false
+            },
+            {
+              "id": "6a5abd63b45ef5b1a87b8273",
+              "description": "6a5abd63b45ef5b1a87b8273",
+              "type": "shoot",
+              "count": 5,
+              "optional": false,
+              "shotType": "kill",
+              "bodyParts": [],
+              "usingWeapon": [],
+              "usingWeaponMods": [],
+              "distance": {
+                "value": 0,
+                "compareMethod": ">="
+              },
+              "timeFromHour": 0,
+              "timeUntilHour": 0,
+              "wearing": [],
+              "notWearing": [],
+              "enemyHealthEffect": null,
+              "targetNames": ["sectantPriest", "sectantWarrior"],
+              "playerHealthEffect": null,
+              "zones": [],
+              "maps": [
+                "5704e3c2d2720bac5b8b4567",
+                "59fc81d786f774390775787e",
+                "56f40101d2720b2a4d8b45d6",
+                "65b8d6f5cdde2479cb2a3125",
+                "5704e554d2720bac5b8b456e"
+              ]
+            }
+          ],
+          "failConditions": [],
+          "startRewards": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "finishRewards": {
+            "traderStanding": [
+              {
+                "standing": 1.5,
+                "trader": "58330581ace78e27b8b10cee"
+              }
+            ],
+            "items": [
+              {
+                "item": "569668774bdc2da2298b4568",
+                "count": 2400,
+                "attributes": {}
+              },
+              {
+                "item": "60b7d76e2a3c79100f1979de",
+                "count": 1,
+                "attributes": {}
+              },
+              {
+                "item": "64ace9f9c4eda9354b0226aa",
+                "count": 5,
+                "attributes": {}
+              }
+            ],
+            "offerUnlock": [
+              {
+                "id": "6a7054b1d7dd52b13b33a2b7",
+                "level": 4,
+                "item": "60b7d76e2a3c79100f1979de",
+                "count": 1,
+                "contains": [
+                  {
+                    "item": "606587252535c57a13424cfd",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "55802f5d4bdc2dac148b458f",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "59d6272486f77466146386ff",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "606587a88900dc2d9a55b659",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "60658776f2cb2e02a42ace2b",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "6065c6e7132d4d12c81fd8e1",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "6065dc8a132d4d12c81fd8e3",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "6065880c132d4d12c81fd8da",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "5bc09a30d4351e00367fb7c8",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "5bc09a18d4351e003562b68e",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "606587e18900dc2d9a55b65f",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "606587d11246154cad35d635",
+                    "count": 1,
+                    "attributes": []
+                  },
+                  {
+                    "item": "606587bd6d0bd7580617bacc",
+                    "count": 1,
+                    "attributes": []
+                  }
+                ],
+                "attributes": [],
+                "trader": "58330581ace78e27b8b10cee"
+              },
+              {
+                "id": "6a7054cb4a85cea1a16e2985",
+                "level": 4,
+                "item": "58d2912286f7744e27117493",
+                "count": 1,
+                "contains": [],
+                "attributes": [],
+                "trader": "58330581ace78e27b8b10cee"
+              }
+            ],
+            "skillLevelReward": [
+              {
+                "level": 4,
+                "skill": "Search"
+              },
+              {
+                "level": 4,
+                "skill": "StressResistance"
+              }
+            ],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "failureOutcome": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "restartable": false,
+          "experience": 65000,
+          "factionName": "Any",
+          "neededKeys": [],
+          "availableDelaySecondsMin": 0,
+          "availableDelaySecondsMax": 0,
+          "otherRequirements": [
+            {
+              "id": "6a5abd447c0cd5dbc9fcd692",
+              "type": "globalVariable",
+              "variableId": "6a5a1192efde11cc7105b18f",
+              "compareMethod": ">=",
+              "value": 1
+            }
+          ],
+          "normalizedName": "night-sweep",
+          "kappaRequired": false,
+          "lightkeeperRequired": false,
+          "taskImageLink": "https://assets.tarkov.dev/60e71c11d54b755a3b53eb65.webp",
+          "map": null
+        },
+        "5b477f7686f7744d1b23c4d2": {
+          "id": "5b477f7686f7744d1b23c4d2",
+          "name": "5b477f7686f7744d1b23c4d2 name",
+          "trader": "5a7c2eca46aef81a7ca2145d",
+          "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Gunsmith_Master_-_Part_7",
+          "minPlayerLevel": 40,
+          "taskRequirements": [
+            {
+              "task": "639873003693c63d86328f25",
+              "status": ["complete"]
+            }
+          ],
+          "traderRequirements": [],
+          "objectives": [
+            {
+              "id": "5b47824386f7744d190d8dd1",
+              "description": "5b47824386f7744d190d8dd1",
+              "type": "buildWeapon",
+              "count": 1,
+              "optional": false,
+              "item": "5aafa857e5b5b00018480968",
+              "containsAll": [
+                "5addbfbb5acfc400194dbcf7",
+                "5aa66be6e5b5b0214e506e97",
+                "58d399e486f77442e0016fe7",
+                "57fd23e32459772d0805bcf1"
+              ],
+              "containsCategory": [],
+              "zones": [],
+              "maps": [],
+              "buildAttributes": {
+                "accuracy": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "durability": {
+                  "value": 60,
+                  "compareMethod": ">="
+                },
+                "effectiveDistance": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "ergonomics": {
+                  "value": 20,
+                  "compareMethod": ">="
+                },
+                "height": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "magazineCapacity": {
+                  "value": 20,
+                  "compareMethod": ">="
+                },
+                "muzzleVelocity": {
+                  "value": 0,
+                  "compareMethod": ">="
+                },
+                "recoil": {
+                  "value": 400,
+                  "compareMethod": "<="
+                },
+                "weight": {
+                  "value": 7.3,
+                  "compareMethod": "<="
+                },
+                "width": {
+                  "value": 0,
+                  "compareMethod": ">="
+                }
+              }
+            }
+          ],
+          "failConditions": [],
+          "startRewards": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "finishRewards": {
+            "traderStanding": [],
+            "items": [
+              {
+                "item": "5449016a4bdc2d6f028b456f",
+                "count": 275000,
+                "attributes": {}
+              },
+              {
+                "item": "58d2912286f7744e27117493",
+                "count": 3,
+                "attributes": {}
+              }
+            ],
+            "offerUnlock": [
+              {
+                "id": "63a19d62151bfb591645c0f4",
+                "level": 4,
+                "item": "58d2912286f7744e27117493",
+                "count": 1,
+                "contains": [],
+                "attributes": [],
+                "trader": "5935c25fb3acc3127c3d8cd9"
+              }
+            ],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "failureOutcome": {
+            "traderStanding": [],
+            "items": [],
+            "offerUnlock": [],
+            "skillLevelReward": [],
+            "traderUnlock": [],
+            "craftUnlock": [],
+            "achievement": [],
+            "customization": [],
+            "traderDialogueUnlock": [],
+            "locationUnlock": []
+          },
+          "restartable": false,
+          "experience": 28000,
+          "factionName": "Any",
+          "neededKeys": [],
+          "availableDelaySecondsMin": 0,
+          "availableDelaySecondsMax": 0,
+          "otherRequirements": [],
+          "normalizedName": "gunsmith-master-part-7",
+          "kappaRequired": false,
+          "lightkeeperRequired": false,
+          "taskImageLink": "https://assets.tarkov.dev/5b477f7686f7744d1b23c4d2.webp",
+          "map": null
         }
       }
     },
@@ -1011,6 +1395,8 @@
     "5a03296886f774569778596a name": "I Need More Power",
     "5a3ba62786f7742c9d4f5ee9": "Locate the generators in the east wing of the Health Resort on Shoreline",
     "6a5cd11e5cf929b0f5d76816": "Hand over the found in raid item: Metal fuel tank or Expeditionary fuel tank",
-    "5a3ba65f86f7743af1475f11": "Locate the generators in the west wing of the Health Resort on Shoreline"
+    "5a3ba65f86f7743af1475f11": "Locate the generators in the west wing of the Health Resort on Shoreline",
+    "60e71c11d54b755a3b53eb65 name": "Night Sweep",
+    "5b477f7686f7744d1b23c4d2 name": "Gunsmith Master - Part 7"
   }
 }

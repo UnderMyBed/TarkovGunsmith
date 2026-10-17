@@ -419,9 +419,9 @@ describe("itemAvailability — weapon shape", () => {
 });
 
 /**
- * The unit tests above build their offers by hand. This one drives the composed path —
- * `fetchPartCatalog` → `createOfferResolver` → `itemAvailability` — over the committed sample of the
- * real upstream document, so a break in the chain that carries upstream's `minLevelForFlea`
+ * The unit tests above build their offers by hand. This one drives the composed path — the
+ * generated snapshot → `snapshotPartCatalog` → `itemAvailability` — over the committed sample of
+ * the real upstream document, so a break in the chain that carries upstream's `minLevelForFlea`
  * onto the gate shows up here rather than passing on hand-shaped input. That chain is the
  * thing that was silently broken: the value was parsed and then never read.
  */

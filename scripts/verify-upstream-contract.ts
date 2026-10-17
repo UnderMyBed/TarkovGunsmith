@@ -45,6 +45,24 @@ import {
   fetchSnapshotDocuments,
   SnapshotDriftError,
 } from "../packages/tarkov-data/src/snapshot/generate.js";
+import {
+  snapshotPartCatalog,
+  snapshotWeaponList,
+} from "../packages/tarkov-data/src/snapshot/views.js";
+import type { ItemsDocument } from "../packages/tarkov-data/src/queries/documents.js";
+import {
+  buildSlotGraph,
+  selectWeaponTree,
+} from "../packages/tarkov-data/src/queries/slot-graph.js";
+import type { WeaponListItem } from "../packages/tarkov-data/src/queries/weaponList.js";
+import {
+  presetRecordSchema,
+  selectWeaponPresets,
+} from "../packages/tarkov-data/src/queries/presets.js";
+import { partsById, type AttachablePart } from "../packages/tarkov-data/src/queries/parts.js";
+import { attachedParts } from "../packages/tarkov-data/src/attached-parts.js";
+import { adaptMod, adaptWeapon } from "../packages/tarkov-data/src/ballistic-adapters.js";
+import { weaponSpec } from "../packages/ballistics/src/weapon/weaponSpec.js";
 
 const API_BASE = "https://json.tarkov.dev/regular/";
 const ITEMS_URL = `${API_BASE}items`;
@@ -300,9 +318,10 @@ async function checkBuilderSnapshot(): Promise<void> {
   const client = createTarkovClient(API_BASE, undefined, undefined, {
     requireTranslations: true,
   });
+  const documents = await fetchSnapshotDocuments(client);
   let generated: ReturnType<typeof buildBuilderSnapshot>;
   try {
-    generated = buildBuilderSnapshot(await fetchSnapshotDocuments(client), "upstream");
+    generated = buildBuilderSnapshot(documents, "upstream");
   } catch (error) {
     if (!(error instanceof SnapshotDriftError)) throw error;
     for (const problem of error.problems) check("snapshot", false, problem);
@@ -343,6 +362,107 @@ async function checkBuilderSnapshot(): Promise<void> {
   notes.push(
     `builder prices: ${kb(Buffer.byteLength(pricesText))} raw, ` +
       `${kb(edgeBrotli(pricesText))} brotli (q4); data as of ${snapshot.dataAsOf}`,
+  );
+  // Presets are checked against the weapons and parts the Builder actually reads: the snapshot.
+  checkPresets(
+    documents.items,
+    snapshotWeaponList(snapshot, prices.prices),
+    snapshotPartCatalog(snapshot, prices.prices),
+  );
+}
+
+/**
+ * Every live weapon preset places into the slot graph, and its parts reproduce upstream's own
+ * preset ergonomics and recoil — the stat oracle (#220), over the whole document rather than
+ * the six presets the unit test pins.
+ *
+ * Upstream's preset stats count each DISTINCT part once, while the Builder counts every physical
+ * part (a preset listing 3× rail has three rails). So the oracle is checked over distinct parts,
+ * and the presets where the per-part figure differs are counted, not failed.
+ */
+function checkPresets(
+  doc: ItemsDocument,
+  weapons: readonly WeaponListItem[],
+  parts: readonly AttachablePart[],
+): void {
+  const graph = buildSlotGraph(doc);
+  const { byWeapon, failures } = selectWeaponPresets(doc, graph);
+  check(
+    "presets/placement",
+    failures.length === 0,
+    `${failures.length} preset(s) could not be placed or validated: ${failures
+      .slice(0, 5)
+      .map((f) => `${f.id} ${f.reason} (${f.detail})`)
+      .join("; ")}`,
+  );
+
+  const byId = partsById(parts);
+  const weaponById = new Map(weapons.map((w) => [w.id, w]));
+  let placed = 0;
+  let perPartMatches = 0;
+  const misses: string[] = [];
+  for (const [weaponId, presets] of Object.entries(byWeapon)) {
+    const weapon = weaponById.get(weaponId);
+    if (weapon === undefined) {
+      misses.push(`${weaponId}: weapon not in the weapon list`);
+      continue;
+    }
+    const tree = selectWeaponTree(doc, weaponId, graph);
+    for (const preset of presets) {
+      placed += 1;
+      const stats = presetRecordSchema.parse(doc.items[preset.id]).properties;
+      const { entries, missing } = attachedParts(tree, preset.attachments, byId);
+      const distinct = [...new Map(entries.map((e) => [e.part.id, e.part])).values()];
+      const matches = (spec: ReturnType<typeof weaponSpec>) =>
+        Math.abs(spec.ergonomics - stats.ergonomics) < 1e-6 &&
+        Math.abs(spec.verticalRecoil - stats.recoilVertical) <= 0.5 &&
+        Math.abs(spec.horizontalRecoil - stats.recoilHorizontal) <= 0.5;
+      const base = adaptWeapon(weapon);
+      const distinctSpec = weaponSpec(base, distinct.map(adaptMod));
+      if (missing.length > 0 || !matches(distinctSpec)) {
+        misses.push(
+          `${preset.id} ${preset.shortName}: upstream ergo ${stats.ergonomics} ` +
+            `V ${stats.recoilVertical} H ${stats.recoilHorizontal}, distinct parts give ` +
+            `${distinctSpec.ergonomics.toFixed(2)} / ${distinctSpec.verticalRecoil.toFixed(2)} / ` +
+            `${distinctSpec.horizontalRecoil.toFixed(2)}, ${missing.length} missing`,
+        );
+      }
+      if (
+        matches(
+          weaponSpec(
+            base,
+            entries.map((e) => adaptMod(e.part)),
+          ),
+        )
+      )
+        perPartMatches += 1;
+    }
+  }
+  // Floors far below today's 399 presets on 164 weapons: a renamed field upstream reaches the
+  // selector as failures, but a field the selector no longer recognises as a preset at all
+  // would read as "0 placed", and that must not pass.
+  const minimums = { placed: 300, weaponsWithDefault: 150 } as const;
+  check(
+    "presets/placed",
+    placed >= minimums.placed,
+    `only ${placed} weapon presets placed (expected at least ${minimums.placed}) — a preset ` +
+      `field upstream renamed can make every preset fail or vanish`,
+  );
+  check(
+    "presets/weapons-with-default",
+    Object.keys(byWeapon).length >= minimums.weaponsWithDefault,
+    `only ${Object.keys(byWeapon).length} weapons have exactly one default preset (expected at ` +
+      `least ${minimums.weaponsWithDefault})`,
+  );
+  check(
+    "presets/oracle",
+    misses.length === 0,
+    `${misses.length} preset(s) disagree with upstream's own stats: ${misses.slice(0, 5).join("; ")}`,
+  );
+  notes.push(
+    `presets: ${placed} placed on ${Object.keys(byWeapon).length} weapons; ` +
+      `${placed - misses.length} match upstream over distinct parts, ${perPartMatches} also ` +
+      `counting every physical part`,
   );
 }
 

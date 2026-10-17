@@ -36,9 +36,16 @@ undercuts its cash gate (Badger latch, Mechanic LL1), a barter-only scope (ELCAN
 GP-coin barter. Every item those barters require is in `items-sample.json` with its flea price,
 except GP coin, which has none upstream.
 
-Added 2026-10-16 with the Builder snapshot's strict generation: the task "I Need More Power"
-(`5a03296886f774569778596a`), which a captured offer is quest-locked behind and which strict
-generation requires to resolve; and the PVS-7 Wilcox adapter (`5c11046cd174af02a012e42b`), a
+Every part the four weapon presets in `items-sample.json` list (the PM default, the M4A1
+Carbine default, the M4A1 SOPMOD II and the golden TT-33's default) is in the capture too, so
+`selectWeaponPresets` places all four. The golden TT's preset is sold only on the flea
+market, which is what `preset-seed.test.ts` reads it for. The preset parts also widen the
+M4A1's and PM's slot options in the e2e suite.
+
+Added 2026-10-16 with the Builder snapshot's strict generation, which requires every captured
+offer's quest lock to resolve: the tasks "I Need More Power" (`5a03296886f774569778596a`), "Night
+Sweep" (`60e71c11d54b755a3b53eb65`) and "Gunsmith Master - Part 7" (`5b477f7686f7744d1b23c4d2`),
+which captured offers are locked behind; and the PVS-7 Wilcox adapter (`5c11046cd174af02a012e42b`), a
 helmet mount — part-typed, flea-priced, and reached by no weapon slot — for the barter-ingredient
 tests.
 
