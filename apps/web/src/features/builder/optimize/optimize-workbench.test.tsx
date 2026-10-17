@@ -442,6 +442,20 @@ describe("OptimizeWorkbench", () => {
       expect(screen.queryByText("The build changed. Run again.")).toBeNull();
     });
 
+    it("frees a lock on a part the build no longer has, swapped or taken off", () => {
+      const { update } = renderWorkbench({ attachments: { muzzle: "m-old", handguard: "h-old" } });
+      fireEvent.keyDown(row("Muzzle"), { key: "l" });
+      fireEvent.keyDown(row("Handguard"), { key: "l" });
+      fireEvent.keyDown(row("Foregrip"), { key: "e" });
+      expect([pinState("Muzzle"), pinState("Handguard")]).toEqual(["Lock", "Lock"]);
+
+      update({ attachments: { muzzle: "m-new" } });
+      expect(pinState("Muzzle")).toBe("Free");
+      expect(pinState("Handguard")).toBe("Free");
+      fireEvent.click(runButton());
+      expect([...lastWorker().request!.constraints.pinnedSlots]).toEqual([]);
+    });
+
     it("drops the proposal when the progression changes, so it can't be applied", async () => {
       const onApply = vi.fn();
       const { update } = renderWorkbench({ onApply });
@@ -453,6 +467,27 @@ describe("OptimizeWorkbench", () => {
       expect(screen.getAllByText("Progression changed. Run again.")).toHaveLength(2);
       // Back to the old gate: the old run stays gone.
       update({ onApply });
+      expect(screen.queryByRole("region", { name: "Proposal" })).toBeNull();
+    });
+
+    it("keeps the proposal when the progression comes back the same, in another order", async () => {
+      const quests = { ...profile, completedQuests: ["q-1", "q-2"] };
+      const { update } = renderWorkbench({ gate: quests });
+      fireEvent.click(runButton());
+      await screen.findByRole("region", { name: "Proposal" });
+      // As a sync rebuilds the profile: other key order, quests in another order.
+      const { traders, ...rest } = quests;
+      update({
+        gate: {
+          traders: Object.fromEntries(Object.entries(traders).reverse()) as typeof traders,
+          ...rest,
+          completedQuests: ["q-2", "q-1"],
+        },
+      });
+      expect(screen.getByRole("region", { name: "Proposal" })).toBeInTheDocument();
+      expect(screen.queryByText("Progression changed. Run again.")).toBeNull();
+      // A real change still drops it.
+      update({ gate: { ...quests, completedQuests: ["q-1"] } });
       expect(screen.queryByRole("region", { name: "Proposal" })).toBeNull();
     });
 

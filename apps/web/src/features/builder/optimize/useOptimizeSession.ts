@@ -83,6 +83,29 @@ export function pinStateOf(pin: string | null | undefined): PinState {
   return pin === undefined ? "free" : pin === null ? "empty" : "lock";
 }
 
+/**
+ * A key that changes only when the gate gates differently. The profile is rebuilt on every
+ * edit and sync, so its key order may change without its meaning changing; and its only array,
+ * `completedQuests`, is a set. Object keys are sorted, and so is every array of strings.
+ */
+export function gateKeyOf(gate: PriceGate): string {
+  const canonical = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      const items = value.map(canonical);
+      return items.every((v) => typeof v === "string") ? [...items].sort() : items;
+    }
+    if (value !== null && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value)
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([k, v]) => [k, canonical(v)]),
+      );
+    }
+    return value;
+  };
+  return JSON.stringify(canonical(gate));
+}
+
 export interface OptimizeSessionDeps {
   weapon: BallisticWeapon;
   /** The weapon's own record: the budget and the price cover the gun as well as its parts. */
@@ -175,7 +198,8 @@ export interface OptimizeSession {
  * A proposal holds only for the build and the progression it was solved for. When either
  * changes under it (prices arriving re-seed a new build's preset; the user switches mode or
  * edits the profile), the run is dropped — back to idle, with {@link OptimizeSession.staleNote}
- * saying why — and pins on slots the build no longer reaches are removed.
+ * saying why — and pins on slots the build no longer reaches, or locks on a part it no longer
+ * has, are removed.
  *
  * Every change starts ticked when a result arrives. The ticked build is the one Apply gives,
  * and its stats and price are what the stat strip and the Proposal card show.
@@ -198,7 +222,7 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
   );
   // What a run is solved for. A run started for other keys is not shown: see `live` below.
   const buildKey = JSON.stringify(Object.entries(currentOn).sort(([a], [b]) => (a < b ? -1 : 1)));
-  const gateKey = JSON.stringify(gate);
+  const gateKey = gateKeyOf(gate);
   const [ranFor, setRanFor] = useState<{ buildKey: string; gateKey: string } | null>(null);
   const [seen, setSeen] = useState({ buildKey, gateKey });
   if (seen.buildKey !== buildKey || seen.gateKey !== gateKey) {
@@ -217,7 +241,11 @@ export function useOptimizeSession(deps: OptimizeSessionDeps): OptimizeSession {
     setRanFor(null);
     if (seen.buildKey !== buildKey) {
       const reach = new Set(flattenVisibleSlots(slotTree, currentOn).map((r) => r.slot.path));
-      const gone = [...constraints.pinnedSlots.keys()].filter((path) => !reach.has(path));
+      // A lock keeps the build's part: one whose part the build no longer has (another part, or
+      // none) would lock in a part the user took off, so it is freed with the rest.
+      const gone = [...constraints.pinnedSlots]
+        .filter(([path, id]) => !reach.has(path) || (id !== null && id !== currentOn[path]))
+        .map(([path]) => path);
       if (gone.length > 0) dispatch({ type: "UNPIN", slotPaths: gone });
     }
   }
