@@ -114,7 +114,9 @@ describe("/builder/compare/$pairId", () => {
 
     // Side A hydrated from the loaded pair's `left` build (1 attachment); side B is the
     // pair's `right: null`.
-    expect(await screen.findByText("1 attached")).toBeInTheDocument();
+    // "incomplete": the fixture M4A1's receiver slot is required, as it is upstream, and these
+    // builds leave it empty.
+    expect(await screen.findByText("1 attached · incomplete")).toBeInTheDocument();
     expect(screen.getByText("No build selected.")).toBeInTheDocument();
   });
 
@@ -145,8 +147,10 @@ describe("/builder/compare/$pairId", () => {
 
     // Both sides are on screen: the v1 side places its muzzle and orphans the id the game data
     // does not hold; the v2 side keeps both of its parts.
-    expect(await screen.findByText("1 attached")).toBeInTheDocument();
-    expect(screen.getByText("2 attached")).toBeInTheDocument();
+    // "incomplete": the fixture M4A1's receiver slot is required, as it is upstream, and these
+    // builds leave it empty.
+    expect(await screen.findByText("1 attached · incomplete")).toBeInTheDocument();
+    expect(screen.getByText("2 attached · incomplete")).toBeInTheDocument();
     expect(screen.queryByText("No build selected.")).not.toBeInTheDocument();
     expect(screen.getByText("mod-vanished — not a part the Builder knows")).toBeInTheDocument();
   });

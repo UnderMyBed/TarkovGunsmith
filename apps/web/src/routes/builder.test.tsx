@@ -92,8 +92,8 @@ describe("/builder", () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
 
-    // DEFAULT_PROFILE is all-LL1/no-flea; the fixture weapon needs Prapor LL1, so it shows
-    // up under progression's "available on your profile" filter.
+    // DEFAULT_PROFILE is all-LL1/no-flea. The bare M4A1 needs Mechanic LL3, but its default
+    // preset is Prapor LL1, so it shows up under progression's "available on your profile".
     await waitFor(() =>
       expect(screen.getByText("1 weapons available on your profile")).toBeInTheDocument(),
     );
@@ -105,6 +105,14 @@ describe("/builder", () => {
     expect(screen.getByText("Stock")).toBeInTheDocument();
     // Stock spec (no mods attached yet).
     expect(screen.getByText(withNormalizedText("M4A1 with 0 mods"))).toBeInTheDocument();
+    // The bare gun item's own stats, as upstream publishes them, not an assembled weapon's:
+    // #213 shipped from a fixture that gave the receiver 3.4 kg and 47 ergonomics.
+    const stat = (label: string) =>
+      screen.getByText(label, { selector: "dt" }).nextElementSibling as HTMLElement;
+    expect(stat("Ergonomics")).toHaveTextContent("48.0");
+    expect(stat("Vert. recoil")).toHaveTextContent("119.0");
+    expect(stat("Horiz. recoil")).toHaveTextContent("342.0");
+    expect(stat("Weight")).toHaveTextContent("0.75 kg");
   });
 
   it("attaching an available mod updates the mod count; a locked mod renders a LOCKED pill with its gate", async () => {
@@ -112,15 +120,20 @@ describe("/builder", () => {
     await renderRoute("/builder");
     await selectFixtureWeapon(user);
 
-    const stockButton = screen.getByRole("button", { name: /Magpul CTR carbine stock/ });
-    // mod-stock needs Mechanic LL2; DEFAULT_PROFILE's traders are all LL1 and flea is off,
+    const stockButton = screen.getByRole("button", {
+      name: /AR-15 Magpul MOE Carbine stock \(FDE\)/,
+    });
+    // mod-stock (the MOE stock) needs Peacekeeper LL3; DEFAULT_PROFILE's traders are all LL1
+    // and flea is off,
     // so itemAvailability has no satisfying path — the SlotTree renders it LOCKED with the
     // cheapest unmet requirement alongside it.
     expect(within(stockButton).getByText("LOCKED")).toBeInTheDocument();
-    expect(within(stockButton).getByText("mechanic LL2")).toBeInTheDocument();
+    expect(within(stockButton).getByText("peacekeeper LL3")).toBeInTheDocument();
 
-    const muzzleButton = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
-    // mod-muzzle needs only Prapor LL1 — available under the default profile.
+    const muzzleButton = screen.getByRole("button", {
+      name: /AR-15 Colt USGI A2 5.56x45 flash hider/,
+    });
+    // mod-muzzle (the A2 flash hider) needs only Mechanic LL1, available under the default profile.
     expect(within(muzzleButton).getByText("LL1")).toBeInTheDocument();
 
     await user.click(muzzleButton);
@@ -222,8 +235,10 @@ describe("/builder on a first visit", () => {
     await user.selectOptions(weaponSelect, "w-m4a1");
     await screen.findByText("2 attached", { exact: true });
 
-    // The Mechanic LL2 stock is open in theorycraft, and the toggle is not offered there.
-    const stockButton = screen.getByRole("button", { name: /Magpul CTR carbine stock/ });
+    // The Peacekeeper LL3 stock is open in theorycraft, and the toggle is not offered there.
+    const stockButton = screen.getByRole("button", {
+      name: /AR-15 Magpul MOE Carbine stock \(FDE\)/,
+    });
     expect(within(stockButton).queryByText("LOCKED")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Show all items")).not.toBeInTheDocument();
 
@@ -246,7 +261,9 @@ describe("/builder draft", () => {
     const user = userEvent.setup();
     await renderRoute("/builder");
     await pickWeapon(user);
-    await user.click(screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ }));
+    await user.click(
+      screen.getByRole("button", { name: /AR-15 Colt USGI A2 5.56x45 flash hider/ }),
+    );
     await user.type(screen.getByPlaceholderText("Build name (optional)"), "Night raid");
     cleanup();
 

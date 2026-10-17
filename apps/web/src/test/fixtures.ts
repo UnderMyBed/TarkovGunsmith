@@ -1,5 +1,9 @@
+// Imported rather than read with `fs`: route tests run under jsdom, where `import.meta.url` is
+// not a file URL.
+import itemsCapture from "../../../../packages/tarkov-data/src/__fixtures__/items-sample.json" with { type: "json" };
+
 /**
- * Hand-built upstream-shaped fixtures for route tests.
+ * Upstream-shaped fixtures for route tests.
  *
  * `@tarkov/data`'s hooks (`useWeaponList`, `usePartCatalog`, `useAmmoList`, `useArmorList`,
  * `useWeaponTree`, `useTraders`, `useTasks`) all read through one `TarkovJsonClient` whose
@@ -8,31 +12,39 @@
  * matching what `queries/*.ts` expects on the wire, so route tests exercise the real fetchers
  * and schemas rather than mocking around them.
  *
- * Deliberately NOT imported from `packages/tarkov-data/src/__fixtures__/` — that package only
- * exports its public API (`"."`) from `package.json#exports`, and this unit's brief scopes
- * changes to `apps/web/**`. These fixtures are smaller and hand-shaped for the specific
- * scenarios routes need (an available weapon, a locked mod, a helmet vs. a body armor, two
- * distinguishable ammo types) rather than a trimmed capture of the live document.
+ * The weapon and its parts are the captured records
+ * (`packages/tarkov-data/src/__fixtures__/items-sample.json`), read by id through
+ * {@link captured}: real weights, ergonomics, recoil, modifiers, prices and trader offers, so
+ * no value here can drift from upstream's. What stays hand-shaped is the scenario: the slots
+ * each item offers are trimmed to the parts this document carries, and the items keep short
+ * readable ids (`w-m4a1`, `mod-muzzle`, ...) that the route tests name. The presets, ammo and
+ * armor are hand-built for the scenarios below.
  *
  * Units: `recoilModifier`/`accuracyModifier` are fractions and `armorDamage` is a percent —
- * see the "Units" warning in `packages/tarkov-data/CLAUDE.md`. Values below stay inside the
- * live ranges recorded in `docs/operations/data-api-audit.md` so a unit-scale bug (like the
- * 100x recoil error that shipped once already) would be visible here too.
+ * see the "Units" warning in `packages/tarkov-data/CLAUDE.md`.
  */
 
 const ICON = "https://assets.tarkov.dev/fixture-icon.webp";
 
 // ---------- Traders ----------
-// The 7 canonical profile-gating traders `itemAvailability` reads by normalizedName.
-export const TRADERS_DOCUMENT: Record<string, unknown> = {
-  "t-prapor": { id: "t-prapor", name: "Prapor", normalizedName: "prapor" },
-  "t-therapist": { id: "t-therapist", name: "Therapist", normalizedName: "therapist" },
-  "t-skier": { id: "t-skier", name: "Skier", normalizedName: "skier" },
-  "t-peacekeeper": { id: "t-peacekeeper", name: "Peacekeeper", normalizedName: "peacekeeper" },
-  "t-mechanic": { id: "t-mechanic", name: "Mechanic", normalizedName: "mechanic" },
-  "t-ragman": { id: "t-ragman", name: "Ragman", normalizedName: "ragman" },
-  "t-jaeger": { id: "t-jaeger", name: "Jaeger", normalizedName: "jaeger" },
-};
+// The 7 canonical profile-gating traders `itemAvailability` reads by normalizedName, under
+// their real ids so the captured offers below resolve unchanged.
+export const TRADER_IDS = {
+  prapor: "54cb50c76803fa8b248b4571",
+  therapist: "54cb57776803fa99248b456e",
+  skier: "58330581ace78e27b8b10cee",
+  peacekeeper: "5935c25fb3acc3127c3d8cd9",
+  mechanic: "5a7c2eca46aef81a7ca2145d",
+  ragman: "5ac3b934156ae10c4430e83c",
+  jaeger: "5c0647fdd443bc2504c2d371",
+} as const;
+
+export const TRADERS_DOCUMENT: Record<string, unknown> = Object.fromEntries(
+  Object.entries(TRADER_IDS).map(([normalizedName, id]) => [
+    id,
+    { id, name: normalizedName[0]!.toUpperCase() + normalizedName.slice(1), normalizedName },
+  ]),
+);
 
 // ---------- Tasks ----------
 // Empty: none of the fixture offers below carry a `taskUnlock`, so no task needs resolving.
@@ -57,11 +69,92 @@ export const ARMOR_MATERIALS: Record<
   ArmorMaterial_Titan: { id: "ArmorMaterial_Titan", name: "MatTitan", destructibility: 0.35 },
 };
 
+// ---------- Captured records ----------
+/** The Builder snapshot's `dataAsOf` is the newest `updated` in the document. */
+const UPDATED = "2026-10-16T12:00:00.000Z";
+
+interface CapturedRecord {
+  name: string;
+  shortName: string;
+  properties: Record<string, unknown>;
+  [field: string]: unknown;
+}
+
+const CAPTURED_ITEMS = (
+  itemsCapture.document.data as unknown as { items: Record<string, CapturedRecord> }
+).items;
+const CAPTURED_LANG: Readonly<Record<string, string>> = itemsCapture.lang;
+
+/** The captured record's fields the Builder reads, under the fixture's own id. */
+const CAPTURED_FIELDS = [
+  "iconLink",
+  "weight",
+  "types",
+  "velocity",
+  "minLevelForFlea",
+  "lastLowPrice",
+  "avg24hPrice",
+  "conflictingItems",
+  "conflictingSlotIds",
+  "buyFromTrader",
+] as const;
+
+/**
+ * The captured upstream record `capturedId`, as fixture `id`, translated, with its slots
+ * replaced by `slots` (the scenario's). Throws on an id the capture does not carry, so a
+ * trimmed capture fails here rather than quietly emptying a slot.
+ */
+function captured(
+  id: string,
+  capturedId: string,
+  slots: readonly unknown[],
+  properties: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const record = CAPTURED_ITEMS[capturedId];
+  if (record === undefined) throw new Error(`items-sample.json has no item ${capturedId}`);
+  const translate = (key: string) => {
+    const text = CAPTURED_LANG[key];
+    if (text === undefined) throw new Error(`items-sample.json has no translation for ${key}`);
+    return text;
+  };
+  return {
+    id,
+    updated: UPDATED,
+    name: translate(record.name),
+    shortName: translate(record.shortName),
+    ...Object.fromEntries(CAPTURED_FIELDS.map((field) => [field, record[field]])),
+    properties: { ...record.properties, ...properties, slots },
+  };
+}
+
+/** Captured ids of the records below. */
+export const CAPTURED_IDS = {
+  m4a1: "5447a9cd4bdc2dbd208b4567",
+  a2FlashHider: "544a38634bdc2d58388b4568",
+  moeStock: "58d2946386f774496974c37e",
+  stanag: "55d4887d4bdc2d962f8b4570",
+  upper: "55d355e64bdc2d962f8b4569",
+  barrel103: "55d35ee94bdc2d61338b4568",
+  hamr: "544a3a774bdc2d3a388b4567",
+} as const;
+
+function slot(owner: string, nameId: string, name: string, required: boolean, items: string[]) {
+  return {
+    id: `slot-${owner}-${nameId}`,
+    nameId,
+    name,
+    required,
+    filters: { allowedItems: items, allowedCategories: [] },
+  };
+}
+
 // ---------- Items ----------
-// One weapon with two slots, one always-available mod, one locked-by-default mod (LL2
-// Mechanic, which the DEFAULT_PROFILE's all-LL1 traders can't reach) so availability-gating
-// UI (SlotTree "Show all items", the weapon picker in progression mode) has something real
-// to gate. Two ammo types and two armor pieces (one head zone, one chest zone) so `/sim`'s
+// The M4A1 with the A2 flash hider (Mechanic LL1, so reachable on DEFAULT_PROFILE, where every
+// trader is LL1 and flea is off), the MOE stock (Peacekeeper LL3 or flea at 20, so locked there:
+// SlotTree's "Show all items" and itemAvailability's "trader-ll-required" have something real to
+// render), a STANAG magazine, and the upper receiver carrying the 10.3" barrel and the HAMR
+// scope. The weapon itself is Mechanic LL3; DEFAULT_PROFILE reaches it through the default
+// preset below. Two ammo types and two armor pieces (one head zone, one chest zone) so `/sim`'s
 // helmet vs. body-armor split and `/matrix`, `/adc`, `/aec`, `/charts` all have distinct rows.
 export const ITEMS_DOCUMENT: {
   items: Record<string, unknown>;
@@ -69,132 +162,27 @@ export const ITEMS_DOCUMENT: {
 } = {
   armorMaterials: ARMOR_MATERIALS,
   items: {
-    "w-m4a1": {
-      id: "w-m4a1",
-      name: "Colt M4A1 5.56x45 assault rifle",
-      shortName: "M4A1",
-      iconLink: ICON,
-      // The Builder snapshot's `dataAsOf` is the newest `updated` in the document.
-      updated: "2026-10-16T12:00:00.000Z",
-      weight: 3.4,
-      types: ["gun"],
-      // Top-level and a PERCENT, unlike the fraction-scale `properties` modifiers.
-      velocity: 0,
-      minLevelForFlea: 0,
-      lastLowPrice: 40_000,
-      avg24hPrice: 42_000,
-      properties: {
-        propertiesType: "ItemPropertiesWeapon",
-        caliber: "Caliber556x45NATO",
-        ergonomics: 47,
-        recoilVertical: 108,
-        recoilHorizontal: 296,
-        fireRate: 800,
-        centerOfImpact: 0.01,
-        deviationCurve: 1.35,
-        effectiveDistance: 500,
-        sightingRange: 100,
-        // An id the snapshot generator resolves to that ammo's `shortName` and `initialSpeed`.
-        defaultAmmo: "ammo-m855",
-        slots: [
-          {
-            id: "slot-w-m4a1-muzzle",
-            nameId: "mod_muzzle",
-            name: "Muzzle",
-            required: false,
-            filters: { allowedItems: ["mod-muzzle"], allowedCategories: [] },
-          },
-          {
-            id: "slot-w-m4a1-stock",
-            nameId: "mod_stock",
-            name: "Stock",
-            required: false,
-            filters: { allowedItems: ["mod-stock"], allowedCategories: [] },
-          },
-        ],
-      },
-      // Prapor LL1 — satisfied by DEFAULT_PROFILE (every trader starts at LL1), so this
-      // weapon is selectable in the Builder's progression-mode "available on your profile"
-      // filter, not only in theorycraft.
-      buyFromTrader: [
-        {
-          trader: "t-prapor",
-          priceRUB: 35_000,
-          currency: "RUB",
-          minTraderLevel: 1,
-          taskUnlock: null,
-        },
+    "w-m4a1": captured(
+      "w-m4a1",
+      CAPTURED_IDS.m4a1,
+      [
+        slot("w-m4a1", "mod_muzzle", "Muzzle", false, ["mod-muzzle"]),
+        slot("w-m4a1", "mod_stock", "Stock", false, ["mod-stock"]),
+        slot("w-m4a1", "mod_magazine", "Magazine", false, ["mod-magazine"]),
+        slot("w-m4a1", "mod_reciever", "Receiver", true, ["mod-upper"]),
       ],
-    },
-    "mod-muzzle": {
-      id: "mod-muzzle",
-      updated: "2026-10-16T12:00:00.000Z",
-      name: "Zenit DTK-1 muzzle brake",
-      shortName: "DTK-1",
-      iconLink: ICON,
-      weight: 0.14,
-      types: ["mods"],
-      velocity: 0,
-      minLevelForFlea: 0,
-      lastLowPrice: 4_200,
-      avg24hPrice: 4_500,
-      // Upstream sends both on every item, empty or not.
-      conflictingItems: [],
-      conflictingSlotIds: [],
-      properties: {
-        propertiesType: "ItemPropertiesWeaponMod",
-        ergonomics: -1,
-        recoilModifier: -0.05,
-        accuracyModifier: 0.02,
-        slots: [],
-      },
-      // Prapor LL1 — available by default, same as the weapon.
-      buyFromTrader: [
-        {
-          trader: "t-prapor",
-          priceRUB: 3_000,
-          currency: "RUB",
-          minTraderLevel: 1,
-          taskUnlock: null,
-        },
-      ],
-    },
-    "mod-stock": {
-      id: "mod-stock",
-      updated: "2026-10-16T12:00:00.000Z",
-      name: "Magpul CTR carbine stock",
-      shortName: "CTR",
-      iconLink: ICON,
-      weight: 0.4,
-      types: ["mods"],
-      velocity: 0,
-      // Locked off flea by level, AND its only trader offer needs Mechanic LL2 — the
-      // DEFAULT_PROFILE (all traders LL1, flea off) can reach neither path. Deliberately
-      // unavailable so SlotTree's "Show all items" toggle and itemAvailability's
-      // "trader-ll-required" reason both have something real to render.
-      minLevelForFlea: 15,
-      lastLowPrice: 9_000,
-      avg24hPrice: 9_500,
-      // Upstream sends both on every item, empty or not.
-      conflictingItems: [],
-      conflictingSlotIds: [],
-      properties: {
-        propertiesType: "ItemPropertiesWeaponMod",
-        ergonomics: 8,
-        recoilModifier: -0.1,
-        accuracyModifier: 0,
-        slots: [],
-      },
-      buyFromTrader: [
-        {
-          trader: "t-mechanic",
-          priceRUB: 9_000,
-          currency: "RUB",
-          minTraderLevel: 2,
-          taskUnlock: null,
-        },
-      ],
-    },
+      // An id the snapshot generator resolves to that ammo's `shortName` and `initialSpeed`.
+      { defaultAmmo: "ammo-m855" },
+    ),
+    "mod-muzzle": captured("mod-muzzle", CAPTURED_IDS.a2FlashHider, []),
+    "mod-stock": captured("mod-stock", CAPTURED_IDS.moeStock, []),
+    "mod-magazine": captured("mod-magazine", CAPTURED_IDS.stanag, []),
+    "mod-upper": captured("mod-upper", CAPTURED_IDS.upper, [
+      slot("mod-upper", "mod_barrel", "Barrel", true, ["mod-barrel"]),
+      slot("mod-upper", "mod_scope", "Scope", false, ["mod-scope"]),
+    ]),
+    "mod-barrel": captured("mod-barrel", CAPTURED_IDS.barrel103, []),
+    "mod-scope": captured("mod-scope", CAPTURED_IDS.hamr, []),
     // Two presets of the weapon, upstream-shaped: `containsItems` lists the base weapon with
     // its parts, and the trader offers live on the preset item. The default fits both mods and
     // Prapor sells it at LL1 (dearer than the bare weapon, so the weapon's own offer stays its
@@ -202,7 +190,7 @@ export const ITEMS_DOCUMENT: {
     // muzzle alone matches neither, so a loaded build can be told apart from a seeded one.
     "p-m4a1-default": {
       id: "p-m4a1-default",
-      updated: "2026-10-16T12:00:00.000Z",
+      updated: UPDATED,
       name: "Colt M4A1 5.56x45 assault rifle Default",
       shortName: "M4A1 Default",
       normalizedName: "colt-m4a1-556x45-assault-rifle-default",
@@ -226,7 +214,7 @@ export const ITEMS_DOCUMENT: {
       },
       buyFromTrader: [
         {
-          trader: "t-prapor",
+          trader: TRADER_IDS.prapor,
           priceRUB: 50_000,
           currency: "RUB",
           minTraderLevel: 1,
@@ -236,7 +224,7 @@ export const ITEMS_DOCUMENT: {
     },
     "p-m4a1-stock": {
       id: "p-m4a1-stock",
-      updated: "2026-10-16T12:00:00.000Z",
+      updated: UPDATED,
       name: "Colt M4A1 5.56x45 assault rifle Stock",
       shortName: "M4A1 Stock",
       normalizedName: "colt-m4a1-556x45-assault-rifle-stock",
@@ -259,7 +247,7 @@ export const ITEMS_DOCUMENT: {
       },
       buyFromTrader: [
         {
-          trader: "t-mechanic",
+          trader: TRADER_IDS.mechanic,
           priceRUB: 48_000,
           currency: "RUB",
           minTraderLevel: 2,
