@@ -9,7 +9,7 @@ import { createTestClient } from "../../test/test-client.js";
 
 afterEach(() => cleanup());
 
-function rowsOf(table: HTMLTableElement) {
+function rowsOf(table: HTMLElement) {
   return within(table).getAllByRole("row").slice(1); // drop the header row
 }
 

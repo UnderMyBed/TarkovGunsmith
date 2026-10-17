@@ -82,6 +82,7 @@ const sampleWeaponListItem: WeaponListItem = {
   shortName: "M4A1",
   iconLink: "https://assets.tarkov.dev/weapon-1-icon.webp",
   weight: 0.75,
+  types: ["gun", "wearable"],
   velocity: 0,
   properties: {
     propertiesType: "ItemPropertiesWeapon",
@@ -96,6 +97,7 @@ const sampleWeaponListItem: WeaponListItem = {
     sightingRange: 100,
   },
   defaultAmmo: { id: "54527a984bdc2d4e668b4567", shortName: "M855", initialSpeed: 922 },
+  buyFor: [],
 };
 
 // AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake, as the live
@@ -116,6 +118,11 @@ const samplePart: AttachablePart = {
     accuracyModifier: 0.04,
     velocity: 0,
   },
+  types: ["mods"],
+  minLevelForFlea: null,
+  buyFor: [],
+  conflictingItems: [],
+  conflictingSlotIds: [],
 };
 
 describe("adaptWeapon", () => {

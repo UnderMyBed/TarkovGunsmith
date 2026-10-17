@@ -505,7 +505,7 @@ describe("SlotTree — arrow-key navigation", () => {
     const user = userEvent.setup();
     renderTree();
     await openSlot(user, "Muzzle");
-    const [muzzle] = headers();
+    const muzzle = headers()[0]!;
     const none = within(slotRegion("Muzzle")).getByRole("button", { name: /— none —/ });
     const dtk = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
 
@@ -537,7 +537,7 @@ describe("SlotTree — arrow-key navigation", () => {
     renderTree();
     await openSlot(user, "Muzzle");
     await openSlot(user, "Stock");
-    const [muzzle] = headers();
+    const muzzle = headers()[0]!;
     const lastRow = screen.getByRole("button", { name: /Magpul CTR carbine stock/ });
 
     muzzle.focus();
@@ -552,7 +552,7 @@ describe("SlotTree — arrow-key navigation", () => {
   it("steps into an expanded slot's options rather than skipping over them", async () => {
     const user = userEvent.setup();
     renderTree();
-    const [muzzle] = headers();
+    const muzzle = headers()[0]!;
 
     muzzle.focus();
     await user.keyboard("{ArrowRight}");
@@ -564,7 +564,7 @@ describe("SlotTree — arrow-key navigation", () => {
   it("opens a collapsed slot with ArrowRight and closes it again with ArrowLeft", async () => {
     const user = userEvent.setup();
     renderTree();
-    const [muzzle] = headers();
+    const muzzle = headers()[0]!;
     const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
 
     muzzle.focus();
@@ -578,7 +578,7 @@ describe("SlotTree — arrow-key navigation", () => {
   it("leaves an already-open slot open on ArrowRight and an already-closed one closed on ArrowLeft", async () => {
     const user = userEvent.setup();
     renderTree();
-    const [muzzle] = headers();
+    const muzzle = headers()[0]!;
     const option = screen.getByRole("button", { name: /Zenit DTK-1 muzzle brake/ });
 
     muzzle.focus();
@@ -606,7 +606,7 @@ describe("SlotTree — arrow-key navigation", () => {
   it("ignores keys that are not arrows", async () => {
     const user = userEvent.setup();
     renderTree();
-    const [muzzle] = headers();
+    const muzzle = headers()[0]!;
 
     muzzle.focus();
     await user.keyboard("x");

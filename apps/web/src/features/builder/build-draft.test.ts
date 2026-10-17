@@ -52,7 +52,7 @@ describe("draft round trip", () => {
   it("keeps more orphans than a share may carry", () => {
     const orphaned = Array.from({ length: 100 }, (_, i) => `gone-${i}`);
     writeDraft(DRAFT_KEY, { ...DRAFT, orphaned });
-    expect(readDraft(DRAFT_KEY)?.orphaned).toEqual(orphaned);
+    expect(readDraft(DRAFT_KEY)).toMatchObject({ orphaned });
   });
 
   it("reads a draft whose build is an older version, for the migrations to bring up", () => {

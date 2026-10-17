@@ -302,8 +302,8 @@ describe("optimize — what it refuses", () => {
     const nobody = { ...refusal, message: "No trader or flea listing sells the TR." };
     expect(run({ weaponItem: unsold })).toEqual(nobody);
     expect(run({ weaponItem: unsold, profile: null })).toEqual(nobody);
-    // A record with no offers field at all, and a preset with none.
-    const { buyFor: _none, ...bare } = SMALL_WEAPON_ITEM;
+    // A record whose offers upstream publishes as null, and a preset with none.
+    const bare = { ...SMALL_WEAPON_ITEM, buyFor: null };
     expect(run({ weaponItem: bare, presets: [{ id: "pa", attachments: {} }] })).toEqual(nobody);
     // Only Ref sells it, by barter: no trader level a profile holds reaches him.
     const refOnly = {

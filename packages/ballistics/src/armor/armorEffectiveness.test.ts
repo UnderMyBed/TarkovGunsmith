@@ -53,8 +53,8 @@ describe("armorEffectiveness", () => {
   it("returns finite shots-to-kill for ammo that can defeat the armor", () => {
     const matrix = armorEffectiveness(ammos, armors);
     // BP penetrates Class 3 fresh trivially, so should be a small finite count.
-    expect(Number.isFinite(matrix[1][0])).toBe(true);
-    expect(matrix[1][0]).toBeGreaterThan(0);
+    expect(Number.isFinite(matrix[1]![0])).toBe(true);
+    expect(matrix[1]![0]).toBeGreaterThan(0);
   });
 
   it("returns Infinity only when the cap is genuinely too low", () => {
@@ -64,14 +64,14 @@ describe("armorEffectiveness", () => {
     // is unreachable whenever durability <= cap. It is still reachable with a
     // deliberately small cap, which is the only thing worth asserting now.
     // See docs/operations/data-api-audit.md §G.
-    expect(armorEffectiveness(ammos, armors)[0][1]).toBeLessThanOrEqual(320);
-    expect(Number.isFinite(armorEffectiveness(ammos, armors)[0][1])).toBe(true);
-    expect(armorEffectiveness(ammos, armors, 3)[0][1]).toBe(Number.POSITIVE_INFINITY);
+    expect(armorEffectiveness(ammos, armors)[0]![1]).toBeLessThanOrEqual(320);
+    expect(Number.isFinite(armorEffectiveness(ammos, armors)[0]![1])).toBe(true);
+    expect(armorEffectiveness(ammos, armors, 3)[0]![1]).toBe(Number.POSITIVE_INFINITY);
   });
 
   it("higher-pen ammo kills armor in fewer shots than lower-pen ammo (when both can)", () => {
     const matrix = armorEffectiveness(ammos, armors);
-    expect(matrix[1][0]).toBeLessThanOrEqual(matrix[0][0]);
+    expect(matrix[1]![0]).toBeLessThanOrEqual(matrix[0]![0]!);
   });
 
   it("does not mutate caller's input arrays or objects", () => {

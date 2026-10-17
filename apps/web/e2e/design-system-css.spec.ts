@@ -1,4 +1,5 @@
-import { test, expect, type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+import { test, expect } from "./upstream.js";
 
 /**
  * In-browser half of the guard for GitHub issue #162, where Tailwind never scanned

@@ -33,7 +33,7 @@ const PEN_CHANCE_TOLERANCE = 0.06;
 
 describe("armor durability vs WishGranter ground truth", () => {
   it.each(GROUND_TRUTH)("breaks $label in ~$shots shots", ({ ammo, armor, shots }) => {
-    const [[actual]] = armorEffectiveness([ammo], [armor]);
+    const actual = armorEffectiveness([ammo], [armor])[0]![0]!;
     expect(Number.isFinite(actual)).toBe(true);
     expect(Math.abs(actual - shots) / shots).toBeLessThanOrEqual(PEN_CHANCE_TOLERANCE);
   });

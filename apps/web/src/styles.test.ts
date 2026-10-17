@@ -228,13 +228,12 @@ beforeAll(async () => {
     },
   });
   const outputs = Array.isArray(result)
-    ? result[0].output
+    ? result[0]!.output
     : "output" in result
       ? result.output
       : [];
   css = outputs
-    .filter((o) => o.type === "asset" && o.fileName.endsWith(".css"))
-    .map((o) => String(o.source))
+    .flatMap((o) => (o.type === "asset" && o.fileName.endsWith(".css") ? [String(o.source)] : []))
     .join("\n");
   expect(
     css.length,

@@ -109,7 +109,7 @@ describe("weaponPaths", () => {
   });
 
   it("adds a preset's own offers, such as its flea listing", () => {
-    const paths = weaponPaths(LL4, { id: "gun", types: [], buyFor: null }, [
+    const paths = weaponPaths(LL4, { types: [], buyFor: null }, [
       { id: FANCY.id, attachments: {}, buyFor: [flea(70_000)] },
       { id: "p-none", attachments: {} },
     ]);

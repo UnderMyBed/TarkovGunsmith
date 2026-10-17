@@ -17,6 +17,7 @@ describe("OptimizeConstraintsForm", () => {
         state={initialConstraintsState}
         dispatch={() => {}}
         slotTree={TREE}
+        pricesReady
       />,
     );
     const offered = screen.getAllByRole("radio").map((r) => (r as HTMLInputElement).value);

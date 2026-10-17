@@ -22,7 +22,7 @@ afterEach(() => {
 
 // Stub @tarkov/optimizer for a deterministic result; a test may swap in its own.
 const solver = vi.hoisted(() => ({
-  result: undefined,
+  result: undefined as OptimizationResult | undefined,
 }));
 const proposal = {
   ok: true,
@@ -75,6 +75,7 @@ const profile: PlayerProfile = {
   mode: "basic",
   traders: { prapor: 4, therapist: 3, skier: 3, peacekeeper: 2, mechanic: 3, ragman: 2, jaeger: 3 },
   flea: true,
+  level: 20,
   completedQuests: [],
 };
 const sync: UseTarkovTrackerSyncResult = {
@@ -210,7 +211,7 @@ describe("OptimizeView", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /Accept HANDGUARD/i }));
     fireEvent.click(await screen.findByRole("button", { name: /ACCEPT SELECTED \(1\)/ }));
     expect(onAccept).toHaveBeenCalledTimes(1);
-    const acceptedBuild = onAccept.mock.calls[0][0] as BuildV6;
+    const acceptedBuild = onAccept.mock.calls[0]![0] as BuildV6;
     expect(acceptedBuild.attachments).toEqual({ muzzle: "m-new", handguard: "h-old" });
   });
   it("shows the solver's own reason when it finds no build", async () => {
@@ -226,7 +227,6 @@ describe("OptimizeView", () => {
         weaponItem={weaponItem}
         slotTree={slotTree}
         parts={parts}
-        profile={profile}
         gate={profile}
         presets={[]}
         pricesReady
@@ -259,7 +259,6 @@ describe("OptimizeView", () => {
         weaponItem={weaponItem}
         slotTree={slotTree}
         parts={parts}
-        profile={profile}
         gate={profile}
         presets={[]}
         pricesReady

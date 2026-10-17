@@ -22,6 +22,7 @@ const profile: PlayerProfile = {
     jaeger: 1,
   },
   flea: false,
+  level: 1,
 };
 
 describe("compareDraftReducer", () => {

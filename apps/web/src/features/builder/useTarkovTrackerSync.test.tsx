@@ -12,6 +12,7 @@ const profile: PlayerProfile = {
   mode: "advanced",
   traders: { prapor: 1, therapist: 1, skier: 1, peacekeeper: 1, mechanic: 1, ragman: 1, jaeger: 1 },
   flea: false,
+  level: 1,
   completedQuests: [],
 };
 

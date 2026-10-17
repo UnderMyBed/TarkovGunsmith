@@ -30,7 +30,7 @@ describe("public API integration", () => {
     const matrix = armorEffectiveness([M855, M995], armors);
     for (let armorIndex = 0; armorIndex < armors.length; armorIndex++) {
       // M995 row [1] should be ≤ M855 row [0] for every armor
-      expect(matrix[1][armorIndex]).toBeLessThanOrEqual(matrix[0][armorIndex]);
+      expect(matrix[1]![armorIndex]).toBeLessThanOrEqual(matrix[0]![armorIndex]!);
     }
   });
 

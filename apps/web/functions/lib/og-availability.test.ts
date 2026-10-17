@@ -14,6 +14,7 @@ const defaultProfile: PlayerProfile = {
     jaeger: 4,
   },
   flea: true,
+  level: 15,
 };
 
 describe("availabilityPillText", () => {

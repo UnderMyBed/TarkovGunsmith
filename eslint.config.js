@@ -99,6 +99,7 @@ export default tseslint.config(
         project: [
           "apps/builds-api/tsconfig.test.json",
           "apps/web/tsconfig.test.json",
+          "apps/web/functions/tsconfig.test.json",
           "packages/ballistics/tsconfig.test.json",
           "packages/og/tsconfig.test.json",
           "packages/optimizer/tsconfig.test.json",

@@ -17,6 +17,7 @@ function part(id: string, shortName: string, conflictingItems: string[] = []): A
       ergonomics: 0,
       recoilModifier: 0,
       accuracyModifier: 0,
+      velocity: 0,
     },
     buyFor: [],
     conflictingItems,
