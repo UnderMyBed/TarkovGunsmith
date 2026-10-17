@@ -40,7 +40,7 @@ function floorNote(stats: Stats, key: string): string | undefined {
 export function CompareStatDelta({ left, right }: CompareStatDeltaProps): ReactElement {
   if (!left || !right) {
     return (
-      <div className="border border-dashed border-[var(--color-border)] p-4 text-center text-sm text-[var(--color-muted-foreground)]">
+      <div className="border border-[var(--color-border)] p-4 text-center text-sm text-[var(--color-muted-foreground)]">
         Add a second build to see deltas.
       </div>
     );
@@ -52,27 +52,25 @@ export function CompareStatDelta({ left, right }: CompareStatDeltaProps): ReactE
   if (allEqual) {
     return (
       <div className="flex justify-center py-6">
-        <Stamp tone="amber">BUILDS ARE IDENTICAL</Stamp>
+        <Stamp tone="accent">Builds are identical</Stamp>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-6 gap-y-2 font-mono text-sm">
+    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-6 gap-y-2 text-sm">
       {rows.map((r) => (
         <div key={r.key} className="contents">
-          <span className="text-[var(--color-muted-foreground)] uppercase tracking-wider">
-            {r.label}
-          </span>
-          <span className="text-right tabular-nums" title={floorNote(left, r.key)}>
+          <span className="text-[var(--color-muted-foreground)]">{r.label}</span>
+          <span className="text-right font-mono tabular-nums" title={floorNote(left, r.key)}>
             {formatNum(r.left)}
           </span>
-          <span className="text-right tabular-nums" title={floorNote(right, r.key)}>
+          <span className="text-right font-mono tabular-nums" title={floorNote(right, r.key)}>
             {formatNum(r.right)}
           </span>
           <span
             data-direction={r.direction}
-            className="text-right tabular-nums data-[direction=better]:text-[var(--color-primary)] data-[direction=worse]:text-[var(--color-destructive)]"
+            className="text-right font-mono tabular-nums data-[direction=better]:text-[var(--color-better)] data-[direction=worse]:text-[var(--color-worse)]"
           >
             {formatDelta(r.delta)}
           </span>

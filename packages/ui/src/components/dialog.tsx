@@ -73,7 +73,7 @@ export interface DialogProps {
  * that lands outside by any other route is pulled back, and the element that was focused
  * before the dialog opened is restored on close.
  *
- * Consumers wrap their content in <DialogPanel> (applies Card.bracket styling)
+ * Consumers wrap their content in <DialogPanel> (a Card)
  * and use <DialogTitle>/<DialogBody> for semantic layout.
  */
 export function Dialog({
@@ -178,7 +178,7 @@ export function Dialog({
   return createPortal(
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 transition-opacity duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-background)]/80 transition-opacity duration-150"
       onClick={
         closeOnBackdropClick
           ? // Only close when the click lands directly on the backdrop, not when it
@@ -212,12 +212,12 @@ export function Dialog({
 export type DialogPanelProps = HTMLAttributes<HTMLDivElement>;
 
 /**
- * The visible panel inside a <Dialog>. Renders a Field Ledger bracket-card.
+ * The visible panel inside a <Dialog>. Renders a Card.
  * Consumers pass `className` for sizing (max-w-*, w-full, etc.).
  */
 export function DialogPanel({ className, children, ...props }: DialogPanelProps) {
   return (
-    <Card variant="bracket" className={cn("w-full max-w-2xl", className)} {...props}>
+    <Card className={cn("w-full max-w-2xl", className)} {...props}>
       {children}
     </Card>
   );
@@ -228,10 +228,7 @@ export type DialogTitleProps = HTMLAttributes<HTMLHeadingElement>;
 export function DialogTitle({ className, children, ...props }: DialogTitleProps) {
   return (
     <h2
-      className={cn(
-        "font-display text-xl uppercase tracking-wider border-b border-dashed border-[var(--color-border)] px-5 py-4",
-        className,
-      )}
+      className={cn("text-lg font-bold border-b border-[var(--color-border)] px-5 py-4", className)}
       {...props}
     >
       {children}

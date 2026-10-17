@@ -54,10 +54,10 @@ test.describe("quest gating", () => {
     await page.goto("/builder");
 
     const option = await openBufferTubeStockSlot(page);
-    const pill = option.getByText("LL3 · QUEST");
+    const pill = option.getByText("LL3 · quest");
     await expect(pill).toBeVisible();
     await expect(pill).toHaveAttribute("title", "Assumes I Need More Power is complete");
-    await expect(option.getByText("LOCKED")).toHaveCount(0);
+    await expect(option.getByText("Locked")).toHaveCount(0);
 
     await page.getByText("Edit profile").click();
     await expect(
@@ -74,7 +74,7 @@ test.describe("quest gating", () => {
     await page.goto("/builder");
 
     const option = await openBufferTubeStockSlot(page);
-    await expect(option.getByText("LOCKED")).toBeVisible();
+    await expect(option.getByText("Locked")).toBeVisible();
     await expect(option.getByText("Quest: I Need More Power")).toBeVisible();
 
     await page.getByText("Edit profile").click();
@@ -86,6 +86,6 @@ test.describe("quest gating", () => {
     await page.getByLabel("I Need More Power").check();
     await expect(page.getByText("— 1 of 3 complete")).toBeVisible();
     await expect(option.getByText("LL3", { exact: true })).toBeVisible();
-    await expect(option.getByText("LOCKED")).toHaveCount(0);
+    await expect(option.getByText("Locked")).toHaveCount(0);
   });
 });

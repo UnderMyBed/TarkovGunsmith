@@ -27,9 +27,8 @@ export interface NavDropdownProps {
  * disclosure, with `aria-expanded` + `aria-controls` on the trigger and Tab as the
  * traversal key. That contract the component actually keeps.
  *
- * Matches the flat-nav link styling (Azeret Mono 11px, 0.18em tracking,
- * uppercase, amber on hover). The panel uses the Field Ledger
- * amber-top-border + warm-black card pattern.
+ * Matches the flat-nav link styling (Chivo, accent on hover). The panel is an
+ * accent-top-border card.
  */
 export function NavDropdown({ label, items }: NavDropdownProps): ReactElement {
   const [open, setOpen] = useState(false);
@@ -80,12 +79,12 @@ export function NavDropdown({ label, items }: NavDropdownProps): ReactElement {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className={`font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors inline-flex items-center gap-1.5 ${focusRing}`}
+        className={`text-11 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-b-[1.5px] border-transparent pb-[2px] transition-colors inline-flex items-center gap-1.5 ${focusRing}`}
       >
         <span>{label}</span>
         <span
           aria-hidden
-          className={`text-8 leading-none transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-11 leading-none transition-transform ${open ? "rotate-180" : ""}`}
         >
           ▾
         </span>
@@ -104,9 +103,9 @@ export function NavDropdown({ label, items }: NavDropdownProps): ReactElement {
                  * — no need to repeat it here. */
                 activeProps={{
                   className:
-                    "block px-4 py-1.5 font-mono text-11 tracking-18 uppercase text-[var(--color-primary)] hover:bg-[var(--color-muted)]",
+                    "block px-4 py-1.5 text-11 text-[var(--color-primary-text)] hover:bg-[var(--color-muted)]",
                 }}
-                className={`block px-4 py-1.5 font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors ${focusRing}`}
+                className={`block px-4 py-1.5 text-11 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors ${focusRing}`}
               >
                 {item.label}
               </Link>

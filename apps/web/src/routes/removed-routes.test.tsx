@@ -14,6 +14,6 @@ describe("parked feature routes redirect to /builder", () => {
     const { router } = await renderRoute(path);
 
     expect(router.state.location.pathname).toBe("/builder");
-    expect(await screen.findByText("NO WEAPON SELECTED")).toBeInTheDocument();
+    expect(await screen.findByText("No weapon selected")).toBeInTheDocument();
   });
 });

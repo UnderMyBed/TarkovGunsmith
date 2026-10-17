@@ -5,18 +5,18 @@ import type { VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn.js";
 
 const pillVariants = cva(
-  "inline-block font-mono text-10 font-semibold tracking-20 uppercase px-2 py-[2px] border",
+  "inline-block rounded-[var(--radius)] text-11 font-medium px-2 py-[2px] border",
   {
     variants: {
       tone: {
-        default: "text-[var(--color-foreground)] border-[var(--color-border)]",
+        default: "text-[var(--color-foreground-2)] border-[var(--color-border-strong)]",
         reliable:
-          "text-[var(--color-olive)] border-[var(--color-olive)] bg-[color:rgba(122,139,63,0.1)]",
+          "text-[var(--color-better)] border-[var(--color-better)] bg-[color-mix(in_srgb,var(--color-better)_10%,transparent)]",
         marginal:
-          "text-[var(--color-primary)] border-[var(--color-primary)] bg-[color:rgba(245,158,11,0.08)]",
-        ineffective: "text-[var(--color-paper-dim)] border-[var(--color-border)]",
-        accent: "text-[var(--color-primary)] border-[var(--color-primary)]",
-        muted: "text-[var(--color-paper-dim)] border-[var(--color-border)]",
+          "text-[var(--color-worse)] border-[var(--color-worse)] bg-[color-mix(in_srgb,var(--color-worse)_10%,transparent)]",
+        ineffective: "text-[var(--color-faint)] border-[var(--color-border)]",
+        accent: "text-[var(--color-primary-text)] border-[var(--color-primary)]",
+        muted: "text-[var(--color-faint)] border-[var(--color-border)]",
       },
     },
     defaultVariants: { tone: "default" },

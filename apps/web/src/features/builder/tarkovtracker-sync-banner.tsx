@@ -16,10 +16,10 @@ function Shell({
   tone,
   children,
 }: {
-  tone: "amber" | "destructive";
+  tone: "accent" | "destructive";
   children: ReactNode;
 }): ReactElement {
-  const borderColor = tone === "amber" ? "var(--color-primary)" : "var(--color-destructive)";
+  const borderColor = tone === "accent" ? "var(--color-primary)" : "var(--color-destructive)";
   return (
     <div
       className="flex items-center justify-between gap-3 border bg-[var(--color-background)] p-3"
@@ -60,11 +60,9 @@ export function TarkovTrackerSyncBanner({
 
   if (detail.state === "connected") {
     return (
-      <Shell tone="amber">
+      <Shell tone="accent">
         <div className="flex flex-col gap-0.5 text-xs">
-          <span className="font-mono uppercase tracking-wider text-[var(--color-primary)]">
-            ▲ TARKOVTRACKER · CONNECTED
-          </span>
+          <span className="text-[var(--color-primary-text)]">▲ TarkovTracker · connected</span>
           <span className="text-[var(--color-muted-foreground)]">
             Token stored in this browser. Re-sync to pull your current progression.
           </span>
@@ -83,11 +81,9 @@ export function TarkovTrackerSyncBanner({
 
   if (detail.state === "syncing") {
     return (
-      <Shell tone="amber">
+      <Shell tone="accent">
         <div className="flex flex-col gap-0.5 text-xs">
-          <span className="font-mono uppercase tracking-wider text-[var(--color-primary)]">
-            ▲ TARKOVTRACKER · SYNCING…
-          </span>
+          <span className="text-[var(--color-primary-text)]">▲ TarkovTracker · syncing…</span>
           <span className="text-[var(--color-muted-foreground)]">
             Fetching progression from tarkovtracker.io
           </span>
@@ -98,10 +94,10 @@ export function TarkovTrackerSyncBanner({
 
   if (detail.state === "synced") {
     return (
-      <Shell tone="amber">
+      <Shell tone="accent">
         <div className="flex flex-col gap-0.5 text-xs">
-          <span className="font-mono uppercase tracking-wider text-[var(--color-primary)]">
-            ▲ TARKOVTRACKER · {detail.questCount}/{detail.questTotal} GEAR QUESTS · PMC LV{" "}
+          <span className="text-[var(--color-primary-text)]">
+            ▲ TarkovTracker · {detail.questCount}/{detail.questTotal} gear quests · PMC lv{" "}
             {detail.playerLevel}
           </span>
           <span className="text-[var(--color-muted-foreground)]">
@@ -124,9 +120,7 @@ export function TarkovTrackerSyncBanner({
   return (
     <Shell tone="destructive">
       <div className="flex flex-col gap-0.5 text-xs">
-        <span className="font-mono uppercase tracking-wider text-[var(--color-destructive)]">
-          ▲ TARKOVTRACKER · ERROR
-        </span>
+        <span className="text-[var(--color-destructive)]">▲ TarkovTracker · error</span>
         <span className="text-[var(--color-muted-foreground)]">{copy}</span>
       </div>
       <div className="flex gap-1">

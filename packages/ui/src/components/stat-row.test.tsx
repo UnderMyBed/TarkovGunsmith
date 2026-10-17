@@ -9,8 +9,6 @@ afterEach(() => cleanup());
 describe("StatRow", () => {
   it("renders label, stock, delta and value text", () => {
     render(<StatRow label="Recoil V" stock={119} delta="−50%" value={60.095} percent={50} />);
-    // The `uppercase` class is a CSS text-transform, not a DOM text mutation —
-    // the rendered text node stays exactly as the `label` prop was passed.
     expect(screen.getByText("Recoil V")).toBeInTheDocument();
     expect(screen.getByText("119")).toBeInTheDocument();
     expect(screen.getByText("−50%")).toBeInTheDocument();
@@ -66,7 +64,7 @@ describe("StatRow", () => {
   });
 
   it("gives every barTone its own class set on the fill", () => {
-    const tones = ["primary", "olive", "destructive"] as const;
+    const tones = ["primary", "better", "worse"] as const;
     const signatures = tones.map((barTone) => {
       const { container } = render(
         <StatRow label="Tone" value={1} percent={50} barTone={barTone} />,

@@ -56,7 +56,7 @@ test.describe("Builder prices", () => {
     // Until prices arrive the build has no cost, and a budget cannot be checked.
     await expect(page.getByText("Prices loading…", { exact: true })).toBeVisible();
     await expect(page.getByTestId("build-cost")).toHaveCount(0);
-    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    await page.getByRole("button", { name: /◇ Optimize/i }).click();
     const budget = page.getByLabel("Budget");
     await expect(budget).toBeDisabled();
     await expect(budget).toHaveAttribute("placeholder", "Budget needs prices");

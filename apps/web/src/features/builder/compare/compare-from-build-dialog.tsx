@@ -56,7 +56,7 @@ export function CompareFromBuildDialog({
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-background)]/80"
       onClick={(e) => {
         // Only close on a click that lands directly on the backdrop, not one that bubbles
         // up from inside the panel — see packages/ui/src/components/dialog.tsx for the same
@@ -68,7 +68,7 @@ export function CompareFromBuildDialog({
     >
       <Card className="w-full max-w-md">
         <CardContent className="flex flex-col gap-4 p-6">
-          <h2 className="text-lg font-bold uppercase tracking-wider">Compare this build</h2>
+          <h2 className="text-lg font-bold">Compare this build</h2>
 
           <label className="flex items-start gap-2">
             <input
@@ -94,7 +94,7 @@ export function CompareFromBuildDialog({
             <div className="flex flex-col gap-1 pl-6">
               <label
                 htmlFor="compare-paste-url"
-                className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]"
+                className="text-xs text-[var(--color-muted-foreground)]"
               >
                 Share URL or id
               </label>

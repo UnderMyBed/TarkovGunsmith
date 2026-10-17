@@ -101,35 +101,35 @@ describe("availabilityPill", () => {
   it("says BARTER only when a barter is at the highest level", () => {
     const gun = item(cash("mechanic", 3, 30_000));
     expect(pill(null, gun, item(barter("prapor", 2, 6_000)))).toBe("LL3");
-    expect(pill(null, gun, item(barter("prapor", 3, 6_000)))).toBe("LL3 BARTER");
+    expect(pill(null, gun, item(barter("prapor", 3, 6_000)))).toBe("LL3 barter");
   });
 
   it("says BARTER, FLEA and QUEST when a path is one, in the Builder's words", () => {
     const gun = item(cash("mechanic", 2, 30_000));
-    expect(pill(null, gun, item(barter("prapor", 3, 6_000)))).toBe("LL3 BARTER");
-    expect(pill(null, gun, item(flea(9_000)))).toBe("LL2 · FLEA");
+    expect(pill(null, gun, item(barter("prapor", 3, 6_000)))).toBe("LL3 barter");
+    expect(pill(null, gun, item(flea(9_000)))).toBe("LL2 · Flea");
     expect(pill(LL4, gun, item(cash("peacekeeper", 3, 5_000, "gunsmith-part-4")))).toBe(
-      "LL3 · QUEST",
+      "LL3 · quest",
     );
-    expect(pill(null, item(flea(31_000)))).toBe("FLEA");
+    expect(pill(null, item(flea(31_000)))).toBe("Flea");
   });
 
   it("reads a quest-gated barter as the Builder labels it", () => {
     const stock = item(barter("prapor", 3, 21_000, "shootout-picnic"));
     // The Builder's label for the same offer under the same profile.
     const builder = itemAvailability(stock, LL4);
-    expect(availabilityLabel(builder)).toBe("LL3 BARTER · QUEST");
+    expect(availabilityLabel(builder)).toBe("LL3 barter · quest");
     expect(pill(LL4, stock)).toBe(availabilityLabel(builder));
   });
 
   it("reads LOCKED when the profile cannot buy the build", () => {
     const gun = item(cash("mechanic", 2, 30_000));
-    expect(pill(DEFAULT_PROFILE, gun)).toBe("LOCKED");
+    expect(pill(DEFAULT_PROFILE, gun)).toBe("Locked");
     // A part with no offer at all, or only on a flea the profile has no access to.
-    expect(pill(LL4, gun, item())).toBe("LOCKED");
-    expect(pill(LL4, gun, item(flea(9_000)))).toBe("LOCKED");
+    expect(pill(LL4, gun, item())).toBe("Locked");
+    expect(pill(LL4, gun, item(flea(9_000)))).toBe("Locked");
     // Ref is a trader no profile tracks: Ref-only reads as locked under one.
-    expect(pill(LL4, gun, item(barter("ref", 3, null)))).toBe("LOCKED");
+    expect(pill(LL4, gun, item(barter("ref", 3, null)))).toBe("Locked");
   });
 
   it("in theorycraft, shows a part nobody sells as nothing, not as gated", () => {
@@ -137,7 +137,7 @@ describe("availabilityPill", () => {
     expect(pill(null, gun, item())).toBe("LL2");
     expect(pill(null, gun, item({ ...flea(null), unlisted: true }))).toBe("LL2");
     // Ref is open in theorycraft, by its own level.
-    expect(pill(null, gun, item(barter("ref", 3, null)))).toBe("LL3 BARTER");
+    expect(pill(null, gun, item(barter("ref", 3, null)))).toBe("LL3 barter");
     // Nothing to show at all: no pill, never an invented one.
     expect(pill(null, item(), item())).toBeNull();
   });
@@ -168,7 +168,7 @@ describe("availabilityPill", () => {
     for (const gate of [null, { ...DEFAULT_PROFILE, flea: true, level: 20 }]) {
       const price = buildPriceUnder(gate, fleaOnly);
       expect(price).toMatchObject({ status: "priced", totalRUB: 50_000 });
-      expect(availabilityPill(gate, fleaOnly, price)).toBe("FLEA");
+      expect(availabilityPill(gate, fleaOnly, price)).toBe("Flea");
     }
   });
 });
@@ -225,15 +225,15 @@ describe("the card's pill against the Builder's, over the captured records", () 
   ];
   /** Rows: theorycraft, a fresh profile, LL4 without flea, LL4 advanced, LL4 with flea at 30. */
   const expected: Record<string, Array<string | null>> = {
-    "bare M4A1": ["LL3", "LOCKED", "LL3", "LL3", "LL3"],
-    "with a buffer tube": ["LL3", "LOCKED", "LL3", "LL3", "LL3"],
+    "bare M4A1": ["LL3", "Locked", "LL3", "LL3", "LL3"],
+    "with a buffer tube": ["LL3", "Locked", "LL3", "LL3", "LL3"],
     // Theorycraft and the flea profile buy the stock on the flea, where it is cheaper; LL4
     // without flea gets it from Peacekeeper, assuming the quest; advanced mode lacks it.
-    "with a quest-gated stock": ["LL3 · FLEA", "LOCKED", "LL3 · QUEST", "LOCKED", "LL3 · FLEA"],
+    "with a quest-gated stock": ["LL3 · Flea", "Locked", "LL3 · quest", "Locked", "LL3 · Flea"],
     // Ref is open in theorycraft only: no profile tracks a level for him.
-    "with a barter-only stock": ["LL3 BARTER", "LOCKED", "LOCKED", "LOCKED", "LOCKED"],
+    "with a barter-only stock": ["LL3 barter", "Locked", "Locked", "Locked", "Locked"],
     // Theorycraft does not show a part nobody sells as gated.
-    "with a stock nobody sells": ["LL3", "LOCKED", "LOCKED", "LOCKED", "LOCKED"],
+    "with a stock nobody sells": ["LL3", "Locked", "Locked", "Locked", "Locked"],
   };
 
   it.each(cases)(
@@ -258,10 +258,10 @@ describe("the card's pill against the Builder's, over the captured records", () 
       PROFILES.map((p) => builderPill(id === M4A1 ? weapon : parts.get(id)!, p));
     // The bare weapon's card is its Builder pill exactly.
     expect(builder(M4A1)).toEqual(expected["bare M4A1"]);
-    expect(builder(BUFFER_TUBE)).toEqual(["LL2", "LOCKED", "LL2", "LL2", "LL2"]);
-    expect(builder(PRS_GEN3)).toEqual(["FLEA", "LOCKED", "LL3 · QUEST", "LOCKED", "FLEA"]);
-    expect(builder(RAVAGE)).toEqual(["LL3 BARTER", "LOCKED", "LOCKED", "LOCKED", "LOCKED"]);
-    expect(builder(RAVAGE_RED)).toEqual([null, "LOCKED", "LOCKED", "LOCKED", "LOCKED"]);
+    expect(builder(BUFFER_TUBE)).toEqual(["LL2", "Locked", "LL2", "LL2", "LL2"]);
+    expect(builder(PRS_GEN3)).toEqual(["Flea", "Locked", "LL3 · quest", "Locked", "Flea"]);
+    expect(builder(RAVAGE)).toEqual(["LL3 barter", "Locked", "Locked", "Locked", "Locked"]);
+    expect(builder(RAVAGE_RED)).toEqual([null, "Locked", "Locked", "Locked", "Locked"]);
   });
 
   it("is the Builder's pill for every captured weapon and part on its own", async () => {
@@ -315,7 +315,7 @@ describe("the card's pill against the Builder's, over the captured records", () 
     expect(cards.map((c) => c.priceRub)).toEqual(Array(5).fill(142_000));
     // ...so each reads the same, though the preset comes with parts that, bought on their own,
     // need LL4 and the flea.
-    expect(cards.map((c) => c.availability)).toEqual(Array(5).fill("LL2 BARTER"));
+    expect(cards.map((c) => c.availability)).toEqual(Array(5).fill("LL2 barter"));
     const parts = new Map(snapshotPartCatalog(data.snapshot, table).map((p) => [p.id, p]));
     const ownPills = new Set(
       Object.values(attachments).map((id) => builderPill(parts.get(id)!, LL4)),
@@ -351,7 +351,7 @@ describe("the card's pill against the Builder's, over the captured records", () 
       let parts = input.parts;
       let price = buildPriceUnder(gate, input);
       if (price.status === "unobtainable") {
-        if (gate !== null) return "LOCKED";
+        if (gate !== null) return "Locked";
         // Theorycraft: the parts nobody sells show as nothing; choose without them.
         parts = parts.filter((p) => itemAvailability(p, null).available);
         price = buildPriceUnder(null, { ...input, parts });
@@ -377,17 +377,17 @@ describe("the card's pill against the Builder's, over the captured records", () 
         if (n > 0) left.set(part.id, n - 1);
         else labels.push(availabilityLabel(itemAvailability(part, gate)));
       }
-      expect(labels).not.toContain("LOCKED");
+      expect(labels).not.toContain("Locked");
       const levels = labels.flatMap((l) => /^LL(\d+)/.exec(l)?.[1] ?? []).map(Number);
       const max = levels.length === 0 ? null : Math.max(...levels);
       const out: string[] = [];
       if (max !== null) {
         out.push(
-          labels.some((l) => l.startsWith(`LL${max} BARTER`)) ? `LL${max} BARTER` : `LL${max}`,
+          labels.some((l) => l.startsWith(`LL${max} barter`)) ? `LL${max} barter` : `LL${max}`,
         );
       }
-      if (labels.includes("FLEA")) out.push("FLEA");
-      if (labels.some((l) => l.endsWith(" · QUEST"))) out.push("QUEST");
+      if (labels.includes("Flea")) out.push("Flea");
+      if (labels.some((l) => l.endsWith(" · quest"))) out.push("quest");
       return out.length === 0 ? null : out.join(" · ");
     }
 

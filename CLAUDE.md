@@ -16,9 +16,10 @@ A modern, AI-first rebuild of the defunct [TarkovGunsmith](https://github.com/Xe
 > URLs (`/calc` `/sim` `/adc` `/aec` `/matrix` `/data` `/charts` `/smoke`) redirect to `/builder`.
 >
 > Ballistics, the build optimizer, and `tarkov.dev` profile import all run client-side. The UI is
-> the "Field Ledger" aesthetic — Bungee display + Chivo body + Azeret Mono numerics, amber-phosphor
-> accent, corner-bracketed panels, tick-mark dividers, and the `@tarkov/ui` primitives. Dark only;
-> there is no light theme.
+> the Graphite palette — cool greys with a teal accent, blue for better and orange for worse — on the
+> `@tarkov/ui` primitives. Chivo sets every label, button, heading and line of prose in sentence
+> case; Azeret Mono sets numbers; Bungee sets the wordmark and nothing else. Controls take a 6 px
+> radius and panels 8 px. Dark only; there is no light theme.
 >
 > Deploys fire on release-please PR merges (tagged version bumps) — feature PR merges stage changes
 > on `main` without deploying.

@@ -200,12 +200,12 @@ describe("fetchOgRowsForBuild", () => {
     const out = fetchOgRowsForBuild({ weaponId: "w1", attachments, gate: null }, ogData());
     expect(out.mods[0]).toMatchObject({ id: "m1", weight: 0.1, ergonomicsDelta: 3 });
     // Theorycraft: the gun on the flea, m1 from Prapor LL2, and the barter at Prapor LL3.
-    expect(out.availability).toBe("LL3 BARTER · FLEA");
+    expect(out.availability).toBe("LL3 barter · Flea");
     // A fresh profile has no flea, and the gun is sold nowhere else.
     expect(
       fetchOgRowsForBuild({ weaponId: "w1", attachments, gate: DEFAULT_PROFILE }, ogData())
         .availability,
-    ).toBe("LOCKED");
+    ).toBe("Locked");
   });
 
   it("prices the build as the Builder does: weapon plus parts, by the cheapest open path", () => {
@@ -236,7 +236,7 @@ describe("fetchOgRowsForBuild", () => {
       { ...data, prices: { ...data.prices, prices: { items, trader } } },
     );
     // The barter's cost is unknown, but Prapor LL3 still sells the part.
-    expect(out.availability).toBe("LL3 BARTER · FLEA");
+    expect(out.availability).toBe("LL3 barter · Flea");
     expect(out.priceRub).toBeNull();
     const vm = hydrateBuildCard({
       name: undefined,
@@ -288,7 +288,7 @@ describe("fetchOgRowsForBuild", () => {
     );
     expect(out.mods.map((m) => m.id)).toEqual(["m1"]);
     // The gun on the flea and m1 from Prapor LL2.
-    expect(out.availability).toBe("LL2 · FLEA");
+    expect(out.availability).toBe("LL2 · Flea");
   });
 
   it("skips a mounted id the snapshot holds no part for", () => {

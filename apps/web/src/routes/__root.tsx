@@ -28,9 +28,9 @@ function NavLink({
       activeOptions={{ exact: true }}
       aria-current={active ? "page" : undefined}
       className={
-        "font-mono text-11 tracking-18 uppercase border-b-[1.5px] pb-[2px] transition-colors " +
+        " text-11 border-b-[1.5px] pb-[2px] transition-colors " +
         (active
-          ? "text-[var(--color-primary)] border-[var(--color-primary)]"
+          ? "text-[var(--color-primary-text)] border-[var(--color-primary)]"
           : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] border-transparent")
       }
     >
@@ -62,21 +62,18 @@ function RootLayout() {
        * source scan, which silently retires that guard. */}
       <a
         href="#main-content"
-        className="absolute left-4 top-4 z-50 -translate-y-[200%] border border-[var(--color-primary)] bg-[var(--color-card)] px-4 py-2 font-mono text-11 tracking-18 uppercase text-[var(--color-primary)] transition-transform focus-visible:translate-y-0"
+        className="absolute left-4 top-4 z-50 -translate-y-[200%] border border-[var(--color-primary)] bg-[var(--color-card)] px-4 py-2 text-11 text-[var(--color-primary-text)] transition-transform focus-visible:translate-y-0"
       >
         Skip to content
       </a>
       <div className="h-[2px] bg-[var(--color-foreground)]" aria-hidden />
-      <header className="border-b border-[var(--color-border)]">
+      <header className="border-b border-[var(--color-border)] bg-[var(--color-muted)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <Link to="/" className="flex items-center gap-3">
-            <span aria-hidden className="text-[var(--color-primary)] text-lg leading-none">
+            <span aria-hidden className="text-[var(--color-primary-text)] text-lg leading-none">
               ▲
             </span>
-            <span className="font-display text-lg leading-none tracking-wide">TARKOVGUNSMITH</span>
-            <span className="hidden sm:inline font-mono text-10 tracking-20 uppercase text-[var(--color-paper-dim)]">
-              · FIELD LEDGER / v2
-            </span>
+            <span className="font-display text-lg leading-none">TarkovGunsmith</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <NavLink to="/builder" active={builderActive}>
@@ -95,15 +92,15 @@ function RootLayout() {
         <Outlet />
       </main>
       <footer className="mt-24 border-t border-[var(--color-border)]">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-wrap items-center justify-between gap-3 font-mono text-10 tracking-20 uppercase text-[var(--color-paper-dim)]">
-          <span>TARKOVGUNSMITH · REBUILD OF XERXES-17&rsquo;S ORIGINAL</span>
+        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-wrap items-center justify-between gap-3 text-11 text-[var(--color-faint)]">
+          <span>TarkovGunsmith · rebuild of Xerxes-17&rsquo;s original</span>
           <span>
-            EDITION 2026 ·{" "}
+            Edition 2026 ·{" "}
             <a
               href="https://github.com/UnderMyBed/TarkovGunsmith"
               target="_blank"
               rel="noreferrer"
-              className="text-[var(--color-primary)] hover:underline"
+              className="text-[var(--color-primary-text)] hover:underline"
             >
               GitHub ↗
             </a>

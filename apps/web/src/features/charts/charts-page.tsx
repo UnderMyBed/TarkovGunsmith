@@ -66,13 +66,13 @@ export function ChartsPage() {
     <div className="flex flex-col gap-6">
       <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
-        <div className="font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
-          <span>DATA · CHARTS</span>
-          <span>/ SHOTS-TO-BREAK VISUALISED</span>
-          <span>/ RELIABLE · MARGINAL · INEFFECTIVE</span>
+        <div className="text-11 text-[var(--color-faint)] flex gap-4 flex-wrap">
+          <span>Data · charts</span>
+          <span>/ shots-to-break visualised</span>
+          <span>/ reliable · marginal · ineffective</span>
         </div>
-        <h1 className="font-display text-56 leading-[0.95] tracking-tight uppercase">
-          Effectiveness <span className="text-[var(--color-primary)]">Charts</span>
+        <h1 className="font-bold text-56 leading-[0.95]">
+          Effectiveness <span className="text-[var(--color-primary-text)]">Charts</span>
         </h1>
         <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Visualise how an ammo stacks up across every armor. Bar height = shots to break.
@@ -145,7 +145,7 @@ export function ChartsPage() {
         </CardContent>
       </Card>
 
-      <Card variant="bracket">
+      <Card>
         <CardHeader>
           <CardTitle>Shots to break, by armor</CardTitle>
           {!chartData && <CardDescription>Pick an ammo to render the chart.</CardDescription>}
@@ -198,7 +198,7 @@ export function ChartsPage() {
             </div>
             <div className="mt-4 flex gap-4 text-xs text-[var(--color-muted-foreground)]">
               <Legend color="var(--color-primary)" label="reliable (≤ shot cap)" />
-              <Legend color="var(--color-amber-deep)" label="marginal (≤ 2× cap)" />
+              <Legend color="var(--color-worse)" label="marginal (≤ 2× cap)" />
               <Legend color="var(--color-muted)" label="ineffective (∞ or > 2× cap)" />
             </div>
           </CardContent>
@@ -210,7 +210,7 @@ export function ChartsPage() {
 
 function fillForClassification(k: ChartRow["classification"]): string {
   if (k === "reliable") return "var(--color-primary)";
-  if (k === "marginal") return "var(--color-amber-deep)";
+  if (k === "marginal") return "var(--color-worse)";
   return "var(--color-muted)";
 }
 

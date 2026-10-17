@@ -44,12 +44,12 @@ describe("ModsPanel", () => {
   it("in theorycraft, shows a part nobody sells neither dimmed nor LOCKED", () => {
     renderPanel("theorycraft");
     const orphan = option(/Discontinued muzzle brake/);
-    expect(within(orphan).queryByText("LOCKED")).not.toBeInTheDocument();
+    expect(within(orphan).queryByText("Locked")).not.toBeInTheDocument();
     expect(within(orphan).queryByText("No sources")).not.toBeInTheDocument();
     // Dimming has no accessible signal; its class is the only observable.
     expect(orphan).not.toHaveClass("opacity-40");
     // An available part keeps its source pill.
-    expect(within(option(/Zenit DTK-1/)).getByText("FLEA")).toBeInTheDocument();
+    expect(within(option(/Zenit DTK-1/)).getByText("Flea")).toBeInTheDocument();
     expect(screen.queryByLabelText("Show all items")).not.toBeInTheDocument();
   });
 
@@ -61,7 +61,7 @@ describe("ModsPanel", () => {
   it("in progression, dims it and marks it LOCKED with why, unless Show all items is on", () => {
     renderPanel("progression");
     const orphan = option(/Discontinued muzzle brake/);
-    expect(within(orphan).getByText("LOCKED")).toBeInTheDocument();
+    expect(within(orphan).getByText("Locked")).toBeInTheDocument();
     expect(within(orphan).getByText("No sources")).toBeInTheDocument();
     expect(orphan).toHaveClass("opacity-40");
 

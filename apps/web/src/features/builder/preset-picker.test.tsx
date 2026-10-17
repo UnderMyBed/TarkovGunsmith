@@ -152,8 +152,8 @@ describe("PresetPicker", () => {
       />,
     );
     expect(chip(/M4A1 Carbine/)).toHaveTextContent("peacekeeper LL2 barter");
-    expect(chip(/M4A1 Carbine/)).toHaveTextContent("LOCKED");
-    expect(chip(/M4A1 SOPMOD II/)).not.toHaveTextContent("LOCKED");
+    expect(chip(/M4A1 Carbine/)).toHaveTextContent("Locked");
+    expect(chip(/M4A1 SOPMOD II/)).not.toHaveTextContent("Locked");
     fireEvent.click(chip(/M4A1 Carbine/));
     expect(onApply).toHaveBeenCalledWith(CARBINE.attachments);
   });
@@ -169,7 +169,7 @@ describe("PresetPicker", () => {
         onApply={vi.fn()}
       />,
     );
-    expect(chip(/M4A1 Carbine/)).not.toHaveTextContent("LOCKED");
+    expect(chip(/M4A1 Carbine/)).not.toHaveTextContent("Locked");
     expect(chip(/M4A1 Carbine/)).not.toHaveTextContent("No sources");
     // Dimming has no accessible signal; its class is the only observable.
     expect(chip(/M4A1 Carbine/)).not.toHaveClass("opacity-60");
@@ -183,7 +183,7 @@ describe("PresetPicker", () => {
         onApply={vi.fn()}
       />,
     );
-    expect(chip(/M4A1 Carbine/)).toHaveTextContent("LOCKED");
+    expect(chip(/M4A1 Carbine/)).toHaveTextContent("Locked");
     expect(chip(/M4A1 Carbine/)).toHaveClass("opacity-60");
   });
 });

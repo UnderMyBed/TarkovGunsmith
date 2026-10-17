@@ -127,7 +127,7 @@ describe("/builder", () => {
     // and flea is off,
     // so itemAvailability has no satisfying path — the SlotTree renders it LOCKED with the
     // cheapest unmet requirement alongside it.
-    expect(within(stockButton).getByText("LOCKED")).toBeInTheDocument();
+    expect(within(stockButton).getByText("Locked")).toBeInTheDocument();
     expect(within(stockButton).getByText("peacekeeper LL3")).toBeInTheDocument();
 
     const muzzleButton = screen.getByRole("button", {
@@ -178,11 +178,11 @@ describe("/builder", () => {
     await renderRoute("/builder");
     await selectFixtureWeapon(user);
 
-    await user.click(screen.getByRole("button", { name: /OPTIMIZE/ }));
+    await user.click(screen.getByRole("button", { name: /Optimize/ }));
 
     // OptimizeView (a separate, already-tested feature component) mounted — its own heading
     // proves BuilderPage's view="optimize" branch rendered it with a ready weapon/tree/spec.
-    expect(await screen.findByText(/OPTIMIZER/)).toBeInTheDocument();
+    expect(await screen.findByText(/Optimizer/)).toBeInTheDocument();
     // The editor's own "Weapon" picker card is gone while the optimizer is showing.
     expect(screen.queryByText("1 weapons available on your profile")).not.toBeInTheDocument();
   });
@@ -239,12 +239,12 @@ describe("/builder on a first visit", () => {
     const stockButton = screen.getByRole("button", {
       name: /AR-15 Magpul MOE Carbine stock \(FDE\)/,
     });
-    expect(within(stockButton).queryByText("LOCKED")).not.toBeInTheDocument();
+    expect(within(stockButton).queryByText("Locked")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Show all items")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "LL1" }));
     await screen.findByText("1 weapons available on your profile");
-    expect(within(stockButton).getByText("LOCKED")).toBeInTheDocument();
+    expect(within(stockButton).getByText("Locked")).toBeInTheDocument();
   });
 });
 
@@ -298,7 +298,7 @@ describe("/builder draft", () => {
 
     await user.click(screen.getByRole("button", { name: "New build" }));
     await user.click(screen.getByRole("button", { name: "Discard" }));
-    expect(await screen.findByText("NO WEAPON SELECTED")).toBeInTheDocument();
+    expect(await screen.findByText("No weapon selected")).toBeInTheDocument();
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
   });
 
@@ -310,7 +310,7 @@ describe("/builder draft", () => {
     await renderRoute("/builder");
 
     await screen.findByText("1 weapons available on your profile");
-    expect(screen.getByText("NO WEAPON SELECTED")).toBeInTheDocument();
+    expect(screen.getByText("No weapon selected")).toBeInTheDocument();
     expect(warn).toHaveBeenCalledTimes(1);
     expect(error).not.toHaveBeenCalled();
     expect(localStorage.getItem(DRAFT_KEY)).toBe("{not json");

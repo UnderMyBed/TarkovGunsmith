@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Dialog, DialogBody, DialogPanel, DialogTitle } from "./dialog.js";
-import { cardVariants } from "./card.js";
+import { Card } from "./card.js";
 import { classList } from "../__test-utils__/class-set.js";
 
 afterEach(() => cleanup());
@@ -391,19 +391,20 @@ describe("Dialog", () => {
 });
 
 describe("DialogPanel", () => {
-  /* DialogPanel's contract is composition: it IS a bracket-variant <Card>, so a consumer
-   * gets the Field Ledger corner marks without reaching for Card themselves. Deriving the
-   * expectation from `cardVariants` rather than naming a token keeps this honest if the
-   * bracket is restyled — and whether those classes paint anything is checked against the
-   * compiled stylesheet in apps/web/src/styles.test.ts. */
-  it("renders as a bracket-variant Card", () => {
+  /* DialogPanel's contract is composition: it IS a <Card>, so a consumer gets the panel
+   * surface without reaching for Card themselves. The expectation is derived from a rendered
+   * Card rather than from token names, and whether those classes paint anything is checked
+   * against the compiled stylesheet in apps/web/src/styles.test.ts. */
+  it("renders as a Card", () => {
+    render(<Card data-testid="card" />);
+    const card = classList(screen.getByTestId("card"));
+    cleanup();
     render(
       <Dialog open onClose={vi.fn()}>
         <DialogPanel data-testid="panel">content</DialogPanel>
       </Dialog>,
     );
-    const bracket = cardVariants({ variant: "bracket" }).split(/\s+/).filter(Boolean);
-    expect(screen.getByTestId("panel")).toHaveClass(...bracket);
+    expect(screen.getByTestId("panel")).toHaveClass(...card);
   });
 
   it("lets a caller override its default width cap rather than emitting both", () => {

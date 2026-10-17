@@ -83,7 +83,7 @@ describe("/og/build/:id — id validation", () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy.mock.calls[0]?.[0]).toBe("https://api.example.com/builds/abcd2345");
-    // 404 upstream → the "BUILD NOT FOUND" fallback card, unchanged by this fix.
+    // 404 upstream → the "Build not found" fallback card, unchanged by this fix.
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/png");
   });

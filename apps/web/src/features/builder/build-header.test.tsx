@@ -143,17 +143,17 @@ describe("BuildHeader ergonomics floor", () => {
 
   it("shows a build summing below 0 as 0, with the raw sum in the row's title", () => {
     renderHeader([heavy]);
-    const row = screen.getByText("ERGONOMICS").parentElement!;
+    const row = screen.getByText("Ergonomics").parentElement!;
     expect(row).toHaveAttribute("title", "−23 before the game's floor at 0");
     // Label, stock 48, delta −48 against the floored 0 (not −71), value 0.
-    expect(row).toHaveTextContent(/^ERGONOMICS48-480$/);
+    expect(row).toHaveTextContent(/^Ergonomics48-480$/);
     expect(within(row).getByText("-48")).toBeInTheDocument();
     expect(row.querySelector("span")).toHaveStyle({ width: "0%" });
   });
 
   it("gives no title to a build at or above the floor", () => {
     renderHeader(realMods);
-    expect(screen.getByText("ERGONOMICS").parentElement!).not.toHaveAttribute("title");
+    expect(screen.getByText("Ergonomics").parentElement!).not.toHaveAttribute("title");
   });
 });
 

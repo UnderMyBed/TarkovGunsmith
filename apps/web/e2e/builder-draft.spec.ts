@@ -53,11 +53,11 @@ test.describe("Builder draft", () => {
 
     await page.getByRole("button", { name: "New build" }).click();
     await page.getByRole("button", { name: "Discard" }).click();
-    await expect(page.getByText("NO WEAPON SELECTED")).toBeVisible();
+    await expect(page.getByText("No weapon selected")).toBeVisible();
 
     await page.reload({ waitUntil: "networkidle" });
     await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
-    await expect(page.getByText("NO WEAPON SELECTED")).toBeVisible();
+    await expect(page.getByText("No weapon selected")).toBeVisible();
     expect(await page.evaluate((key) => localStorage.getItem(key), DRAFT_KEY)).toBeNull();
     expect(errors).toEqual([]);
   });
@@ -68,7 +68,7 @@ test.describe("Builder draft", () => {
     await page.goto("/builder", { waitUntil: "networkidle" });
 
     await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
-    await expect(page.getByText("NO WEAPON SELECTED")).toBeVisible();
+    await expect(page.getByText("No weapon selected")).toBeVisible();
     expect(errors).toEqual([]);
   });
 

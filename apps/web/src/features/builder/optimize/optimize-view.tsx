@@ -69,7 +69,7 @@ export function objectiveDelta(
   switch (objective) {
     case "min-recoil":
       return {
-        label: "RECOIL V+H",
+        label: "Recoil V+H",
         value:
           proposed.verticalRecoil +
           proposed.horizontalRecoil -
@@ -78,12 +78,12 @@ export function objectiveDelta(
       };
     case "max-ergonomics":
       return {
-        label: "ERGO",
+        label: "Ergo",
         value: shownErgonomics(proposed.ergonomics) - shownErgonomics(current.ergonomics),
         digits: 0,
       };
     case "min-weight":
-      return { label: "WEIGHT KG", value: proposed.weight - current.weight, digits: 2 };
+      return { label: "Weight kg", value: proposed.weight - current.weight, digits: 2 };
     case "max-accuracy":
       return { label: "MOA", value: proposed.accuracy - current.accuracy, digits: 2 };
   }
@@ -237,26 +237,26 @@ export function OptimizeView({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center gap-4 border-b border-dashed border-[var(--color-border)] pb-3">
+      <div className="flex items-center gap-4 border-b border-[var(--color-border)] pb-3">
         <button
           type="button"
           onClick={onExit}
           aria-label="Back to builder editor"
-          className={`font-mono text-11 uppercase tracking-20 text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] ${focusRing}`}
+          className={`text-11 text-[var(--color-muted-foreground)] hover:text-[var(--color-primary-text)] ${focusRing}`}
         >
-          ← EDITOR
+          ← Editor
         </button>
-        <h1 className="font-display text-2xl uppercase tracking-wide text-[var(--color-foreground)]">
-          OPTIMIZER
-        </h1>
-        <Pill tone={optimizerPillTone}>{optimizer.state.toUpperCase()}</Pill>
+        <h1 className="font-bold text-2xl text-[var(--color-foreground)]">Optimizer</h1>
+        <Pill tone={optimizerPillTone}>
+          {optimizer.state.charAt(0).toUpperCase() + optimizer.state.slice(1)}
+        </Pill>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
-        <Card variant="bracket" className="flex flex-col gap-5 p-5">
+        <Card className="flex flex-col gap-5 p-5">
           <div className="flex items-center justify-between">
-            <span className="font-display text-base tracking-wide">SOLVER</span>
-            <Pill tone="reliable">EXACT</Pill>
+            <span className="font-bold text-base">Solver</span>
+            <Pill tone="reliable">Exact</Pill>
           </div>
           <OptimizeConstraintsForm
             state={state}
@@ -268,7 +268,7 @@ export function OptimizeView({
           />
           <ProfileReadout gate={gate} sync={sync} onEditProfile={onEditProfile} />
           {/* Enabled while running: the solver is pure, so a new run just supersedes the old. */}
-          <Button onClick={handleRun}>RE-RUN OPTIMIZATION</Button>
+          <Button onClick={handleRun}>Re-run optimization</Button>
         </Card>
 
         <div className="flex flex-col gap-5 min-w-0">

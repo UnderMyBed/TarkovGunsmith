@@ -80,37 +80,37 @@ describe("OptimizePinTree", () => {
     expect(group("Muzzle").closest("li")).toHaveTextContent("empty");
     expect(screen.getByText("Nothing pinned")).toBeInTheDocument();
     for (const slot of ["Receiver", "Barrel", "Mount", "Stock", "Muzzle"]) {
-      expect(radio(slot, "FREE")).toBeChecked();
+      expect(radio(slot, "Free")).toBeChecked();
     }
   });
 
   it("locks a nested slot to the build's part, and FREE removes the pin rather than emptying it", () => {
     render(<Harness />);
-    fireEvent.click(radio("Barrel", "LOCK"));
+    fireEvent.click(radio("Barrel", "Lock"));
     expect(pins()).toEqual([["receiver/barrel", "b1"]]);
     expect(screen.getByText("1 slot pinned")).toBeInTheDocument();
-    fireEvent.click(radio("Barrel", "FREE"));
+    fireEvent.click(radio("Barrel", "Free"));
     expect(pins()).toEqual([]);
-    expect(radio("Barrel", "FREE")).toBeChecked();
+    expect(radio("Barrel", "Free")).toBeChecked();
   });
 
   it("can't lock an empty slot or empty a required one", () => {
     render(<Harness />);
-    expect(radio("Muzzle", "LOCK")).toBeDisabled();
-    expect(radio("Muzzle", "EMPTY")).toBeEnabled();
-    expect(radio("Stock", "EMPTY")).toBeDisabled();
-    expect(radio("Mount", "EMPTY")).toBeDisabled();
-    expect(radio("Stock", "LOCK")).toBeEnabled();
+    expect(radio("Muzzle", "Lock")).toBeDisabled();
+    expect(radio("Muzzle", "Empty")).toBeEnabled();
+    expect(radio("Stock", "Empty")).toBeDisabled();
+    expect(radio("Mount", "Empty")).toBeDisabled();
+    expect(radio("Stock", "Lock")).toBeEnabled();
   });
 
   it("EMPTY on a slot clears the locks below it, and its nested rows leave the list", () => {
     render(<Harness />);
-    fireEvent.click(radio("Barrel", "LOCK"));
-    fireEvent.click(radio("Mount", "LOCK"));
-    fireEvent.click(radio("Stock", "LOCK"));
+    fireEvent.click(radio("Barrel", "Lock"));
+    fireEvent.click(radio("Mount", "Lock"));
+    fireEvent.click(radio("Stock", "Lock"));
     expect(pins()).toHaveLength(3);
-    fireEvent.click(radio("Receiver", "EMPTY"));
-    fireEvent.click(screen.getByRole("button", { name: "EMPTY IT" }));
+    fireEvent.click(radio("Receiver", "Empty"));
+    fireEvent.click(screen.getByRole("button", { name: "Empty it" }));
     expect(pins()).toEqual([
       ["stock", "s1"],
       ["receiver", null],
@@ -119,47 +119,47 @@ describe("OptimizePinTree", () => {
     expect(screen.queryByRole("radiogroup", { name: "Mount pin" })).toBeNull();
     expect(group("Receiver").closest("li")).toHaveTextContent("left empty");
     // Freed again, the nested slots come back free: nothing was kept out of sight.
-    fireEvent.click(radio("Receiver", "FREE"));
-    expect(radio("Barrel", "FREE")).toBeChecked();
-    expect(radio("Mount", "FREE")).toBeChecked();
+    fireEvent.click(radio("Receiver", "Free"));
+    expect(radio("Barrel", "Free")).toBeChecked();
+    expect(radio("Mount", "Free")).toBeChecked();
   });
 
   it("asks before EMPTY clears pins below, so an arrow key passing over it wipes nothing", () => {
     render(<Harness />);
-    fireEvent.click(radio("Barrel", "LOCK"));
-    fireEvent.click(radio("Mount", "LOCK"));
+    fireEvent.click(radio("Barrel", "Lock"));
+    fireEvent.click(radio("Mount", "Lock"));
     // Arrowing through the radios checks each in turn: landing on EMPTY only asks.
-    fireEvent.click(radio("Receiver", "EMPTY"));
+    fireEvent.click(radio("Receiver", "Empty"));
     const ask = screen.getByRole("group", { name: "Empty Receiver" });
     expect(ask).toHaveTextContent("Emptying Receiver clears 2 pins below it.");
     expect(pins()).toEqual([
       ["receiver/barrel", "b1"],
       ["receiver/mount", "m1"],
     ]);
-    expect(radio("Receiver", "FREE")).toBeChecked();
-    expect(radio("Receiver", "EMPTY")).not.toBeChecked();
+    expect(radio("Receiver", "Free")).toBeChecked();
+    expect(radio("Receiver", "Empty")).not.toBeChecked();
     // Moving on to another choice drops the question and keeps the pins below.
-    fireEvent.click(radio("Receiver", "LOCK"));
+    fireEvent.click(radio("Receiver", "Lock"));
     expect(screen.queryByRole("group", { name: "Empty Receiver" })).toBeNull();
     expect(pins()).toEqual([
       ["receiver/barrel", "b1"],
       ["receiver/mount", "m1"],
       ["receiver", "upper"],
     ]);
-    fireEvent.click(radio("Receiver", "EMPTY"));
+    fireEvent.click(radio("Receiver", "Empty"));
     fireEvent.click(
       within(screen.getByRole("group", { name: "Empty Receiver" })).getByRole("button", {
-        name: "KEEP PINS",
+        name: "Keep pins",
       }),
     );
     expect(screen.queryByRole("group", { name: "Empty Receiver" })).toBeNull();
     expect(pins()).toHaveLength(3);
-    expect(radio("Receiver", "LOCK")).toBeChecked();
+    expect(radio("Receiver", "Lock")).toBeChecked();
   });
 
   it("empties a slot with no pins below it at once", () => {
     render(<Harness />);
-    fireEvent.click(radio("Receiver", "EMPTY"));
+    fireEvent.click(radio("Receiver", "Empty"));
     expect(screen.queryByRole("group", { name: "Empty Receiver" })).toBeNull();
     expect(pins()).toEqual([["receiver", null]]);
   });
@@ -197,10 +197,10 @@ describe("OptimizePinTree", () => {
     );
     // Locked on another barrel than the build now has: the lock's part is what it keeps.
     expect(group("Barrel").closest("li")).toHaveTextContent("b2");
-    expect(radio("Barrel", "LOCK")).toBeChecked();
+    expect(radio("Barrel", "Lock")).toBeChecked();
     expect(screen.getByText("2 slots pinned")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "CLEAR ALL" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
     expect(pins()).toEqual([]);
-    expect(screen.queryByRole("button", { name: "CLEAR ALL" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Clear all" })).toBeNull();
   });
 });

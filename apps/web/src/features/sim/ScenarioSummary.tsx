@@ -14,35 +14,33 @@ export function ScenarioSummary({ result }: ScenarioSummaryProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between border-b border-dashed border-[var(--color-border)] pb-3">
+      <div className="flex items-baseline justify-between border-b border-[var(--color-border)] pb-3">
         <div>
-          <div className="font-mono text-10 tracking-20 uppercase text-[var(--color-muted-foreground)]">
-            OUTCOME
-          </div>
-          <div className="font-display text-xl leading-none mt-1 uppercase">
+          <div className="text-11 text-[var(--color-muted-foreground)]">Outcome</div>
+          <div className="font-bold text-xl leading-none mt-1">
             {result.killed ? (
               <span className="text-[var(--color-destructive)]">
                 Killed{result.killedAt !== null ? ` · shot ${result.killedAt + 1}` : ""}
               </span>
             ) : (
-              <span className="text-[var(--color-primary)]">Alive</span>
+              <span className="text-[var(--color-primary-text)]">Alive</span>
             )}
           </div>
         </div>
-        {result.killed && <Stamp tone="red">ELIMINATED</Stamp>}
+        {result.killed && <Stamp tone="red">Eliminated</Stamp>}
       </div>
       <dl className="grid grid-cols-2 gap-3">
-        <SummaryStat label="SHOTS FIRED" value={`${shotsFired}`} />
-        <SummaryStat label="TOTAL FLESH DMG" value={`${totalDamage.toFixed(1)} HP`} />
+        <SummaryStat label="Shots fired" value={`${shotsFired}`} />
+        <SummaryStat label="Total flesh dmg" value={`${totalDamage.toFixed(1)} HP`} />
         {lastBodyShot && (
           <SummaryStat
-            label="BODY ARMOR · REM"
+            label="Body armor · rem"
             value={`${lastBodyShot.remainingDurability.toFixed(1)}`}
           />
         )}
         {lastHelmetShot && (
           <SummaryStat
-            label="HELMET · REM"
+            label="Helmet · rem"
             value={`${lastHelmetShot.remainingDurability.toFixed(1)}`}
           />
         )}
@@ -54,9 +52,7 @@ export function ScenarioSummary({ result }: ScenarioSummaryProps) {
 function SummaryStat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="border border-[var(--color-border)] p-3">
-      <dt className="font-mono text-10 tracking-20 uppercase text-[var(--color-muted-foreground)]">
-        {label}
-      </dt>
+      <dt className="text-11 text-[var(--color-muted-foreground)]">{label}</dt>
       <dd className="mt-1 font-mono text-xl tabular-nums">{value}</dd>
     </div>
   );

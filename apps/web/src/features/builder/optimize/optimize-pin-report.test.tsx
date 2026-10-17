@@ -58,16 +58,16 @@ describe("OptimizePinReport", () => {
       />,
     );
     const report = screen.getByRole("region", { name: "Pins" });
-    expect(report).toHaveTextContent("2 KEPT");
-    expect(report).toHaveTextContent("4 DROPPED");
+    expect(report).toHaveTextContent("2 kept");
+    expect(report).toHaveTextContent("4 dropped");
     const items = screen.getAllByRole("listitem").map((li) => li.textContent);
     expect(items).toEqual([
-      "KEPTReceiver › BarrelLong barrel",
-      "KEPTMuzzleempty",
-      "DROPPEDReceiver › Barrel › muzzleBrake · This build has no muzzle slot there.",
-      "DROPPEDStockBrake · Stock doesn't take Brake.",
-      "DROPPEDReceiverghost-id · ghost-id is not in the game data.",
-      "DROPPEDStockempty · Stock is required, so it can't be left empty.",
+      "KeptReceiver › BarrelLong barrel",
+      "KeptMuzzleempty",
+      "DroppedReceiver › Barrel › muzzleBrake · This build has no muzzle slot there.",
+      "DroppedStockBrake · Stock doesn't take Brake.",
+      "DroppedReceiverghost-id · ghost-id is not in the game data.",
+      "DroppedStockempty · Stock is required, so it can't be left empty.",
     ]);
   });
 });

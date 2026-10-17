@@ -175,7 +175,7 @@ describe("compare handoff profile, and saving it", () => {
     stubPairsFetch(() => new Promise<Response>(() => {}));
     handOff(JSON.stringify(PROFILE));
     await renderRoute("/builder/compare");
-    expect(await screen.findAllByText("REACHABLE")).toHaveLength(2);
+    expect(await screen.findAllByText("Reachable")).toHaveLength(2);
   });
 
   it("keeps a handoff with no profile, as one written before the key existed, theorycraft", async () => {
@@ -183,7 +183,7 @@ describe("compare handoff profile, and saving it", () => {
     handOff(null);
     await renderRoute("/builder/compare");
     await waitFor(() => expect(screen.getAllByText(/^₽/)).toHaveLength(2));
-    expect(screen.queryByText("REACHABLE")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reachable")).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText("Embed the progression snapshots in the shared URL"),
     ).not.toBeInTheDocument();
@@ -355,7 +355,7 @@ describe("compare save — loaded pairs and the viewer's profiles", () => {
     sessionStorage.setItem("compare:mode", "clone-both");
     sessionStorage.setItem("compare:profile", JSON.stringify(PROFILE));
     const { router } = await renderRoute("/builder/compare");
-    expect(await screen.findAllByText("REACHABLE")).toHaveLength(2);
+    expect(await screen.findAllByText("Reachable")).toHaveLength(2);
     await clickSave();
 
     await waitFor(() => expect(posts).toHaveLength(1));
@@ -367,7 +367,7 @@ describe("compare save — loaded pairs and the viewer's profiles", () => {
       expect(router.state.location.pathname).toMatch(/^\/builder\/compare\/neww/),
     );
     expect(await screen.findByRole("button", { name: "Save changes" })).toBeInTheDocument();
-    expect(await screen.findAllByText("REACHABLE")).toHaveLength(2);
+    expect(await screen.findAllByText("Reachable")).toHaveLength(2);
     expect(await optIn()).not.toBeChecked();
     expect(sessionStorage.getItem("compare:viewerProfiles")).toBeNull();
   });

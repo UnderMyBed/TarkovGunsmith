@@ -113,8 +113,8 @@ test.describe("Builder stats", () => {
     await expect(spec).toHaveAttribute("title", note);
 
     // The header row: label, stock 48, delta −48 against the floored 0, current 0.
-    const header = page.getByText("ERGONOMICS", { exact: true }).locator("..");
-    await expect(header).toHaveText(/^ERGONOMICS48-480$/);
+    const header = page.getByText("Ergonomics", { exact: true }).locator("..");
+    await expect(header).toHaveText(/^Ergonomics48-480$/);
     await expect(header).toHaveAttribute("title", note);
   });
 });

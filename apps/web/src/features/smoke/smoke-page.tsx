@@ -7,7 +7,7 @@ export function SmokePage() {
   return (
     <div className="flex flex-col gap-6">
       <section>
-        <h1 className="text-3xl font-bold tracking-tight">Smoke</h1>
+        <h1 className="text-3xl font-bold">Smoke</h1>
         <p className="mt-2 text-[var(--color-muted-foreground)]">
           End-to-end proof that <code>@tarkov/data</code> → <code>json.tarkov.dev</code> → Zod parse
           → render works in the browser.

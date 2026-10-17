@@ -122,7 +122,7 @@ export function PresetPicker({
                 {option.label}
                 {option.isDefault && <Pill tone="muted">Default</Pill>}
                 {availability?.available === false && (
-                  <span className="text-10 normal-case text-[var(--color-paper-dim)]">
+                  <span className="text-11 normal-case text-[var(--color-faint)]">
                     {formatRequirement(availability, questName)}
                   </span>
                 )}

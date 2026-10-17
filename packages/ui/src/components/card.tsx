@@ -1,33 +1,23 @@
 import { forwardRef } from "react";
 import type { HTMLAttributes } from "react";
-import { cva } from "class-variance-authority";
-import type { VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn.js";
 
-export const cardVariants = cva(
-  "relative rounded-[var(--radius)] border bg-[var(--color-card)] text-[var(--color-card-foreground)]",
-  {
-    variants: {
-      variant: {
-        plain: "",
-        bracket:
-          "before:content-[''] before:absolute before:top-[-1px] before:left-[-1px] before:w-3.5 before:h-3.5 before:border-[2px] before:border-b-0 before:border-r-0 before:border-[var(--color-primary)] after:content-[''] after:absolute after:bottom-[-1px] after:right-[-1px] after:w-3.5 after:h-3.5 after:border-[2px] after:border-t-0 after:border-l-0 after:border-[var(--color-primary)]",
-        "bracket-olive":
-          "before:content-[''] before:absolute before:top-[-1px] before:left-[-1px] before:w-3.5 before:h-3.5 before:border-[2px] before:border-b-0 before:border-r-0 before:border-[var(--color-olive)] after:content-[''] after:absolute after:bottom-[-1px] after:right-[-1px] after:w-3.5 after:h-3.5 after:border-[2px] after:border-t-0 after:border-l-0 after:border-[var(--color-olive)]",
-      },
-    },
-    defaultVariants: { variant: "plain" },
-  },
-);
-
-export interface CardProps
-  extends HTMLAttributes<HTMLDivElement>, VariantProps<typeof cardVariants> {}
+export type CardProps = HTMLAttributes<HTMLDivElement>;
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
-  { className, variant, ...props },
+  { className, ...props },
   ref,
 ) {
-  return <div ref={ref} className={cn(cardVariants({ variant }), className)} {...props} />;
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "relative rounded-[var(--radius-panel)] border bg-[var(--color-card)] text-[var(--color-card-foreground)]",
+        className,
+      )}
+      {...props}
+    />
+  );
 });
 
 export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
@@ -36,7 +26,7 @@ export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
       <div
         ref={ref}
         className={cn(
-          "flex flex-col gap-1.5 border-b border-dashed border-[var(--color-border)] px-5 py-4",
+          "flex flex-col gap-1.5 border-b border-[var(--color-border)] px-5 py-4",
           className,
         )}
         {...props}
@@ -50,10 +40,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadi
     return (
       <h3
         ref={ref}
-        className={cn(
-          "text-lg font-bold tracking-tight leading-tight text-[var(--color-foreground)]",
-          className,
-        )}
+        className={cn("text-lg font-bold leading-tight text-[var(--color-foreground)]", className)}
         {...props}
       >
         {children}
@@ -69,10 +56,7 @@ export const CardDescription = forwardRef<
   return (
     <p
       ref={ref}
-      className={cn(
-        "font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)]",
-        className,
-      )}
+      className={cn("text-sm text-[var(--color-muted-foreground)]", className)}
       {...props}
     />
   );
@@ -90,7 +74,7 @@ export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
       <div
         ref={ref}
         className={cn(
-          "flex items-center border-t border-dashed border-[var(--color-border)] px-5 py-3",
+          "flex items-center border-t border-[var(--color-border)] px-5 py-3",
           className,
         )}
         {...props}

@@ -57,9 +57,9 @@ test.describe("recoil is expressed as a percentage", () => {
 
     // Drive the optimizer rather than hand-clicking slots: min-recoil is its
     // default objective, so whatever it accepts is a genuine reduction.
-    await page.getByRole("button", { name: /◇ OPTIMIZE/i }).click();
+    await page.getByRole("button", { name: /◇ Optimize/i }).click();
     await expect(page).toHaveURL(/\?view=optimize/);
-    await page.getByRole("button", { name: /RE-RUN OPTIMIZATION/i }).click();
+    await page.getByRole("button", { name: /Re-run optimization/i }).click();
 
     const changedRows = page.locator('[aria-label^="Accept "]');
     await expect
@@ -75,10 +75,10 @@ test.describe("recoil is expressed as a percentage", () => {
       .poll(async () => await deltaCells.allTextContents(), { timeout: 10_000 })
       .toContain(STRONGEST_OPTIMIZED_RECOIL_CELL);
 
-    await page.getByRole("button", { name: /ACCEPT ALL/ }).click();
+    await page.getByRole("button", { name: /Accept all/ }).click();
     await expect(page).not.toHaveURL(/\?view=optimize/);
 
-    // BuildHeader's RECOIL V / RECOIL H delta badges. `formatPercent` blanks
+    // BuildHeader's Recoil V / Recoil H delta badges. `formatPercent` blanks
     // anything under 0.5%, which is exactly what the 100x error produced.
     await expect
       .poll(

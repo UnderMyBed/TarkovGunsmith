@@ -15,7 +15,7 @@
  *   6. Render JSX → SVG → PNG at 1200×630.
  *   7. Cache & return with `public, max-age=30d, immutable`.
  *
- * Fallback path returns the pre-rendered `BUILD NOT FOUND` PNG with a short
+ * Fallback path returns the pre-rendered `Build not found` PNG with a short
  * max-age so a successful follow-up render can displace it.
  *
  * Note on asset loading: we use the `embeddedFonts()` / `embeddedFallbackPng()`
@@ -61,7 +61,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, request, env })
   // functions/lib/build-id.ts for why interpolating an unvalidated id into a
   // URL is the bug. A malformed id can never name a real record (the Worker
   // 400s it), so this is a client error, not a missing build: it gets a 400
-  // rather than the "BUILD NOT FOUND" fallback card, which stays reserved for
+  // rather than the "Build not found" fallback card, which stays reserved for
   // a well-formed id that has expired or never existed.
   if (!isValidBuildId(id)) return invalidId(id);
 

@@ -70,18 +70,18 @@ export function MatrixPage() {
       <WipBanner />
       <SingleLayerCaveat />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
-        <div className="font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
-          <span>DATA · MATRIX</span>
-          <span>/ AMMO × ARMOR</span>
-          <span>/ SHOTS TO BREAK</span>
+        <div className="text-11 text-[var(--color-faint)] flex gap-4 flex-wrap">
+          <span>Data · matrix</span>
+          <span>/ ammo × armor</span>
+          <span>/ shots to break</span>
         </div>
-        <h1 className="font-display text-56 leading-[0.95] tracking-tight uppercase">
-          AmmoVsArmor <span className="text-[var(--color-primary)]">Matrix</span>
+        <h1 className="font-bold text-56 leading-[0.95]">
+          AmmoVsArmor <span className="text-[var(--color-primary-text)]">Matrix</span>
         </h1>
         <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Shots-to-break for every visible ammo against every armor, computed via{" "}
-          <code>armorEffectiveness</code>. Cells are color-coded by bucket: olive = great, amber =
-          good, rust = poor, dim = can&apos;t break.
+          <code>armorEffectiveness</code>. Cells are color-coded by bucket: blue = great, teal =
+          good, orange = fair, red = poor, dim = can&apos;t break.
         </p>
       </section>
 

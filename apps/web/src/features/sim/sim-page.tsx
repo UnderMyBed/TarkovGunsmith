@@ -86,13 +86,13 @@ export function SimPage() {
     <div className="flex flex-col gap-6">
       <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
-        <div className="font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
-          <span>FORWARD · SCENARIO</span>
-          <span>/ MULTI-SHOT · MULTI-ZONE</span>
-          <span>/ PMC DEFAULTS</span>
+        <div className="text-11 text-[var(--color-faint)] flex gap-4 flex-wrap">
+          <span>Forward · scenario</span>
+          <span>/ multi-shot · multi-zone</span>
+          <span>/ PMC defaults</span>
         </div>
-        <h1 className="font-display text-56 leading-[0.95] tracking-tight uppercase">
-          Ballistics <span className="text-[var(--color-primary)]">Simulator</span>
+        <h1 className="font-bold text-56 leading-[0.95]">
+          Ballistics <span className="text-[var(--color-primary-text)]">Simulator</span>
         </h1>
         <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Build a shot plan against a PMC target — pick ammo, optional helmet + body armor, click
@@ -215,7 +215,7 @@ export function SimPage() {
         </Card>
 
         {/* Results */}
-        <Card variant="bracket">
+        <Card>
           <CardHeader>
             <CardTitle>Results</CardTitle>
             {!lastResult && (

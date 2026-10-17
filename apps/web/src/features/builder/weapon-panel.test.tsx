@@ -61,7 +61,7 @@ describe("WeaponPanel", () => {
     const select = screen.getByRole("combobox");
     expect(select).toHaveValue(M4A1);
     expect(screen.getByRole("option", { selected: true })).toHaveTextContent(
-      "Colt M4A1 5.56x45 assault rifle — LOCKED · peacekeeper LL2",
+      "Colt M4A1 5.56x45 assault rifle — locked · peacekeeper LL2",
     );
     // The count is of weapons the profile can obtain; the locked current one is not among them.
     expect(screen.getByText("1 weapons available on your profile")).toBeInTheDocument();

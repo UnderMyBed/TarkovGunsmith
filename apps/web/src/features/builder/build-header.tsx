@@ -65,7 +65,7 @@ export function BuildHeader({
       ? shownErgonomics(currentSpec.ergonomics) - shownErgonomics(stockSpec.ergonomics)
       : 0;
   return (
-    <Card variant="bracket" className="relative overflow-hidden">
+    <Card className="relative overflow-hidden">
       {weaponId && (
         <div
           aria-hidden
@@ -81,14 +81,14 @@ export function BuildHeader({
       <div className="relative z-10">
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div className="flex flex-col gap-2 flex-1 min-w-0">
-            <div className="font-display text-xl sm:text-2xl leading-none tracking-wide uppercase text-[var(--color-foreground)]">
-              {weaponName ?? "NO WEAPON SELECTED"}
+            <div className="font-bold text-xl sm:text-2xl leading-none text-[var(--color-foreground)]">
+              {weaponName ?? "No weapon selected"}
             </div>
-            <div className="font-mono text-10 tracking-20 uppercase text-[var(--color-paper-dim)]">
+            <div className="text-11 text-[var(--color-faint)]">
               {typeof modCount === "number"
-                ? `${modCount} MOD${modCount === 1 ? "" : "S"}`
-                : "— MODS"}
-              {sharedId ? ` · BUILD · ${sharedId.slice(0, 8)}` : ""}
+                ? `${modCount} mod${modCount === 1 ? "" : "s"}`
+                : "— mods"}
+              {sharedId ? ` · build · ${sharedId.slice(0, 8)}` : ""}
             </div>
             {(missingRequired.length > 0 || conflicts.length > 0) && (
               <div className="flex flex-wrap items-center gap-2">
@@ -115,13 +115,8 @@ export function BuildHeader({
               </Button>
             )}
             {onOptimize && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onOptimize}
-                className="font-mono tracking-15"
-              >
-                ◇ OPTIMIZE
+              <Button variant="secondary" size="sm" onClick={onOptimize}>
+                ◇ Optimize
               </Button>
             )}
             {onNewBuild && (
@@ -129,7 +124,7 @@ export function BuildHeader({
                 New build
               </Button>
             )}
-            {sharedId && <Stamp tone="amber">SHARED</Stamp>}
+            {sharedId && <Stamp tone="accent">Shared</Stamp>}
           </div>
         </CardHeader>
         {onNewBuild && confirmingNew && (
@@ -157,7 +152,7 @@ export function BuildHeader({
             maxLength={60}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Build name (optional)"
-            className="bg-transparent font-sans text-lg font-bold tracking-tight text-[var(--color-foreground)] outline-none placeholder:text-[var(--color-paper-dim)] focus:outline-none border-b border-transparent focus:border-[var(--color-primary)] pb-1 transition-colors"
+            className="bg-transparent font-sans text-lg font-bold text-[var(--color-foreground)] outline-none placeholder:text-[var(--color-faint)] focus:outline-none border-b border-transparent focus:border-[var(--color-primary)] pb-1 transition-colors"
           />
           <textarea
             value={description}
@@ -165,13 +160,13 @@ export function BuildHeader({
             onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder="Description (optional)"
             rows={2}
-            className="resize-none bg-transparent text-sm text-[var(--color-muted-foreground)] outline-none placeholder:text-[var(--color-paper-dim)] focus:outline-none"
+            className="resize-none bg-transparent text-sm text-[var(--color-muted-foreground)] outline-none placeholder:text-[var(--color-faint)] focus:outline-none"
           />
 
           {currentSpec && stockSpec && (
-            <div className="flex flex-col gap-2 border-t border-dashed border-[var(--color-border)] pt-4">
+            <div className="flex flex-col gap-2 border-t border-[var(--color-border)] pt-4">
               <StatRow
-                label="ERGONOMICS"
+                label="Ergonomics"
                 title={ergonomicsFloorNote(currentSpec.ergonomics)}
                 stock={shownErgonomics(stockSpec.ergonomics)}
                 delta={formatDelta(ergonomicsDelta, false)}
@@ -181,7 +176,7 @@ export function BuildHeader({
                 barTone="primary"
               />
               <StatRow
-                label="RECOIL V"
+                label="Recoil V"
                 stock={stockSpec.verticalRecoil}
                 delta={formatPercent(currentSpec.verticalRecoil, stockSpec.verticalRecoil)}
                 deltaDirection={deltaDirection(
@@ -190,10 +185,10 @@ export function BuildHeader({
                 )}
                 value={oneDecimal(currentSpec.verticalRecoil)}
                 percent={clampInverse(currentSpec.verticalRecoil, stockSpec.verticalRecoil)}
-                barTone="olive"
+                barTone="primary"
               />
               <StatRow
-                label="RECOIL H"
+                label="Recoil H"
                 stock={stockSpec.horizontalRecoil}
                 delta={formatPercent(currentSpec.horizontalRecoil, stockSpec.horizontalRecoil)}
                 deltaDirection={deltaDirection(
@@ -202,16 +197,16 @@ export function BuildHeader({
                 )}
                 value={oneDecimal(currentSpec.horizontalRecoil)}
                 percent={clampInverse(currentSpec.horizontalRecoil, stockSpec.horizontalRecoil)}
-                barTone="olive"
+                barTone="primary"
               />
               <StatRow
-                label="WEIGHT"
+                label="Weight"
                 stock={stockSpec.weight.toFixed(2)}
                 delta={formatDelta(currentSpec.weight - stockSpec.weight, true)}
                 deltaDirection={deltaDirection(currentSpec.weight - stockSpec.weight, true)}
                 value={currentSpec.weight.toFixed(2)}
                 percent={clampPercent(currentSpec.weight * 20)}
-                barTone={currentSpec.weight > stockSpec.weight ? "destructive" : "primary"}
+                barTone={currentSpec.weight > stockSpec.weight ? "worse" : "primary"}
               />
               {/* The value alone: stock here is the bare receiver, whose MOA has no barrel in
                   it, so every real build would read as a regression against it. */}

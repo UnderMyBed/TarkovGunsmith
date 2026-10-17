@@ -69,7 +69,7 @@ describe("TarkovTrackerSyncBanner — connected", () => {
     const { result } = renderSync();
     render(<TarkovTrackerSyncBanner sync={result.current} />);
 
-    expect(screen.getByText(/TARKOVTRACKER · CONNECTED/)).toBeInTheDocument();
+    expect(screen.getByText(/TarkovTracker · connected/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Re-sync" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Disconnect" })).toBeInTheDocument();
   });

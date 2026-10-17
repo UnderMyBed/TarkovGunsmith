@@ -33,13 +33,13 @@ export function DataPage() {
     <div className="flex flex-col gap-6">
       <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
-        <div className="font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
-          <span>DATA · TABLES</span>
-          <span>/ AMMO · ARMOR · WEAPONS · MODULES</span>
-          <span>/ SORT + FILTER</span>
+        <div className="text-11 text-[var(--color-faint)] flex gap-4 flex-wrap">
+          <span>Data · tables</span>
+          <span>/ ammo · armor · weapons · modules</span>
+          <span>/ sort + filter</span>
         </div>
-        <h1 className="font-display text-56 leading-[0.95] tracking-tight uppercase">
-          Data<span className="text-[var(--color-primary)]">Sheets</span>
+        <h1 className="font-bold text-56 leading-[0.95]">
+          Data<span className="text-[var(--color-primary-text)]">Sheets</span>
         </h1>
         <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Reference tables for ammo, armor, weapons, and weapon modifications. Sort by any column;
@@ -55,8 +55,8 @@ export function DataPage() {
             onClick={() => setTab(t)}
             className={`${
               tab === t
-                ? "border-b-2 border-[var(--color-primary)] px-3 py-2 font-mono text-11 tracking-18 uppercase text-[var(--color-primary)]"
-                : "px-3 py-2 font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                ? "border-b-2 border-[var(--color-primary)] px-3 py-2 text-11 text-[var(--color-primary-text)]"
+                : "px-3 py-2 text-11 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
             } ${focusRing}`}
           >
             {t.toUpperCase()}
@@ -119,11 +119,11 @@ function Header<T>({
       <button
         type="button"
         onClick={() => onSort(keyName)}
-        className={`text-xs font-semibold uppercase tracking-wide hover:text-[var(--color-primary)] ${focusRing}`}
+        className={`text-xs font-semibold hover:text-[var(--color-primary-text)] ${focusRing}`}
       >
         {label}
         {active && (
-          <span className="ml-1 text-[var(--color-primary)]">
+          <span className="ml-1 text-[var(--color-primary-text)]">
             {sort.direction === "asc" ? "▲" : "▼"}
           </span>
         )}
@@ -193,10 +193,7 @@ function AmmoTable({ query }: { query: string }) {
         </thead>
         <tbody>
           {display.map((r) => (
-            <tr
-              key={r.id}
-              className="border-b border-dashed border-[var(--color-border)] last:border-b-0"
-            >
+            <tr key={r.id} className="border-b border-[var(--color-border)] last:border-b-0">
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-right tabular-nums">{r.pen}</td>
               <td className="py-1.5 text-right tabular-nums">{r.damage}</td>
@@ -259,10 +256,7 @@ function ArmorTable({ query }: { query: string }) {
         </thead>
         <tbody>
           {display.map((r) => (
-            <tr
-              key={r.id}
-              className="border-b border-dashed border-[var(--color-border)] last:border-b-0"
-            >
+            <tr key={r.id} className="border-b border-[var(--color-border)] last:border-b-0">
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-right tabular-nums">{r.class}</td>
               <td className="py-1.5 text-right tabular-nums">{r.durability}</td>
@@ -353,10 +347,7 @@ function WeaponTable({ query }: { query: string }) {
         </thead>
         <tbody>
           {display.map((r) => (
-            <tr
-              key={r.id}
-              className="border-b border-dashed border-[var(--color-border)] last:border-b-0"
-            >
+            <tr key={r.id} className="border-b border-[var(--color-border)] last:border-b-0">
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-[var(--color-muted-foreground)]">{r.caliber}</td>
               <td className="py-1.5 text-right tabular-nums">{r.ergonomics}</td>
@@ -437,10 +428,7 @@ function ModTable({ query }: { query: string }) {
         </thead>
         <tbody>
           {display.map((r) => (
-            <tr
-              key={r.id}
-              className="border-b border-dashed border-[var(--color-border)] last:border-b-0"
-            >
+            <tr key={r.id} className="border-b border-[var(--color-border)] last:border-b-0">
               <td className="py-1.5">{r.name}</td>
               <td className="py-1.5 text-right tabular-nums">{r.ergo}</td>
               {/* toFixed absorbs float noise: -0.21 * 100 is -21.000000000000004.

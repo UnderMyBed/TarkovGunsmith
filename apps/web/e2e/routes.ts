@@ -8,7 +8,7 @@ export const ROUTES: ReadonlyArray<{
   /** Text we expect on the loaded page. */
   contains: string;
 }> = [
-  { path: "/", contains: "BUILD THE" },
-  { path: "/builder", contains: "NO WEAPON SELECTED" },
+  { path: "/", contains: "Build the" },
+  { path: "/builder", contains: "No weapon selected" },
   { path: "/builder/compare", contains: "Add a second build" },
 ];

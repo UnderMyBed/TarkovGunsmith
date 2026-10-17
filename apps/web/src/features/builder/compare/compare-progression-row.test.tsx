@@ -23,8 +23,8 @@ describe("CompareProgressionRow", () => {
       />,
     );
     expect(screen.getByTestId("compare-price-row")).toHaveTextContent("——");
-    expect(screen.queryByText("REACHABLE")).not.toBeInTheDocument();
-    expect(screen.queryByText("LOCKED")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reachable")).not.toBeInTheDocument();
+    expect(screen.queryByText("Locked")).not.toBeInTheDocument();
   });
 
   it("then prices each side, and marks reach only on a side with a profile", () => {
@@ -37,9 +37,9 @@ describe("CompareProgressionRow", () => {
       />,
     );
     expect(screen.getByText("₽26,666")).toBeInTheDocument();
-    expect(screen.getByText("REACHABLE")).toBeInTheDocument();
+    expect(screen.getByText("Reachable")).toBeInTheDocument();
     expect(screen.getByText("Can't be bought: M4A1")).toBeInTheDocument();
-    expect(screen.getByText("LOCKED")).toBeInTheDocument();
+    expect(screen.getByText("Locked")).toBeInTheDocument();
 
     rerender(
       <CompareProgressionRow
@@ -53,7 +53,7 @@ describe("CompareProgressionRow", () => {
       />,
     );
     expect(screen.getByText("₽1,000 known; no price for Muzzle A, Stock B")).toBeInTheDocument();
-    expect(screen.queryByText("REACHABLE")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reachable")).not.toBeInTheDocument();
   });
 
   it("says why there are no prices when they failed", () => {

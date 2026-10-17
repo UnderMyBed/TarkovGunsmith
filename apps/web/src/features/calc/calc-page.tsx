@@ -43,12 +43,12 @@ export function CalcPage() {
     <div className="flex flex-col gap-6">
       <WipBanner />
       <section className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
-        <div className="font-mono text-11 tracking-22 uppercase text-[var(--color-paper-dim)] flex gap-4 flex-wrap">
-          <span>FORWARD · SINGLE SHOT</span>
-          <span>/ LIVE RECOMPUTE</span>
+        <div className="text-11 text-[var(--color-faint)] flex gap-4 flex-wrap">
+          <span>Forward · single shot</span>
+          <span>/ live recompute</span>
         </div>
-        <h1 className="font-display text-56 leading-[0.95] tracking-tight uppercase">
-          Ballistic <span className="text-[var(--color-primary)]">Calculator</span>
+        <h1 className="font-bold text-56 leading-[0.95]">
+          Ballistic <span className="text-[var(--color-primary-text)]">Calculator</span>
         </h1>
         <p className="text-[var(--color-muted-foreground)] max-w-[640px]">
           Pick an ammo + armor + distance to compute the deterministic shot outcome (penetration,
@@ -126,7 +126,7 @@ export function CalcPage() {
         </CardContent>
       </Card>
 
-      <Card variant="bracket">
+      <Card>
         <CardHeader>
           <CardTitle>Result</CardTitle>
           {!result && (
@@ -140,7 +140,7 @@ export function CalcPage() {
                 label="Penetrated?"
                 value={
                   <Pill tone={result.didPenetrate ? "accent" : "muted"}>
-                    {result.didPenetrate ? "PEN" : "BLOCKED"}
+                    {result.didPenetrate ? "Pen" : "Blocked"}
                   </Pill>
                 }
               />
@@ -171,9 +171,7 @@ export function CalcPage() {
 function Stat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-[var(--radius)] border p-3">
-      <dt className="text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
-        {label}
-      </dt>
+      <dt className="text-xs text-[var(--color-muted-foreground)]">{label}</dt>
       <dd>{value}</dd>
     </div>
   );

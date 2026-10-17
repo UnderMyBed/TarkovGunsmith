@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect } from "vitest";
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import { renderRoute } from "../test/render-route.js";
 
 afterEach(() => cleanup());
@@ -10,7 +10,7 @@ describe("/ (landing page)", () => {
   it("renders the hero heading and the primary CTA and no simulator link", async () => {
     await renderRoute("/");
 
-    expect(screen.getByText("KNOW THE NUMBERS.")).toBeInTheDocument();
+    expect(screen.getByText("Know the numbers.")).toBeInTheDocument();
 
     const openBuilder = screen.getByRole("link", { name: "Open the Builder ▸" });
     expect(openBuilder).toHaveAttribute("href", "/builder");
@@ -31,18 +31,19 @@ describe("/ (landing page)", () => {
     expect(tryOptimizer.getAttribute("href")).toContain("/builder");
     expect(tryOptimizer.getAttribute("href")).toContain("view=optimize");
 
-    // "Learn More" points at plain /builder with no search params.
-    const learnMore = screen.getByRole("link", { name: "Learn More" });
+    // "Learn more" points at plain /builder with no search params.
+    const learnMore = screen.getByRole("link", { name: "Learn more" });
     expect(learnMore).toHaveAttribute("href", "/builder");
   });
 
   it("renders all four 'what it does' feature cards", async () => {
     await renderRoute("/");
+    const features = screen.getByRole("region", { name: "What TarkovGunsmith does" });
 
-    expect(screen.getByText("BUILDER")).toBeInTheDocument();
-    expect(screen.getByText("OPTIMIZER")).toBeInTheDocument();
-    expect(screen.getByText("COMPARE")).toBeInTheDocument();
-    expect(screen.getByText("SHARE")).toBeInTheDocument();
+    expect(within(features).getByText("Builder")).toBeInTheDocument();
+    expect(within(features).getByText("Optimizer")).toBeInTheDocument();
+    expect(within(features).getByText("Compare")).toBeInTheDocument();
+    expect(within(features).getByText("Share")).toBeInTheDocument();
     expect(
       screen.getByText("Slot tree editor with availability gating and live recompute."),
     ).toBeInTheDocument();

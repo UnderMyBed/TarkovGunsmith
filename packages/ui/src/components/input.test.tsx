@@ -19,6 +19,18 @@ describe("Input", () => {
     expect(screen.getByLabelText("qty")).toHaveAttribute("type", "number");
   });
 
+  /* Numbers take the mono face and text does not. Which face each class resolves to is the
+   * stylesheet's business; here, only that a number field renders a different class set. */
+  it("styles a number field differently from a text field", () => {
+    render(<Input aria-label="text" />);
+    const text = classList(screen.getByLabelText("text"));
+    cleanup();
+    render(<Input type="number" aria-label="number" />);
+    const number = classList(screen.getByLabelText("number"));
+    expect(number).toEqual(expect.arrayContaining(text));
+    expect(number.length).toBeGreaterThan(text.length);
+  });
+
   it("forwards a ref to the underlying <input>", () => {
     const ref = createRef<HTMLInputElement>();
     render(<Input ref={ref} aria-label="ref-input" />);

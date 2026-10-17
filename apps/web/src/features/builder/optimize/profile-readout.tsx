@@ -24,13 +24,13 @@ const TRADER_KEYS = [
 ] as const;
 
 const TRADER_LABEL: Record<(typeof TRADER_KEYS)[number], string> = {
-  prapor: "PRAPOR",
-  therapist: "THERA",
-  skier: "SKIER",
-  peacekeeper: "PEACE",
-  mechanic: "MECH",
-  ragman: "RAGMAN",
-  jaeger: "JAEGER",
+  prapor: "Prapor",
+  therapist: "Thera",
+  skier: "Skier",
+  peacekeeper: "Peace",
+  mechanic: "Mech",
+  ragman: "Ragman",
+  jaeger: "Jaeger",
 };
 
 function formatRelativeTime(then: number, now = Date.now()): string {
@@ -38,11 +38,11 @@ function formatRelativeTime(then: number, now = Date.now()): string {
   const hours = Math.floor(ms / 3_600_000);
   if (hours < 1) {
     const minutes = Math.max(1, Math.floor(ms / 60_000));
-    return `${minutes}M AGO`;
+    return `${minutes}m ago`;
   }
-  if (hours < 48) return `${hours}H AGO`;
+  if (hours < 48) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  return `${days}D AGO`;
+  return `${days}d ago`;
 }
 
 export function ProfileReadout({ gate, sync, onEditProfile }: ProfileReadoutProps): ReactElement {
@@ -50,14 +50,12 @@ export function ProfileReadout({ gate, sync, onEditProfile }: ProfileReadoutProp
     return (
       <div className="flex flex-col gap-2">
         <SectionTitle index={3} title="Profile" />
-        <div className="font-mono text-10 uppercase tracking-20 text-[var(--color-muted-foreground)]">
-          THEORYCRAFT
-        </div>
-        <p className="font-mono text-10 uppercase text-[var(--color-foreground)]">
+        <div className="text-11 text-[var(--color-muted-foreground)]">Theorycraft</div>
+        <p className="text-11 text-[var(--color-foreground)]">
           Every trader, flea offer and quest open
         </p>
         <Button size="sm" variant="ghost" onClick={onEditProfile}>
-          SET PROGRESSION ▸
+          Set progression ▸
         </Button>
       </div>
     );
@@ -79,31 +77,31 @@ function ProgressionReadout({
   const canReSync = sync.detail.state !== "disconnected";
 
   const meta = isSynced
-    ? `TARKOVTRACKER · ${formatRelativeTime((sync.detail as Extract<typeof sync.detail, { state: "synced" }>).lastSyncedAt)}`
-    : "MANUAL";
+    ? `TarkovTracker · ${formatRelativeTime((sync.detail as Extract<typeof sync.detail, { state: "synced" }>).lastSyncedAt)}`
+    : "Manual";
 
   return (
     <div className="flex flex-col gap-2">
       <SectionTitle index={3} title="Profile" />
-      <div className="font-mono text-10 uppercase tracking-20 text-[var(--color-muted-foreground)]">
-        {meta}
-      </div>
+      <div className="text-11 text-[var(--color-muted-foreground)]">{meta}</div>
       <div className="grid grid-cols-2 gap-1">
         <div className="flex items-center justify-between border border-[var(--color-border)] px-1.5 py-0.5">
-          <span className="font-mono text-9 text-[var(--color-muted-foreground)]">PMC LEVEL</span>
-          <span className="font-mono text-10 font-semibold text-[var(--color-foreground)]">
+          <span className="text-11 text-[var(--color-muted-foreground)]">PMC level</span>
+          <span className="font-mono text-11 font-semibold text-[var(--color-foreground)]">
             {profile.level}
           </span>
         </div>
         {/* Level only gates anything while flea access is on, so the two read together. */}
         <div className="flex items-center justify-between border border-[var(--color-border)] px-1.5 py-0.5">
-          <span className="font-mono text-9 text-[var(--color-muted-foreground)]">FLEA</span>
+          <span className="text-11 text-[var(--color-muted-foreground)]">Flea</span>
           <span
-            className={`font-mono text-10 font-semibold ${
-              profile.flea ? "text-[var(--color-primary)]" : "text-[var(--color-muted-foreground)]"
+            className={`text-11 font-semibold ${
+              profile.flea
+                ? "text-[var(--color-primary-text)]"
+                : "text-[var(--color-muted-foreground)]"
             }`}
           >
-            {profile.flea ? "ON" : "OFF"}
+            {profile.flea ? "On" : "Off"}
           </span>
         </div>
       </div>
@@ -111,16 +109,16 @@ function ProgressionReadout({
         {TRADER_KEYS.map((key) => {
           const level = (profile.traders as Record<string, number>)?.[key] ?? 1;
           const colour =
-            level >= 3 ? "text-[var(--color-primary)]" : "text-[var(--color-foreground)]";
+            level >= 3 ? "text-[var(--color-primary-text)]" : "text-[var(--color-foreground)]";
           return (
             <div
               key={key}
               className="flex items-center justify-between border border-[var(--color-border)] px-1.5 py-0.5"
             >
-              <span className="font-mono text-9 text-[var(--color-muted-foreground)]">
+              <span className="text-11 text-[var(--color-muted-foreground)]">
                 {TRADER_LABEL[key]}
               </span>
-              <span className={`font-mono text-10 font-semibold ${colour}`}>L{level}</span>
+              <span className={`font-mono text-11 font-semibold ${colour}`}>L{level}</span>
             </div>
           );
         })}
@@ -135,10 +133,10 @@ function ProgressionReadout({
           disabled={!canReSync || isSyncing}
           className="flex-1"
         >
-          RE-IMPORT
+          Re-import
         </Button>
         <Button size="sm" variant="ghost" onClick={onEditProfile}>
-          EDIT PROFILE ▸
+          Edit profile ▸
         </Button>
       </div>
     </div>

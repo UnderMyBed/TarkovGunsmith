@@ -27,21 +27,21 @@ describe("availabilityLabel", () => {
   it("names the path: trader level, barter, or flea", () => {
     expect(availabilityLabel({ ...trader, kind: "trader" })).toBe("LL3");
     expect(availabilityLabel({ ...trader, kind: "barter", minLevel: 1, barterId: "b1" })).toBe(
-      "LL1 BARTER",
+      "LL1 barter",
     );
-    expect(availabilityLabel(ON_FLEA)).toBe("FLEA");
+    expect(availabilityLabel(ON_FLEA)).toBe("Flea");
   });
 
   it("says QUEST when the path assumes one is done", () => {
     const assumed = { ...trader, assumedQuest: "i-need-more-power" };
-    expect(availabilityLabel({ ...assumed, kind: "trader" })).toBe("LL3 · QUEST");
+    expect(availabilityLabel({ ...assumed, kind: "trader" })).toBe("LL3 · quest");
     expect(availabilityLabel({ ...assumed, kind: "barter", barterId: "b1" })).toBe(
-      "LL3 BARTER · QUEST",
+      "LL3 barter · quest",
     );
   });
 
   it("reads LOCKED for anything with no open path", () => {
-    expect(availabilityLabel(NO_SOURCES)).toBe("LOCKED");
-    expect(availabilityLabel({ available: false, reason: "flea-locked" })).toBe("LOCKED");
+    expect(availabilityLabel(NO_SOURCES)).toBe("Locked");
+    expect(availabilityLabel({ available: false, reason: "flea-locked" })).toBe("Locked");
   });
 });

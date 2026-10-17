@@ -161,7 +161,7 @@ export function CompareSide({
   const loadError = weapons.error ?? mods.error ?? presets.error;
 
   return (
-    <Card variant="bracket" className="relative overflow-hidden">
+    <Card className="relative overflow-hidden">
       {build?.weaponId && (
         <div
           aria-hidden
@@ -185,7 +185,7 @@ export function CompareSide({
           <div className="flex flex-col gap-2">
             <label
               htmlFor={`compare-weapon-${label}`}
-              className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)]"
+              className="text-11 text-[var(--color-muted-foreground)]"
             >
               Weapon
             </label>
@@ -225,9 +225,7 @@ export function CompareSide({
                 onDismiss={handleDismissOrphans}
               />
               {tree.isLoading && (
-                <p className="font-mono text-11 tracking-18 uppercase text-[var(--color-muted-foreground)]">
-                  Loading slot tree…
-                </p>
+                <p className="text-11 text-[var(--color-muted-foreground)]">Loading slot tree…</p>
               )}
               {tree.error && (
                 <p className="text-sm text-[var(--color-destructive)]">

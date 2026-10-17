@@ -3,33 +3,21 @@ import type { Zone } from "@tarkov/ballistics";
 export interface ZoneMeta {
   /** Human-readable label for the zone, shown in UI lists and buttons. */
   readonly label: string;
-  /** Tailwind background utility for the zone's fill, as a Field Ledger token. */
+  /** Tailwind background utility for the zone's fill, as a palette token. */
   readonly colorClass: string;
   /** Tailwind text utility paired with `colorClass` — see the contrast note below. */
   readonly textClass: string;
 }
 
 /**
- * Zone fills, on the Field Ledger palette.
+ * Zone fills, on the palette tokens in `packages/ui/src/styles/index.css`.
  *
- * These were the last raw Tailwind palette classes in the app (`bg-amber-700`, `bg-red-700`,
- * `bg-orange-700`, `bg-sky-700`, `bg-teal-700`, plus `text-white`). Two were already the palette
- * by coincidence — Tailwind's `amber-700` IS `--color-amber-deep` (#b45309) and `red-700` IS
- * `--color-destructive` (#b91c1c) — and the two cool hues, sky and teal, had nothing behind them
- * in a warm amber/olive/paper system. The palette is defined in `packages/ui/src/styles/index.css`.
+ * The fills run by lethality: accent head, error-red thorax, orange stomach, blue arms,
+ * strong-line grey legs.
  *
- * The five fills run by lethality rather than as arbitrary hues: amber head, red thorax, rust
- * stomach, olive arms, stroke-grey legs. That is the ordering the Simulator is about, and it is
- * one a two-hue palette can actually express.
- *
- * Each zone carries its own text token because no single one clears contrast on all five fills.
- * Ratios at full opacity, text on fill: head 8.9:1, thorax 5.1:1, stomach 5.2:1, arms 5.1:1,
- * legs 8.8:1 — every one at or above the 5.0:1 floor the previous `text-white` pairings held,
- * and all above the 4.5:1 needed for these 12px labels.
- *
- * Head takes `--color-primary` rather than the identical-to-before `--color-amber-deep` for that
- * reason and no other: amber-deep is a mid-tone that reaches only 3.9:1 against the light text
- * token and 3.8:1 against the dark one, so it has no accessible label colour in this palette.
+ * Each zone carries its own text token because no single one clears contrast on all five
+ * fills. Ratios, text on fill: head 7.4:1, thorax 7.5:1, stomach 8.7:1, arms 9.0:1,
+ * legs 7.4:1 — all above the 4.5:1 needed for these labels.
  */
 export const ZONE_META: Readonly<Record<Zone, ZoneMeta>> = {
   head: {
@@ -44,27 +32,27 @@ export const ZONE_META: Readonly<Record<Zone, ZoneMeta>> = {
   },
   stomach: {
     label: "Stomach",
-    colorClass: "bg-[var(--color-rust)]",
-    textClass: "text-[var(--color-foreground)]",
+    colorClass: "bg-[var(--color-worse)]",
+    textClass: "text-[var(--color-destructive-foreground)]",
   },
   leftArm: {
     label: "L. Arm",
-    colorClass: "bg-[var(--color-olive)]",
+    colorClass: "bg-[var(--color-better)]",
     textClass: "text-[var(--color-primary-foreground)]",
   },
   rightArm: {
     label: "R. Arm",
-    colorClass: "bg-[var(--color-olive)]",
+    colorClass: "bg-[var(--color-better)]",
     textClass: "text-[var(--color-primary-foreground)]",
   },
   leftLeg: {
     label: "L. Leg",
-    colorClass: "bg-[var(--color-border)]",
+    colorClass: "bg-[var(--color-border-strong)]",
     textClass: "text-[var(--color-foreground)]",
   },
   rightLeg: {
     label: "R. Leg",
-    colorClass: "bg-[var(--color-border)]",
+    colorClass: "bg-[var(--color-border-strong)]",
     textClass: "text-[var(--color-foreground)]",
   },
 };

@@ -11,12 +11,12 @@ export interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Field Ledger placeholder rectangle. Use during a loading state to hint at
+ * Placeholder rectangle. Use during a loading state to hint at
  * the eventual content's shape without shifting layout when data arrives.
  *
  * For multi-row skeletons, set `rows`. For a single block, leave it unset.
  *
- * Styling: muted background, dashed amber border, `animate-pulse`.
+ * Styling: muted background, divider border, `animate-pulse`.
  */
 export function Skeleton({
   width = "100%",
@@ -36,7 +36,7 @@ export function Skeleton({
         {Array.from({ length: rows }, (_, i) => (
           <div
             key={i}
-            className="bg-[var(--color-muted)] border border-dashed border-[var(--color-border)] animate-pulse"
+            className="bg-[var(--color-muted)] rounded-[var(--radius)] border border-[var(--color-divider)] animate-pulse"
             style={{ height }}
           />
         ))}
@@ -46,7 +46,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        "bg-[var(--color-muted)] border border-dashed border-[var(--color-border)] animate-pulse",
+        "bg-[var(--color-muted)] rounded-[var(--radius)] border border-[var(--color-divider)] animate-pulse",
         className,
       )}
       style={{ width, height, ...style }}

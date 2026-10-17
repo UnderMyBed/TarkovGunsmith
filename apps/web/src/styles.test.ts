@@ -11,8 +11,7 @@ import { beforeAll, describe, expect, it } from "vitest";
  * `@tarkov/ui` resolves through `node_modules` (a pnpm workspace symlink) and Tailwind's
  * automatic source detection deliberately never descends there, so every utility class used
  * ONLY by a design-system primitive was absent from the production stylesheet: no
- * `focus-visible:` ring on `<Button>`/`<Input>`, no `before:`/`after:` corner brackets on
- * `<Card variant="bracket">`, no `-rotate-2` on `<Stamp>`, no grid template on `<StatRow>`.
+ * `focus-visible:` ring on `<Button>`/`<Input>`, no grid template on `<StatRow>`.
  * The components rendered the class names; the stylesheet had no matching rule.
  *
  * Why this test and not a jsdom one: the eleven `packages/ui/src/components/*.test.tsx`
@@ -39,8 +38,7 @@ const UI_COMPONENTS = path.join(REPO_ROOT, "packages/ui/src/components");
  * root would emit it regardless and the entry would silently stop guarding anything.
  *
  * These are the visually load-bearing ones — the classes whose absence is the difference
- * between a focus ring and none, a bracketed panel and a plain box, a stat grid and a
- * collapsed row.
+ * between a focus ring and none, or a stat grid and a collapsed row.
  */
 const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: readonly string[]]> = [
   [
@@ -65,36 +63,9 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
       "w-9",
     ],
   ],
-  [
-    "card.tsx",
-    [
-      // variant="bracket" / "bracket-olive" — the Field Ledger corner brackets, in use at
-      // every bracketed panel in the app.
-      "before:content-['']",
-      "before:absolute",
-      "before:top-[-1px]",
-      "before:left-[-1px]",
-      "before:w-3.5",
-      "before:h-3.5",
-      "before:border-[2px]",
-      "before:border-b-0",
-      "before:border-r-0",
-      "before:border-[var(--color-primary)]",
-      "before:border-[var(--color-olive)]",
-      "after:content-['']",
-      "after:absolute",
-      "after:bottom-[-1px]",
-      "after:right-[-1px]",
-      "after:w-3.5",
-      "after:h-3.5",
-      "after:border-[2px]",
-      "after:border-t-0",
-      "after:border-l-0",
-      "after:border-[var(--color-primary)]",
-      "after:border-[var(--color-olive)]",
-      "text-[var(--color-card-foreground)]",
-    ],
-  ],
+  // The panel surface's text colour. Every other class <Card> paints with is shared with
+  // apps/web (its 8px panel radius included), so this is the one that proves the scan.
+  ["card.tsx", ["text-[var(--color-card-foreground)]"]],
   [
     "input.tsx",
     [
@@ -103,7 +74,7 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
       "focus-visible:ring-[var(--color-primary)]",
     ],
   ],
-  ["stamp.tsx", ["-rotate-2", "tracking-25", "border-[1.5px]", "px-2.5"]],
+  ["stamp.tsx", ["border-[1.5px]", "px-2.5", "border-[var(--color-destructive)]"]],
   [
     "stat-row.tsx",
     [
@@ -118,7 +89,16 @@ const UI_ONLY_CLASSES: ReadonlyArray<readonly [component: string, classes: reado
   ],
   ["skeleton.tsx", ["animate-pulse", "space-y-2"]],
   ["dialog.tsx", ["max-w-2xl", "duration-150"]],
-  ["pill.tsx", ["bg-[color:rgba(122,139,63,0.1)]", "bg-[color:rgba(245,158,11,0.08)]", "py-[2px]"]],
+  [
+    "pill.tsx",
+    [
+      // The better / worse tints behind the reliable and marginal tones.
+      "bg-[color-mix(in_srgb,var(--color-better)_10%,transparent)]",
+      "bg-[color-mix(in_srgb,var(--color-worse)_10%,transparent)]",
+      "py-[2px]",
+      "text-[var(--color-foreground-2)]",
+    ],
+  ],
   // `bg-[var(--color-border)]` dropped for the same reason as stat-row's olive: the /sim zone
   // buttons paint with it now, so apps/web's own scan emits it either way.
   ["section-title.tsx", ["my-8", "h-px"]],

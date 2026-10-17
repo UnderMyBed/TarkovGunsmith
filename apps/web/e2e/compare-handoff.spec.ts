@@ -56,13 +56,13 @@ test.describe("Compare handoff", () => {
 
     const cost = await builderCost(page);
     expect(cost).toMatch(/^₽/);
-    await expect((await elcanOption(page.locator("body"))).getByText("LOCKED")).toBeVisible();
+    await expect((await elcanOption(page.locator("body"))).getByText("Locked")).toBeVisible();
 
     await handOffBothSides(page);
     const row = page.getByTestId("compare-price-row");
     await expect(row.getByText(cost, { exact: true })).toHaveCount(2, { timeout: 15_000 });
-    await expect(row.getByText("REACHABLE")).toHaveCount(2);
-    await expect((await elcanOption(sideA(page))).getByText("LOCKED")).toBeVisible();
+    await expect(row.getByText("Reachable")).toHaveCount(2);
+    await expect((await elcanOption(sideA(page))).getByText("Locked")).toBeVisible();
   });
 
   test("in theorycraft, the handed-off sides stay ungated", async ({ page }) => {
@@ -72,9 +72,9 @@ test.describe("Compare handoff", () => {
     await handOffBothSides(page);
     const row = page.getByTestId("compare-price-row");
     await expect(row.getByText(cost, { exact: true })).toHaveCount(2, { timeout: 15_000 });
-    await expect(row.getByText("REACHABLE")).toHaveCount(0);
+    await expect(row.getByText("Reachable")).toHaveCount(0);
     const elcan = await elcanOption(sideA(page));
     await expect(elcan).toBeVisible();
-    await expect(elcan.getByText("LOCKED")).toHaveCount(0);
+    await expect(elcan.getByText("Locked")).toHaveCount(0);
   });
 });
