@@ -26,7 +26,14 @@ export const SMALL_WEAPON: BallisticWeapon = {
   baseVerticalRecoil: 100,
   baseHorizontalRecoil: 200,
   baseWeight: 3.0,
-  baseAccuracy: 3.0,
+  // The live Colt M4A1's accuracy, velocity and range fields (2026-10-17).
+  centerOfImpact: 0.01,
+  deviationCurve: 1.35,
+  velocity: 0,
+  fireRate: 800,
+  effectiveDistance: 500,
+  sightingRange: 100,
+  defaultAmmo: { name: "M855", initialSpeed: 922 },
 };
 
 /**
@@ -89,6 +96,7 @@ function makeMod(
       ergonomics,
       recoilModifier,
       accuracyModifier: 0,
+      velocity: 0,
     },
     conflictingItems: [],
     conflictingSlotIds: [],

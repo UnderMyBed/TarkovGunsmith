@@ -32,7 +32,9 @@ import {
 } from "../packages/ballistics/src/__fixtures__/armor.js";
 import {
   M4A1,
+  AR15_BARREL_10_3,
   CQR_GRIP,
+  HAMR_SCOPE,
   UBR_GEN2_STOCK,
   VP09_MUZZLE_BRAKE,
 } from "../packages/ballistics/src/__fixtures__/weapons.js";
@@ -69,6 +71,8 @@ const ITEMS_URL = `${API_BASE}items`;
 interface LiveItem {
   id: string;
   weight?: number;
+  /** Top-level, and a PERCENT: unlike the fraction-scale modifiers under `properties`. */
+  velocity?: number | null;
   properties?: Record<string, unknown> | null;
 }
 interface LiveDocument {
@@ -139,7 +143,14 @@ async function main(): Promise<void> {
   );
   notes.push(`recoilModifier range [${recoilMin}, ${recoilMax}] (fraction)`);
 
-  const accuracyModifiers = propsOfType("ItemPropertiesWeaponMod")
+  // Every slot-attachable part type: barrels carry one too (up to 0.1 live).
+  const accuracyModifiers = [
+    "ItemPropertiesWeaponMod",
+    "ItemPropertiesBarrel",
+    "ItemPropertiesScope",
+    "ItemPropertiesMagazine",
+  ]
+    .flatMap(propsOfType)
     .map((p) => p["accuracyModifier"])
     .filter((v): v is number => typeof v === "number");
   const accMin = Math.min(...accuracyModifiers);
@@ -187,6 +198,79 @@ async function main(): Promise<void> {
     `armorMaterials: ${Object.values(doc.data.armorMaterials)
       .map((m) => `${m.id}=${m.destructibility}`)
       .join(", ")}`,
+  );
+
+  // The #220 stats. `velocity` is top-level and a percent (-11 = -11%); the magazine figures
+  // are fractions; `centerOfImpact` (cm at 100 m) sits only on weapons and barrels, never
+  // negative, which the optimizer's max-accuracy bound relies on (packages/optimizer bounds.ts).
+  const partVelocities = items
+    .filter((i) => {
+      const type = i.properties?.["propertiesType"];
+      return type !== "ItemPropertiesAmmo" && type !== "ItemPropertiesWeapon";
+    })
+    .map((i) => i.velocity)
+    .filter((v): v is number => typeof v === "number");
+  const velMin = Math.min(...partVelocities);
+  const velMax = Math.max(...partVelocities);
+  check(
+    "unit/velocity",
+    velMin < -1 && velMin >= -100 && velMax <= 100,
+    `expected a percent in [-100, 100] reaching below -1, got [${velMin}, ${velMax}] — a fraction ` +
+      `scale here means weaponSpec's velocity/100 is off by 100x`,
+  );
+  notes.push(`part velocity range [${velMin}, ${velMax}] (percent, top-level)`);
+
+  const numbersOf = (type: string, key: string) =>
+    propsOfType(type)
+      .map((p) => p[key])
+      .filter((v): v is number => typeof v === "number");
+  const loadModifiers = numbersOf("ItemPropertiesMagazine", "loadModifier");
+  const malfunctions = numbersOf("ItemPropertiesMagazine", "malfunctionChance");
+  const loadRange = [Math.min(...loadModifiers), Math.max(...loadModifiers)];
+  const malfRange = [Math.min(...malfunctions), Math.max(...malfunctions)];
+  check(
+    "unit/loadModifier",
+    loadRange[0]! >= -1 && loadRange[1]! <= 1,
+    `expected a fraction in [-1, 1], got [${loadRange.join(", ")}] — the Spec panel shows it ×100`,
+  );
+  check(
+    "unit/malfunctionChance",
+    malfRange[0]! >= 0 && malfRange[1]! <= 1,
+    `expected a fraction in [0, 1], got [${malfRange.join(", ")}] — the Spec panel shows it ×100`,
+  );
+  notes.push(
+    `magazine loadModifier [${loadRange.join(", ")}], malfunctionChance [${malfRange.join(", ")}] (fractions)`,
+  );
+
+  const strayStats: string[] = [];
+  for (const item of items) {
+    const props = item.properties;
+    const type = props?.["propertiesType"];
+    if (props == null || type === "ItemPropertiesWeapon") continue;
+    for (const key of ["fireRate", "effectiveDistance"]) {
+      if (props[key] != null) strayStats.push(`${item.id} (${String(type)}) has ${key}`);
+    }
+    if (type !== "ItemPropertiesBarrel" && props["centerOfImpact"] != null) {
+      strayStats.push(`${item.id} (${String(type)}) has centerOfImpact`);
+    }
+  }
+  check(
+    "scope/part-stats",
+    strayStats.length === 0,
+    `weaponSpec reads fireRate and effectiveDistance from the weapon alone, and centerOfImpact ` +
+      `from the weapon and its barrel alone; these parts now carry one: ${strayStats.slice(0, 5).join("; ")}`,
+  );
+  const centers = [
+    ...numbersOf("ItemPropertiesWeapon", "centerOfImpact"),
+    ...numbersOf("ItemPropertiesBarrel", "centerOfImpact"),
+  ];
+  check(
+    "bounds/centerOfImpact",
+    Math.min(...centers) >= 0,
+    `expected centerOfImpact >= 0, got ${Math.min(...centers)} — the optimizer's max-accuracy bound assumes it`,
+  );
+  notes.push(
+    `centerOfImpact [${Math.min(...centers)}, ${Math.max(...centers)}] cm on weapons and barrels only`,
   );
 
   // ---- 3. Every fixture still matches upstream --------------------------
@@ -249,9 +333,26 @@ async function main(): Promise<void> {
       M4A1.baseHorizontalRecoil,
     );
     checkNumber("weapon/M4A1/weight", byId[M4A1.id]?.weight, M4A1.baseWeight);
+    checkNumber("weapon/M4A1/centerOfImpact", weaponLive["centerOfImpact"], M4A1.centerOfImpact);
+    checkNumber("weapon/M4A1/deviationCurve", weaponLive["deviationCurve"], M4A1.deviationCurve);
+    checkNumber("weapon/M4A1/velocity", byId[M4A1.id]?.velocity, M4A1.velocity);
+    checkNumber("weapon/M4A1/fireRate", weaponLive["fireRate"], M4A1.fireRate);
+    checkNumber(
+      "weapon/M4A1/effectiveDistance",
+      weaponLive["effectiveDistance"],
+      M4A1.effectiveDistance,
+    );
+    checkNumber("weapon/M4A1/sightingRange", weaponLive["sightingRange"], M4A1.sightingRange);
+    const ammoId = weaponLive["defaultAmmo"];
+    const ammo = typeof ammoId === "string" ? byId[ammoId]?.properties : undefined;
+    checkNumber(
+      "weapon/M4A1/defaultAmmo/initialSpeed",
+      ammo?.["initialSpeed"],
+      M4A1.defaultAmmo?.initialSpeed ?? Number.NaN,
+    );
   }
 
-  for (const mod of [CQR_GRIP, UBR_GEN2_STOCK, VP09_MUZZLE_BRAKE]) {
+  for (const mod of [CQR_GRIP, UBR_GEN2_STOCK, VP09_MUZZLE_BRAKE, AR15_BARREL_10_3, HAMR_SCOPE]) {
     const item = byId[mod.id];
     const live = item?.properties;
     if (!live) {
@@ -262,6 +363,14 @@ async function main(): Promise<void> {
     checkNumber(`mod/${mod.name}/recoilModifier`, live["recoilModifier"], mod.recoilModifier);
     checkNumber(`mod/${mod.name}/accuracyModifier`, live["accuracyModifier"], mod.accuracyModifier);
     checkNumber(`mod/${mod.name}/weight`, item?.weight, mod.weight);
+    checkNumber(`mod/${mod.name}/velocity`, item?.velocity, mod.velocity);
+    checkNumber(`mod/${mod.name}/centerOfImpact`, live["centerOfImpact"] ?? 0, mod.centerOfImpact);
+    if (mod.deviationMax !== null) {
+      checkNumber(`mod/${mod.name}/deviationMax`, live["deviationMax"], mod.deviationMax);
+    }
+    if (mod.sightingRange !== null) {
+      checkNumber(`mod/${mod.name}/sightingRange`, live["sightingRange"], mod.sightingRange);
+    }
   }
 
   await checkSelectorsAcceptLiveDocument();
@@ -352,12 +461,10 @@ async function checkBuilderSnapshot(): Promise<void> {
       `${kb(edgeBrotli(pricesText))} brotli (q4); data as of ${snapshot.dataAsOf}`,
   );
   // Presets are checked against the weapons and parts the Builder actually reads: the snapshot.
-  checkPresets(
-    documents.items,
-    snapshot.presets,
-    snapshotWeaponList(snapshot, prices.prices),
-    snapshotPartCatalog(snapshot, prices.prices),
-  );
+  const weapons = snapshotWeaponList(snapshot, prices.prices);
+  const catalog = snapshotPartCatalog(snapshot, prices.prices);
+  checkPresets(documents.items, snapshot.presets, weapons, catalog);
+  checkSlotGraphBounds(documents.items, weapons, catalog);
 }
 
 /**
@@ -381,7 +488,9 @@ function checkPresets(
   const weaponById = new Map(weapons.map((w) => [w.id, w]));
   let placed = 0;
   let perPartMatches = 0;
+  let moaChecked = 0;
   const misses: string[] = [];
+  const moaMisses: string[] = [];
   for (const [weaponId, presets] of Object.entries(byWeapon)) {
     const weapon = weaponById.get(weaponId);
     if (weapon === undefined) {
@@ -408,6 +517,18 @@ function checkPresets(
             `${distinctSpec.horizontalRecoil.toFixed(2)}, ${missing.length} missing`,
         );
       }
+      // MOA: upstream's `moa` leaves accuracy modifiers out, so the Builder's figure is that
+      // times (1 − Σ accuracyModifier) over the same distinct parts. The (1 − Σ) factor itself
+      // has no upstream oracle; this pins the rest. 0.006 covers upstream's 2-decimal rounding.
+      const accuracySum = distinct.reduce((sum, p) => sum + adaptMod(p).accuracyModifier, 0);
+      const expectedMoa = stats.moa * (1 - accuracySum);
+      moaChecked += 1;
+      if (missing.length > 0 || Math.abs(distinctSpec.accuracy - expectedMoa) > 0.006) {
+        moaMisses.push(
+          `${preset.id} ${preset.shortName}: upstream moa ${stats.moa} × (1 − ${accuracySum.toFixed(3)}) ` +
+            `= ${expectedMoa.toFixed(3)}, the Builder gives ${distinctSpec.accuracy.toFixed(3)}`,
+        );
+      }
       if (
         matches(
           weaponSpec(
@@ -424,10 +545,98 @@ function checkPresets(
     misses.length === 0,
     `${misses.length} preset(s) disagree with upstream's own stats: ${misses.slice(0, 5).join("; ")}`,
   );
+  check(
+    "presets/moa",
+    moaMisses.length === 0,
+    `${moaMisses.length} preset(s) disagree with upstream's moa: ${moaMisses.slice(0, 5).join("; ")}`,
+  );
   notes.push(
     `presets: ${placed} placed on ${Object.keys(byWeapon).length} weapons; ` +
       `${placed - misses.length} match upstream over distinct parts, ${perPartMatches} also ` +
-      `counting every physical part`,
+      `counting every physical part; MOA ${moaChecked - moaMisses.length}/${moaChecked} within 0.006`,
+  );
+}
+
+/**
+ * The most of `value` any build of a weapon can collect: per slot, the best of leaving it empty
+ * or fitting one allowed item (its own value plus the best of its sub-slots), summed over slots.
+ * Conflicts are ignored, so it over-estimates if anything.
+ */
+function slotGraphMaximum(
+  graph: ReturnType<typeof buildSlotGraph>,
+  value: (itemId: string) => number,
+): (weaponId: string) => number {
+  const memo = new Map<string, number>();
+  const maximum = (ownerId: string, visiting: Set<string>): number => {
+    const hit = memo.get(ownerId);
+    if (hit !== undefined) return hit;
+    if (visiting.has(ownerId)) return 0;
+    visiting.add(ownerId);
+    let total = 0;
+    for (const slot of graph.owners[ownerId]?.slots ?? []) {
+      let best = 0;
+      for (const id of slot.allowedItemIds) {
+        best = Math.max(best, value(id) + maximum(id, visiting));
+      }
+      total += best;
+    }
+    visiting.delete(ownerId);
+    memo.set(ownerId, total);
+    return total;
+  };
+  return (weaponId) => maximum(weaponId, new Set());
+}
+
+/**
+ * The two facts the optimizer's max-accuracy bound (`packages/optimizer/src/bounds.ts`) rests on,
+ * over every weapon's slot graph with conflicts ignored (so a weapon passes only if no chain of
+ * allowed items breaks them):
+ *
+ * - no weapon can mount two barrels — the bound takes the build's `centerOfImpact` as the
+ *   weapon's plus ONE barrel's;
+ * - the summed `accuracyModifier` of any build lies in (-1, 1) — the bound needs 1 − a ≤ 2 and
+ *   1 − a ≥ 0 for every running and final sum a.
+ */
+function checkSlotGraphBounds(
+  doc: ItemsDocument,
+  weapons: readonly WeaponListItem[],
+  parts: readonly AttachablePart[],
+): void {
+  const graph = buildSlotGraph(doc);
+  const byId = partsById(parts);
+  const accuracy = (id: string) => {
+    const part = byId.get(id);
+    return part === undefined ? 0 : adaptMod(part).accuracyModifier;
+  };
+  const barrels = slotGraphMaximum(graph, (id) =>
+    byId.get(id)?.properties.propertiesType === "ItemPropertiesBarrel" ? 1 : 0,
+  );
+  const highest = slotGraphMaximum(graph, accuracy);
+  const lowest = slotGraphMaximum(graph, (id) => -accuracy(id));
+
+  const over = weapons.filter((w) => barrels(w.id) > 1);
+  const most = Math.max(0, ...weapons.map((w) => barrels(w.id)));
+  check(
+    "bounds/barrels-per-weapon",
+    over.length === 0,
+    `${over.length} weapon(s) can mount more than one barrel: ` +
+      `${over
+        .slice(0, 5)
+        .map((w) => w.shortName)
+        .join(", ")}`,
+  );
+  notes.push(`barrels: at most ${most} per weapon over ${weapons.length} weapons`);
+
+  const sumMax = Math.max(0, ...weapons.map((w) => highest(w.id)));
+  const sumMin = -Math.max(0, ...weapons.map((w) => lowest(w.id)));
+  check(
+    "bounds/accuracy-sum",
+    sumMax < 1 && sumMin > -1,
+    `a build's summed accuracyModifier can reach [${sumMin}, ${sumMax}], outside (-1, 1) — ` +
+      `the optimizer's max-accuracy bound assumes it stays inside`,
+  );
+  notes.push(
+    `summed accuracyModifier per build within [${sumMin.toFixed(3)}, ${sumMax.toFixed(3)}] (conflicts ignored)`,
   );
 }
 

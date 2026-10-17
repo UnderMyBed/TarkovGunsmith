@@ -68,6 +68,7 @@ function documents(): SnapshotDocuments {
           updated: "2026-10-16T12:00:00.000Z",
           lastLowPrice: 50000,
           buyFromTrader: [],
+          velocity: 0,
           properties: {
             propertiesType: "ItemPropertiesWeapon",
             caliber: "Caliber556x45NATO",
@@ -75,6 +76,11 @@ function documents(): SnapshotDocuments {
             ergonomics: 50,
             recoilVertical: 70,
             recoilHorizontal: 250,
+            centerOfImpact: 0.01,
+            deviationCurve: 1.35,
+            effectiveDistance: 500,
+            sightingRange: 100,
+            defaultAmmo: M855A1,
             slots: [
               slot("mod_foregrip", ["m1"]),
               slot("mod_barrel", [BARREL]),
@@ -88,6 +94,7 @@ function documents(): SnapshotDocuments {
           weight: 0.1,
           minLevelForFlea: 5,
           lastLowPrice: 9000,
+          velocity: 0,
           properties: {
             propertiesType: "ItemPropertiesWeaponMod",
             ergonomics: 3,
@@ -103,11 +110,14 @@ function documents(): SnapshotDocuments {
           shortName: "10.3",
           weight: 0.409,
           lastLowPrice: 12000,
+          velocity: -11,
           properties: {
             propertiesType: "ItemPropertiesBarrel",
             ergonomics: -2,
             recoilModifier: -0.052,
             accuracyModifier: 0,
+            centerOfImpact: 0.07,
+            deviationMax: 22,
           },
         }),
         [M855A1]: part(M855A1, {
@@ -115,12 +125,17 @@ function documents(): SnapshotDocuments {
           weight: 0.012,
           types: ["ammo"],
           lastLowPrice: 800,
-          properties: { propertiesType: "ItemPropertiesAmmo", recoilModifier: 0.05 },
+          properties: {
+            propertiesType: "ItemPropertiesAmmo",
+            recoilModifier: 0.05,
+            initialSpeed: 945,
+          },
         }),
         // Only sold for a barter, and not on the flea.
         bartered: part("bartered", {
           weight: 0.3,
           types: ["mods", "noFlea"],
+          velocity: 0,
           properties: {
             propertiesType: "ItemPropertiesWeaponMod",
             ergonomics: 1,
@@ -156,7 +171,18 @@ describe("fetchOgRowsForBuild", () => {
     expect(out.weapon).toEqual({
       id: "w1",
       shortName: "M4A1",
-      properties: { ergonomics: 50, recoilVertical: 70, recoilHorizontal: 250 },
+      properties: {
+        ergonomics: 50,
+        recoilVertical: 70,
+        recoilHorizontal: 250,
+        centerOfImpact: 0.01,
+        deviationCurve: 1.35,
+        velocity: 0,
+        fireRate: 800,
+        effectiveDistance: 500,
+        sightingRange: 100,
+        defaultAmmo: { name: "M855A1", initialSpeed: 945 },
+      },
     });
   });
 
@@ -230,6 +256,13 @@ describe("fetchOgRowsForBuild", () => {
     expect(out.mods.map((m) => [m.id, m.weight, m.properties])).toEqual([
       [BARREL, 0.409, { ergonomics: -2, recoilModifier: -0.052, accuracyModifier: 0 }],
       [M855A1, 0.012, { ergonomics: 0, recoilModifier: 0, accuracyModifier: 0 }],
+    ]);
+    // The barrel's dispersion and velocity reach the card; the cartridge carries none.
+    expect(
+      out.mods.map((m) => [m.centerOfImpact, m.deviationMax, m.velocity, m.sightingRange]),
+    ).toEqual([
+      [0.07, 22, -11, null],
+      [0, null, 0, null],
     ]);
   });
 

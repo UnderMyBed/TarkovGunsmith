@@ -229,7 +229,11 @@ export function BuilderPage({
               />
 
               {builder.spec && (
-                <SpecPanel weaponShortName={builder.selectedWeapon.shortName} spec={builder.spec} />
+                <SpecPanel
+                  weaponShortName={builder.selectedWeapon.shortName}
+                  spec={builder.spec}
+                  magazine={builder.magazine}
+                />
               )}
             </>
           )}

@@ -59,7 +59,9 @@ and says so. Use the `fixtures` override to work offline.
 Generation is strict for everything the snapshot holds or derives from:
 
 - every trader and task, and their names;
-- every buildable weapon;
+- every buildable weapon, with its MOA, velocity, range and fire-rate fields, and its default
+  ammo resolved to that cartridge's `shortName` and `initialSpeed` (a weapon whose default ammo
+  is missing, or is not ammo, is drift);
 - every part a weapon's slots reach, with its `updated` and `conflictingSlotIds`;
 - the slots of every item a weapon reaches: `id`, `nameId` and `name` non-empty, and
   `filters.allowedItems` a list;
@@ -117,8 +119,8 @@ Every Builder visit downloads the snapshot. `SNAPSHOT_BUDGET` in
 
 | Measure                                   | Budget | Live, 2026-10-17 | Headroom | Why this number                                            |
 | ----------------------------------------- | ------ | ---------------- | -------- | ---------------------------------------------------------- |
-| Brotli at quality 4 (close to the edge's) | 300 KB | 263 KB           | 37 KB    | Room for upstream growth                                   |
-| Raw                                       | 6 MB   | 3974 KB          | 2170 KB  | Bounds the main-thread parse (about 10 ms at today's size) |
+| Brotli at quality 4 (close to the edge's) | 300 KB | 269 KB           | 31 KB    | Room for upstream growth                                   |
+| Raw                                       | 6 MB   | 4058 KB          | 2086 KB  | Bounds the main-thread parse (about 10 ms at today's size) |
 
 The snapshot script fails the build when either is exceeded, so the release deploy's build step
 is the hard gate. `pnpm verify:upstream` checks the same budget against live data on a schedule

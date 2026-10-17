@@ -67,7 +67,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
 
 - The Builder's upstream request on a visit is the raw `items` document for prices; traders,
   tasks, barters and every translation document are gone from its critical path.
-- On the 2026-10-17 live data the snapshot, weapon presets included, is 3.9 MB raw and 263 KB
+- On the 2026-10-17 live data the snapshot, weapon presets included, is 4.0 MB raw and 269 KB
   brotli at quality 4, and parses in about 10 ms; parsing the raw items document took 36 ms.
 - Upstream drift fails a release build, listing every problem, rather than silently emptying a
   picker in production.
@@ -83,7 +83,8 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   unrelated. That is deliberate: the alternative ships a Builder with records missing.
 - A shared build may name a part a later snapshot no longer holds. Those ids move to the build's
   orphaned list on load rather than staying on the weapon.
-- The brotli headroom is 37 KB on the 2026-10-17 data (263 KB with the weapon presets).
+- The brotli headroom is 31 KB on the 2026-10-17 data (269 KB with the weapon presets and
+  weapon stats).
   Sustained growth in parts or offers upstream will reach it and need a deliberate decision.
 - A release build depends on `json.tarkov.dev` answering. Each request times out and is retried
   once; a longer outage fails the build, and production keeps the previous release.

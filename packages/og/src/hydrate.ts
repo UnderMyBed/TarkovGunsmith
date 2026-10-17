@@ -1,5 +1,4 @@
 import type { BuildV6 } from "@tarkov/data";
-import { DEFAULT_BASE_ACCURACY } from "@tarkov/data";
 import { weaponSpec } from "@tarkov/ballistics";
 import type { BuildCardViewModel, PairCardViewModel, SideViewModel } from "./view-model.js";
 
@@ -15,6 +14,15 @@ export interface HydrateWeapon {
     ergonomics: number;
     recoilVertical: number;
     recoilHorizontal: number;
+    /** Centimetres at 100 m; with the barrel's, the card's MOA. */
+    centerOfImpact: number;
+    deviationCurve: number;
+    /** Percent. */
+    velocity: number;
+    fireRate: number;
+    effectiveDistance: number;
+    sightingRange: number;
+    defaultAmmo: { name: string; initialSpeed: number } | null;
   } | null;
 }
 
@@ -28,6 +36,14 @@ export interface HydrateMod {
     recoilModifier?: number;
     accuracyModifier?: number;
   } | null;
+  /** A barrel's `centerOfImpact` in cm at 100 m; 0 for other parts (see `adaptMod`). */
+  centerOfImpact: number;
+  /** A barrel's `deviationMax`; `null` for other parts. */
+  deviationMax: number | null;
+  /** Muzzle velocity modifier, a percent. */
+  velocity: number;
+  /** A sight's sighting range in metres; `null` for other parts. */
+  sightingRange: number | null;
 }
 
 export interface HydrateBuildArgs {
@@ -74,16 +90,19 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
           baseHorizontalRecoil: weapon.properties.recoilHorizontal,
           // `weight` is summed separately below, so the base is intentionally 0.
           baseWeight: 0,
-          // Accuracy is multiplicative, so a 0 base pinned the card's ACCURACY
-          // cell to a meaningless 0.0 on every share image. Use the same
-          // fabricated baseline the Builder shows, so the card mirrors it.
-          baseAccuracy: DEFAULT_BASE_ACCURACY,
+          centerOfImpact: weapon.properties.centerOfImpact,
+          deviationCurve: weapon.properties.deviationCurve,
+          velocity: weapon.properties.velocity,
+          fireRate: weapon.properties.fireRate,
+          effectiveDistance: weapon.properties.effectiveDistance,
+          sightingRange: weapon.properties.sightingRange,
+          defaultAmmo: weapon.properties.defaultAmmo,
         },
         // Passthrough, no unit conversion: `recoilModifier` and
         // `accuracyModifier` are fractions on both sides. Stays inline rather
         // than using @tarkov/data's `adaptMod` because `HydrateMod` is a
         // deliberately looser Pages-Function shape, not an `AttachablePart` —
-        // optional properties, `shortName`, and a `buyFor` price list.
+        // optional properties and `shortName`.
         attachedMods.map((m) => ({
           id: m.id,
           name: m.shortName,
@@ -91,6 +110,10 @@ export function hydrateBuildCard(args: HydrateBuildArgs): BuildCardViewModel {
           recoilModifier: m.properties?.recoilModifier ?? 0,
           accuracyModifier: m.properties?.accuracyModifier ?? 0,
           weight: m.weight,
+          centerOfImpact: m.centerOfImpact,
+          deviationMax: m.deviationMax,
+          velocity: m.velocity,
+          sightingRange: m.sightingRange,
         })),
       )
     : null;

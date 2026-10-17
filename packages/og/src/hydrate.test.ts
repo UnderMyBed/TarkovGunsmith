@@ -49,9 +49,9 @@ describe("hydrateBuildCard", () => {
     expect(vm.stats.recoilV).toBeCloseTo(60.095, 3);
     expect(vm.stats.recoilH).toBeCloseTo(342 * 0.505, 3);
     expect(vm.stats.weight).toBeCloseTo(0.499 + 0.61 + 0.246, 5);
-    // No mod here carries a non-zero accuracyModifier, so the card shows the
-    // Builder's fabricated baseline unchanged rather than a dead 0.
-    expect(vm.stats.accuracy).toBeCloseTo(3.5, 5);
+    // No barrel on this build (the M4A1's sits under its upper receiver), so the MOA is the
+    // receiver's own 0.01 cm: 0.01 × 100 / 2.9089 × the 1.35-curve deviation factor.
+    expect(vm.stats.accuracy).toBeCloseTo(0.343779, 5);
   });
 
   it("sets availability to FLEA by default (no profileSnapshot)", () => {

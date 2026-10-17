@@ -82,6 +82,7 @@ const sampleWeaponListItem: WeaponListItem = {
   shortName: "M4A1",
   iconLink: "https://assets.tarkov.dev/weapon-1-icon.webp",
   weight: 0.75,
+  velocity: 0,
   properties: {
     propertiesType: "ItemPropertiesWeapon",
     caliber: "Caliber556x45NATO",
@@ -89,7 +90,12 @@ const sampleWeaponListItem: WeaponListItem = {
     recoilVertical: 119,
     recoilHorizontal: 342,
     fireRate: 800,
+    centerOfImpact: 0.01,
+    deviationCurve: 1.35,
+    effectiveDistance: 500,
+    sightingRange: 100,
   },
+  defaultAmmo: { id: "54527a984bdc2d4e668b4567", shortName: "M855", initialSpeed: 922 },
 };
 
 // AR-15 Vendetta Precision VP-09 Interceptor 5.56x45 muzzle brake, as the live
@@ -108,6 +114,7 @@ const samplePart: AttachablePart = {
     ergonomics: -2,
     recoilModifier: -0.085,
     accuracyModifier: 0.04,
+    velocity: 0,
   },
 };
 
@@ -122,10 +129,11 @@ describe("adaptWeapon", () => {
     expect(out.baseWeight).toBe(0.75);
   });
 
-  it("defaults baseAccuracy to a reasonable value (upstream schema doesn't expose it)", () => {
+  it("carries the dispersion inputs and the default ammo's speed for MOA and velocity", () => {
     const out = adaptWeapon(sampleWeaponListItem);
-    expect(out.baseAccuracy).toBeGreaterThan(0);
-    expect(out.baseAccuracy).toBeLessThan(10);
+    expect(out.centerOfImpact).toBe(0.01);
+    expect(out.deviationCurve).toBe(1.35);
+    expect(out.defaultAmmo).toEqual({ name: "M855", initialSpeed: 922 });
   });
 });
 

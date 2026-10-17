@@ -11,7 +11,7 @@ import type { BallisticAmmo, BallisticArmor } from "@tarkov/ballistics";
  * 100x recoil unit error (docs/operations/data-api-audit.md §B). One home next
  * to the schema is what stops that recurring.
  */
-export { adaptMod, adaptWeapon, DEFAULT_BASE_ACCURACY } from "@tarkov/data";
+export { adaptMod, adaptWeapon, mountedMagazine } from "@tarkov/data";
 
 /**
  * Convert an `@tarkov/data` ammo item to the `@tarkov/ballistics` input shape.

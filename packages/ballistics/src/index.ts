@@ -12,7 +12,8 @@ export { effectiveDamage } from "./armor/effectiveDamage.js";
 export { simulateShot } from "./shot/simulateShot.js";
 export { simulateBurst } from "./shot/simulateBurst.js";
 export { armorEffectiveness } from "./armor/armorEffectiveness.js";
-export { weaponSpec } from "./weapon/weaponSpec.js";
+export { weaponSpec, CM_PER_MOA_AT_100M } from "./weapon/weaponSpec.js";
+export { barrelDeviation } from "./weapon/barrelDeviation.js";
 export type {
   Zone,
   BodyPart,

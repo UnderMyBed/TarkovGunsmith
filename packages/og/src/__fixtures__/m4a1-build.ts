@@ -1,9 +1,10 @@
 import type { BuildV6 } from "@tarkov/data";
+import type { HydrateMod, HydrateWeapon } from "../hydrate.js";
 
 /**
  * Hand-constructed BuildV6 + weapon/mod lookups. Every id, slot path and
  * numeric value below is taken from the live json.tarkov.dev items document
- * (sampled 2026-08-19).
+ * (sampled 2026-08-19; the accuracy, velocity and range fields 2026-10-17).
  *
  * The previous version claimed "real Tarkov item IDs" but the four it used
  * were a front sight, a receiver extension, an M-LOK rail, and one id absent
@@ -27,32 +28,28 @@ export const m4a1Build: BuildV6 = {
   description: "",
 };
 
-export interface FixtureWeapon {
-  id: string;
-  shortName: string;
-  properties: {
-    ergonomics: number;
-    recoilVertical: number;
-    recoilHorizontal: number;
-  } | null;
-}
-
-export interface FixtureMod {
-  id: string;
-  shortName: string;
-  weight: number;
-  properties: {
-    ergonomics?: number;
-    recoilModifier?: number;
-    accuracyModifier?: number;
-  } | null;
-}
+export type FixtureWeapon = HydrateWeapon;
+export type FixtureMod = HydrateMod;
 
 export const m4a1Weapon: FixtureWeapon = {
   id: "5447a9cd4bdc2dbd208b4567",
   shortName: "M4A1",
-  properties: { ergonomics: 48, recoilVertical: 119, recoilHorizontal: 342 },
+  properties: {
+    ergonomics: 48,
+    recoilVertical: 119,
+    recoilHorizontal: 342,
+    centerOfImpact: 0.01,
+    deviationCurve: 1.35,
+    velocity: 0,
+    fireRate: 800,
+    effectiveDistance: 500,
+    sightingRange: 100,
+    defaultAmmo: { name: "M855", initialSpeed: 922 },
+  },
 };
+
+/** None of these three is a barrel or a sight, and none changes muzzle velocity. */
+const PLAIN = { centerOfImpact: 0, deviationMax: null, velocity: 0, sightingRange: null };
 
 // recoilModifier / accuracyModifier are fractions, exactly as upstream returns
 // them. Attached sum is -0.495, i.e. a real -49.5% recoil build.
@@ -62,17 +59,20 @@ export const m4a1Mods: FixtureMod[] = [
     shortName: "CQR AR15",
     weight: 0.499,
     properties: { ergonomics: 15, recoilModifier: -0.23, accuracyModifier: 0 },
+    ...PLAIN,
   },
   {
     id: "5947e98b86f774778f1448bc",
     shortName: "UBR GEN2",
     weight: 0.61,
     properties: { ergonomics: 8, recoilModifier: -0.225, accuracyModifier: 0 },
+    ...PLAIN,
   },
   {
     id: "59bfe68886f7746004266202",
     shortName: "MUR-1S",
     weight: 0.246,
     properties: { ergonomics: 7, recoilModifier: -0.04, accuracyModifier: 0 },
+    ...PLAIN,
   },
 ];
