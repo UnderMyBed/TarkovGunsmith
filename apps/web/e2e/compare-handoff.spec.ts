@@ -80,4 +80,22 @@ test.describe("Compare handoff", () => {
     await expect(elcan).toBeVisible();
     await expect(elcan.getByText("Locked")).toHaveCount(0);
   });
+
+  test("Escape closes the compare dialog and returns focus to Compare", async ({ page }) => {
+    await page.goto("/builder", { waitUntil: "networkidle" });
+    await expect(weaponPicker(page)).toBeEnabled({ timeout: 15_000 });
+    await pickWeapon(page);
+
+    const trigger = page.getByRole("button", { name: "Compare", exact: true });
+    await trigger.click();
+    const dialog = page.getByRole("dialog", { name: "Compare this build" });
+    await expect(dialog).toHaveAttribute("aria-modal", "true");
+    // Focus starts inside the dialog, on its first control.
+    await expect(dialog.getByRole("radio").first()).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+    await expect(page).not.toHaveURL(/\/compare/);
+  });
 });

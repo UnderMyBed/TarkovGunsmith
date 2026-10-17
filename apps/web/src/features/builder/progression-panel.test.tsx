@@ -133,6 +133,24 @@ describe("the progression controls on a first visit", () => {
     expect(window.localStorage.getItem(MODE_KEY)).toBe("progression");
   });
 
+  it("closes only the import dialog on Escape, leaving the panel open", () => {
+    render(<Harness />);
+    openPanel();
+    const importButton = within(panel()).getByRole("button", { name: /Import from TarkovTracker/ });
+    // fireEvent.click does not move focus as a real click does.
+    importButton.focus();
+    fireEvent.click(importButton);
+    const connect = screen.getByRole("dialog", { name: "Connect TarkovTracker" });
+    expect(connect).toHaveAttribute("aria-modal", "true");
+    expect(connect).toContainElement(document.activeElement as HTMLElement);
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog", { name: "Connect TarkovTracker" })).not.toBeInTheDocument();
+    expect(panel()).toBeInTheDocument();
+    expect(importButton).toHaveFocus();
+  });
+
   it("applies a TarkovTracker import only once it succeeds, in advanced mode", async () => {
     vi.stubGlobal(
       "fetch",

@@ -1,5 +1,5 @@
 import { useId, useState, type ReactElement } from "react";
-import { Button, Card, CardContent, Input } from "@tarkov/ui";
+import { Button, Dialog, DialogBody, DialogPanel, DialogTitle, Input } from "@tarkov/ui";
 
 const BUILD_ID_REGEX = /^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/;
 
@@ -25,13 +25,11 @@ export function CompareFromBuildDialog({
   open,
   onClose,
   onConfirm,
-}: CompareFromBuildDialogProps): ReactElement | null {
+}: CompareFromBuildDialogProps): ReactElement {
   const [mode, setMode] = useState<Mode>("clone-both");
   const [pasteValue, setPasteValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const titleId = useId();
-
-  if (!open) return null;
 
   const handleSubmit = () => {
     setError(null);
@@ -55,25 +53,10 @@ export function CompareFromBuildDialog({
   };
 
   return (
-    <div
-      role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-background)]/80"
-      onClick={(e) => {
-        // Only close on a click that lands directly on the backdrop, not one that bubbles
-        // up from inside the panel — see packages/ui/src/components/dialog.tsx for the same
-        // pattern. Leaves the panel below with no click handler of its own, so there's
-        // nothing for jsx-a11y's click-events-have-key-events / no-static-element-interactions
-        // to flag on either element.
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      {/* Named as a dialog so its own Compare button is told apart from the workbench's. */}
-      <Card role="dialog" aria-labelledby={titleId} className="w-full max-w-md">
-        <CardContent className="flex flex-col gap-4 p-6">
-          <h2 id={titleId} className="text-lg font-bold">
-            Compare this build
-          </h2>
-
+    <Dialog open={open} onClose={onClose} labelledBy={titleId}>
+      <DialogPanel className="max-w-md">
+        <DialogTitle id={titleId}>Compare this build</DialogTitle>
+        <DialogBody className="flex flex-col gap-4">
           <label className="flex items-start gap-2">
             <input
               type="radio"
@@ -129,8 +112,8 @@ export function CompareFromBuildDialog({
             </Button>
             <Button onClick={handleSubmit}>Compare</Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </DialogBody>
+      </DialogPanel>
+    </Dialog>
   );
 }
