@@ -2,6 +2,7 @@ import { useState } from "react";
 import { loadSavedBuild, useBuilderSnapshot, type BuilderSnapshot } from "@tarkov/data";
 import { Skeleton } from "@tarkov/ui";
 import { BuilderPage } from "./builder-page.js";
+import { GameDataErrorCard } from "./game-data-error.js";
 import { clearDraft, DRAFT_KEY, hasDraft, readDraft } from "./build-draft.js";
 
 /**
@@ -15,20 +16,19 @@ export function DraftBuilderPage({ view }: { view?: "editor" | "optimize" }) {
   const snapshot = useBuilderSnapshot();
   const stored = hasDraft(DRAFT_KEY);
 
-  if (stored && snapshot.isLoading) {
+  // A stored draft waits for the game data it is read against. If that fails, the draft stays
+  // as stored and the page says so: an editor mounted here would refetch the game data on
+  // mount and fall back to this state, in a loop.
+  if (stored && !snapshot.data) {
+    if (snapshot.error) {
+      return <GameDataErrorCard error={snapshot.error} onRetry={() => void snapshot.refetch()} />;
+    }
     return (
       <div className="flex flex-col gap-4 p-4" role="status" aria-busy="true">
         <Skeleton width="60%" height="2rem" />
         <Skeleton rows={6} height="2.5rem" />
       </div>
     );
-  }
-
-  // A draft that cannot be read against the game data is kept, not overwritten: without the
-  // snapshot the page shows the data error and nothing is persisted. Once the game data
-  // arrives, the editor mounts and reads the draft.
-  if (stored && !snapshot.data) {
-    return <BuilderPage view={view} />;
   }
 
   const newBuild = () => {

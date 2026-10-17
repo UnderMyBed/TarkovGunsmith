@@ -19,6 +19,7 @@ import {
   Skeleton,
 } from "@tarkov/ui";
 import { BuilderPage } from "../features/builder/builder-page.js";
+import { GameDataErrorCard } from "../features/builder/game-data-error.js";
 import {
   clearDraft,
   hasDraft,
@@ -69,19 +70,7 @@ function SharedBuildPage({ id }: { id: string }) {
 
   if (snapshot.error && !snapshot.data) {
     // The build itself loaded; it cannot be shown without the game data it is read against.
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Game data couldn&apos;t be loaded</CardTitle>
-          <CardDescription>{snapshot.error.message}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={() => void snapshot.refetch()} size="sm">
-            Try again
-          </Button>
-        </CardContent>
-      </Card>
-    );
+    return <GameDataErrorCard error={snapshot.error} onRetry={() => void snapshot.refetch()} />;
   }
 
   if (!build || !snapshot.data) {
@@ -178,7 +167,13 @@ function SharedBuildEditor({
       notice={notice}
       view={view}
       draftKey={draftKey}
-      onDraftWritten={() => setEdited(hasDraft(draftKey))}
+      onDraftWritten={() => {
+        const stored = hasDraft(draftKey);
+        setEdited(stored);
+        // With the edits gone there is nothing to discard: a prompt left open would come back
+        // by itself with the next edit.
+        if (!stored) setConfirmingRevert(false);
+      }}
     />
   );
 }

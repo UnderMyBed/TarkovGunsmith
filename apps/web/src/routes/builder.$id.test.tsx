@@ -3,6 +3,9 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import { renderRoute } from "../test/render-route.js";
+import { createTestClient } from "../test/test-client.js";
+import { createTestBuilderData } from "../test/test-builder-data.js";
+import { SnapshotVersionError, type BuilderDataSource } from "@tarkov/data";
 import { DRAFT_KEY, sharedDraftKey } from "../features/builder/build-draft.js";
 
 // `/builder/$id` (routes/builder.$id.tsx) reuses `BuilderPage` (routes/builder.tsx, the
@@ -240,6 +243,15 @@ describe("/builder/$id edits, empty weapon", () => {
 
     await user.selectOptions(weaponSelect, "w-m4a1");
     expect(await screen.findByText("Edited from the shared build")).toBeInTheDocument();
+
+    // A Revert prompt open when the edits go does not come back with the next edit.
+    await user.click(screen.getByRole("button", { name: "Revert" }));
+    await user.selectOptions(weaponSelect, "");
+    await user.selectOptions(weaponSelect, "w-m4a1");
+    expect(await screen.findByText("Edited from the shared build")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Discard your edits and go back to the shared build?"),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -327,5 +339,54 @@ describe("/builder/$id edits across a refetch", () => {
       build: { attachments: object; name: string };
     };
     expect(after.build).toMatchObject({ attachments: {}, name: "Shared oneX" });
+  });
+});
+
+describe("/builder/$id when the game data is from another deploy", () => {
+  it("asks for a reload, without refetching in a loop", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          jsonResponse({
+            version: 6,
+            weaponId: "w-m4a1",
+            attachments: {},
+            orphaned: [],
+            createdAt: new Date().toISOString(),
+          }),
+        ),
+      ),
+    );
+    localStorage.setItem(
+      sharedDraftKey(VALID_ID),
+      JSON.stringify({
+        draft: 1,
+        writtenAt: 1,
+        build: {
+          version: 6,
+          weaponId: "w-m4a1",
+          attachments: {},
+          orphaned: [],
+          createdAt: new Date(1).toISOString(),
+        },
+      }),
+    );
+    const good = await createTestBuilderData(createTestClient());
+    let calls = 0;
+    const source: BuilderDataSource = {
+      ...good,
+      snapshot: () => {
+        calls++;
+        return Promise.reject(new SnapshotVersionError(0));
+      },
+    };
+    await renderRoute(`/builder/${VALID_ID}`, { builderData: source });
+
+    await act(() => new Promise((r) => setTimeout(r, 500)));
+    expect(calls).toBeLessThanOrEqual(2);
+    expect(screen.getByText("Game data was updated. Reload the page.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
+    expect(localStorage.getItem(sharedDraftKey(VALID_ID))).not.toBeNull();
   });
 });

@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderRoute } from "../test/render-route.js";
 import { createTestClient } from "../test/test-client.js";
+import { createTestBuilderData } from "../test/test-builder-data.js";
+import { SnapshotVersionError, type BuilderDataSource } from "@tarkov/data";
 import { DRAFT_KEY } from "../features/builder/build-draft.js";
 
 // `BuilderPage` was 512 lines / 12 useState / 45 hook calls in one function body, and these
@@ -272,5 +274,67 @@ describe("/builder draft", () => {
 
     await pickWeapon(user);
     expect(localStorage.getItem(DRAFT_KEY)).toContain('"weaponId":"w-m4a1"');
+  });
+});
+
+describe("/builder draft when the game data fails", () => {
+  const STORED = JSON.stringify({
+    draft: 1,
+    writtenAt: 1,
+    build: {
+      version: 6,
+      weaponId: "w-m4a1",
+      attachments: {},
+      orphaned: [],
+      createdAt: new Date(1).toISOString(),
+      name: "Mine",
+    },
+  });
+
+  /** A source whose snapshot fails with `error` until `net.fail` is cleared, counting calls. */
+  async function failingSource(error: Error) {
+    const good = await createTestBuilderData(createTestClient());
+    const net = { fail: true, calls: 0 };
+    const source: BuilderDataSource = {
+      ...good,
+      snapshot: () => {
+        net.calls++;
+        return net.fail ? Promise.reject(error) : good.snapshot();
+      },
+    };
+    return { source, net };
+  }
+
+  const wait = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+
+  it("shows the error once, keeps the draft, and loads it on Try again", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    localStorage.setItem(DRAFT_KEY, STORED);
+    const { source, net } = await failingSource(new Error("snapshot down"));
+    const user = userEvent.setup();
+    await renderRoute("/builder", { builderData: source });
+
+    await wait(500);
+    expect(net.calls).toBeLessThanOrEqual(2);
+    expect(screen.getByText("Game data couldn't be loaded")).toBeInTheDocument();
+    expect(localStorage.getItem(DRAFT_KEY)).toBe(STORED);
+
+    net.fail = false;
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByDisplayValue("Mine")).toBeInTheDocument();
+    expect(localStorage.getItem(DRAFT_KEY)).toBe(STORED);
+  });
+
+  it("after a deploy, asks for a reload instead of retrying", async () => {
+    localStorage.setItem(DRAFT_KEY, STORED);
+    const { source, net } = await failingSource(new SnapshotVersionError(0));
+    await renderRoute("/builder", { builderData: source });
+
+    await wait(500);
+    expect(net.calls).toBeLessThanOrEqual(2);
+    expect(screen.getByText("Game data was updated. Reload the page.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+    expect(localStorage.getItem(DRAFT_KEY)).toBe(STORED);
   });
 });
