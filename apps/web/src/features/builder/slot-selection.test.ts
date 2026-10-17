@@ -99,4 +99,29 @@ describe("flattenProposalSlots", () => {
     const rows = flattenProposalSlots(TREE, { mod_reciever: "upper" }, current);
     expect(rows.map((r) => r.slot.path)).toContain("mod_reciever/mod_barrel/mod_muzzle");
   });
+  it("finds each build's part in that build's own slot where two parents share a child path", () => {
+    // Both handguards have a lower-handguard slot at the same path, but they are different slots
+    // (ids `h-old:lower` and `h-new:lower`), and only the new one takes the new lower handguard.
+    const tree = tinyTree("w", [
+      {
+        nameId: "hg",
+        items: [
+          ["h-old", [{ nameId: "lower", items: ["l-old"] }]],
+          ["h-new", [{ nameId: "lower", items: [["l-new", [{ nameId: "grip", items: ["g"] }]]] }]],
+        ],
+      },
+    ]);
+    const rows = flattenProposalSlots(
+      tree,
+      { hg: "h-old", "hg/lower": "l-old" },
+      { hg: "h-new", "hg/lower": "l-new", "hg/lower/grip": "g" },
+    );
+    expect(rows.map((r) => [r.slot.path, r.level, r.parentPath, r.hasChildren])).toEqual([
+      ["hg", 1, null, true],
+      ["hg/lower", 2, "hg", true],
+      ["hg/lower/grip", 3, "hg/lower", false],
+    ]);
+    // The row shows the current part's slot first, as it does for every shared path.
+    expect(rows[1]!.slot.id).toBe("h-old:lower");
+  });
 });
