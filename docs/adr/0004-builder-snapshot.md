@@ -30,15 +30,20 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   Each file records which (`source`), and the deploy refuses to ship a fixture snapshot.
 - **Strict generation, scoped to what the snapshot holds.** Everything the snapshot contains or
   derives from must parse: every trader and task, every buildable weapon, every part a weapon's
-  slots reach (with its `updated` and `conflictingSlotIds`), every offer on those (trader, quest
-  gate, loyalty level, price fields), every barter rewarding one of them or a preset of one,
-  and each barter ingredient. Weapon-reachable slot items must be parts, duplicate trader offers
-  must agree on price, and names must not still be translation keys; the generator also
-  requires every translation document upstream lists paths for. Any failure fails the build
-  with every problem listed, so drift stops a release instead of reaching users. Records the
-  Builder never reads — special-slot weapons, part-typed items no weapon reaches, barters
-  rewarding anything else — are not checked, so unrelated upstream records cannot block a
-  release. The lenient per-record parse paths are removed.
+  slots reach (with its `updated` and `conflictingSlotIds`), the slots of every reached item,
+  every preset's link to its base item, every offer on those (trader, quest gate, loyalty
+  level, price fields), every barter rewarding one of them or a preset of one, and each barter
+  ingredient. Weapon-reachable slot items must be parts, duplicate trader offers must agree on
+  price, and names must not still be translation keys; the generator also requires every
+  translation document upstream lists paths for. Any failure fails the build with every
+  problem listed, so drift stops a release instead of reaching users. Records the Builder never
+  reads — special-slot weapons, part-typed items no weapon reaches, barters rewarding anything
+  else, ingredients' own trader offers — are not checked, so unrelated upstream records cannot
+  block a release. The lenient per-record parse paths are removed.
+- **Floors on an upstream build.** Strict parsing cannot see rows that stop being recognised: a
+  renamed `propertiesType` or `baseItem` yields a valid but gutted snapshot. A snapshot built
+  from upstream must hold at least 50 weapons, 2000 parts, 150 offers selling through a preset
+  and 150 barter offers, about half of live (164, 2335, 303 and 304 on 2026-10-17).
 - **Prices stay live in the SPA.** Offers are stored without prices. The SPA prices them from
   the raw `items` document — no translation sibling, price fields only — refreshed hourly.
 - **OG cards price from the release.** A separate `/data/builder-prices.json`, generated with
@@ -46,9 +51,11 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   it. A card is cached for 30 days, so its price is a point-in-time figure regardless.
 - **Versioned.** Both files carry `schema`. A tab holding code from an earlier deploy refuses a
   file of another version with "Game data was updated. Reload the page."
-- **Budget.** The snapshot must stay within 250 KB brotli (measured at quality 4, near what the
-  edge serves) and 4.5 MB raw, checked against live data by `pnpm verify:upstream`; the deploy
-  also checks the raw size.
+- **Budget.** The snapshot must stay within 300 KB brotli (measured at quality 4, near what the
+  edge serves) and 6 MB raw. The brotli figure leaves room for the weapon presets #216 adds
+  (about 27 KB) and for upstream growth; the raw figure bounds the main-thread parse. The
+  release build fails over either, and `pnpm verify:upstream` checks the same constant on a
+  schedule.
 
 ## Consequences
 
@@ -72,7 +79,7 @@ the OG card Functions repeated the whole fetch and join server-side, per isolate
   unrelated. That is deliberate: the alternative ships a Builder with records missing.
 - A shared build may name a part a later snapshot no longer holds. Those ids move to the build's
   orphaned list on load rather than staying on the weapon.
-- The brotli budget has little headroom: 14 KB on the 2026-10-16 data. Growth in parts or offers
-  upstream will reach it.
+- The brotli headroom is 64 KB on the 2026-10-17 data, about 37 KB once #216's presets land.
+  Sustained growth in parts or offers upstream will reach it and need a deliberate decision.
 - A release build depends on `json.tarkov.dev` answering. Each request times out and is retried
   once; a longer outage fails the build, and production keeps the previous release.

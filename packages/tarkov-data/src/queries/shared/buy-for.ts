@@ -216,10 +216,15 @@ export function fleaPriceRUB(item: unknown): number | null {
  * {@link priceOffers} reads as "not in the items document". Three callers share this: the
  * snapshot generator (release-time prices for the OG cards), the SPA's price fetch, and the
  * price Web Worker issue #212 adds.
+ *
+ * `sellerIds`, when given, limits trader offers to those ids: a barter ingredient is valued
+ * at its flea price only, so its own trader offers are read by nothing, and a disagreement
+ * among them must not count as a conflict. Without it every id's trader offers are read.
  */
 export function extractPrices(
   lookup: (id: string) => unknown,
   ids: Iterable<string>,
+  sellerIds?: ReadonlySet<string>,
 ): ExtractedPrices {
   const items: Record<string, ItemPriceTuple> = {};
   const trader: Record<string, number | null> = {};
@@ -228,6 +233,7 @@ export function extractPrices(
     const raw = lookup(id);
     if (raw === null || typeof raw !== "object") continue;
     items[id] = priceTupleOf(raw);
+    if (sellerIds !== undefined && !sellerIds.has(id)) continue;
     const { buyFromTrader } = raw as { buyFromTrader?: unknown };
     if (!Array.isArray(buyFromTrader)) continue;
     for (const offer of buyFromTrader as unknown[]) {

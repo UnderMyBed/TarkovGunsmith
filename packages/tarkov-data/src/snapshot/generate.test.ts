@@ -5,10 +5,12 @@ import legacyBuyFor from "../__fixtures__/legacy-buy-for.json" with { type: "jso
 import {
   buildBuilderSnapshot,
   fetchSnapshotDocuments,
+  floorProblems,
   SnapshotDriftError,
   type SnapshotDocuments,
 } from "./generate.js";
 import { snapshotPartCatalog, snapshotWeaponList } from "./views.js";
+import { UPSTREAM_FLOORS } from "./limits.js";
 import type { Barter } from "../queries/barters.js";
 import type { ItemsDocument } from "../queries/documents.js";
 
@@ -19,6 +21,7 @@ const BARREL_10_3 = "55d35ee94bdc2d61338b4568";
 const GRENADE = "5448be9a4bdc2dfd2f8b456a";
 const SCREW_NUTS = "57347c77245977448d35f6e2"; // the PM preset barter's input
 
+const PM_DEFAULT = "58414967245977598f1ad391"; // the PM's default preset
 const docs = (): Promise<SnapshotDocuments> => fetchSnapshotDocuments(fixtureClient());
 const M855A1 = "54527ac44bdc2d36668b4567"; // a cartridge: part-typed, in no weapon slot
 const PRAPOR = "54cb50c76803fa8b248b4571";
@@ -168,7 +171,7 @@ describe("buildBuilderSnapshot on drift", () => {
     const items = input.items.items as Mutable;
     delete items[BARREL_10_3]!.conflictingSlotIds;
     (items[PM]!.properties as Record<string, unknown>).fireRate = "fast";
-    const problems = driftOf(() => buildBuilderSnapshot(input, "upstream"));
+    const problems = driftOf(() => buildBuilderSnapshot(input, "fixtures"));
     expect(problems).toEqual([
       `items/${PM} (ItemPropertiesWeapon): properties.fireRate: Invalid input: expected number, received string`,
       `items/${BARREL_10_3} (ItemPropertiesBarrel): conflictingSlotIds: Invalid input: expected array, received undefined`,
@@ -188,9 +191,12 @@ describe("buildBuilderSnapshot on drift", () => {
       { trader: PRAPOR, priceRUB: 1, currency: "RUB", minTraderLevel: 1, taskUnlock: null },
       { trader: PRAPOR, priceRUB: 2, currency: "RUB", minTraderLevel: 1, taskUnlock: null },
     ];
-    // A preset whose base is not an id cannot sell anything the snapshot holds.
-    items.oddPreset = { id: "oddPreset", properties: { propertiesType: "ItemPropertiesPreset" } };
-    expect(() => buildBuilderSnapshot(input, "upstream")).not.toThrow();
+    // A preset of an item outside the snapshot, missing what a snapshot preset needs.
+    items.otherPreset = {
+      id: "otherPreset",
+      properties: { propertiesType: "ItemPropertiesPreset", baseItem: GRENADE },
+    };
+    expect(() => buildBuilderSnapshot(input, "fixtures")).not.toThrow();
   });
 
   it("fails on a bad trader, task or barter, collecting all of them", async () => {
@@ -202,7 +208,7 @@ describe("buildBuilderSnapshot on drift", () => {
     const [firstTask] = Object.keys(tasks);
     delete tasks[firstTask!]!.name;
     input.barters.push({ id: "bad-barter" });
-    const problems = driftOf(() => buildBuilderSnapshot(input, "upstream"));
+    const problems = driftOf(() => buildBuilderSnapshot(input, "fixtures"));
     expect(problems).toEqual(
       expect.arrayContaining([
         "traders/broken: (record): Invalid input: expected object, received null",
@@ -231,7 +237,7 @@ describe("buildBuilderSnapshot on drift", () => {
     );
     const at = `items/${seller}: buyFromTrader`;
     const n = offers.length;
-    expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual([
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
       `${at}[${n - 6}]: trader nobody is not in the traders document`,
       `${at}[${n - 5}]: taskUnlock no-such-task is not in the tasks document`,
       `${at}[${n - 4}]: minTraderLevel is not a number`,
@@ -246,7 +252,7 @@ describe("buildBuilderSnapshot on drift", () => {
     const input = await docs();
     const seller = cashSeller(input);
     (input.items.items as Mutable)[seller]!.buyFromTrader = { oops: true };
-    expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual([
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
       `items/${seller}: buyFromTrader is not an array`,
     ]);
   });
@@ -257,7 +263,7 @@ describe("buildBuilderSnapshot on drift", () => {
     const copy = { ...barter, id: "copy", trader: "nobody" };
     const gated = { ...barter, id: "gated", taskUnlock: "no-such-task" };
     input.barters.push(copy, gated);
-    expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual([
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
       "barters/copy: trader nobody is not in the traders document",
       "barters/gated: taskUnlock no-such-task is not in the tasks document",
     ]);
@@ -270,7 +276,7 @@ describe("buildBuilderSnapshot on drift", () => {
     barter.requiredItems.push({ item: "gone", count: 1, attributes: {} });
     delete items[SCREW_NUTS]!.name;
     barter.requiredItems.push({ item: SCREW_NUTS, count: 1, attributes: {} });
-    expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual(
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual(
       expect.arrayContaining([
         `barters/${barter.id}: required item gone is not in the items document`,
         `barters/${barter.id}: required item ${SCREW_NUTS} has no name`,
@@ -282,7 +288,7 @@ describe("buildBuilderSnapshot on drift", () => {
     const input = await docs();
     const items = input.items.items as Mutable;
     (items[BARREL_10_3]!.conflictingSlotIds as string[]).push("no-such-slot");
-    expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual([
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
       `items/${BARREL_10_3}: conflictingSlotIds names slot no-such-slot, which no item has`,
     ]);
   });
@@ -290,7 +296,7 @@ describe("buildBuilderSnapshot on drift", () => {
   it("fails on a weapon or part without an `updated` timestamp", async () => {
     const input = await docs();
     delete (input.items.items as Mutable)[BARREL_10_3]!.updated;
-    expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual([
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
       `items/${BARREL_10_3}: no valid \`updated\` timestamp`,
     ]);
   });
@@ -302,7 +308,7 @@ describe("buildBuilderSnapshot on drift", () => {
     items[M4A1]!.name = `${M4A1} Name`;
     items[BARREL_10_3]!.shortName = `${BARREL_10_3} ShortName`;
     items[SCREW_NUTS]!.name = `${SCREW_NUTS} Name`;
-    expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual([
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
       `items/${M4A1}: name is still its translation key; the _en document did not apply`,
       `items/${BARREL_10_3}: shortName is still its translation key; the _en document did not apply`,
       `items/${SCREW_NUTS}: name is still its translation key; the _en document did not apply`,
@@ -312,7 +318,7 @@ describe("buildBuilderSnapshot on drift", () => {
   it("fails on the untranslated capture", async () => {
     const raw = structuredClone(itemsCapture.document) as unknown as ItemsDocument;
     const input = { ...(await docs()), items: raw.data as unknown as ItemsDocument };
-    const problems = driftOf(() => buildBuilderSnapshot(input, "upstream"));
+    const problems = driftOf(() => buildBuilderSnapshot(input, "fixtures"));
     expect(problems.length).toBeGreaterThan(0);
     for (const p of problems) expect(p).toMatch(/is still its translation key/);
   });
@@ -325,7 +331,7 @@ describe("buildBuilderSnapshot on drift", () => {
     slots[0]!.filters.allowedItems.push(GRENADE);
     delete items[GRENADE]!.properties;
     items[GRENADE]!.properties = null;
-    const problems = driftOf(() => buildBuilderSnapshot(input, "upstream"));
+    const problems = driftOf(() => buildBuilderSnapshot(input, "fixtures"));
     expect(problems).toEqual([
       `items/${GRENADE} (undefined): allowed in slot mod_pistol_grip of ${M4A1} but is not a part`,
     ]);
@@ -334,7 +340,7 @@ describe("buildBuilderSnapshot on drift", () => {
   it("fails when no item carries an `updated` timestamp", async () => {
     const input = await docs();
     for (const item of Object.values(input.items.items as Mutable)) delete item.updated;
-    const problems = driftOf(() => buildBuilderSnapshot(input, "upstream"));
+    const problems = driftOf(() => buildBuilderSnapshot(input, "fixtures"));
     expect(problems).toContain("items: no item carries an `updated` timestamp");
     expect(problems.filter((p) => p.endsWith("no valid `updated` timestamp")).length).toBe(
       problems.length - 1,
@@ -351,13 +357,136 @@ describe("buildBuilderSnapshot on drift", () => {
     const seller = items[sellerId]!;
     const offers = seller.buyFromTrader as Record<string, unknown>[];
     offers.push({ ...offers[0], priceRUB: Number(offers[0]!.priceRUB) + 1 });
-    const problems = driftOf(() => buildBuilderSnapshot(input, "upstream"));
+    const problems = driftOf(() => buildBuilderSnapshot(input, "fixtures"));
     expect(problems).toHaveLength(1);
     expect(problems[0]).toMatch(/^prices: trader offers under key .+ disagree on price$/);
   });
 
-  it("says how many problems there were", () => {
+  it("says how many problems there were, listing the first fifty", () => {
     expect(new SnapshotDriftError(["a"]).message).toMatch(/\(1 problem\):\n {2}- a$/);
     expect(new SnapshotDriftError(["a", "b"]).message).toMatch(/\(2 problems\)/);
+    const many = Array.from({ length: 52 }, (_, i) => `p${String(i).padStart(2, "0")}`);
+    const error = new SnapshotDriftError(many);
+    expect(error.problems).toHaveLength(52);
+    expect(error.message).toMatch(/\(52 problems\)/);
+    expect(error.message).toContain("- p49\n  … and 2 more");
+    expect(error.message).not.toContain("p50");
+  });
+
+  it("fails on a reached owner's slot it cannot read, naming the field", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    type RawSlot = Record<string, unknown> & { filters?: Record<string, unknown> };
+    const m4Slots = (items[M4A1]!.properties as { slots: RawSlot[] }).slots;
+    delete m4Slots[0]!.nameId;
+    m4Slots[1]!.name = "";
+    m4Slots[2]!.filters = { allowed: m4Slots[2]!.filters!.allowedItems };
+    m4Slots[3]!.id = 7;
+    (m4Slots as unknown[]).push(null);
+    (items[PM]!.properties as Record<string, unknown>).slots = { mod_magazine: {} };
+    const at = `items/${M4A1}: properties.slots`;
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
+      `${at}[0].nameId is not a non-empty string`,
+      `${at}[1].name is not a non-empty string`,
+      `${at}[2].filters.allowedItems is not an array`,
+      `${at}[3].id is not a non-empty string`,
+      `${at}[${m4Slots.length - 1}] is not an object`,
+      `items/${PM}: properties.slots is not an array`,
+    ]);
+  });
+
+  it("accepts a reached part whose slots are absent or null", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    const { snapshot } = buildBuilderSnapshot(structuredClone(input), "fixtures");
+    const leaves = snapshot.parts.filter((p) => snapshot.slots[p.id] === undefined).slice(0, 2);
+    expect(leaves).toHaveLength(2);
+    const [absent, nulled] = leaves.map((p) => items[p.id]!.properties as Record<string, unknown>);
+    delete absent!.slots;
+    nulled!.slots = null;
+    expect(() => buildBuilderSnapshot(input, "fixtures")).not.toThrow();
+  });
+
+  it("does not read the slots of an owner no weapon reaches", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    (items[SP81]!.properties as Record<string, unknown>).slots = [{ nameId: 3 }];
+    expect(() => buildBuilderSnapshot(input, "fixtures")).not.toThrow();
+  });
+
+  it("fails on a preset with no base, and on a snapshot item's preset with no normalizedName", async () => {
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    items.oddPreset = { id: "oddPreset", properties: { propertiesType: "ItemPropertiesPreset" } };
+    delete items[PM_DEFAULT]!.normalizedName;
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
+      `items/${PM_DEFAULT} (ItemPropertiesPreset): normalizedName is not a non-empty string`,
+      "items/oddPreset (ItemPropertiesPreset): properties.baseItem is not a string",
+    ]);
+  });
+
+  it("fails on task and trader names that are still translation keys", async () => {
+    const input = await docs();
+    const tasks = input.tasks.tasks as Mutable;
+    const [taskId] = Object.keys(tasks);
+    tasks[taskId!]!.name = `${taskId} name`;
+    const traders = input.traders as unknown as Mutable;
+    traders[PRAPOR]!.name = `${PRAPOR} Nickname`;
+    expect(driftOf(() => buildBuilderSnapshot(input, "fixtures"))).toEqual([
+      `tasks/${taskId}: name is still its translation key; the _en document did not apply`,
+      `traders/${PRAPOR}: name is still its translation key; the _en document did not apply`,
+    ]);
+  });
+
+  it("prices an ingredient at its flea price only, ignoring its own trader offers", async () => {
+    // Screws and nuts: the PM preset barter's input, and no weapon or part.
+    const input = await docs();
+    const items = input.items.items as Mutable;
+    const offer = { trader: PRAPOR, currency: "RUB", minTraderLevel: 1, taskUnlock: null };
+    items[SCREW_NUTS]!.buyFromTrader = [
+      { ...offer, priceRUB: 100 },
+      { ...offer, priceRUB: 200 },
+    ];
+    const { snapshot, prices } = buildBuilderSnapshot(input, "fixtures");
+    expect(snapshot.ingredientNames[SCREW_NUTS]).toBeDefined();
+    expect(prices.prices.items[SCREW_NUTS]).toBeDefined();
+    expect(Object.keys(prices.prices.trader).filter((k) => k.startsWith(`${SCREW_NUTS}|`))).toEqual(
+      [],
+    );
+  });
+});
+
+describe("buildBuilderSnapshot from upstream", () => {
+  it("fails a snapshot below the floors, which strict parsing alone cannot catch", async () => {
+    // The fixture capture is small by design; built as upstream, it is what a gutted release
+    // would look like.
+    const { snapshot } = buildBuilderSnapshot(await docs(), "fixtures");
+    const all = Object.values(snapshot.offers).flat();
+    const presetOffers = all.filter((o) => o.kind !== "flea" && o.preset !== undefined).length;
+    const barterOffers = all.filter((o) => o.kind === "barter").length;
+    const note = "rows went unrecognised";
+    const input = await docs();
+    expect(driftOf(() => buildBuilderSnapshot(input, "upstream"))).toEqual([
+      `floors: barterOffers ${barterOffers}, below the floor of ${UPSTREAM_FLOORS.barterOffers}; ${note}`,
+      `floors: parts ${snapshot.parts.length}, below the floor of ${UPSTREAM_FLOORS.parts}; ${note}`,
+      `floors: presetOffers ${presetOffers}, below the floor of ${UPSTREAM_FLOORS.presetOffers}; ${note}`,
+      `floors: weapons ${snapshot.weapons.length}, below the floor of ${UPSTREAM_FLOORS.weapons}; ${note}`,
+    ]);
+    expect(presetOffers).toBeGreaterThan(0);
+    expect(barterOffers).toBeGreaterThan(0);
+  });
+});
+
+describe("floorProblems", () => {
+  const live = { weapons: 164, parts: 2335, presetOffers: 303, barterOffers: 304 };
+  it("passes live-sized counts, and counts exactly at a floor", () => {
+    expect(floorProblems(live)).toEqual([]);
+    expect(floorProblems(UPSTREAM_FLOORS)).toEqual([]);
+  });
+
+  it("names each count below its floor", () => {
+    expect(floorProblems({ ...live, parts: 0 })).toEqual([
+      `floors: parts 0, below the floor of ${UPSTREAM_FLOORS.parts}; rows went unrecognised`,
+    ]);
   });
 });

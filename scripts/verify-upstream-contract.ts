@@ -45,6 +45,7 @@ import {
   fetchSnapshotDocuments,
   SnapshotDriftError,
 } from "../packages/tarkov-data/src/snapshot/generate.js";
+import { SNAPSHOT_BUDGET } from "../packages/tarkov-data/src/snapshot/limits.js";
 import {
   snapshotPartCatalog,
   snapshotWeaponList,
@@ -297,21 +298,20 @@ async function checkSelectorsAcceptLiveDocument(): Promise<void> {
   notes.push(`selectors parsed: ${counts.ammo} ammo, ${counts.armor} armor`);
 }
 
-/** Size budget for `/data/builder-snapshot.json`, which every Builder visit downloads. */
-const SNAPSHOT_BUDGET = { brotliBytes: 250 * 1024, rawBytes: 4.5 * 1024 * 1024 } as const;
+/** Brotli at the quality the budget is measured at, roughly what Cloudflare's edge serves. */
+const edgeBrotli = (text: string): number =>
+  brotliCompressSync(text, {
+    params: { [constants.BROTLI_PARAM_QUALITY]: SNAPSHOT_BUDGET.brotliQuality },
+  }).length;
 
 /**
  * The Builder snapshot still generates from the live documents, and still fits its budget.
  *
- * This is the same strict generator the release deploy runs (`apps/web/scripts/
- * builder-snapshot.ts`): any weapon, part, barter, trader or task that no longer matches its
- * schema, any weapon-reachable slot item that is not a part, and any two copies of one trader
- * offer that disagree on price is a problem here — and would fail that deploy. Checking on a
+ * This is the same strict generator, with the same floors (`UPSTREAM_FLOORS`) and size
+ * budget (`SNAPSHOT_BUDGET`), that the release deploy runs (`apps/web/scripts/
+ * builder-snapshot.ts`): every problem it reports here would fail that deploy. Checking on a
  * schedule finds it before a release does.
  */
-/** Brotli at quality 4, roughly what Cloudflare's edge serves the file at. */
-const edgeBrotli = (text: string): number =>
-  brotliCompressSync(text, { params: { [constants.BROTLI_PARAM_QUALITY]: 4 } }).length;
 
 async function checkBuilderSnapshot(): Promise<void> {
   // Translations required, exactly as the release build reads them.
@@ -328,17 +328,7 @@ async function checkBuilderSnapshot(): Promise<void> {
     return;
   }
   const { snapshot, prices } = generated;
-  // Strictness catches a record that changed shape; it cannot catch records that vanished.
-  check(
-    "snapshot/weapons",
-    snapshot.weapons.length >= 50,
-    `only ${snapshot.weapons.length} buildable weapons (expected at least 50)`,
-  );
-  check(
-    "snapshot/parts",
-    snapshot.parts.length >= 2000,
-    `only ${snapshot.parts.length} weapon-reachable parts (expected at least 2000)`,
-  );
+  // The floors are enforced inside generation, which reports them as drift above.
   const text = JSON.stringify(snapshot);
   const raw = Buffer.byteLength(text);
   const brotli = edgeBrotli(text);
@@ -357,7 +347,7 @@ async function checkBuilderSnapshot(): Promise<void> {
     `builder snapshot: ${snapshot.weapons.length} weapons, ${snapshot.parts.length} parts, ` +
       `${kb(raw)} raw, ${kb(brotli)} brotli (q4), JSON.parse ${parseMs.toFixed(1)} ms ` +
       `(budget ${kb(SNAPSHOT_BUDGET.rawBytes)} raw / ${kb(SNAPSHOT_BUDGET.brotliBytes)} brotli q4; ` +
-      `headroom ${kb(SNAPSHOT_BUDGET.brotliBytes - brotli)} brotli)`,
+      `headroom ${kb(SNAPSHOT_BUDGET.rawBytes - raw)} raw, ${kb(SNAPSHOT_BUDGET.brotliBytes - brotli)} brotli)`,
   );
   notes.push(
     `builder prices: ${kb(Buffer.byteLength(pricesText))} raw, ` +

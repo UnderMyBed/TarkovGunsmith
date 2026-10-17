@@ -49,4 +49,33 @@ describe("createRetryingFetch", () => {
     await expect(retrying("https://x/items")).rejects.toThrow(/timed? ?out|aborted/i);
     expect(inner).toHaveBeenCalledTimes(2);
   });
+
+  it("cancels a discarded 5xx body before retrying", async () => {
+    const body = new ReadableStream({ start: () => undefined });
+    const cancel = vi.spyOn(body, "cancel");
+    const inner = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(body, { status: 503 }))
+      .mockResolvedValueOnce(ok());
+    const retrying = createRetryingFetch(inner as typeof fetch, { retryDelayMs: 0 });
+    expect((await retrying("https://x/items")).status).toBe(200);
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("honours the caller's signal, and does not retry what the caller aborted", async () => {
+    const inner = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          const signal = init!.signal!;
+          if (signal.aborted) reject(signal.reason as Error);
+          signal.addEventListener("abort", () => reject(signal.reason as Error));
+        }),
+    );
+    const controller = new AbortController();
+    const retrying = createRetryingFetch(inner, { timeoutMs: 60_000, retryDelayMs: 0 });
+    const pending = retrying("https://x/items", { signal: controller.signal });
+    controller.abort(new Error("caller gave up"));
+    await expect(pending).rejects.toThrow("caller gave up");
+    expect(inner).toHaveBeenCalledTimes(1);
+  });
 });

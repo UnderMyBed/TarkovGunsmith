@@ -11,11 +11,12 @@
  *     through the same client and translation merge as live data. The default for `build`, so
  *     CI and the e2e suite never depend on upstream being reachable.
  *   - `upstream` — live `json.tarkov.dev`. The default for `dev` (`--default-source=upstream`),
- *     and what the release deploy builds with. Each request times out and is retried once on
- *     a 5xx or network failure.
+ *     and what the release deploy builds with. Each request times out, and a failure to
+ *     connect or a 5xx response is retried once.
  *
  * Generation is strict: any record that no longer matches the schemas fails the build with
- * every problem listed, rather than shipping a snapshot with rows missing.
+ * every problem listed, rather than shipping a snapshot with rows missing. So does a snapshot
+ * over `SNAPSHOT_BUDGET`; the release deploy runs this script, so the budget is a deploy gate.
  *
  *   TARKOV_SNAPSHOT_SOURCE=upstream pnpm exec tsx scripts/builder-snapshot.ts
  *   pnpm exec tsx scripts/builder-snapshot.ts --default-source=upstream
@@ -26,6 +27,7 @@ import {
   buildBuilderSnapshot,
   createTarkovClient,
   fetchSnapshotDocuments,
+  SNAPSHOT_BUDGET,
   SnapshotDriftError,
   type SnapshotSource,
 } from "@tarkov/data";
@@ -59,18 +61,20 @@ const fixtureFetch: typeof fetch = (input) => {
   );
 };
 
-function write(name: string, value: unknown): void {
+const kb = (bytes: number) => `${(bytes / 1024).toFixed(0)} KB`;
+
+/** Write one file and report its size; returns the raw and brotli (edge quality) byte counts. */
+function write(name: string, value: unknown): { raw: number; brotli: number } {
   const text = JSON.stringify(value);
   writeFileSync(new URL(name, OUT_DIR), text);
-  const kb = (bytes: number) => `${(bytes / 1024).toFixed(0)} KB`;
-  // Quality 4 approximates what Cloudflare's edge serves; the budget is checked at that
-  // quality by `pnpm verify:upstream`.
+  const raw = new TextEncoder().encode(text).length;
   const brotli = brotliCompressSync(text, {
-    params: { [constants.BROTLI_PARAM_QUALITY]: 4 },
+    params: { [constants.BROTLI_PARAM_QUALITY]: SNAPSHOT_BUDGET.brotliQuality },
   }).length;
   process.stdout.write(
-    `  ${name}: ${kb(new TextEncoder().encode(text).length)} raw, ${kb(brotli)} brotli (q4)\n`,
+    `  ${name}: ${kb(raw)} raw, ${kb(brotli)} brotli (q${SNAPSHOT_BUDGET.brotliQuality})\n`,
   );
+  return { raw, brotli };
 }
 
 async function main(): Promise<void> {
@@ -85,11 +89,18 @@ async function main(): Promise<void> {
   process.stdout.write(`builder snapshot: reading ${source} documents\n`);
   const { snapshot, prices } = buildBuilderSnapshot(await fetchSnapshotDocuments(client), source);
   mkdirSync(OUT_DIR, { recursive: true });
-  write("builder-snapshot.json", snapshot);
+  const size = write("builder-snapshot.json", snapshot);
   write("builder-prices.json", prices);
   process.stdout.write(
     `  ${snapshot.weapons.length} weapons, ${snapshot.parts.length} parts, data as of ${snapshot.dataAsOf}\n`,
   );
+  if (size.raw > SNAPSHOT_BUDGET.rawBytes || size.brotli > SNAPSHOT_BUDGET.brotliBytes) {
+    throw new Error(
+      `builder-snapshot.json is ${kb(size.raw)} raw / ${kb(size.brotli)} brotli, over the ` +
+        `budget of ${kb(SNAPSHOT_BUDGET.rawBytes)} raw / ${kb(SNAPSHOT_BUDGET.brotliBytes)} brotli ` +
+        `(SNAPSHOT_BUDGET in packages/tarkov-data/src/snapshot/limits.ts)`,
+    );
+  }
 }
 
 try {

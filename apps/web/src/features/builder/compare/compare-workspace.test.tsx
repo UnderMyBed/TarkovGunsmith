@@ -4,7 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, it, expect, vi } from "vite
 import { render, screen, cleanup } from "@testing-library/react";
 import { createTestBuilderData } from "../../../test/test-builder-data.js";
 import { createTestClient } from "../../../test/test-client.js";
-import type * as TarkovData from "@tarkov/data";
+import * as TarkovData from "@tarkov/data";
 import type { BuildV6 } from "@tarkov/data";
 import { CompareWorkspace } from "./compare-workspace.js";
 
@@ -33,8 +33,10 @@ vi.mock("@tarkov/data", async () => {
 
 // The real snapshot the route tests run on, so the paste-url side resolves against real data.
 let mockBuilderData: TarkovData.BuilderDataSource;
+let realBuilderData: TarkovData.BuilderDataSource;
 beforeAll(async () => {
-  mockBuilderData = await createTestBuilderData(createTestClient());
+  realBuilderData = await createTestBuilderData(createTestClient());
+  mockBuilderData = realBuilderData;
 });
 
 const leftBuild: BuildV6 = {
@@ -102,6 +104,50 @@ describe("CompareWorkspace sessionStorage prefill", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  describe("when the pasted build cannot be read", () => {
+    const paste = (status: number) => {
+      sessionStorage.setItem("compare:leftPrefill", JSON.stringify(leftBuild));
+      sessionStorage.setItem("compare:mode", "paste-url");
+      sessionStorage.setItem("compare:rightBuildId", "abcd2345");
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() =>
+          Promise.resolve(
+            new Response(JSON.stringify({ ...leftBuild, weaponId: "w-right" }), { status }),
+          ),
+        ),
+      );
+    };
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      mockBuilderData = realBuilderData;
+    });
+
+    it("says the game data was updated when the snapshot is from another version", async () => {
+      mockBuilderData = {
+        ...realBuilderData,
+        snapshot: () => Promise.reject(new TarkovData.SnapshotVersionError(2)),
+      };
+      paste(200);
+      render(<CompareWorkspace />);
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Failed to load data: Game data was updated. Reload the page.",
+      );
+      expect(screen.getByText("empty")).toBeInTheDocument();
+    });
+
+    it("leaves side B empty and says nothing when only the build failed to load", async () => {
+      paste(404);
+      const loaded = vi.spyOn(realBuilderData, "snapshot");
+      render(<CompareWorkspace />);
+      await vi.waitFor(() => expect(loaded).toHaveBeenCalled());
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByText("empty")).toBeInTheDocument();
+      loaded.mockRestore();
+    });
   });
 
   it("does not touch sessionStorage when a loader-supplied initialPair is present", () => {

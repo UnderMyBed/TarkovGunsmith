@@ -52,12 +52,11 @@ export function createTarkovClient(
     fetchImpl !== undefined ? fetchImpl(input, init) : fetch(input, init);
   const cache = new Map<string, CacheEntry>();
 
-  async function getJson(resource: string, required: boolean): Promise<unknown> {
+  async function getJson(resource: string): Promise<unknown> {
     const response = await doFetch(`${baseUrl}${resource}`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) {
-      if (!required) return undefined;
       throw new TarkovApiError(
         `Failed to fetch ${resource}: ${response.status} ${response.statusText}`,
         resource,
@@ -65,6 +64,23 @@ export function createTarkovClient(
       );
     }
     return response.json();
+  }
+
+  /** The `_en` lookup table, or why there is none. */
+  async function getLang(
+    resource: string,
+  ): Promise<{ data: Record<string, string> } | { error: unknown }> {
+    try {
+      const body = (await getJson(`${resource}_en`)) as { data?: unknown } | null;
+      const data = body?.data;
+      if (data === null || typeof data !== "object" || Array.isArray(data)) {
+        return { error: new Error("its body has no `data` object") };
+      }
+      if (Object.keys(data).length === 0) return { error: new Error("its `data` is empty") };
+      return { data: data as Record<string, string> };
+    } catch (error) {
+      return { error };
+    }
   }
 
   return {
@@ -76,21 +92,22 @@ export function createTarkovClient(
       const promise = (async () => {
         // The translation document is optional unless required: a missing one leaves keys in
         // place rather than failing a request that already has perfectly good data.
-        const [raw, lang] = await Promise.all([
-          getJson(resource, true),
-          getJson(`${resource}_en`, false).catch(() => undefined),
-        ]);
+        const [raw, lang] = await Promise.all([getJson(resource), getLang(resource)]);
         const doc = raw as TranslatedDocument<T>;
         // Required only where there is something to translate: upstream serves no `_en` for a
         // document that lists no translation paths (`barters`).
-        if (requireTranslations && lang === undefined && (doc.translations?.length ?? 0) > 0) {
+        if ("error" in lang && requireTranslations && (doc.translations?.length ?? 0) > 0) {
+          const cause = lang.error;
           throw new TarkovApiError(
-            `Failed to fetch ${resource}_en, which ${resource} needs for its text`,
+            `${resource}_en, which ${resource} needs for its text, is unusable: ${
+              cause instanceof Error ? cause.message : String(cause)
+            }`,
             `${resource}_en`,
-            0,
+            // The HTTP status when there was one; 0 for a network failure or a malformed body.
+            cause instanceof TarkovApiError ? cause.status : 0,
           );
         }
-        const langData = (lang as { data?: Record<string, string> } | undefined)?.data ?? {};
+        const langData = "data" in lang ? lang.data : {};
         return mergeTranslations(doc, langData);
       })();
 

@@ -89,12 +89,14 @@ export const ITEMS_DOCUMENT: {
         fireRate: 800,
         slots: [
           {
+            id: "slot-w-m4a1-muzzle",
             nameId: "mod_muzzle",
             name: "Muzzle",
             required: false,
             filters: { allowedItems: ["mod-muzzle"], allowedCategories: [] },
           },
           {
+            id: "slot-w-m4a1-stock",
             nameId: "mod_stock",
             name: "Stock",
             required: false,

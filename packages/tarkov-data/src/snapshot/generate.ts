@@ -25,6 +25,7 @@ import {
   type SnapshotSource,
   type SnapshotWeapon,
 } from "./types.js";
+import { UPSTREAM_FLOORS } from "./limits.js";
 
 /** The translated upstream documents a snapshot is built from. */
 export interface SnapshotDocuments {
@@ -41,13 +42,19 @@ export interface SnapshotDocuments {
 export class SnapshotDriftError extends Error {
   override name = "SnapshotDriftError";
   constructor(readonly problems: readonly string[]) {
+    // A renamed field upstream fails thousands of records alike; the first lines name it.
+    const shown = problems.slice(0, MESSAGE_PROBLEMS);
+    const more = problems.length - shown.length;
     super(
       `upstream data no longer matches the Builder's schemas (${problems.length} problem${
         problems.length === 1 ? "" : "s"
-      }):\n  - ${problems.join("\n  - ")}`,
+      }):\n  - ${shown.join("\n  - ")}${more > 0 ? `\n  … and ${more} more` : ""}`,
     );
   }
 }
+
+/** How many problems a {@link SnapshotDriftError} message lists; `problems` holds all. */
+const MESSAGE_PROBLEMS = 50;
 
 /** Fetch the four documents a snapshot needs, translations merged. */
 export async function fetchSnapshotDocuments(client: TarkovJsonClient): Promise<SnapshotDocuments> {
@@ -88,24 +95,79 @@ function sortedRecord<T>(entries: Iterable<readonly [string, T]>): Record<string
 const byId = (a: { id: string }, b: { id: string }) => compareStrings(a.id, b.id);
 
 /** What upstream leaves in a text field whose translation did not apply. */
-const translationKey = (id: string, field: "Name" | "ShortName"): string => `${id} ${field}`;
+const translationKey = (id: string, field: "Name" | "ShortName" | "Nickname" | "name"): string =>
+  `${id} ${field}`;
+
+const untranslated = (at: string, field: string): string =>
+  `${at}: ${field} is still its translation key; the _en document did not apply`;
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.length > 0;
+
+/** The counts an upstream snapshot is held to, by {@link UPSTREAM_FLOORS} key. */
+export type FloorCounts = Readonly<Record<keyof typeof UPSTREAM_FLOORS, number>>;
+
+/** One line per count below its floor. */
+export function floorProblems(
+  counts: FloorCounts,
+  floors: FloorCounts = UPSTREAM_FLOORS,
+): string[] {
+  return (Object.keys(floors) as (keyof FloorCounts)[])
+    .filter((what) => counts[what] < floors[what])
+    .map(
+      (what) =>
+        `floors: ${what} ${counts[what]}, below the floor of ${floors[what]}; rows went unrecognised`,
+    );
+}
+
+/**
+ * Problems with one reached owner's raw slots. The slot graph reads slots leniently — a slot
+ * without a `nameId` or `allowedItems` simply offers nothing — so a renamed slot field would
+ * otherwise ship a Builder with empty slots, or with slot paths no saved build matches.
+ */
+function slotShapeProblems(ownerId: string, raw: unknown): string[] {
+  // A reached owner parsed as a weapon or part, so it has `properties`.
+  const slots = (raw as { properties: { slots?: unknown } }).properties.slots;
+  if (slots === undefined || slots === null) return [];
+  if (!Array.isArray(slots)) return [`items/${ownerId}: properties.slots is not an array`];
+  const problems: string[] = [];
+  for (const [index, slot] of (slots as unknown[]).entries()) {
+    const at = `items/${ownerId}: properties.slots[${index}]`;
+    if (!isRecord(slot)) {
+      problems.push(`${at} is not an object`);
+      continue;
+    }
+    for (const field of ["id", "nameId", "name"] as const) {
+      if (!isNonEmptyString(slot[field])) problems.push(`${at}.${field} is not a non-empty string`);
+    }
+    const filters = slot.filters as { allowedItems?: unknown } | null | undefined;
+    if (!Array.isArray(filters?.allowedItems)) {
+      problems.push(`${at}.filters.allowedItems is not an array`);
+    }
+  }
+  return problems;
+}
 
 /**
  * Build the Builder snapshot, and the release-time prices beside it, from the upstream
  * documents.
  *
- * Strict for everything the snapshot holds or derives from: every trader and task; every
- * buildable weapon; every part a weapon's slots reach, its `conflictingSlotIds` and `updated`;
- * every offer on those (cash, preset and barter: trader, quest gate, loyalty level, price
- * fields); every barter rewarding one of them, or a preset of one, and each of its
- * ingredients; and two copies of one trader offer that disagree on price. Names that are
- * still translation keys are drift too: the translation document did not apply. Every problem
- * is collected and thrown together as a {@link SnapshotDriftError}, so a deploy fails rather
- * than ship a Builder with options missing or mislabelled.
+ * Strict for everything the snapshot holds or derives from: every trader and task, and their
+ * names; every buildable weapon; every part a weapon's slots reach, its `conflictingSlotIds`
+ * and `updated`; the slots of every reached item (`id`, `nameId`, `name`,
+ * `filters.allowedItems`); every preset's `baseItem`, and the `normalizedName` of each preset
+ * of a snapshot item; every offer on those (cash, preset and barter: trader, quest gate,
+ * loyalty level, price fields); every barter rewarding one of them, or a preset of one, and
+ * each of its ingredients; and two copies of one seller's trader offer that disagree on
+ * price. Names that are still translation keys are drift too: the translation document did
+ * not apply. Built from `upstream`, the snapshot must also meet {@link UPSTREAM_FLOORS}: a
+ * renamed type or link makes rows vanish rather than fail to parse. Every problem is collected
+ * and thrown together as a {@link SnapshotDriftError}, so a deploy fails rather than ship a
+ * Builder with options missing or mislabelled.
  *
  * Records the Builder never reads are not checked, so they cannot block a release: weapons
- * flagged `specialSlot`, part-typed items no weapon reaches, barters rewarding anything else,
- * and items of other types.
+ * flagged `specialSlot`, part-typed items no weapon reaches and their slots, barters
+ * rewarding anything else, ingredients' own trader offers, and items of other types.
  *
  * Output is deterministic: arrays and maps are sorted by id, so the same documents give a
  * byte-identical file.
@@ -130,8 +192,13 @@ export function buildBuilderSnapshot(
   const traders: TraderListItem[] = [];
   for (const [key, raw] of Object.entries(docs.traders)) {
     const parsed = traderListItemSchema.safeParse(raw);
-    if (parsed.success) traders.push(parsed.data);
-    else fail(`traders/${key}: ${describeIssues(parsed.error)}`);
+    if (!parsed.success) {
+      fail(`traders/${key}: ${describeIssues(parsed.error)}`);
+      continue;
+    }
+    traders.push(parsed.data);
+    if (parsed.data.name === translationKey(key, "Nickname"))
+      fail(untranslated(`traders/${key}`, "name"));
   }
   const traderNameById = new Map(traders.map((t) => [t.id, t.normalizedName]));
 
@@ -144,8 +211,13 @@ export function buildBuilderSnapshot(
       continue;
     }
     const parsed = taskListItemSchema.safeParse({ ...(raw as object), trader: { normalizedName } });
-    if (parsed.success) tasks.push(parsed.data);
-    else fail(`tasks/${key}: ${describeIssues(parsed.error)}`);
+    if (!parsed.success) {
+      fail(`tasks/${key}: ${describeIssues(parsed.error)}`);
+      continue;
+    }
+    tasks.push(parsed.data);
+    if (parsed.data.name === translationKey(key, "name"))
+      fail(untranslated(`tasks/${key}`, "name"));
   }
 
   let newest = Number.NEGATIVE_INFINITY;
@@ -174,8 +246,11 @@ export function buildBuilderSnapshot(
       if (parsed.success) allParts.set(parsed.data.id, parsed.data);
       else brokenParts.set(key, `items/${key} (${type}): ${describeIssues(parsed.error)}`);
     } else if (type === "ItemPropertiesPreset") {
+      // A preset sells its base item: without a base, nothing tells whether the snapshot needs
+      // its offers, so it is drift whatever it is a preset of.
       const base = (raw as { properties: { baseItem?: unknown } }).properties.baseItem;
       if (typeof base === "string") presetBases.set(key, base);
+      else fail(`items/${key} (${type}): properties.baseItem is not a string`);
     }
   }
   if (newest === Number.NEGATIVE_INFINITY) fail("items: no item carries an `updated` timestamp");
@@ -189,6 +264,7 @@ export function buildBuilderSnapshot(
   for (let owner = stack.pop(); owner !== undefined; owner = stack.pop()) {
     if (reached.has(owner)) continue;
     reached.add(owner);
+    for (const problem of slotShapeProblems(owner, items[owner])) fail(problem);
     for (const slot of graph.owners[owner]?.slots ?? []) {
       for (const id of slot.allowedItemIds) {
         if (allParts.has(id)) {
@@ -211,13 +287,18 @@ export function buildBuilderSnapshot(
   );
   for (const item of [...weapons, ...parts]) {
     if (!updatedOf.has(item.id)) fail(`items/${item.id}: no valid \`updated\` timestamp`);
-    if (item.name === translationKey(item.id, "Name")) {
-      fail(`items/${item.id}: name is still its translation key; the _en document did not apply`);
-    }
+    if (item.name === translationKey(item.id, "Name"))
+      fail(untranslated(`items/${item.id}`, "name"));
     if (item.shortName === translationKey(item.id, "ShortName")) {
-      fail(
-        `items/${item.id}: shortName is still its translation key; the _en document did not apply`,
-      );
+      fail(untranslated(`items/${item.id}`, "shortName"));
+    }
+  }
+  // A preset of a snapshot item is how traders sell it; the collector tags each such offer
+  // with the preset's normalizedName, and skips a preset without one.
+  for (const [presetId, base] of presetBases) {
+    if (!weaponIds.has(base) && !partIds.has(base)) continue;
+    if (!isNonEmptyString((items[presetId] as { normalizedName?: unknown }).normalizedName)) {
+      fail(`items/${presetId} (ItemPropertiesPreset): normalizedName is not a non-empty string`);
     }
   }
   for (const part of parts) {
@@ -255,9 +336,15 @@ export function buildBuilderSnapshot(
   for (const { id } of [...weapons, ...parts]) offers.set(id, collect(items[id]));
 
   const priceIds = new Set<string>();
+  // Ids that sell something: the snapshot's items and the presets they are sold as. Only
+  // their trader offers are priced; an ingredient is valued at its flea price alone.
+  const sellerIds = new Set<string>();
   const ingredientNames = new Map<string, string>();
   for (const [id, list] of offers) {
     for (const priceId of offerPriceIds(id, list)) priceIds.add(priceId);
+    sellerIds.add(id);
+    for (const offer of list)
+      if (offer.kind !== "flea" && offer.preset) sellerIds.add(offer.preset.id);
     for (const offer of list) {
       if (offer.kind !== "barter") continue;
       for (const { itemId } of offer.vendor.requiredItems) {
@@ -274,18 +361,26 @@ export function buildBuilderSnapshot(
           fail(`${at}: required item ${itemId} has no name`);
           continue;
         }
-        if (raw.name === translationKey(itemId, "Name")) {
-          fail(
-            `items/${itemId}: name is still its translation key; the _en document did not apply`,
-          );
-        }
+        if (raw.name === translationKey(itemId, "Name"))
+          fail(untranslated(`items/${itemId}`, "name"));
         ingredientNames.set(itemId, raw.name);
       }
     }
   }
 
-  const { table, conflicts } = extractPrices((id) => items[id], [...priceIds].sort());
+  const { table, conflicts } = extractPrices((id) => items[id], [...priceIds].sort(), sellerIds);
   for (const key of conflicts) fail(`prices: trader offers under key ${key} disagree on price`);
+
+  if (source === "upstream") {
+    const all = [...offers.values()].flat();
+    const counts = {
+      weapons: weapons.length,
+      parts: parts.length,
+      presetOffers: all.filter((o) => o.kind !== "flea" && o.preset !== undefined).length,
+      barterOffers: all.filter((o) => o.kind === "barter").length,
+    };
+    for (const problem of floorProblems(counts)) fail(problem);
+  }
   throwIfProblems();
 
   const dataAsOf = new Date(newest).toISOString();

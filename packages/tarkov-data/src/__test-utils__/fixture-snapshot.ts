@@ -54,8 +54,8 @@ export async function fixtureWeaponTree(
 }
 
 /**
- * `createOfferResolver` over a client's documents, with traders, tasks and barters validated
- * by the generator first — what pricing an item straight from the documents looks like.
+ * `createOfferResolver` over a client's documents, with traders and tasks validated by the
+ * generator first — what pricing an item straight from the documents looks like.
  */
 export async function fixtureOfferResolver(
   client: TarkovJsonClient = fixtureClient(),
@@ -66,7 +66,9 @@ export async function fixtureOfferResolver(
     items: docs.items.items,
     traders: snapshot.traders,
     tasks: snapshot.tasks,
-    // Validated by the generator call above, which throws on any malformed barter.
+    // Unvalidated: the generator parses only barters that reward a snapshot item, so one for
+    // anything else reaches the resolver as upstream sent it. The captured barters are all
+    // well-formed; a test that breaks one should build its resolver itself.
     barters: docs.barters as Barter[],
   });
 }
