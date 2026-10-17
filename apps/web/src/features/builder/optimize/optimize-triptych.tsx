@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import type { WeaponSpec } from "@tarkov/ballistics";
 import { Card, Skeleton } from "@tarkov/ui";
+import { ergonomicsFloorNote, shownErgonomics } from "../ergonomics.js";
 
 export interface OptimizeTriptychProps {
   current: WeaponSpec | null;
@@ -17,7 +18,10 @@ interface StatDef {
   readonly label: string;
   readonly lowerIsBetter: boolean;
   readonly format: (v: number) => string;
+  /** The value shown, and the one deltas compare. */
   readonly select: (s: WeaponSpec, price: number | null) => number | null;
+  /** What the shown value leaves out, for its `title`. */
+  readonly note?: (s: WeaponSpec) => string | undefined;
 }
 
 const STATS: readonly StatDef[] = [
@@ -33,7 +37,8 @@ const STATS: readonly StatDef[] = [
     label: "ERGO",
     lowerIsBetter: false,
     format: (v) => v.toFixed(0),
-    select: (s) => s.ergonomics,
+    select: (s) => shownErgonomics(s.ergonomics),
+    note: (s) => ergonomicsFloorNote(s.ergonomics),
   },
   {
     key: "weight",
@@ -95,6 +100,7 @@ export function OptimizeTriptych({
                 <div
                   className="font-mono text-xl text-[var(--color-foreground)] mt-0.5"
                   data-testid={`triptych-current-${stat.key}`}
+                  title={current === null ? undefined : stat.note?.(current)}
                 >
                   {value === null ? "—" : stat.format(value)}
                 </div>
@@ -119,6 +125,7 @@ export function OptimizeTriptych({
                 <div
                   className="font-mono text-xl text-[var(--color-foreground)] mt-0.5"
                   data-testid={`triptych-optimized-${stat.key}`}
+                  title={optimized === null || running ? undefined : stat.note?.(optimized)}
                 >
                   {running ? (
                     <Skeleton width="60%" height="1.25rem" />

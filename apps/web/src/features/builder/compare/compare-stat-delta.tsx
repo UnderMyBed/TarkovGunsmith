@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { Stamp } from "@tarkov/ui";
 import { statDelta } from "@tarkov/data";
+import { ergonomicsFloorNote, shownErgonomics } from "../ergonomics.js";
 
 type Stats = NonNullable<Parameters<typeof statDelta>[0]>;
 
@@ -22,6 +23,20 @@ function formatDelta(d: number | null): string {
   return `${sign}${Number.isInteger(abs) ? abs.toLocaleString() : abs.toFixed(2)}`;
 }
 
+/** The side as the game handles it: ergonomics floored at 0, so the delta compares that. */
+function asShown(stats: Stats): Stats {
+  return stats.ergonomics === undefined
+    ? stats
+    : { ...stats, ergonomics: shownErgonomics(stats.ergonomics) };
+}
+
+/** The raw ergonomics behind a floored side, for its cell's `title`. */
+function floorNote(stats: Stats, key: string): string | undefined {
+  return key === "ergonomics" && stats.ergonomics !== undefined
+    ? ergonomicsFloorNote(stats.ergonomics)
+    : undefined;
+}
+
 export function CompareStatDelta({ left, right }: CompareStatDeltaProps): ReactElement {
   if (!left || !right) {
     return (
@@ -31,7 +46,7 @@ export function CompareStatDelta({ left, right }: CompareStatDeltaProps): ReactE
     );
   }
 
-  const rows = statDelta(left, right);
+  const rows = statDelta(asShown(left), asShown(right));
   const allEqual = rows.every((r) => r.delta === 0 || r.direction === "unavailable");
 
   if (allEqual) {
@@ -49,8 +64,12 @@ export function CompareStatDelta({ left, right }: CompareStatDeltaProps): ReactE
           <span className="text-[var(--color-muted-foreground)] uppercase tracking-wider">
             {r.label}
           </span>
-          <span className="text-right tabular-nums">{formatNum(r.left)}</span>
-          <span className="text-right tabular-nums">{formatNum(r.right)}</span>
+          <span className="text-right tabular-nums" title={floorNote(left, r.key)}>
+            {formatNum(r.left)}
+          </span>
+          <span className="text-right tabular-nums" title={floorNote(right, r.key)}>
+            {formatNum(r.right)}
+          </span>
           <span
             data-direction={r.direction}
             className="text-right tabular-nums data-[direction=better]:text-[var(--color-primary)] data-[direction=worse]:text-[var(--color-destructive)]"
