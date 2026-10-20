@@ -18,10 +18,10 @@
   },
   "dependencies": {
     "@tarkov/data": "workspace:*",
-    "nanoid": "^6.0.1"
+    "nanoid": "^6.0.2"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/vitest-pool-workers": "^0.23.0",
     "@cloudflare/workers-types": "^5.20261006.1",
     "vitest": "^4.1.11",
     "wrangler": "^4.151.1"
