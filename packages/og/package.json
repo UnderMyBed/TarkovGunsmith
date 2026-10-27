@@ -33,12 +33,12 @@
   "dependencies": {
     "@resvg/resvg-wasm": "^2.6.2",
     "@tarkov/ballistics": "workspace:*",
-    "react": "^19.2.8",
+    "react": "^19.3.1",
     "satori": "^0.10.14"
   },
   "devDependencies": {
     "@tarkov/data": "workspace:*",
-    "@types/react": "^19.2.18",
-    "tsx": "^4.23.12"
+    "@types/react": "^19.3.0",
+    "tsx": "^4.23.15"
   }
 }
